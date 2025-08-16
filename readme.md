@@ -1,4 +1,4 @@
-# ​ KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)
+# 🐨 KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)
 
 [![Version](https://img.shields.io/badge/version-2.1-green.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -10,9 +10,9 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 
 ---
 
-##  Features
+## 🚀 Features
 
-### ​ Advanced Networking
+### 🔗 Advanced Networking
 - Disable TCP ACK Delay (`TcpDelAckTicks`)
 - Set `TcpDelAckTicks` Value
 - TCP Autotuning (Normal)
@@ -22,7 +22,7 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 - Disable Network Throttling
 - Disable Nagle Algorithm
 
-###  Windows Gaming Optimizations
+### 🎮 Windows Gaming Optimizations
 - System Responsiveness (0)
 - Set Game Tasks to High Priority
 - Disable Game DVR
@@ -32,18 +32,18 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 - Disable Visual Effects
 - Disable Hibernation
 
-###  System Performance
+### ⚙️ System Performance
 - Optimize Memory Management
 - Apply Ultimate Performance Power Plan
 - Optimize CPU Scheduling
 - Optimize Page File
 
-###  GPU Vendor Optimizations
+### 🖥️ GPU Vendor Optimizations
 - **NVIDIA** – Disable Telemetry Service  
 - **AMD** – Disable External Events  
 - **Intel** – Graphics Optimizations (pre-ausgewählt)
 
-###  Background Services
+### 🔧 Background Services
 - Disable Xbox Services
 - Disable Print Spooler
 - Disable SysMain (Superfetch)
@@ -52,12 +52,12 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 - Disable Tablet Services
 - Disable Themes Service
 
-###  Disable Unneeded Services
+### 🗑 Disable Unneeded Services
 - Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / bthserv
 
 ---
 
-##  Game Selection & Process Priority
+## 🎯 Game Selection & Process Priority
 - Vordefinierte Game-Profile (z. B. Counter-Strike 2)
 - **Auto Detect** aktiver Spieleprozesse
 - Individuelle Prozessnamen & Game-Pfad
@@ -65,7 +65,7 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 
 ---
 
-##  Installation
+## 📦 Installation
 1. **Download** die neueste Version über [Releases](https://github.com/KOALAaufPILLEN/KOALAOptimizer/releases).
 2. **Entpacken** in einen beliebigen Ordner.
 3. **Starten** mit **Administratorrechten**.
@@ -73,26 +73,26 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 
 ---
 
-##  Screenshot
-*Siehe Datei `screenshot.png` im Repository für das aktuelle UI-Design.*
+## 🖥️ Screenshot
+![KOALA-UDP Screenshot](https://github.com/KOALAaufPILLEN/KOALAOptimizer/blob/main/screenshot.png)
 
 ---
 
-##  Activity Log & System Info
+## 📋 Activity Log & System Info
 - Echtzeit-Log der vorgenommenen Optimierungen
 - Systeminformationen abrufbar
 - Schnell-Benchmark für Performance-Vergleich
 
 ---
 
-##  Hinweise
+## ⚠️ Hinweise
 - **Administratorrechte erforderlich**
 - Einige Änderungen erfordern Neustart
 - "Revert All" … bringt Windows auf Ausgangszustand zurück
 
 ---
 
-##  Geplante Features
+## 🛠️ Geplante Features
 - Erweiterte Netzwerk-Tweaks
 - Weitere vorgefertigte Spieleprofile
 - Cloud-Sync für Konfigurationen
@@ -100,5 +100,5 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 
 ---
 
-##  Lizenz
+## 📜 Lizenz
 Dieses Projekt ist unter der **MIT License** lizenziert – frei für private und kommerzielle Nutzung.
