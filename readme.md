@@ -10,6 +10,8 @@ Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungsto
 
 ---
 
+<img src="https://github.com/KOALAaufPILLEN/KoalaSleep/assets/92574026/401f5135-cf60-4708-8372-48a082dc8003.png" width="350">
+
 ## 🚀 Features
 
 ### 🔗 Advanced Networking
