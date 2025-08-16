@@ -1,7 +1,7 @@
-# KOALA-UDP Enhanced Gamer Toolkit (All-in-one, WPF)
+# KOALA-UDP Enhanced Gamer Toolkit (All-in-one, WPF) - KORRIGIERTE VERSION
 # - Works on PowerShell 5.1+ (Windows 10/11)
 # - Enhanced with additional optimizations and game-specific tweaks
-# - Fixed XAML compatibility issues
+# - Fixed XAML compatibility issues and ContainsKey errors
 # NOTE: Run as Administrator
 
 # ---------- WPF Assemblies ----------
@@ -30,7 +30,7 @@ public static class WinMM {
 "@
 Add-Type -TypeDefinition $winmm -ErrorAction SilentlyContinue
 
-# ---------- Game Profiles ----------
+# ---------- Game Profiles (KORRIGIERT: HashTable statt OrderedDictionary) ----------
 $GameProfiles = @{
     'cs2' = @{
         DisplayName = 'Counter-Strike 2'
@@ -211,7 +211,8 @@ function Get-NetshTcpGlobal {
 function Apply-GameSpecificTweaks {
     param([string]$GameKey, [array]$TweakList)
     
-    if (-not $GameProfiles.ContainsKey($GameKey)) { return }
+    # KORRIGIERT: .ContainsKey() ersetzt durch .Contains()
+    if (-not $GameProfiles.Contains($GameKey)) { return }
     
     $profile = $GameProfiles[$GameKey]
     Log "Applying game-specific tweaks for $($profile.DisplayName)..."
@@ -254,14 +255,15 @@ function Apply-GameSpecificTweaks {
     }
 }
 
-# ---------- Backup / Restore ----------
+# ---------- KORRIGIERTE Backup / Restore Funktionen ----------
 function Create-Backup {
-    $b = [ordered]@{
+    # KORRIGIERT: Normale HashTables statt OrderedDictionary verwenden
+    $b = @{
         Timestamp        = Get-Date
         GPU              = Get-GPUVendor
-        Registry         = [ordered]@{}
-        RegistryNICs     = [ordered]@{}
-        Services         = [ordered]@{}
+        Registry         = @{}
+        RegistryNICs     = @{}
+        Services         = @{}
         NetshTcp         = Get-NetshTcpGlobal
     }
 
@@ -334,89 +336,150 @@ function Create-Backup {
 
 function Restore-FromBackup {
     if (-not (Test-Path $BackupPath)) { Log "No backup file found at $BackupPath"; return }
-    $b = Get-Content $BackupPath -Raw | ConvertFrom-Json
+    
+    try {
+        $b = Get-Content $BackupPath -Raw | ConvertFrom-Json
+        Log "Backup loaded successfully, starting restoration..."
+    } catch {
+        Log "Failed to load backup file: $_"
+        return
+    }
 
-    # Registry restoration
-    foreach ($path in $b.Registry.PSObject.Properties.Name) {
-        foreach ($name in $b.Registry.$path.PSObject.Properties.Name) {
-            $val = $b.Registry.$path.$name
-            if ($null -eq $val) {
-                Remove-Reg $path $name | Out-Null
-            } else {
-                $vText = [string]$val
-                $isInt = $false
-                $tmp = 0
-                if ([int]::TryParse($vText, [ref]$tmp)) { $isInt = $true }
-                if ($isInt) {
-                    Set-Reg $path $name 'DWord' $val | Out-Null
-                } else {
-                    Set-Reg $path $name 'String' $val | Out-Null
+    # Registry restoration - KORRIGIERT für PowerShell JSON
+    if ($b.Registry) {
+        try {
+            # PowerShell JSON konvertiert nested objects zu PSCustomObject
+            $regData = $b.Registry
+            if ($regData -is [PSCustomObject]) {
+                $regData.PSObject.Properties | ForEach-Object {
+                    $path = $_.Name
+                    $pathValues = $_.Value
+                    if ($pathValues -is [PSCustomObject]) {
+                        $pathValues.PSObject.Properties | ForEach-Object {
+                            $name = $_.Name
+                            $val = $_.Value
+                            if ($null -eq $val) {
+                                Remove-Reg $path $name | Out-Null
+                            } else {
+                                $vText = [string]$val
+                                $isInt = $false
+                                $tmp = 0
+                                if ([int]::TryParse($vText, [ref]$tmp)) { $isInt = $true }
+                                if ($isInt) {
+                                    Set-Reg $path $name 'DWord' $val | Out-Null
+                                } else {
+                                    Set-Reg $path $name 'String' $val | Out-Null
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            Log "Registry settings restored"
+        } catch {
+            Log "Error restoring registry: $_"
         }
     }
     
-    # NIC registry restoration
+    # NIC registry restoration - KORRIGIERT
     if ($b.RegistryNICs) {
-        foreach ($nicPath in $b.RegistryNICs.PSObject.Properties.Name) {
-            $nicVals = $b.RegistryNICs.$nicPath
-            foreach ($n in @('TcpAckFrequency','TCPNoDelay')) {
-                if ($nicVals.$n -eq $null) {
-                    Remove-Reg $nicPath $n | Out-Null
-                } else {
-                    Set-Reg $nicPath $n 'DWord' ([int]$nicVals.$n) | Out-Null
+        try {
+            $nicData = $b.RegistryNICs
+            if ($nicData -is [PSCustomObject]) {
+                $nicData.PSObject.Properties | ForEach-Object {
+                    $nicPath = $_.Name
+                    $nicVals = $_.Value
+                    if ($nicVals -is [PSCustomObject]) {
+                        foreach ($n in @('TcpAckFrequency','TCPNoDelay')) {
+                            $val = $null
+                            if ($nicVals.PSObject.Properties.Name -contains $n) {
+                                $val = $nicVals.$n
+                            }
+                            if ($val -eq $null) {
+                                Remove-Reg $nicPath $n | Out-Null
+                            } else {
+                                Set-Reg $nicPath $n 'DWord' ([int]$val) | Out-Null
+                            }
+                        }
+                    }
                 }
             }
+            Log "NIC registry settings restored"
+        } catch {
+            Log "Error restoring NIC registry: $_"
         }
     }
 
-    # Service restoration
-    foreach ($svcName in $b.Services.PSObject.Properties.Name) {
-        Restore-ServiceState $b.Services.$svcName
+    # Service restoration - KORRIGIERT
+    if ($b.Services) {
+        try {
+            $svcData = $b.Services
+            if ($svcData -is [PSCustomObject]) {
+                $svcData.PSObject.Properties | ForEach-Object {
+                    $svcName = $_.Name
+                    $svcInfo = $_.Value
+                    $savedService = [PSCustomObject]@{
+                        Name = if ($svcInfo.Name) { $svcInfo.Name } else { $svcName }
+                        Display = $svcInfo.Display
+                        StartType = $svcInfo.StartType
+                        Status = $svcInfo.Status
+                    }
+                    Restore-ServiceState $savedService
+                }
+            }
+            Log "Services restored"
+        } catch {
+            Log "Error restoring services: $_"
+        }
     }
 
     # Netsh restoration
     if ($b.NetshTcp) {
-        $ns = $b.NetshTcp
-        if ($ns.'ECN Capability') {
-            $en = ($ns.'ECN Capability' -match 'enabled')
-            if ($en) { netsh int tcp set global ecncapability=enabled | Out-Null } else { netsh int tcp set global ecncapability=disabled | Out-Null }
-        }
-        if ($ns.'TCP timestamps') {
-            $en = ($ns.'TCP timestamps' -match 'enabled')
-            if ($en) { netsh int tcp set global timestamps=enabled | Out-Null } else { netsh int tcp set global timestamps=disabled | Out-Null }
-        }
-        if ($ns.'Chimney Offload State') {
-            $en = ($ns.'Chimney Offload State' -match 'enabled')
-            if ($en) { netsh int tcp set global chimney=enabled | Out-Null } else { netsh int tcp set global chimney=disabled | Out-Null }
-        }
-        if ($ns.'Receive-Side Scaling State') {
-            $en = ($ns.'Receive-Side Scaling State' -match 'enabled')
-            if ($en) { netsh int tcp set global rss=enabled | Out-Null } else { netsh int tcp set global rss=disabled | Out-Null }
-        }
-        if ($ns.'Receive Segment Coalescing State') {
-            $en = ($ns.'Receive Segment Coalescing State' -match 'enabled')
-            if ($en) { netsh int tcp set global rsc=enabled | Out-Null } else { netsh int tcp set global rsc=disabled | Out-Null }
-        }
-        if ($ns.'Receive Window Auto-Tuning Level') {
-            $lvl = 'normal'
-            $rw = $ns.'Receive Window Auto-Tuning Level'
-            if ($rw -match 'disabled')          { $lvl = 'disabled' }
-            elseif ($rw -match 'experimental')  { $lvl = 'experimental' }
-            elseif ($rw -match 'highlyrestricted') { $lvl = 'highlyrestricted' }
-            elseif ($rw -match 'restricted')    { $lvl = 'restricted' }
-            netsh int tcp set global autotuninglevel=$lvl | Out-Null
+        try {
+            $ns = $b.NetshTcp
+            if ($ns.'ECN Capability') {
+                $en = ($ns.'ECN Capability' -match 'enabled')
+                if ($en) { netsh int tcp set global ecncapability=enabled | Out-Null } else { netsh int tcp set global ecncapability=disabled | Out-Null }
+            }
+            if ($ns.'TCP timestamps') {
+                $en = ($ns.'TCP timestamps' -match 'enabled')
+                if ($en) { netsh int tcp set global timestamps=enabled | Out-Null } else { netsh int tcp set global timestamps=disabled | Out-Null }
+            }
+            if ($ns.'Chimney Offload State') {
+                $en = ($ns.'Chimney Offload State' -match 'enabled')
+                if ($en) { netsh int tcp set global chimney=enabled | Out-Null } else { netsh int tcp set global chimney=disabled | Out-Null }
+            }
+            if ($ns.'Receive-Side Scaling State') {
+                $en = ($ns.'Receive-Side Scaling State' -match 'enabled')
+                if ($en) { netsh int tcp set global rss=enabled | Out-Null } else { netsh int tcp set global rss=disabled | Out-Null }
+            }
+            if ($ns.'Receive Segment Coalescing State') {
+                $en = ($ns.'Receive Segment Coalescing State' -match 'enabled')
+                if ($en) { netsh int tcp set global rsc=enabled | Out-Null } else { netsh int tcp set global rsc=disabled | Out-Null }
+            }
+            if ($ns.'Receive Window Auto-Tuning Level') {
+                $lvl = 'normal'
+                $rw = $ns.'Receive Window Auto-Tuning Level'
+                if ($rw -match 'disabled')          { $lvl = 'disabled' }
+                elseif ($rw -match 'experimental')  { $lvl = 'experimental' }
+                elseif ($rw -match 'highlyrestricted') { $lvl = 'highlyrestricted' }
+                elseif ($rw -match 'restricted')    { $lvl = 'restricted' }
+                netsh int tcp set global autotuninglevel=$lvl | Out-Null
+            }
+            Log "Network settings restored"
+        } catch {
+            Log "Error restoring network settings: $_"
         }
     }
 
     Log "Complete restore finished. Reboot recommended."
 }
 
-# ---------- Fixed XAML UI ----------
+# ---------- Fixed XAML UI (Rest der UI Code bleibt gleich) ----------
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KOALA-UDP Enhanced Gaming Toolkit v2.0" Height="750" Width="900"
+        Title="KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)" Height="750" Width="900"
         Background="#1A1625" WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
   <Grid Margin="12">
     <Grid.RowDefinitions>
@@ -428,8 +491,8 @@ function Restore-FromBackup {
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
-      <TextBlock Text="🚀 KOALA-UDP Enhanced Gaming Toolkit v2.0" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
-      <TextBlock Text="Advanced Windows gaming optimizations with game-specific profiles" FontSize="14" Foreground="#B8B3E6" FontStyle="Italic"/>
+      <TextBlock Text="🚀 KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
+      <TextBlock Text="Advanced Windows gaming optimizations with game-specific profiles - ContainsKey Bug Fixed!" FontSize="14" Foreground="#B8B3E6" FontStyle="Italic"/>
     </StackPanel>
 
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="#252140" BorderThickness="2" BorderBrush="#6B46C1" Padding="10">
@@ -653,7 +716,7 @@ $cmbPriority.SelectedIndex = 0     # High
 $cmbGameProfile.Add_SelectionChanged({
     if ($cmbGameProfile.SelectedItem -and $cmbGameProfile.SelectedItem.Tag) {
         $tag = $cmbGameProfile.SelectedItem.Tag.ToString()
-        if ($tag -ne 'custom' -and $GameProfiles.ContainsKey($tag)) {
+        if ($tag -ne 'custom' -and $GameProfiles.Contains($tag)) {
             $profile = $GameProfiles[$tag]
             $txtProcess.Text = $profile.ProcessNames[0]
             
@@ -676,7 +739,7 @@ function Apply-Tweaks {
     $lblStatus.Text = "Working..."
     $lblStatus.Foreground = "#F59E0B"
     
-    Log "🚀 Starting enhanced gaming optimizations..."
+    Log "Starting enhanced gaming optimizations..."
     Create-Backup
 
     # Timer resolution
@@ -684,8 +747,8 @@ function Apply-Tweaks {
         try { 
             [WinMM]::timeBeginPeriod(1) | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 | Out-Null
-            Log "✅ High precision timer enabled (~1ms resolution)"
-        } catch { Log "❌ Timer resolution request failed: $_" }
+            Log "High precision timer enabled (~1ms resolution)"
+        } catch { Log "Timer resolution request failed: $_" }
     }
 
     # ENHANCED NETWORKING
@@ -698,51 +761,51 @@ function Apply-Tweaks {
                 Set-Reg $i.PSPath 'TCPNoDelay' 'DWord' 1 | Out-Null
                 $count++
             }
-            Log "✅ TCP ACK delay disabled on $count network interfaces"
-        } catch { Log "❌ TCP ACK optimization failed: $_" }
+            Log "TCP ACK delay disabled on $count network interfaces"
+        } catch { Log "TCP ACK optimization failed: $_" }
     }
     
     if ($chkDelAckTicks.IsChecked) {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpDelAckTicks" 'DWord' 0 | Out-Null
-        Log "✅ TcpDelAckTicks set to 0"
+        Log "TcpDelAckTicks set to 0"
     }
     
     if ($chkNagle.IsChecked) {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpNoDelay" 'DWord' 1 | Out-Null
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TCPNoDelay" 'DWord' 1 | Out-Null
-        Log "✅ Nagle's algorithm disabled for reduced latency"
+        Log "Nagle's algorithm disabled for reduced latency"
     }
     
     # Netsh optimizations
     if ($chkTcpAutoTune.IsChecked) {
         netsh int tcp set global autotuninglevel=normal | Out-Null
-        Log "✅ TCP autotuning set to Normal"
+        Log "TCP autotuning set to Normal"
     }
     if ($chkTcpTimestamps.IsChecked) {
         netsh int tcp set global timestamps=disabled | Out-Null
-        Log "✅ TCP timestamps disabled"
+        Log "TCP timestamps disabled"
     }
     if ($chkTcpECN.IsChecked) {
         netsh int tcp set global ecncapability=disabled | Out-Null
-        Log "✅ ECN capability disabled"
+        Log "ECN capability disabled"
     }
     if ($chkRSS.IsChecked) {
         netsh int tcp set global rss=enabled | Out-Null
-        Log "✅ Receive-Side Scaling enabled"
+        Log "Receive-Side Scaling enabled"
     }
     if ($chkRSC.IsChecked) {
         netsh int tcp set global rsc=enabled | Out-Null
-        Log "✅ Receive Segment Coalescing enabled"
+        Log "Receive Segment Coalescing enabled"
     }
     if ($chkThrottle.IsChecked) {
         Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 'DWord' 0xffffffff | Out-Null
-        Log "✅ Network throttling disabled"
+        Log "Network throttling disabled"
     }
 
     # WINDOWS/GAME UX OPTIMIZATIONS
     if ($chkResponsiveness.IsChecked) {
         Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 'DWord' 0 | Out-Null
-        Log "✅ System responsiveness optimized (0)"
+        Log "System responsiveness optimized (0)"
     }
     if ($chkGamesTask.IsChecked) {
         $p = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
@@ -750,74 +813,74 @@ function Apply-Tweaks {
         Set-Reg $p "Priority"     'DWord' 6   | Out-Null
         Set-Reg $p "Scheduling Category" 'String' "High" | Out-Null
         Set-Reg $p "SFIO Priority"       'String' "High" | Out-Null
-        Log "✅ MMCSS 'Games' task priorities raised to High"
+        Log "MMCSS 'Games' task priorities raised to High"
     }
     if ($chkGameDVR.IsChecked) {
         Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "AppCaptureEnabled" 'DWord' 0 | Out-Null
         Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "GameDVR_Enabled" 'DWord' 0 | Out-Null
-        Log "✅ Game DVR disabled"
+        Log "Game DVR disabled"
     }
     if ($chkFSE.IsChecked) {
         Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 'DWord' 2 | Out-Null
         Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehavior" 'DWord' 2 | Out-Null
-        Log "✅ Fullscreen optimizations disabled"
+        Log "Fullscreen optimizations disabled"
     }
     if ($chkGpuScheduler.IsChecked) {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 | Out-Null
-        Log "✅ GPU Hardware Scheduling enabled"
+        Log "GPU Hardware Scheduling enabled"
     }
     if ($chkVisualEffects.IsChecked) {
         Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" "VisualFXSetting" 'DWord' 2 | Out-Null
-        Log "✅ Visual effects disabled for performance"
+        Log "Visual effects disabled for performance"
     }
     if ($chkHibernation.IsChecked) {
         powercfg /hibernate off | Out-Null
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabled" 'DWord' 0 | Out-Null
-        Log "✅ Hibernation disabled"
+        Log "Hibernation disabled"
     }
 
     # SYSTEM PERFORMANCE
     if ($chkMemoryManagement.IsChecked) {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 | Out-Null
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 | Out-Null
-        Log "✅ Memory management optimized (paging executive disabled)"
+        Log "Memory management optimized (paging executive disabled)"
     }
     if ($chkPowerPlan.IsChecked) {
         try {
             powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c | Out-Null
-            Log "✅ Ultimate Performance power plan activated"
+            Log "Ultimate Performance power plan activated"
         } catch {
             powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null
-            Log "✅ High Performance power plan activated (Ultimate not available)"
+            Log "High Performance power plan activated (Ultimate not available)"
         }
     }
     if ($chkCpuScheduling.IsChecked) {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 | Out-Null
-        Log "✅ CPU scheduling optimized for foreground applications"
+        Log "CPU scheduling optimized for foreground applications"
     }
     if ($chkPageFile.IsChecked) {
         $cs = Get-CimInstance Win32_ComputerSystem
         $ram = [math]::Round($cs.TotalPhysicalMemory / 1GB)
         $pageFileSize = [math]::Max(2048, $ram * 1024)  # Minimum 2GB or RAM size
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PagingFiles" 'MultiString' @("C:\pagefile.sys $pageFileSize $pageFileSize") | Out-Null
-        Log "✅ Page file optimized (Size: $([math]::Round($pageFileSize/1024, 1))GB)"
+        Log "Page file optimized (Size: $([math]::Round($pageFileSize/1024, 1))GB)"
     }
 
     # GPU VENDOR OPTIMIZATIONS
     $gpu = Get-GPUVendor
-    Log "🎯 Detected GPU: $gpu"
+    Log "Detected GPU: $gpu"
     
     if ($chkNvidiaTweaks.IsChecked -and $gpu -eq 'NVIDIA') {
         $svc = Get-ServiceState 'NvTelemetryContainer'
         if ($svc) { 
             Set-ServiceState $svc 'Disabled' 'Stop'
-            Log "✅ NVIDIA telemetry service disabled"
-        } else { Log "ℹ️ NVIDIA telemetry service not found" }
+            Log "NVIDIA telemetry service disabled"
+        } else { Log "NVIDIA telemetry service not found" }
         
         # Additional NVIDIA optimizations
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 | Out-Null
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 60 | Out-Null
-        Log "✅ NVIDIA TDR (Timeout Detection and Recovery) optimized"
+        Log "NVIDIA TDR (Timeout Detection and Recovery) optimized"
     }
     
     if ($chkAmdTweaks.IsChecked -and $gpu -eq 'AMD') {
@@ -825,13 +888,13 @@ function Apply-Tweaks {
         if ($svc) {
             $st = Get-ServiceState $svc.Name
             Set-ServiceState $st 'Disabled' 'Stop'
-            Log "✅ AMD External Events service disabled"
-        } else { Log "ℹ️ AMD External Events service not found" }
+            Log "AMD External Events service disabled"
+        } else { Log "AMD External Events service not found" }
     }
     
     if ($chkIntelTweaks.IsChecked -and $gpu -eq 'Intel') {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 | Out-Null
-        Log "✅ Intel graphics optimizations applied"
+        Log "Intel graphics optimizations applied"
     }
 
     # SERVICE OPTIMIZATIONS
@@ -854,13 +917,13 @@ function Apply-Tweaks {
         $st = Get-ServiceState $svcName
         if ($st) { 
             Set-ServiceState $st 'Disabled' 'Stop'
-            Log "✅ Service disabled: $($st.Display)"
+            Log "Service disabled: $($st.Display)"
         }
     }
 
-    # GAME-SPECIFIC OPTIMIZATIONS
+    # GAME-SPECIFIC OPTIMIZATIONS - KORRIGIERT
     $selectedProfile = $cmbGameProfile.SelectedItem.Tag.ToString()
-    if ($selectedProfile -ne 'custom' -and $GameProfiles.ContainsKey($selectedProfile)) {
+    if ($selectedProfile -ne 'custom' -and $GameProfiles.Contains($selectedProfile)) {
         Apply-GameSpecificTweaks $selectedProfile $GameProfiles[$selectedProfile].SpecificTweaks
     }
 
@@ -907,12 +970,12 @@ function Apply-Tweaks {
             }
         } -ArgumentList $procName, $selectedPriority, $txtGamePath.Text.Trim() | Out-Null
         
-        Log "🎮 Priority optimizer started for '$procName' (Priority: $selectedPriority)"
+        Log "Priority optimizer started for '$procName' (Priority: $selectedPriority)"
     }
 
     $lblStatus.Text = "Complete!"
     $lblStatus.Foreground = "#00FF88"
-    Log "🎉 All optimizations applied successfully! Some changes may require a reboot."
+    Log "All optimizations applied successfully! Some changes may require a reboot."
 }
 
 function Revert-Tweaks {
@@ -920,14 +983,14 @@ function Revert-Tweaks {
     $lblStatus.Text = "Reverting..."
     $lblStatus.Foreground = "#F59E0B"
     
-    Log "🔄 Reverting all optimizations..."
+    Log "Reverting all optimizations..."
 
     # Stop priority job
     $existing = Get-Job -Name 'KoalaPriority' -ErrorAction SilentlyContinue
     if ($existing) { 
         Stop-Job $existing -ErrorAction SilentlyContinue
         Remove-Job $existing -ErrorAction SilentlyContinue
-        Log "✅ Priority optimizer stopped"
+        Log "Priority optimizer stopped"
     }
 
     # Revert timer resolution
@@ -948,16 +1011,15 @@ function Show-SystemInfo {
     $powerPlan = (powercfg /getactivescheme).Split('(')[1].Split(')')[0]
     
     $info = @"
-🖥️ SYSTEM INFORMATION
-━━━━━━━━━━━━━━━━━━━━━━━━━
-💻 Computer: $($cs.Name)
-🔧 OS: $($os.Caption) ($($os.Version))
-⚡ CPU: $($cpu.Name) ($($cpu.NumberOfLogicalProcessors) cores)
-💾 RAM: $ram GB
-🎯 GPU: $gpu
-🔋 Power Plan: $powerPlan
-📊 CPU Usage: $((Get-CimInstance Win32_Processor).LoadPercentage)%
-💿 Available Memory: $([math]::Round($os.FreePhysicalMemory / 1MB, 2)) GB
+SYSTEM INFORMATION
+Computer: $($cs.Name)
+OS: $($os.Caption) ($($os.Version))
+CPU: $($cpu.Name) ($($cpu.NumberOfLogicalProcessors) cores)
+RAM: $ram GB
+GPU: $gpu
+Power Plan: $powerPlan
+CPU Usage: $((Get-CimInstance Win32_Processor).LoadPercentage)%
+Available Memory: $([math]::Round($os.FreePhysicalMemory / 1MB, 2)) GB
 "@
     
     Log $info
@@ -968,7 +1030,7 @@ function Show-SystemInfo {
 function Run-QuickBenchmark {
     $lblStatus.Text = "Benchmarking..."
     $lblStatus.Foreground = "#F59E0B"
-    Log "🏁 Running quick system benchmark..."
+    Log "Running quick system benchmark..."
     
     # CPU benchmark
     $start = Get-Date
@@ -989,12 +1051,11 @@ function Run-QuickBenchmark {
     } catch {}
     
     $benchmark = @"
-🏁 QUICK BENCHMARK RESULTS
-━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ CPU Performance: $([math]::Round(10000 / $cpuTime, 2)) ops/ms
-💾 Memory Performance: $([math]::Round(100000 / $memTime, 2)) ops/ms
-🌐 Network Latency: $($pingResults -join ', ')
-📊 Performance Score: $([math]::Round((10000 / $cpuTime + 100000 / $memTime) / 2, 0))
+QUICK BENCHMARK RESULTS
+CPU Performance: $([math]::Round(10000 / $cpuTime, 2)) ops/ms
+Memory Performance: $([math]::Round(100000 / $memTime, 2)) ops/ms
+Network Latency: $($pingResults -join ', ')
+Performance Score: $([math]::Round((10000 / $cpuTime + 100000 / $memTime) / 2, 0))
 "@
     
     Log $benchmark
@@ -1054,7 +1115,7 @@ function Export-Configuration {
     
     $configPath = Join-Path $ScriptRoot "KoalaConfig_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
     $config | ConvertTo-Json -Depth 4 | Set-Content -Path $configPath -Encoding UTF8
-    Log "✅ Configuration exported to: $configPath"
+    Log "Configuration exported to: $configPath"
     $lblStatus.Text = "Config exported"
     $lblStatus.Foreground = "#10B981"
 }
@@ -1130,27 +1191,15 @@ function Import-Configuration {
                     }
                 }
                 
-                Log "✅ Configuration imported successfully from: $configFile"
+                Log "Configuration imported successfully from: $configFile"
                 $lblStatus.Text = "Config imported"
                 $lblStatus.Foreground = "#10B981"
             }
         }
     } catch {
-        # Fallback: manual file path entry
-        $configFile = [Microsoft.VisualBasic.Interaction]::InputBox("Enter full path to configuration JSON file:", "Import Configuration", (Join-Path $ScriptRoot "KoalaConfig_*.json"))
-        if ($configFile -and (Test-Path $configFile)) {
-            try {
-                $config = Get-Content $configFile -Raw | ConvertFrom-Json
-                # Same import logic as above...
-                Log "✅ Configuration imported from: $configFile"
-                $lblStatus.Text = "Config imported"
-                $lblStatus.Foreground = "#10B981"
-            } catch {
-                Log "❌ Failed to import configuration: $_"
-                $lblStatus.Text = "Import failed"
-                $lblStatus.Foreground = "#FF6B6B"
-            }
-        }
+        Log "Failed to import configuration: $_"
+        $lblStatus.Text = "Import failed"
+        $lblStatus.Foreground = "#FF6B6B"
     }
 }
 
@@ -1160,7 +1209,7 @@ $btnApply.Add_Click({
         $global:LogBox.Clear()
         Apply-Tweaks
     } catch {
-        Log "❌ Error during Apply: $_"
+        Log "Error during Apply: $_"
         $lblStatus.Text = "Error occurred"
         $lblStatus.Foreground = "#FF6B6B"
     }
@@ -1171,7 +1220,7 @@ $btnRevert.Add_Click({
         $global:LogBox.Clear()
         Revert-Tweaks
     } catch {
-        Log "❌ Error during Revert: $_"
+        Log "Error during Revert: $_"
         $lblStatus.Text = "Revert failed"
         $lblStatus.Foreground = "#FF6B6B"
     }
@@ -1196,14 +1245,14 @@ $btnDetect.Add_Click({
                     }
                 }
                 
-                Log "🎮 Detected running game: $($profile.DisplayName) (Process: $procName)"
+                Log "Detected running game: $($profile.DisplayName) (Process: $procName)"
                 $lblStatus.Text = "Game detected!"
                 $lblStatus.Foreground = "#00FF88"
                 return
             }
         }
     }
-    Log "ℹ️ No known game processes detected"
+    Log "No known game processes detected"
     $lblStatus.Text = "No games found"
     $lblStatus.Foreground = "#F59E0B"
 })
@@ -1212,7 +1261,7 @@ $btnSystemInfo.Add_Click({
     try {
         Show-SystemInfo
     } catch {
-        Log "❌ Error showing system info: $_"
+        Log "Error showing system info: $_"
     }
 })
 
@@ -1220,7 +1269,7 @@ $btnBenchmark.Add_Click({
     try {
         Run-QuickBenchmark
     } catch {
-        Log "❌ Error during benchmark: $_"
+        Log "Error during benchmark: $_"
         $lblStatus.Text = "Benchmark failed"
         $lblStatus.Foreground = "#FF6B6B"
     }
@@ -1230,7 +1279,7 @@ $btnExportConfig.Add_Click({
     try {
         Export-Configuration
     } catch {
-        Log "❌ Error exporting config: $_"
+        Log "Error exporting config: $_"
         $lblStatus.Text = "Export failed"
         $lblStatus.Foreground = "#FF6B6B"
     }
@@ -1240,7 +1289,7 @@ $btnImportConfig.Add_Click({
     try {
         Import-Configuration
     } catch {
-        Log "❌ Error importing config: $_"
+        Log "Error importing config: $_"
         $lblStatus.Text = "Import failed"
         $lblStatus.Foreground = "#FF6B6B"
     }
@@ -1248,21 +1297,21 @@ $btnImportConfig.Add_Click({
 
 # ---------- Form Lifecycle ----------
 $form.Add_SourceInitialized({
-    Log "🚀 KOALA-UDP Enhanced Gaming Toolkit v2.0 loaded"
-    Log "💡 Select your optimizations and click 'Apply Selected' to begin"
-    Log "⚠️ Remember: This tool requires Administrator privileges"
+    Log "KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED) loaded"
+    Log "Select your optimizations and click 'Apply Selected' to begin"
+    Log "Remember: This tool requires Administrator privileges"
     
     # Auto-detect GPU and show recommendations
     $gpu = Get-GPUVendor
     if ($gpu -eq 'NVIDIA') {
         $chkNvidiaTweaks.IsChecked = $true
-        Log "💡 Recommendation: NVIDIA GPU detected - NVIDIA tweaks pre-selected"
+        Log "Recommendation: NVIDIA GPU detected - NVIDIA tweaks pre-selected"
     } elseif ($gpu -eq 'AMD') {
         $chkAmdTweaks.IsChecked = $true
-        Log "💡 Recommendation: AMD GPU detected - AMD tweaks pre-selected"
+        Log "Recommendation: AMD GPU detected - AMD tweaks pre-selected"
     } elseif ($gpu -eq 'Intel') {
         $chkIntelTweaks.IsChecked = $true
-        Log "💡 Recommendation: Intel GPU detected - Intel tweaks pre-selected"
+        Log "Recommendation: Intel GPU detected - Intel tweaks pre-selected"
     }
     
     # Pre-select recommended optimizations
@@ -1290,7 +1339,7 @@ $form.Add_Closing({
             Remove-Job $existing -ErrorAction SilentlyContinue 
         }
         
-        Log "👋 KOALA-UDP Gaming Toolkit closed - Timer resolution restored"
+        Log "KOALA-UDP Gaming Toolkit closed - Timer resolution restored"
     } catch {}
 })
 
@@ -1301,5 +1350,5 @@ $form.MinWidth = 900
 $form.MinHeight = 750
 
 # Show the enhanced interface
-Log "🎮 Starting KOALA-UDP Enhanced Gaming Toolkit..."
+Log "Starting KOALA-UDP Enhanced Gaming Toolkit..."
 [void]$form.ShowDialog()
