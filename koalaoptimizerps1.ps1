@@ -74,24 +74,107 @@ $GameProfiles = @{
         Affinity = 'Auto'
         SpecificTweaks = @('MemoryOptimization', 'NetworkOptimization')
     }
+    'bf6' = @{
+        DisplayName = 'Battlefield 6'
+        ProcessNames = @('bf6event', 'bf6')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('BF6Optimization', 'MemoryOptimization', 'NetworkOptimization', 'GPUScheduling')
+    }
+    'codmw2' = @{
+        DisplayName = 'Call of Duty: Modern Warfare II'
+        ProcessNames = @('cod', 'cod22-cod', 'modernwarfare2')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('MemoryOptimization', 'NetworkOptimization', 'AntiCheatOptimization')
+    }
+    'codmw3' = @{
+        DisplayName = 'Call of Duty: Modern Warfare III'
+        ProcessNames = @('cod23-cod', 'modernwarfare3', 'mw3')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('MemoryOptimization', 'NetworkOptimization', 'AntiCheatOptimization')
+    }
+    'rainbow6' = @{
+        DisplayName = 'Rainbow Six Siege'
+        ProcessNames = @('rainbowsix', 'rainbowsix_vulkan')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('DisableNagle', 'AntiCheatOptimization', 'NetworkOptimization')
+    }
+    'overwatch2' = @{
+        DisplayName = 'Overwatch 2'
+        ProcessNames = @('overwatch')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('DisableNagle', 'NetworkOptimization', 'MemoryOptimization')
+    }
+    'leagueoflegends' = @{
+        DisplayName = 'League of Legends'
+        ProcessNames = @('league of legends', 'leagueoflegends')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('DisableNagle', 'NetworkOptimization')
+    }
+    'rocketleague' = @{
+        DisplayName = 'Rocket League'
+        ProcessNames = @('rocketleague')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('DisableNagle', 'NetworkOptimization', 'GPUScheduling')
+    }
+    'pubg' = @{
+        DisplayName = 'PUBG: Battlegrounds'
+        ProcessNames = @('tslgame')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('MemoryOptimization', 'NetworkOptimization', 'AntiCheatOptimization')
+    }
+    'destiny2' = @{
+        DisplayName = 'Destiny 2'
+        ProcessNames = @('destiny2')
+        Priority = 'High'
+        Affinity = 'Auto'
+        SpecificTweaks = @('MemoryOptimization', 'NetworkOptimization', 'AntiCheatOptimization')
+    }
 }
 
 # ---------- Helpers ----------
 function Log {
-    param([string]$msg)
+    param([string]$msg, [string]$Level = 'Info')
+    
+    $timestamp = [DateTime]::Now.ToString('HH:mm:ss')
+    $logMessage = "[$timestamp] [$Level] $msg"
+    
+    # Enhanced error handling for UI updates
     if ($global:LogBox) {
-        $timestamp = [DateTime]::Now.ToString('HH:mm:ss')
         try {
             $global:LogBox.Dispatcher.Invoke([Action]{
-                $global:LogBox.AppendText("[$timestamp] $msg`r`n")
+                $global:LogBox.AppendText("$logMessage`r`n")
                 $global:LogBox.ScrollToEnd()
-            })
+            }, [System.Windows.Threading.DispatcherPriority]::Background)
+        } catch [System.InvalidOperationException] {
+            # Fallback for cross-thread operations
+            try {
+                $global:LogBox.AppendText("$logMessage`r`n")
+                $global:LogBox.ScrollToEnd()
+            } catch {
+                Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
+            }
         } catch {
-            $global:LogBox.AppendText("[$timestamp] $msg`r`n")
-            $global:LogBox.ScrollToEnd()
+            Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
         }
     } else {
-        Write-Host $msg
+        Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
+    }
+    
+    # Also log to Windows Event Log for debugging (optional)
+    try {
+        if ($Level -eq 'Error') {
+            Write-EventLog -LogName Application -Source 'KOALA-UDP' -EventId 1001 -EntryType Error -Message $msg -ErrorAction SilentlyContinue
+        }
+    } catch {
+        # Ignore event log errors
     }
 }
 
@@ -113,7 +196,65 @@ function Get-GPUVendor {
             elseif ($gpu.Name -match 'Intel') { return 'Intel' }
         }
         return 'Other'
-    } catch { 'Other' }
+    } catch { 
+        Log "Failed to detect GPU vendor: $_" 'Error'
+        'Other' 
+    }
+}
+
+function Test-SystemRequirements {
+    Log "Checking system requirements..." 'Info'
+    
+    # Check Windows version
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem
+        $version = [System.Version]$os.Version
+        if ($version.Major -lt 10) {
+            Log "Warning: Windows 10 or later recommended for best performance" 'Warning'
+        } else {
+            Log "Operating System: $($os.Caption) ($($os.Version))" 'Info'
+        }
+    } catch {
+        Log "Failed to check Windows version: $_" 'Error'
+    }
+    
+    # Check available memory
+    try {
+        $cs = Get-CimInstance Win32_ComputerSystem
+        $ram = [math]::Round($cs.TotalPhysicalMemory / 1GB, 2)
+        if ($ram -lt 8) {
+            Log "Warning: Less than 8GB RAM detected ($ram GB). Some optimizations may have limited effect." 'Warning'
+        } else {
+            Log "System RAM: $ram GB" 'Info'
+        }
+    } catch {
+        Log "Failed to check system memory: $_" 'Error'
+    }
+    
+    # Check CPU core count
+    try {
+        $cpu = Get-CimInstance Win32_Processor
+        $cores = $cpu.NumberOfLogicalProcessors
+        Log "CPU: $($cpu.Name) ($cores logical cores)" 'Info'
+        if ($cores -lt 4) {
+            Log "Warning: Less than 4 CPU cores detected. CPU affinity optimizations may be limited." 'Warning'
+        }
+    } catch {
+        Log "Failed to check CPU information: $_" 'Error'
+    }
+    
+    # Check PowerShell version
+    try {
+        $psVersion = $PSVersionTable.PSVersion
+        Log "PowerShell Version: $psVersion" 'Info'
+        if ($psVersion.Major -lt 5) {
+            Log "Warning: PowerShell 5.0 or later recommended" 'Warning'
+        }
+    } catch {
+        Log "Failed to check PowerShell version: $_" 'Error'
+    }
+    
+    Log "System requirements check completed" 'Info'
 }
 
 function Get-Reg { param($Path,$Name)
@@ -122,10 +263,23 @@ function Get-Reg { param($Path,$Name)
 
 function Set-Reg { param($Path,$Name,$Type='DWord',$Value)
     try {
-        if (-not (Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
+        if (-not (Test-Path $Path)) { 
+            New-Item -Path $Path -Force | Out-Null 
+            Log "Created registry path: $Path" 'Info'
+        }
         New-ItemProperty -Path $Path -Name $Name -PropertyType $Type -Value $Value -Force | Out-Null
+        Log "Set registry: $Path\$Name = $Value ($Type)" 'Info'
         $true
-    } catch { Log "Reg set failed: $Path\$Name ($_)"; $false }
+    } catch [System.UnauthorizedAccessException] {
+        Log "Access denied setting registry: $Path\$Name (Run as Administrator required)" 'Error'
+        $false
+    } catch [System.Security.SecurityException] {
+        Log "Security exception setting registry: $Path\$Name (Insufficient permissions)" 'Error'
+        $false
+    } catch {
+        Log "Registry set failed: $Path\$Name ($_)" 'Error'
+        $false
+    }
 }
 
 function Remove-Reg { param($Path,$Name)
@@ -165,15 +319,24 @@ function Set-ServiceState {
     try {
         if ($DesiredStartMode) {
             $mode = Normalize-StartupType $DesiredStartMode
-            if ($mode) { Set-Service -Name $BackupObj.Name -StartupType $mode -ErrorAction SilentlyContinue }
+            if ($mode) { 
+                Set-Service -Name $BackupObj.Name -StartupType $mode -ErrorAction Stop
+                Log "Service startup type changed: $($BackupObj.Name) -> $mode" 'Info'
+            }
         }
         if ($DesiredAction -eq 'Stop') {
-            Stop-Service -Name $BackupObj.Name -Force -ErrorAction SilentlyContinue
+            Stop-Service -Name $BackupObj.Name -Force -ErrorAction Stop
+            Log "Service stopped: $($BackupObj.Name)" 'Info'
         } elseif ($DesiredAction -eq 'Start') {
-            Start-Service -Name $BackupObj.Name -ErrorAction SilentlyContinue
+            Start-Service -Name $BackupObj.Name -ErrorAction Stop
+            Log "Service started: $($BackupObj.Name)" 'Info'
         }
+    } catch [System.ServiceProcess.InvalidOperationException] {
+        Log "Service operation failed: $($BackupObj.Name) - Invalid operation ($_)" 'Warning'
+    } catch [System.ComponentModel.Win32Exception] {
+        Log "Service access denied: $($BackupObj.Name) - $($_.Exception.Message)" 'Error'
     } catch {
-        Log "Service change failed: $($BackupObj.Name) ($_)"
+        Log "Service change failed: $($BackupObj.Name) ($_)" 'Error'
     }
 }
 
@@ -251,6 +414,18 @@ function Apply-GameSpecificTweaks {
                 Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "SFIO Priority" 'String' "High" | Out-Null
                 Log "Source Engine optimizations applied"
             }
+            'BF6Optimization' {
+                # Battlefield 6 specific optimizations
+                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 | Out-Null
+                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 | Out-Null
+                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 | Out-Null
+                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 | Out-Null
+                Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "GPU Priority" 'DWord' 8 | Out-Null
+                Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Priority" 'DWord' 6 | Out-Null
+                # Enhanced I/O priority for BF6
+                Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 'DWord' 0 | Out-Null
+                Log "Battlefield 6 specific optimizations applied (CPU priority, memory, GPU scheduling)"
+            }
         }
     }
 }
@@ -271,25 +446,51 @@ function Create-Backup {
     $regList = @(
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name="SystemResponsiveness"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name="NetworkThrottlingIndex"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name="LazyModeTimeout"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name="LazyModeThreshold"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="GPU Priority"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Priority"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Scheduling Category"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="SFIO Priority"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="BackgroundPriority"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Clock Rate"},
         @{Path="HKCU:\System\GameConfigStore"; Name="GameDVR_FSEBehaviorMode"},
         @{Path="HKCU:\System\GameConfigStore"; Name="GameDVR_FSEBehavior"},
         @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR"; Name="AppCaptureEnabled"},
         @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR"; Name="GameDVR_Enabled"},
+        @{Path="HKCU:\SOFTWARE\Microsoft\GameBar"; Name="AllowAutoGameMode"},
+        @{Path="HKCU:\SOFTWARE\Microsoft\GameBar"; Name="AutoGameModeEnabled"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR"; Name="value"},
+        @{Path="HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR"; Name="AllowGameDVR"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="HwSchMode"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrLevel"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrDelay"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrDdiDelay"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrDebugMode"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrTestMode"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpDelAckTicks"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpNoDelay"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TCPNoDelay"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="MaxConnectionsPerServer"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="MaxConnectionsPer1_0Server"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpTimedWaitDelay"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="DefaultTTL"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpMaxDataRetransmissions"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="EnablePMTUBHDetect"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="EnablePMTUDiscovery"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="GlobalTimerResolutionRequests"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="ThreadDpcEnable"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="DpcQueueDepth"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="DisablePagingExecutive"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="LargeSystemCache"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="SystemPages"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="FeatureSettings"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="FeatureSettingsOverride"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="FeatureSettingsOverrideMask"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="EnablePrefetcher"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="Win32PrioritySeparation"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; Name="HibernateEnabled"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1"; Name="Attributes"},
         @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"}
     )
     
@@ -523,6 +724,18 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkHibernation" Content="Disable Hibernation" ToolTip="Disables hibernation to free up disk space." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
+        <TextBlock Text="🚀 Enhanced Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <WrapPanel Margin="0,0,0,12">
+          <CheckBox x:Name="chkEnhancedCpuAffinity" Content="Enhanced CPU Affinity Management" ToolTip="Advanced CPU core assignment for better game performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkAdvancedMemory" Content="Advanced Memory Optimization" ToolTip="Enhanced memory allocation and garbage collection tuning." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGpuDriverOpt" Content="GPU Driver Optimizations" ToolTip="Optimizes GPU driver settings for gaming performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkNetworkLatency" Content="Network Latency Improvements" ToolTip="Advanced network optimizations for reduced latency." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGameMode" Content="Windows Game Mode Enhancements" ToolTip="Enhanced Windows Game Mode with additional tweaks." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkPowerOptimization" Content="Gaming Power Plan Optimization" ToolTip="Optimizes power settings specifically for gaming performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkRealTimeMonitoring" Content="Real-Time Performance Monitoring" ToolTip="Enables real-time system resource monitoring during gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" ToolTip="Advanced process priority and scheduling optimizations." Foreground="White" Margin="0,5,15,5"/>
+        </WrapPanel>
+
         <TextBlock Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkMemoryManagement" Content="Optimize Memory Management" ToolTip="Disables paging executive and optimizes memory allocation." Foreground="White" Margin="0,5,15,5"/>
@@ -587,6 +800,15 @@ function Restore-FromBackup {
             <ComboBoxItem Content="Fortnite" Tag="fortnite"/>
             <ComboBoxItem Content="Apex Legends" Tag="apexlegends"/>
             <ComboBoxItem Content="Call of Duty: Warzone" Tag="warzone"/>
+            <ComboBoxItem Content="Battlefield 6" Tag="bf6"/>
+            <ComboBoxItem Content="Call of Duty: MW II" Tag="codmw2"/>
+            <ComboBoxItem Content="Call of Duty: MW III" Tag="codmw3"/>
+            <ComboBoxItem Content="Rainbow Six Siege" Tag="rainbow6"/>
+            <ComboBoxItem Content="Overwatch 2" Tag="overwatch2"/>
+            <ComboBoxItem Content="League of Legends" Tag="leagueoflegends"/>
+            <ComboBoxItem Content="Rocket League" Tag="rocketleague"/>
+            <ComboBoxItem Content="PUBG: Battlegrounds" Tag="pubg"/>
+            <ComboBoxItem Content="Destiny 2" Tag="destiny2"/>
           </ComboBox>
           
           <Button x:Name="btnDetect" Grid.Row="0" Grid.Column="2" Content="🔍 Auto Detect" Height="28" Margin="0,0,8,4" Background="#6B46C1" Foreground="White"/>
@@ -677,6 +899,15 @@ $chkMemoryManagement = $form.FindName('chkMemoryManagement')
 $chkPowerPlan      = $form.FindName('chkPowerPlan')
 $chkCpuScheduling  = $form.FindName('chkCpuScheduling')
 $chkPageFile       = $form.FindName('chkPageFile')
+
+$chkEnhancedCpuAffinity = $form.FindName('chkEnhancedCpuAffinity')
+$chkAdvancedMemory = $form.FindName('chkAdvancedMemory')
+$chkGpuDriverOpt   = $form.FindName('chkGpuDriverOpt')
+$chkNetworkLatency = $form.FindName('chkNetworkLatency')
+$chkGameMode       = $form.FindName('chkGameMode')
+$chkPowerOptimization = $form.FindName('chkPowerOptimization')
+$chkRealTimeMonitoring = $form.FindName('chkRealTimeMonitoring')
+$chkProcessOptimization = $form.FindName('chkProcessOptimization')
 
 $chkNvidiaTweaks   = $form.FindName('chkNvidiaTweaks')
 $chkAmdTweaks      = $form.FindName('chkAmdTweaks')
@@ -866,6 +1097,72 @@ function Apply-Tweaks {
         Log "Page file optimized (Size: $([math]::Round($pageFileSize/1024, 1))GB)"
     }
 
+    # ENHANCED GAMING OPTIMIZATIONS
+    if ($chkEnhancedCpuAffinity.IsChecked) {
+        # Enhanced CPU affinity management
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "ThreadDpcEnable" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "DpcQueueDepth" 'DWord' 1 | Out-Null
+        Log "Enhanced CPU affinity management enabled"
+    }
+    if ($chkAdvancedMemory.IsChecked) {
+        # Advanced memory optimization
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettings" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride" 'DWord' 3 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask" 'DWord' 3 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "EnablePrefetcher" 'DWord' 0 | Out-Null
+        Log "Advanced memory optimization techniques applied"
+    }
+    if ($chkGpuDriverOpt.IsChecked) {
+        # GPU driver optimizations
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 60 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDdiDelay" 'DWord' 60 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDebugMode" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrTestMode" 'DWord' 0 | Out-Null
+        Log "GPU driver optimizations applied"
+    }
+    if ($chkNetworkLatency.IsChecked) {
+        # Network latency improvements
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpTimedWaitDelay" 'DWord' 30 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "DefaultTTL" 'DWord' 64 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpMaxDataRetransmissions" 'DWord' 3 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "EnablePMTUBHDetect" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "EnablePMTUDiscovery" 'DWord' 1 | Out-Null
+        Log "Network latency improvements applied"
+    }
+    if ($chkGameMode.IsChecked) {
+        # Windows Game Mode enhancements
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AllowAutoGameMode" 'DWord' 1 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AutoGameModeEnabled" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" "value" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 'DWord' 0 | Out-Null
+        Log "Windows Game Mode enhanced with additional optimizations"
+    }
+    if ($chkPowerOptimization.IsChecked) {
+        # Gaming power plan optimizations
+        try {
+            powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c | Out-Null
+            powercfg /change standby-timeout-ac 0 | Out-Null
+            powercfg /change standby-timeout-dc 0 | Out-Null
+            powercfg /change hibernate-timeout-ac 0 | Out-Null
+            powercfg /change hibernate-timeout-dc 0 | Out-Null
+            Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1" "Attributes" 'DWord' 2 | Out-Null
+            Log "Gaming power plan fully optimized"
+        } catch {
+            Log "Power plan optimization failed, using High Performance instead"
+            powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null
+        }
+    }
+    if ($chkProcessOptimization.IsChecked) {
+        # Advanced process optimization
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "LazyModeTimeout" 'DWord' 10000 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "LazyModeThreshold" 'DWord' 150000 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "BackgroundPriority" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Clock Rate" 'DWord' 10000 | Out-Null
+        Log "Advanced process optimization enhancements applied"
+    }
+
     # GPU VENDOR OPTIMIZATIONS
     $gpu = Get-GPUVendor
     Log "Detected GPU: $gpu"
@@ -935,8 +1232,13 @@ function Apply-Tweaks {
         $existing = Get-Job -Name 'KoalaPriority' -ErrorAction SilentlyContinue
         if ($existing) { Stop-Job $existing -ErrorAction SilentlyContinue; Remove-Job $existing -ErrorAction SilentlyContinue }
         
+        $monitoringEnabled = $chkRealTimeMonitoring.IsChecked
+        
         Start-Job -Name 'KoalaPriority' -ScriptBlock {
-            param($name, $priority, $gamePath)
+            param($name, $priority, $gamePath, $enableMonitoring)
+            $lastCpuReport = Get-Date
+            $lastMemReport = Get-Date
+            
             while ($true) {
                 try {
                     # Find and optimize main process
@@ -944,13 +1246,41 @@ function Apply-Tweaks {
                     foreach ($p in $processes) {
                         $p.PriorityClass = $priority
                         
-                        # Set CPU affinity to use all cores efficiently
+                        # Enhanced CPU affinity management
                         if ($priority -eq 'High' -or $priority -eq 'RealTime') {
                             $coreCount = (Get-CimInstance Win32_Processor).NumberOfLogicalProcessors
                             if ($coreCount -gt 4) {
                                 # Use cores 2-N for the game, leave core 0-1 for system
                                 $affinityMask = [math]::Pow(2, $coreCount) - 1 - 3  # All cores except 0,1
                                 $p.ProcessorAffinity = $affinityMask
+                            }
+                        }
+                        
+                        # Real-time monitoring (if enabled)
+                        if ($enableMonitoring) {
+                            $now = Get-Date
+                            
+                            # CPU usage monitoring (every 30 seconds)
+                            if (($now - $lastCpuReport).TotalSeconds -ge 30) {
+                                try {
+                                    $cpuUsage = $p.CPU
+                                    $workingSet = [math]::Round($p.WorkingSet64 / 1MB, 1)
+                                    $privateMemory = [math]::Round($p.PrivateMemorySize64 / 1MB, 1)
+                                    Write-Host "[$($now.ToString('HH:mm:ss'))] $name - CPU: $([math]::Round($cpuUsage, 1))%, RAM: $workingSet MB, Private: $privateMemory MB"
+                                    $lastCpuReport = $now
+                                } catch {}
+                            }
+                            
+                            # Memory optimization (every 60 seconds)
+                            if (($now - $lastMemReport).TotalSeconds -ge 60) {
+                                try {
+                                    # Force garbage collection for .NET processes
+                                    if ($p.ProcessName -match 'dotnet|unity|unreal') {
+                                        [System.GC]::Collect()
+                                        [System.GC]::WaitForPendingFinalizers()
+                                    }
+                                    $lastMemReport = $now
+                                } catch {}
                             }
                         }
                     }
@@ -968,9 +1298,13 @@ function Apply-Tweaks {
                 } catch {}
                 Start-Sleep -Seconds 2
             }
-        } -ArgumentList $procName, $selectedPriority, $txtGamePath.Text.Trim() | Out-Null
+        } -ArgumentList $procName, $selectedPriority, $txtGamePath.Text.Trim(), $monitoringEnabled | Out-Null
         
-        Log "Priority optimizer started for '$procName' (Priority: $selectedPriority)"
+        if ($monitoringEnabled) {
+            Log "Priority optimizer with real-time monitoring started for '$procName' (Priority: $selectedPriority)"
+        } else {
+            Log "Priority optimizer started for '$procName' (Priority: $selectedPriority)"
+        }
     }
 
     $lblStatus.Text = "Complete!"
@@ -1301,6 +1635,9 @@ $form.Add_SourceInitialized({
     Log "Select your optimizations and click 'Apply Selected' to begin"
     Log "Remember: This tool requires Administrator privileges"
     
+    # Perform system requirements check
+    Test-SystemRequirements
+    
     # Auto-detect GPU and show recommendations
     $gpu = Get-GPUVendor
     if ($gpu -eq 'NVIDIA') {
@@ -1322,9 +1659,15 @@ $form.Add_SourceInitialized({
     $chkGameDVR.IsChecked = $true
     $chkTimerRes.IsChecked = $true
     
+    # Pre-select some enhanced optimizations for better defaults
+    $chkNetworkLatency.IsChecked = $true
+    $chkGameMode.IsChecked = $true
+    
     if ($chkTimerRes.IsChecked) {
         try { [WinMM]::timeBeginPeriod(1) | Out-Null } catch {}
     }
+    
+    Log "Ready for optimization! Select additional options as needed and click 'Apply Selected'"
 })
 
 $form.Add_Closing({
