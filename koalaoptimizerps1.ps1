@@ -969,7 +969,7 @@ function Restore-FromBackup {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)" Height="750" Width="900"
+        Title="KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition)" Height="750" Width="900"
         Background="#1A1625" WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
   <Grid Margin="12">
     <Grid.RowDefinitions>
@@ -981,8 +981,8 @@ function Restore-FromBackup {
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
-      <TextBlock Text="🚀 KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
-      <TextBlock Text="Advanced Windows gaming optimizations with game-specific profiles - ContainsKey Bug Fixed!" FontSize="14" Foreground="#B8B3E6" FontStyle="Italic"/>
+      <TextBlock Text="🚀 KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition)" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
+      <TextBlock Text="Advanced Windows gaming optimizations with comprehensive FPS-boosting features and smart game detection!" FontSize="14" Foreground="#B8B3E6" FontStyle="Italic"/>
     </StackPanel>
 
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="#252140" BorderThickness="2" BorderBrush="#6B46C1" Padding="10">
@@ -2397,7 +2397,7 @@ $btnImportConfig.Add_Click({
 
 # ---------- Form Lifecycle ----------
 $form.Add_SourceInitialized({
-    Log "KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED) loaded"
+    Log "KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition) loaded"
     Log "Select your optimizations and click 'Recommended' to begin"
     
     # Check and display admin status
