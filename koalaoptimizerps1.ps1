@@ -341,10 +341,10 @@ function Get-GPUVendor {
                     }
                     
                     # Prioritize discrete GPUs (NVIDIA/AMD) over integrated (Intel)
-                    if ($vendor -in @('NVIDIA', 'AMD') -and -not $primaryGPU) {
-                        $primaryGPU = $vendor
+                    if ($vendor -in @('NVIDIA', 'AMD')) {
+                        $primaryGPU = $vendor  # Always prioritize discrete GPUs
                     } elseif (-not $primaryGPU) {
-                        $primaryGPU = $vendor
+                        $primaryGPU = $vendor  # Use integrated only if no discrete GPU found yet
                     }
                 }
             }
