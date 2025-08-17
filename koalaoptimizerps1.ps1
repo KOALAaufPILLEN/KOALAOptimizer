@@ -689,7 +689,17 @@ function Create-Backup {
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="Win32PrioritySeparation"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; Name="HibernateEnabled"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1"; Name="Attributes"},
-        @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"}
+        @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"},
+        # Additional visual effects registry keys for selective optimization
+        @{Path="HKCU:\Control Panel\Desktop"; Name="MinAnimate"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="MenuShowDelay"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="DragFullWindows"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="FontSmoothing"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="FontSmoothingType"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="UserPreferencesMask"},
+        @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="EnableAeroPeek"},
+        @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="AlwaysHibernateThumbnails"},
+        @{Path="HKCU:\Control Panel\Desktop\WindowMetrics"; Name="MinAnimate"}
     )
     
     foreach ($r in $regList) {
