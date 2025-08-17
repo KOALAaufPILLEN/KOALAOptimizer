@@ -317,11 +317,9 @@ Special thanks to all contributors, testers, and users who help make KOALA Optim
 ### 🌟 Support the Project
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink.svg?style=for-the-badge&logo=github)](https://github.com/sponsors/KOALAaufPILLEN)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/koalaaufpillen)
 
 ### 📱 Connect With Us
 
-[![Discord](https://img.shields.io/badge/Discord-Community-blue.svg?style=for-the-badge&logo=discord)](https://discord.gg/gaming)
 [![Reddit](https://img.shields.io/badge/Reddit-Discussion-orange.svg?style=for-the-badge&logo=reddit)](https://reddit.com/r/pcgaming)
 
 ---
