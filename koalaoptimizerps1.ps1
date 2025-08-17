@@ -360,7 +360,7 @@ function Get-GPUVendor {
             Log "No dedicated GPU detected"
         }
         
-        return $primaryGPU ?? 'Other'
+        return if ($primaryGPU) { $primaryGPU } else { 'Other' }
     } catch { 
         Log "Failed to detect GPU vendor: $_" 'Error'
         'Other' 
