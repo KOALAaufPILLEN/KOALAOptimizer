@@ -178,12 +178,132 @@ function Log {
     }
 }
 
-function Require-Admin {
+function Test-AdminPrivileges {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
     $p  = New-Object Security.Principal.WindowsPrincipal($id)
-    if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        [System.Windows.MessageBox]::Show("Please run this script as Administrator.","KOALA-UDP", 'OK','Warning') | Out-Null
-        throw "Not running as admin."
+    return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Request-AdminElevation {
+    param(
+        [string]$Message = "Administrator privileges are required for system-level optimizations.",
+        [switch]$ForceElevation
+    )
+    
+    if (Test-AdminPrivileges) {
+        return $true
+    }
+    
+    if ($ForceElevation) {
+        # Attempt to restart with elevation
+        try {
+            $scriptPath = $MyInvocation.ScriptName
+            if (-not $scriptPath -and $PSCommandPath) {
+                $scriptPath = $PSCommandPath
+            }
+            if (-not $scriptPath) {
+                $scriptPath = (Get-Location).Path + "\koalaoptimizerps1.ps1"
+            }
+            
+            Log "Attempting to restart with administrator privileges..." 'Warning'
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$scriptPath`"" -Verb RunAs -ErrorAction Stop
+            [System.Windows.Application]::Current.Shutdown()
+            return $true
+        } catch {
+            Log "Failed to elevate privileges automatically: $_" 'Error'
+            return $false
+        }
+    }
+    
+    return $false
+}
+
+function Require-Admin {
+    param([switch]$ShowFallbackOptions)
+    
+    if (Test-AdminPrivileges) {
+        return
+    }
+    
+    $result = [System.Windows.MessageBox]::Show(
+        "Administrator privileges are required for system-level optimizations.`n`nWould you like to:`n• Yes: Restart with admin privileges`n• No: Continue with limited functionality`n• Cancel: Exit application",
+        "KOALA-UDP - Admin Privileges Required", 
+        'YesNoCancel',
+        'Question'
+    )
+    
+    switch ($result) {
+        'Yes' {
+            if (-not (Request-AdminElevation -ForceElevation)) {
+                Log "Manual elevation required: Please right-click the script and select 'Run as administrator'" 'Warning'
+                throw "Manual admin elevation required"
+            }
+        }
+        'No' {
+            if ($ShowFallbackOptions) {
+                Log "Running in limited mode - some optimizations will be unavailable" 'Warning'
+                return
+            } else {
+                throw "Admin privileges required for this operation"
+            }
+        }
+        'Cancel' {
+            throw "User cancelled admin elevation"
+        }
+    }
+}
+
+function Get-AdminRequiredOperations {
+    # Returns a hashtable of operations that require admin privileges
+    return @{
+        'Registry_HKLM' = @{
+            'Required' = $true
+            'Description' = 'System registry modifications (HKEY_LOCAL_MACHINE)'
+            'Operations' = @('CPU Scheduling', 'Memory Management', 'GPU Driver Settings', 'Network Optimizations')
+        }
+        'Services' = @{
+            'Required' = $true
+            'Description' = 'Windows service configuration'
+            'Operations' = @('Disable Background Services', 'Xbox Services', 'Telemetry Services')
+        }
+        'PowerManagement' = @{
+            'Required' = $true
+            'Description' = 'Power plan and hibernation settings'
+            'Operations' = @('Ultimate Performance Power Plan', 'Disable Hibernation')
+        }
+        'ProcessPriority' = @{
+            'Required' = $false
+            'Description' = 'Game process priority adjustment (limited without admin)'
+            'Operations' = @('Set Game Priority', 'CPU Affinity')
+        }
+        'UserRegistry' = @{
+            'Required' = $false
+            'Description' = 'User-specific registry changes (HKEY_CURRENT_USER)'
+            'Operations' = @('Visual Effects', 'Game DVR Settings', 'Fullscreen Optimizations')
+        }
+    }
+}
+
+function Test-OperationRequiresAdmin {
+    param([string]$OperationType)
+    
+    $adminOps = Get-AdminRequiredOperations
+    if ($adminOps.ContainsKey($OperationType)) {
+        return $adminOps[$OperationType].Required
+    }
+    return $false
+}
+
+function Get-AdminStatusMessage {
+    $isAdmin = Test-AdminPrivileges
+    $adminOps = Get-AdminRequiredOperations
+    
+    if ($isAdmin) {
+        return "✓ Running with Administrator privileges - All optimizations available"
+    } else {
+        $limitedOps = ($adminOps.Values | Where-Object { -not $_.Required } | ForEach-Object { $_.Operations }) -join ', '
+        $requiresAdmin = ($adminOps.Values | Where-Object { $_.Required } | ForEach-Object { $_.Operations }) -join ', '
+        return "⚠ Limited mode - Available: $limitedOps | Requires Admin: $requiresAdmin"
     }
 }
 
@@ -199,6 +319,73 @@ function Get-GPUVendor {
     } catch { 
         Log "Failed to detect GPU vendor: $_" 'Error'
         'Other' 
+    }
+}
+
+function Set-SelectiveVisualEffects {
+    param(
+        [switch]$EnablePerformanceMode,
+        [switch]$Revert
+    )
+    
+    if ($Revert) {
+        Log "Reverting visual effects to default settings..."
+        # Restore to default (Let Windows choose what's best for my computer)
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" "VisualFXSetting" 'DWord' 0 | Out-Null
+        
+        # Restore individual settings to default
+        $visualFXPath = "HKCU:\Control Panel\Desktop"
+        Remove-Reg $visualFXPath "DragFullWindows" | Out-Null
+        Remove-Reg $visualFXPath "FontSmoothing" | Out-Null
+        Remove-Reg $visualFXPath "UserPreferencesMask" | Out-Null
+        
+        $dwmPath = "HKCU:\Software\Microsoft\Windows\DWM"
+        Remove-Reg $dwmPath "EnableAeroPeek" | Out-Null
+        Remove-Reg $dwmPath "AlwaysHibernateThumbnails" | Out-Null
+        
+        Log "Visual effects restored to system defaults"
+        return
+    }
+    
+    if ($EnablePerformanceMode) {
+        Log "Applying selective visual effects optimization..."
+        
+        # Set to custom mode so we can control individual settings
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" "VisualFXSetting" 'DWord' 3 | Out-Null
+        
+        # Desktop and window settings
+        $visualFXPath = "HKCU:\Control Panel\Desktop"
+        
+        # DISABLE performance-impacting effects:
+        # Disable window animations (open/close/minimize/maximize)
+        Set-Reg $visualFXPath "MinAnimate" 'String' "0" | Out-Null
+        
+        # Disable menu fade/slide animations
+        Set-Reg $visualFXPath "MenuShowDelay" 'String' "0" | Out-Null
+        
+        # Disable taskbar thumbnails and previews (Aero Peek)
+        Set-Reg "HKCU:\Software\Microsoft\Windows\DWM" "EnableAeroPeek" 'DWord' 0 | Out-Null
+        
+        # Disable thumbnail caching 
+        Set-Reg "HKCU:\Software\Microsoft\Windows\DWM" "AlwaysHibernateThumbnails" 'DWord' 1 | Out-Null
+        
+        # Disable fade effects for menus and tooltips
+        Set-Reg "HKCU:\Control Panel\Desktop\WindowMetrics" "MinAnimate" 'String' "0" | Out-Null
+        
+        # KEEP functional elements enabled:
+        # Keep window borders and basic styling (DragFullWindows = 1)
+        Set-Reg $visualFXPath "DragFullWindows" 'String' "1" | Out-Null
+        
+        # Keep font smoothing for readability
+        Set-Reg $visualFXPath "FontSmoothing" 'String' "2" | Out-Null
+        Set-Reg $visualFXPath "FontSmoothingType" 'DWord' 2 | Out-Null
+        
+        # Advanced: Disable composition effects but keep basic theming
+        # This maintains window borders and basic styling while reducing GPU load
+        $userPrefMask = [byte[]]@(0x90, 0x12, 0x03, 0x80, 0x10, 0x00, 0x00, 0x00)
+        Set-ItemProperty -Path $visualFXPath -Name "UserPreferencesMask" -Value $userPrefMask -Type Binary -Force -ErrorAction SilentlyContinue
+        
+        Log "Selective visual effects applied - Performance optimized while maintaining usability"
     }
 }
 
@@ -280,6 +467,17 @@ function Set-Reg { param($Path,$Name,$Type='DWord',$Value)
         Log "Registry set failed: $Path\$Name ($_)" 'Error'
         $false
     }
+}
+
+function Set-Reg-Safe { 
+    param($Path,$Name,$Type='DWord',$Value,$RequiresAdmin=$false)
+    
+    if ($RequiresAdmin -and -not (Test-AdminPrivileges)) {
+        Log "Skipping $Path\$Name - requires administrator privileges" 'Warning'
+        return $false
+    }
+    
+    return Set-Reg $Path $Name $Type $Value
 }
 
 function Remove-Reg { param($Path,$Name)
@@ -491,7 +689,17 @@ function Create-Backup {
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="Win32PrioritySeparation"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; Name="HibernateEnabled"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1"; Name="Attributes"},
-        @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"}
+        @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"},
+        # Additional visual effects registry keys for selective optimization
+        @{Path="HKCU:\Control Panel\Desktop"; Name="MinAnimate"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="MenuShowDelay"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="DragFullWindows"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="FontSmoothing"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="FontSmoothingType"},
+        @{Path="HKCU:\Control Panel\Desktop"; Name="UserPreferencesMask"},
+        @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="EnableAeroPeek"},
+        @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="AlwaysHibernateThumbnails"},
+        @{Path="HKCU:\Control Panel\Desktop\WindowMetrics"; Name="MinAnimate"}
     )
     
     foreach ($r in $regList) {
@@ -720,7 +928,7 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkFSE" Content="Disable Fullscreen Optimizations" ToolTip="Turns off FSE optimizations via GameConfigStore." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkGpuScheduler" Content="Enable GPU Hardware Scheduling" ToolTip="GraphicsDrivers: HwSchMode=2 (if supported)." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkTimerRes" Content="High Precision Timer" ToolTip="Requests ~1ms timer resolution while the app is open." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkVisualEffects" Content="Disable Visual Effects" ToolTip="Disables Windows visual effects for performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkVisualEffects" Content="Selective Visual Effects Optimization" ToolTip="Optimizes visual effects for gaming performance while preserving usability - disables animations/transparency but keeps window borders and functional elements." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkHibernation" Content="Disable Hibernation" ToolTip="Disables hibernation to free up disk space." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
@@ -966,12 +1174,28 @@ $cmbGameProfile.Add_SelectionChanged({
 
 # ---------- Enhanced Tweaks ----------
 function Apply-Tweaks {
-    Require-Admin
+    # Check admin status and provide options
+    if (-not (Test-AdminPrivileges)) {
+        try {
+            Require-Admin -ShowFallbackOptions
+        } catch {
+            Log $_.Exception.Message 'Warning'
+            return
+        }
+    }
+    
     $lblStatus.Text = "Working..."
     $lblStatus.Foreground = "#F59E0B"
     
-    Log "Starting enhanced gaming optimizations..."
-    Create-Backup
+    $isAdmin = Test-AdminPrivileges
+    Log "Starting enhanced gaming optimizations... (Admin: $isAdmin)"
+    
+    if ($isAdmin) {
+        Create-Backup
+        Log "Running with full administrator privileges - all optimizations available"
+    } else {
+        Log "Running in limited mode - only user-level optimizations will be applied" 'Warning'
+    }
 
     # Timer resolution
     if ($chkTimerRes.IsChecked) {
@@ -1061,20 +1285,27 @@ function Apply-Tweaks {
         Log "GPU Hardware Scheduling enabled"
     }
     if ($chkVisualEffects.IsChecked) {
-        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" "VisualFXSetting" 'DWord' 2 | Out-Null
-        Log "Visual effects disabled for performance"
+        Set-SelectiveVisualEffects -EnablePerformanceMode
     }
     if ($chkHibernation.IsChecked) {
-        powercfg /hibernate off | Out-Null
-        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabled" 'DWord' 0 | Out-Null
-        Log "Hibernation disabled"
+        if (Test-AdminPrivileges) {
+            powercfg /hibernate off | Out-Null
+            Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabled" 'DWord' 0 | Out-Null
+            Log "Hibernation disabled"
+        } else {
+            Log "Hibernation disable skipped - requires administrator privileges" 'Warning'
+        }
     }
 
     # SYSTEM PERFORMANCE
     if ($chkMemoryManagement.IsChecked) {
-        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 | Out-Null
-        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 | Out-Null
-        Log "Memory management optimized (paging executive disabled)"
+        if (Test-AdminPrivileges) {
+            Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 | Out-Null
+            Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 | Out-Null
+            Log "Memory management optimized (paging executive disabled)"
+        } else {
+            Log "Memory management optimization skipped - requires administrator privileges" 'Warning'
+        }
     }
     if ($chkPowerPlan.IsChecked) {
         try {
@@ -1313,7 +1544,16 @@ function Apply-Tweaks {
 }
 
 function Revert-Tweaks {
-    Require-Admin
+    # Check admin status for revert operations
+    if (-not (Test-AdminPrivileges)) {
+        try {
+            Require-Admin -ShowFallbackOptions
+        } catch {
+            Log $_.Exception.Message 'Warning'
+            return
+        }
+    }
+    
     $lblStatus.Text = "Reverting..."
     $lblStatus.Foreground = "#F59E0B"
     
@@ -1329,6 +1569,9 @@ function Revert-Tweaks {
 
     # Revert timer resolution
     try { [WinMM]::timeEndPeriod(1) | Out-Null } catch {}
+
+    # Revert selective visual effects
+    Set-SelectiveVisualEffects -Revert
 
     Restore-FromBackup
     
@@ -1633,7 +1876,15 @@ $btnImportConfig.Add_Click({
 $form.Add_SourceInitialized({
     Log "KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED) loaded"
     Log "Select your optimizations and click 'Apply Selected' to begin"
-    Log "Remember: This tool requires Administrator privileges"
+    
+    # Check and display admin status
+    $adminStatus = Get-AdminStatusMessage
+    Log $adminStatus
+    
+    # If not admin, offer elevation option
+    if (-not (Test-AdminPrivileges)) {
+        Log "💡 Tip: For full functionality, restart as Administrator or click 'Apply Selected' for elevation prompt" 'Warning'
+    }
     
     # Perform system requirements check
     Test-SystemRequirements
