@@ -1,0 +1,1 @@
+﻿Invoke-PS2EXE -InputFile koalaoptimizerps1.ps1 -OutputFile KOALAOptimizer.exe -iconFile "youricon.ico" -noConsole -requireAdmin
