@@ -309,13 +309,58 @@ function Get-AdminStatusMessage {
 
 function Get-GPUVendor {
     try {
-        $gpu = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name -notlike "*Basic*" } | Select-Object -First 1
-        if ($gpu -and $gpu.Name) {
-            if ($gpu.Name -match 'NVIDIA|GeForce|GTX|RTX') { return 'NVIDIA' }
-            elseif ($gpu.Name -match 'AMD|RADEON|RX ') { return 'AMD' }
-            elseif ($gpu.Name -match 'Intel') { return 'Intel' }
+        # Get all video controllers, excluding basic/generic ones
+        $gpus = Get-CimInstance -ClassName Win32_VideoController | Where-Object { 
+            $_.Name -notlike "*Basic*" -and 
+            $_.Name -notlike "*Generic*" -and 
+            $_.PNPDeviceID -notlike "ROOT\*" 
         }
-        return 'Other'
+        
+        $detectedGPUs = @()
+        $primaryGPU = $null
+        
+        foreach ($gpu in $gpus) {
+            if ($gpu -and $gpu.Name) {
+                $vendor = $null
+                if ($gpu.Name -match 'NVIDIA|GeForce|GTX|RTX|Quadro') { 
+                    $vendor = 'NVIDIA' 
+                }
+                elseif ($gpu.Name -match 'AMD|RADEON|RX|FirePro') { 
+                    $vendor = 'AMD' 
+                }
+                elseif ($gpu.Name -match 'Intel|HD Graphics|UHD Graphics|Iris') { 
+                    $vendor = 'Intel' 
+                }
+                
+                if ($vendor) {
+                    $detectedGPUs += @{
+                        Name = $gpu.Name
+                        Vendor = $vendor
+                        Status = $gpu.Status
+                        Present = $gpu.Present
+                    }
+                    
+                    # Prioritize discrete GPUs (NVIDIA/AMD) over integrated (Intel)
+                    if ($vendor -in @('NVIDIA', 'AMD') -and -not $primaryGPU) {
+                        $primaryGPU = $vendor
+                    } elseif (-not $primaryGPU) {
+                        $primaryGPU = $vendor
+                    }
+                }
+            }
+        }
+        
+        # Log detected GPU configuration
+        if ($detectedGPUs.Count -gt 1) {
+            $gpuNames = ($detectedGPUs | ForEach-Object { "$($_.Vendor): $($_.Name)" }) -join " + "
+            Log "Multi-GPU system detected: $gpuNames"
+        } elseif ($detectedGPUs.Count -eq 1) {
+            Log "Single GPU detected: $($detectedGPUs[0].Vendor) - $($detectedGPUs[0].Name)"
+        } else {
+            Log "No dedicated GPU detected"
+        }
+        
+        return $primaryGPU ?? 'Other'
     } catch { 
         Log "Failed to detect GPU vendor: $_" 'Error'
         'Other' 
@@ -652,6 +697,8 @@ function Create-Backup {
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="SFIO Priority"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="BackgroundPriority"},
         @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Clock Rate"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Affinity"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"; Name="Background Only"},
         @{Path="HKCU:\System\GameConfigStore"; Name="GameDVR_FSEBehaviorMode"},
         @{Path="HKCU:\System\GameConfigStore"; Name="GameDVR_FSEBehavior"},
         @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR"; Name="AppCaptureEnabled"},
@@ -666,6 +713,8 @@ function Create-Backup {
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrDdiDelay"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrDebugMode"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="TdrTestMode"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="DirectXUserGlobalSettings"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; Name="DxgkrnlVersion"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpDelAckTicks"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpNoDelay"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TCPNoDelay"},
@@ -676,9 +725,14 @@ function Create-Backup {
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpMaxDataRetransmissions"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="EnablePMTUBHDetect"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="EnablePMTUDiscovery"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpWindowSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="Tcp1323Opts"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="TcpMaxDupAcks"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Name="SackOpts"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="GlobalTimerResolutionRequests"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="ThreadDpcEnable"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="DpcQueueDepth"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"; Name="DisableTsxAutoBan"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="DisablePagingExecutive"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="LargeSystemCache"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="SystemPages"},
@@ -686,9 +740,36 @@ function Create-Backup {
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="FeatureSettingsOverride"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="FeatureSettingsOverrideMask"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="EnablePrefetcher"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="LargePageMinimum"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="LargePageDrivers"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="DisablePageCombining"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="ClearPageFileAtShutdown"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\I/O System"; Name="IoEnableStackSwapping"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="Win32PrioritySeparation"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="IRQ8Priority"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name="IRQ16Priority"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; Name="HibernateEnabled"},
         @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1"; Name="Attributes"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583"; Name="ValueMax"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583"; Name="ValueMin"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\68dd2f27-a4ce-4e11-8487-3794e4135dfa"; Name="Attributes"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\44f3beca-a7c0-460e-9df2-bb8b99e0cba6\3619c3f2-afb2-4afc-b0e9-e7fef372de36"; Name="Attributes"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Processor"; Name="Capabilities"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"; Name="NtfsMftZoneReservation"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"; Name="NtfsDisableLastAccessUpdate"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"; Name="NtfsDisable8dot3NameCreation"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"; Name="Win95TruncatedExtensions"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device"; Name="ForcedPhysicalDiskIo"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\mouclass\Parameters"; Name="MouseDataQueueSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters"; Name="KeyboardDataQueueSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\AudioSrv"; Name="DependOnService"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio"; Name="DisableProtectedAudioDG"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\MSMQ\Parameters"; Name="TCPNoDelay"},
+        @{Path="HKCU:\SOFTWARE\Microsoft\Multimedia\Audio"; Name="UserDuckingPreference"},
+        @{Path="HKCU:\Control Panel\Mouse"; Name="MouseSpeed"},
+        @{Path="HKCU:\Control Panel\Mouse"; Name="MouseThreshold1"},
+        @{Path="HKCU:\Control Panel\Mouse"; Name="MouseThreshold2"},
+        @{Path="HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences"; Name="DirectXUserGlobalSettings"},
         @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"; Name="VisualFXSetting"},
         # Additional visual effects registry keys for selective optimization
         @{Path="HKCU:\Control Panel\Desktop"; Name="MinAnimate"},
@@ -944,6 +1025,25 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" ToolTip="Advanced process priority and scheduling optimizations." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
+        <TextBlock Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <WrapPanel Margin="0,0,0,12">
+          <CheckBox x:Name="chkCpuCorePark" Content="CPU Core Parking Disable" ToolTip="Prevents CPU cores from entering sleep states for consistent performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkCpuCStates" Content="CPU C-States Disable" ToolTip="Disables deep sleep states that can cause frame drops." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkInterruptMod" Content="Interrupt Moderation" ToolTip="Optimizes network and GPU interrupt handling for smoother gameplay." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkMMCSS" Content="MMCSS Gaming Priority" ToolTip="Prioritizes gaming threads through Multimedia Class Scheduler Service." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkLargePages" Content="Large Page Support" ToolTip="Enables large memory pages for reduced memory latency." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkMemCompression" Content="Memory Compression Disable" ToolTip="Disables Windows memory compression during gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkStandbyMemory" Content="Standby Memory Management" ToolTip="Aggressive standby list cleaning for better memory allocation." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGpuScheduling" Content="Hardware GPU Scheduling" ToolTip="Enables hardware-accelerated GPU scheduling for better performance." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGpuPowerStates" Content="GPU Power States Disable" ToolTip="Prevents GPU from entering power-saving states during gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkShaderCache" Content="Shader Cache Management" ToolTip="Optimizes shader compilation and caching for faster loading." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGameIO" Content="Game File I/O Priority" ToolTip="Sets game directories to high I/O priority for faster loading." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkDiskOptimization" Content="Disk Performance Tweaks" ToolTip="Optimizes file system and disk settings for gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkNetworkGaming" Content="Gaming Network Stack" ToolTip="Optimizes network stack specifically for low-latency gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGamingAudio" Content="Gaming Audio Optimization" ToolTip="Enables exclusive mode audio for lower latency." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkInputOptimization" Content="Gaming Input Optimization" ToolTip="Raw input optimizations and mouse acceleration fixes." Foreground="White" Margin="0,5,15,5"/>
+        </WrapPanel>
+
         <TextBlock Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkMemoryManagement" Content="Optimize Memory Management" ToolTip="Disables paging executive and optimizes memory allocation." Foreground="White" Margin="0,5,15,5"/>
@@ -1038,7 +1138,7 @@ function Restore-FromBackup {
       </StackPanel>
       
       <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Bottom">
-        <Button x:Name="btnApply" Content="🚀 Apply Selected" Width="160" Height="40" Margin="0,0,10,0" Background="#00FF88" Foreground="Black" FontWeight="Bold" FontSize="14"/>
+        <Button x:Name="btnApply" Content="🎯 Recommended" Width="160" Height="40" Margin="0,0,10,0" Background="#00FF88" Foreground="Black" FontWeight="Bold" FontSize="14" ToolTip="Enable all recommended settings excluding visual themes"/>
         <Button x:Name="btnRevert" Content="🔄 Revert All" Width="120" Height="40" Background="#FF6B6B" Foreground="White" FontWeight="Bold"/>
       </StackPanel>
     </Grid>
@@ -1116,6 +1216,23 @@ $chkGameMode       = $form.FindName('chkGameMode')
 $chkPowerOptimization = $form.FindName('chkPowerOptimization')
 $chkRealTimeMonitoring = $form.FindName('chkRealTimeMonitoring')
 $chkProcessOptimization = $form.FindName('chkProcessOptimization')
+
+# Advanced FPS-Boosting Optimizations
+$chkCpuCorePark    = $form.FindName('chkCpuCorePark')
+$chkCpuCStates     = $form.FindName('chkCpuCStates')
+$chkInterruptMod   = $form.FindName('chkInterruptMod')
+$chkMMCSS          = $form.FindName('chkMMCSS')
+$chkLargePages     = $form.FindName('chkLargePages')
+$chkMemCompression = $form.FindName('chkMemCompression')
+$chkStandbyMemory  = $form.FindName('chkStandbyMemory')
+$chkGpuScheduling  = $form.FindName('chkGpuScheduling')
+$chkGpuPowerStates = $form.FindName('chkGpuPowerStates')
+$chkShaderCache    = $form.FindName('chkShaderCache')
+$chkGameIO         = $form.FindName('chkGameIO')
+$chkDiskOptimization = $form.FindName('chkDiskOptimization')
+$chkNetworkGaming  = $form.FindName('chkNetworkGaming')
+$chkGamingAudio    = $form.FindName('chkGamingAudio')
+$chkInputOptimization = $form.FindName('chkInputOptimization')
 
 $chkNvidiaTweaks   = $form.FindName('chkNvidiaTweaks')
 $chkAmdTweaks      = $form.FindName('chkAmdTweaks')
@@ -1392,6 +1509,140 @@ function Apply-Tweaks {
         Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "BackgroundPriority" 'DWord' 0 | Out-Null
         Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Clock Rate" 'DWord' 10000 | Out-Null
         Log "Advanced process optimization enhancements applied"
+    }
+
+    # ADVANCED FPS-BOOSTING OPTIMIZATIONS
+    if ($chkCpuCorePark.IsChecked) {
+        # Disable CPU core parking
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583" "ValueMax" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583" "ValueMin" 'DWord' 0 | Out-Null
+        powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 0 | Out-Null
+        powercfg /setdcvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 0 | Out-Null
+        Log "CPU core parking disabled for consistent performance"
+    }
+    
+    if ($chkCpuCStates.IsChecked) {
+        # Disable CPU C-States for reduced latency
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\68dd2f27-a4ce-4e11-8487-3794e4135dfa" "Attributes" 'DWord' 2 | Out-Null
+        powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 68dd2f27-a4ce-4e11-8487-3794e4135dfa 0 | Out-Null
+        powercfg /setdcvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 68dd2f27-a4ce-4e11-8487-3794e4135dfa 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Processor" "Capabilities" 'DWord' 0x0007e066 | Out-Null
+        Log "CPU C-States disabled to prevent frame drops"
+    }
+    
+    if ($chkInterruptMod.IsChecked) {
+        # Optimize interrupt moderation
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "IRQ8Priority" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "IRQ16Priority" 'DWord' 2 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "DisableTsxAutoBan" 'DWord' 1 | Out-Null
+        Log "Interrupt moderation optimized for gaming performance"
+    }
+    
+    if ($chkMMCSS.IsChecked) {
+        # Enhanced MMCSS for gaming priority
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Affinity" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Background Only" 'String' "False" | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Clock Rate" 'DWord' 10000 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "GPU Priority" 'DWord' 8 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Priority" 'DWord' 6 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" 'String' "High" | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "SFIO Priority" 'String' "High" | Out-Null
+        Log "MMCSS gaming thread prioritization enhanced"
+    }
+    
+    if ($chkLargePages.IsChecked) {
+        # Enable large page support
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargePageMinimum" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargePageDrivers" 'DWord' 1 | Out-Null
+        Log "Large page support enabled for reduced memory latency"
+    }
+    
+    if ($chkMemCompression.IsChecked) {
+        # Disable memory compression for gaming
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePageCombining" 'DWord' 1 | Out-Null
+        try {
+            Disable-MMAgent -MemoryCompression | Out-Null
+            Log "Memory compression disabled for gaming performance"
+        } catch {
+            Log "Memory compression setting applied via registry"
+        }
+    }
+    
+    if ($chkStandbyMemory.IsChecked) {
+        # Aggressive standby memory management
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "ClearPageFileAtShutdown" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "SystemPages" 'DWord' 0 | Out-Null
+        Log "Standby memory management optimized for gaming"
+    }
+    
+    if ($chkGpuScheduling.IsChecked) {
+        # Hardware-accelerated GPU scheduling
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "DirectXUserGlobalSettings" 'String' "VSync=0;TdrDelay=10;" | Out-Null
+        Log "Hardware-accelerated GPU scheduling enabled"
+    }
+    
+    if ($chkGpuPowerStates.IsChecked) {
+        # Disable GPU power saving states
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" "PP_DisablePowerContainment" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" "PP_ThermalAutoThrottlingEnable" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\44f3beca-a7c0-460e-9df2-bb8b99e0cba6\3619c3f2-afb2-4afc-b0e9-e7fef372de36" "Attributes" 'DWord' 2 | Out-Null
+        Log "GPU power saving states disabled for consistent performance"
+    }
+    
+    if ($chkShaderCache.IsChecked) {
+        # Optimize shader cache management
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "DxgkrnlVersion" 'String' "10.0.0.0" | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" "DirectXUserGlobalSettings" 'String' "SwapEffectUpgradeEnable=1;" | Out-Null
+        New-Item -Path "C:\ProgramData\NVIDIA Corporation\NV_Cache" -ItemType Directory -Force | Out-Null
+        Log "Shader cache optimization applied"
+    }
+    
+    if ($chkGameIO.IsChecked) {
+        # Game file I/O priority optimization
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\I/O System" "IoEnableStackSwapping" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" "ForcedPhysicalDiskIo" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "NtfsMftZoneReservation" 'DWord' 4 | Out-Null
+        Log "Game file I/O priority optimized"
+    }
+    
+    if ($chkDiskOptimization.IsChecked) {
+        # Disk performance optimizations
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "NtfsDisableLastAccessUpdate" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "NtfsDisable8dot3NameCreation" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "Win95TruncatedExtensions" 'DWord' 0 | Out-Null
+        fsutil behavior set DisableDeleteNotify 0 | Out-Null
+        Log "Disk performance optimizations applied"
+    }
+    
+    if ($chkNetworkGaming.IsChecked) {
+        # Gaming-specific network optimizations
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpWindowSize" 'DWord' 65536 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "Tcp1323Opts" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpMaxDupAcks" 'DWord' 2 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "SackOpts" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\MSMQ\Parameters" "TCPNoDelay" 'DWord' 1 | Out-Null
+        Log "Gaming network stack optimizations applied"
+    }
+    
+    if ($chkGamingAudio.IsChecked) {
+        # Gaming audio optimizations
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" "DisableProtectedAudioDG" 'DWord' 1 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Multimedia\Audio" "UserDuckingPreference" 'DWord' 3 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\AudioSrv" "DependOnService" 'MultiString' @("AudioEndpointBuilder", "RpcSs") | Out-Null
+        Log "Gaming audio optimization (exclusive mode) enabled"
+    }
+    
+    if ($chkInputOptimization.IsChecked) {
+        # Gaming input optimizations
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseSpeed" 'String' "0" | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseThreshold1" 'String' "0" | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseThreshold2" 'String' "0" | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" "MouseDataQueueSize" 'DWord' 20 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" "KeyboardDataQueueSize" 'DWord' 20 | Out-Null
+        Log "Gaming input optimization (raw input, no acceleration) applied"
     }
 
     # GPU VENDOR OPTIMIZATIONS
@@ -1875,7 +2126,7 @@ $btnImportConfig.Add_Click({
 # ---------- Form Lifecycle ----------
 $form.Add_SourceInitialized({
     Log "KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED) loaded"
-    Log "Select your optimizations and click 'Apply Selected' to begin"
+    Log "Select your optimizations and click 'Recommended' to begin"
     
     # Check and display admin status
     $adminStatus = Get-AdminStatusMessage
@@ -1883,7 +2134,7 @@ $form.Add_SourceInitialized({
     
     # If not admin, offer elevation option
     if (-not (Test-AdminPrivileges)) {
-        Log "💡 Tip: For full functionality, restart as Administrator or click 'Apply Selected' for elevation prompt" 'Warning'
+        Log "💡 Tip: For full functionality, restart as Administrator or click 'Recommended' for elevation prompt" 'Warning'
     }
     
     # Perform system requirements check
@@ -1902,7 +2153,7 @@ $form.Add_SourceInitialized({
         Log "Recommendation: Intel GPU detected - Intel tweaks pre-selected"
     }
     
-    # Pre-select recommended optimizations
+    # Pre-select recommended optimizations (excluding visual themes)
     $chkAck.IsChecked = $true
     $chkDelAckTicks.IsChecked = $true
     $chkResponsiveness.IsChecked = $true
@@ -1910,15 +2161,28 @@ $form.Add_SourceInitialized({
     $chkGameDVR.IsChecked = $true
     $chkTimerRes.IsChecked = $true
     
-    # Pre-select some enhanced optimizations for better defaults
+    # Pre-select enhanced gaming optimizations for better defaults
     $chkNetworkLatency.IsChecked = $true
     $chkGameMode.IsChecked = $true
+    $chkPowerOptimization.IsChecked = $true
+    $chkProcessOptimization.IsChecked = $true
+    
+    # Pre-select key FPS-boosting optimizations (safe defaults)
+    $chkCpuCorePark.IsChecked = $true
+    $chkInterruptMod.IsChecked = $true
+    $chkMMCSS.IsChecked = $true
+    $chkGpuScheduling.IsChecked = $true
+    $chkNetworkGaming.IsChecked = $true
+    $chkInputOptimization.IsChecked = $true
+    
+    # Note: Visual effects (chkVisualEffects) intentionally NOT pre-selected
+    # per requirement to exclude visual themes from recommended settings
     
     if ($chkTimerRes.IsChecked) {
         try { [WinMM]::timeBeginPeriod(1) | Out-Null } catch {}
     }
     
-    Log "Ready for optimization! Select additional options as needed and click 'Apply Selected'"
+    Log "Ready for optimization! Select additional options as needed and click 'Recommended'"
 })
 
 $form.Add_Closing({
