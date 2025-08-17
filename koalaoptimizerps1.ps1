@@ -992,7 +992,15 @@ function Restore-FromBackup {
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="#252140" BorderThickness="2" BorderBrush="#6B46C1" Padding="10">
       <StackPanel x:Name="TweaksPanel">
 
-        <TextBlock Text="🌐 Advanced Networking" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,0,0,6"/>
+        <Grid Margin="0,0,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🌐 Network Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendNetwork" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Network Optimizations category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkAck" Content="Disable TCP ACK Delay" ToolTip="Sets TcpAckFrequency=1 on all active NIC interfaces." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkDelAckTicks" Content="Set TcpDelAckTicks=0" ToolTip="Sets TcpDelAckTicks=0 for faster acknowledgements." Foreground="White" Margin="0,5,15,5"/>
@@ -1017,7 +1025,15 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkHibernation" Content="Disable Hibernation" ToolTip="Disables hibernation to free up disk space." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <TextBlock Text="🚀 Enhanced Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <Grid Margin="0,8,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🚀 Enhanced Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendEnhancedGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Enhanced Gaming Optimizations category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkEnhancedCpuAffinity" Content="Enhanced CPU Affinity Management" ToolTip="Advanced CPU core assignment for better game performance." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkAdvancedMemory" Content="Advanced Memory Optimization" ToolTip="Enhanced memory allocation and garbage collection tuning." Foreground="White" Margin="0,5,15,5"/>
@@ -1029,7 +1045,15 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" ToolTip="Advanced process priority and scheduling optimizations." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <TextBlock Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <Grid Margin="0,8,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendAdvancedFPS" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Advanced FPS-Boosting category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkCpuCorePark" Content="CPU Core Parking Disable" ToolTip="Prevents CPU cores from entering sleep states for consistent performance." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkCpuCStates" Content="CPU C-States Disable" ToolTip="Disables deep sleep states that can cause frame drops." Foreground="White" Margin="0,5,15,5"/>
@@ -1048,7 +1072,15 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkInputOptimization" Content="Gaming Input Optimization" ToolTip="Raw input optimizations and mouse acceleration fixes." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <TextBlock Text="🎮 Smart Gaming Detection &amp; Auto-Optimization" Foreground="#00BFFF" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <Grid Margin="0,8,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🎮 Smart Gaming Detection &amp; Auto-Optimization" Foreground="#00BFFF" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendSmartGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Smart Gaming Detection category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkAutoGameDetection" Content="Automatic Game Detection" ToolTip="Automatically detects when games are launched and applies optimizations." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkAutoProfileSwitch" Content="Auto Profile Switching" ToolTip="Automatically applies game-specific optimization profiles." Foreground="White" Margin="0,5,15,5"/>
@@ -1058,7 +1090,15 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkBackgroundAppSuspend" Content="Background App Suspension" ToolTip="Intelligently suspends non-essential apps during gaming." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <TextBlock Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <Grid Margin="0,8,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendSystemPerf" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for System Performance category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkMemoryManagement" Content="Optimize Memory Management" ToolTip="Disables paging executive and optimizes memory allocation." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkPowerPlan" Content="Ultimate Performance Power Plan" ToolTip="Sets power plan to Ultimate Performance mode." Foreground="White" Margin="0,5,15,5"/>
@@ -1084,7 +1124,15 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkSvcThemes" Content="Disable Themes Service" ToolTip="Disables Windows themes service for performance." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <TextBlock Text="🗑️ Disable Unneeded Services" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
+        <Grid Margin="0,8,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="🗑️ Disable Unneeded Services" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+          <Button x:Name="btnRecommendServices" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Disable Unneeded Services category"/>
+        </Grid>
         <WrapPanel Margin="0,0,0,12">
           <CheckBox x:Name="chkDisableUnneeded" Content="Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / bthserv" ToolTip="Optional: Disables various unneeded services for gaming." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
@@ -1195,8 +1243,12 @@ function Restore-FromBackup {
               <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-              <TextBlock Text="🎮 Active Games" Foreground="#FFD700" FontSize="10" FontWeight="Bold"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎮 Active Games" Foreground="#FFD700" FontSize="10" FontWeight="Bold" Margin="0,0,8,0"/>
+                <Button x:Name="btnRefreshGames" Content="🔄" Width="20" Height="16" Background="#6B46C1" Foreground="White" FontSize="8" Padding="0" ToolTip="Refresh active games list"/>
+              </StackPanel>
               <TextBlock x:Name="lblActiveGames" Text="None" Foreground="White" FontSize="10"/>
+              <TextBlock x:Name="lblLastRefresh" Text="Never" Foreground="#888" FontSize="8"/>
             </StackPanel>
             <StackPanel Grid.Column="1">
               <TextBlock Text="🔥 CPU Usage" Foreground="#FF6B6B" FontSize="10" FontWeight="Bold"/>
@@ -1313,11 +1365,21 @@ $btnBenchmark      = $form.FindName('btnBenchmark')
 $btnExportConfig   = $form.FindName('btnExportConfig')
 $btnImportConfig   = $form.FindName('btnImportConfig')
 
+# Category recommendation buttons
+$btnRecommendSystemPerf = $form.FindName('btnRecommendSystemPerf')
+$btnRecommendAdvancedFPS = $form.FindName('btnRecommendAdvancedFPS')
+$btnRecommendEnhancedGaming = $form.FindName('btnRecommendEnhancedGaming')
+$btnRecommendSmartGaming = $form.FindName('btnRecommendSmartGaming')
+$btnRecommendNetwork = $form.FindName('btnRecommendNetwork')
+$btnRecommendServices = $form.FindName('btnRecommendServices')
+
 $lblStatus         = $form.FindName('lblStatus')
 $global:LogBox     = $form.FindName('txtLog')
 
 # Performance metrics labels
 $lblActiveGames    = $form.FindName('lblActiveGames')
+$lblLastRefresh    = $form.FindName('lblLastRefresh')
+$btnRefreshGames   = $form.FindName('btnRefreshGames')
 $lblCpuUsage       = $form.FindName('lblCpuUsage')
 $lblMemoryUsage    = $form.FindName('lblMemoryUsage')
 $lblOptimizationStatus = $form.FindName('lblOptimizationStatus')
@@ -2240,21 +2302,78 @@ function Stop-SmartGameDetection {
     }
 }
 
-function Update-PerformanceMetrics {
-    param([switch]$RunOnce)
-    
+function Set-SystemPerformanceRecommended {
+    # Enable recommended System Performance settings
+    $chkMemoryManagement.IsChecked = $true
+    $chkPowerPlan.IsChecked = $true
+    $chkCpuScheduling.IsChecked = $true
+    $chkPageFile.IsChecked = $true
+    Log "System Performance recommended settings applied"
+}
+
+function Set-AdvancedFPSRecommended {
+    # Enable recommended Advanced FPS-Boosting settings
+    $chkCpuCorePark.IsChecked = $true
+    $chkCpuCStates.IsChecked = $true
+    $chkInterruptMod.IsChecked = $true
+    $chkMMCSS.IsChecked = $true
+    $chkLargePages.IsChecked = $true
+    $chkMemCompression.IsChecked = $true
+    $chkStandbyMemory.IsChecked = $true
+    $chkGpuScheduling.IsChecked = $true
+    $chkGpuPowerStates.IsChecked = $true
+    $chkShaderCache.IsChecked = $true
+    $chkDirectXOpt.IsChecked = $true
+    $chkGameFileOpt.IsChecked = $true
+    $chkNetworkGaming.IsChecked = $true
+    $chkInputOptimization.IsChecked = $true
+    Log "Advanced FPS-Boosting recommended settings applied"
+}
+
+function Set-EnhancedGamingRecommended {
+    # Enable recommended Enhanced Gaming settings
+    $chkEnhancedCpuAffinity.IsChecked = $true
+    $chkAdvancedMemory.IsChecked = $true
+    $chkGpuDriverOpt.IsChecked = $true
+    $chkNetworkLatency.IsChecked = $true
+    $chkGameMode.IsChecked = $true
+    $chkPowerOptimization.IsChecked = $true
+    $chkRealTimeMonitoring.IsChecked = $true
+    $chkProcessOptimization.IsChecked = $true
+    Log "Enhanced Gaming Optimizations recommended settings applied"
+}
+
+function Set-SmartGamingRecommended {
+    # Enable recommended Smart Gaming Detection settings
+    $chkAutoGameDetection.IsChecked = $true
+    $chkAutoProfileSwitch.IsChecked = $true
+    $chkGameSpecificProfiles.IsChecked = $true
+    $chkPerformanceMetrics.IsChecked = $true
+    $chkAutoRevert.IsChecked = $true
+    $chkBackgroundAppSuspend.IsChecked = $true
+    Log "Smart Gaming Detection recommended settings applied"
+}
+
+function Set-NetworkRecommended {
+    # Enable recommended Network Optimization settings
+    $chkAck.IsChecked = $true
+    $chkDelAckTicks.IsChecked = $true
+    $chkTcpAutoTune.IsChecked = $true
+    $chkTcpTimestamps.IsChecked = $true
+    $chkTcpECN.IsChecked = $true
+    $chkRSS.IsChecked = $true
+    $chkTimerRes.IsChecked = $true
+    Log "Network Optimizations recommended settings applied"
+}
+
+function Set-ServicesRecommended {
+    # Enable recommended Services settings
+    $chkDisableUnneeded.IsChecked = $true
+    Log "Disable Unneeded Services recommended settings applied"
+}
+
+function Update-ActiveGames {
     try {
-        # Update CPU usage
-        $cpuUsage = Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average
-        $global:lblCpuUsage.Text = "$([math]::Round($cpuUsage, 1))%"
-        
-        # Update memory usage
-        $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-        $totalMemory = $memInfo.TotalVisibleMemorySize / 1024
-        $freeMemory = $memInfo.FreePhysicalMemory / 1024
-        $usedMemory = $totalMemory - $freeMemory
-        $global:lblMemoryUsage.Text = "$([math]::Round($usedMemory, 0)) MB"
-        
         # Update active games
         $activeGames = @()
         foreach ($profileKey in $GameProfiles.Keys) {
@@ -2276,6 +2395,29 @@ function Update-PerformanceMetrics {
         } else {
             $global:lblActiveGames.Text = "None"
         }
+        
+        # Update last refresh timestamp
+        $global:lblLastRefresh.Text = (Get-Date).ToString("HH:mm:ss")
+        
+    } catch {
+        # Fail silently for active games refresh
+    }
+}
+
+function Update-PerformanceMetrics {
+    param([switch]$RunOnce)
+    
+    try {
+        # Update CPU usage
+        $cpuUsage = Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average
+        $global:lblCpuUsage.Text = "$([math]::Round($cpuUsage, 1))%"
+        
+        # Update memory usage
+        $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+        $totalMemory = $memInfo.TotalVisibleMemorySize / 1024
+        $freeMemory = $memInfo.FreePhysicalMemory / 1024
+        $usedMemory = $totalMemory - $freeMemory
+        $global:lblMemoryUsage.Text = "$([math]::Round($usedMemory, 0)) MB"
         
         # Update optimization status
         $optimizationCount = 0
@@ -2327,6 +2469,64 @@ $btnRevert.Add_Click({
         Log "Error during Revert: $_"
         $lblStatus.Text = "Revert failed"
         $lblStatus.Foreground = "#FF6B6B"
+    }
+})
+
+$btnRefreshGames.Add_Click({
+    try {
+        Update-ActiveGames
+        Log "Active games list refreshed manually"
+    } catch {
+        Log "Error refreshing active games: $_"
+    }
+})
+
+# Category recommendation button event handlers
+$btnRecommendSystemPerf.Add_Click({
+    try {
+        Set-SystemPerformanceRecommended
+    } catch {
+        Log "Error applying System Performance recommendations: $_"
+    }
+})
+
+$btnRecommendAdvancedFPS.Add_Click({
+    try {
+        Set-AdvancedFPSRecommended
+    } catch {
+        Log "Error applying Advanced FPS recommendations: $_"
+    }
+})
+
+$btnRecommendEnhancedGaming.Add_Click({
+    try {
+        Set-EnhancedGamingRecommended
+    } catch {
+        Log "Error applying Enhanced Gaming recommendations: $_"
+    }
+})
+
+$btnRecommendSmartGaming.Add_Click({
+    try {
+        Set-SmartGamingRecommended
+    } catch {
+        Log "Error applying Smart Gaming recommendations: $_"
+    }
+})
+
+$btnRecommendNetwork.Add_Click({
+    try {
+        Set-NetworkRecommended
+    } catch {
+        Log "Error applying Network recommendations: $_"
+    }
+})
+
+$btnRecommendServices.Add_Click({
+    try {
+        Set-ServicesRecommended
+    } catch {
+        Log "Error applying Services recommendations: $_"
     }
 })
 
@@ -2465,6 +2665,7 @@ $form.Add_SourceInitialized({
     # Start performance metrics timer
     $global:PerformanceTimer = Start-PerformanceMetricsTimer
     Update-PerformanceMetrics -RunOnce
+    Update-ActiveGames
     
     Log "Ready for optimization! Select additional options as needed and click 'Recommended'"
 })
