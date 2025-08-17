@@ -1,0 +1,1 @@
+Please add admin elevation (UAC) functionality to the optimizer. This will ensure that system-level optimizations like CPU priority changes, memory management, registry modifications, and GPU driver settings can be applied properly. The script should check for admin rights and prompt for elevation if needed, as this would work much better for gaming optimizations.
