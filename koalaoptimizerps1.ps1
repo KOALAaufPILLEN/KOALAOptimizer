@@ -784,7 +784,25 @@ function Create-Backup {
         @{Path="HKCU:\Control Panel\Desktop"; Name="UserPreferencesMask"},
         @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="EnableAeroPeek"},
         @{Path="HKCU:\Software\Microsoft\Windows\DWM"; Name="AlwaysHibernateThumbnails"},
-        @{Path="HKCU:\Control Panel\Desktop\WindowMetrics"; Name="MinAnimate"}
+        @{Path="HKCU:\Control Panel\Desktop\WindowMetrics"; Name="MinAnimate"},
+        # New Additional FPS Tweaks Registry Entries
+        @{Path="HKLM:\SOFTWARE\Microsoft\Direct3D"; Name="DisableVidMemVirtualization"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\DirectX"; Name="D3D12_ENABLE_UNSAFE_COMMAND_BUFFER_REUSE"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\DirectX"; Name="D3D12_ENABLE_RUNTIME_DRIVER_OPTIMIZATIONS"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Avalon.Graphics"; Name="DisableHWAcceleration"},
+        @{Path="HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\VideoSettings"; Name="VideoAcceleratedCompositing"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows\Dwm"; Name="EnableMachineCheck"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler"; Name="EnablePreemption"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="PoolUsageMaximum"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="PagedPoolSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="NonPagedPoolSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="SessionPoolSize"},
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"; Name="SessionViewSize"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\*\Properties"; Name="{3D6E1656-2E50-4C4C-8D85-D0ACB17B4001},0"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio"; Name="DisableProtectedAudio"},
+        @{Path="HKCU:\Control Panel\Mouse"; Name="SmoothMouseXCurve"},
+        @{Path="HKCU:\Control Panel\Mouse"; Name="SmoothMouseYCurve"},
+        @{Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Serialize"; Name="StartupDelayInMSec"}
     )
     
     foreach ($r in $regList) {
@@ -1070,6 +1088,14 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkNetworkGaming" Content="Gaming Network Stack" ToolTip="Optimizes network stack specifically for low-latency gaming." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkGamingAudio" Content="Gaming Audio Optimization" ToolTip="Enables exclusive mode audio for lower latency." Foreground="White" Margin="0,5,15,5"/>
           <CheckBox x:Name="chkInputOptimization" Content="Gaming Input Optimization" ToolTip="Raw input optimizations and mouse acceleration fixes." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkDirectX12Opt" Content="DirectX 12 Optimizations" ToolTip="Enhanced DirectX 12 API performance optimizations." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkHardwareAccel" Content="Windows Hardware Acceleration" ToolTip="Optimizes Windows hardware acceleration settings." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkAdvGpuScheduler" Content="Advanced GPU Scheduler" ToolTip="Additional GPU scheduler and timeout detection tweaks." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkMemoryPool" Content="Enhanced Memory Pool" ToolTip="Optimizes Windows memory pool allocation for gaming." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkGameModeRegistry" Content="Game Mode Registry" ToolTip="Advanced Game Mode registry optimizations." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkAudioLatency" Content="Audio Latency Reduction" ToolTip="Reduces audio latency for gaming and real-time applications." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkInputLagReduction" Content="Input Lag Reduction" ToolTip="Advanced input lag reduction tweaks for mouse and keyboard." Foreground="White" Margin="0,5,15,5"/>
+          <CheckBox x:Name="chkBackgroundSuspend" Content="Background Process Suspension" ToolTip="Enhanced background process suspension during gaming." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
         <Grid Margin="0,8,0,6">
@@ -1329,6 +1355,16 @@ $chkDiskOptimization = $form.FindName('chkDiskOptimization')
 $chkNetworkGaming  = $form.FindName('chkNetworkGaming')
 $chkGamingAudio    = $form.FindName('chkGamingAudio')
 $chkInputOptimization = $form.FindName('chkInputOptimization')
+
+# New Additional FPS Tweaks
+$chkDirectX12Opt   = $form.FindName('chkDirectX12Opt')
+$chkHardwareAccel  = $form.FindName('chkHardwareAccel')
+$chkAdvGpuScheduler = $form.FindName('chkAdvGpuScheduler')
+$chkMemoryPool     = $form.FindName('chkMemoryPool')
+$chkGameModeRegistry = $form.FindName('chkGameModeRegistry')
+$chkAudioLatency   = $form.FindName('chkAudioLatency')
+$chkInputLagReduction = $form.FindName('chkInputLagReduction')
+$chkBackgroundSuspend = $form.FindName('chkBackgroundSuspend')
 
 # Smart Gaming Detection & Auto-Optimization
 $chkAutoGameDetection = $form.FindName('chkAutoGameDetection')
@@ -1763,6 +1799,93 @@ function Apply-Tweaks {
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" "MouseDataQueueSize" 'DWord' 20 | Out-Null
         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" "KeyboardDataQueueSize" 'DWord' 20 | Out-Null
         Log "Gaming input optimization (raw input, no acceleration) applied"
+    }
+
+    # NEW ADDITIONAL WIN10-WIN11 FPS TWEAKS
+    if ($chkDirectX12Opt.IsChecked) {
+        # DirectX 12 optimizations
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" "DirectXUserGlobalSettings" 'String' "VRROptimizeEnable=0;" | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Direct3D" "DisableVidMemVirtualization" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D12_ENABLE_UNSAFE_COMMAND_BUFFER_REUSE" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D12_ENABLE_RUNTIME_DRIVER_OPTIMIZATIONS" 'DWord' 1 | Out-Null
+        Log "DirectX 12 optimizations enabled"
+    }
+    
+    if ($chkHardwareAccel.IsChecked) {
+        # Windows Hardware Acceleration optimizations
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Avalon.Graphics" "DisableHWAcceleration" 'DWord' 0 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\VideoSettings" "VideoAcceleratedCompositing" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" "EnableMachineCheck" 'DWord' 0 | Out-Null
+        Log "Windows Hardware Acceleration optimizations enabled"
+    }
+    
+    if ($chkAdvGpuScheduler.IsChecked) {
+        # Advanced GPU scheduler tweaks
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 60 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDdiDelay" 'DWord' 60 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDebugMode" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrTestMode" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" "EnablePreemption" 'DWord' 0 | Out-Null
+        Log "Advanced GPU scheduler and TDR optimizations enabled"
+    }
+    
+    if ($chkMemoryPool.IsChecked) {
+        # Enhanced memory pool optimizations
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PoolUsageMaximum" 'DWord' 96 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PagedPoolSize" 'DWord' 0xFFFFFFFF | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "NonPagedPoolSize" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "SessionPoolSize" 'DWord' 192 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "SessionViewSize" 'DWord' 192 | Out-Null
+        Log "Enhanced memory pool optimizations enabled"
+    }
+    
+    if ($chkGameModeRegistry.IsChecked) {
+        # Game Mode registry optimizations
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AllowAutoGameMode" 'DWord' 1 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AutoGameModeEnabled" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" "value" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 'DWord' 0 | Out-Null
+        Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 'DWord' 2 | Out-Null
+        Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehavior" 'DWord' 2 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "AppCaptureEnabled" 'DWord' 0 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "GameDVR_Enabled" 'DWord' 0 | Out-Null
+        Log "Game Mode registry optimizations enabled"
+    }
+    
+    if ($chkAudioLatency.IsChecked) {
+        # Audio latency improvements
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" "DisableProtectedAudioDG" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\AudioSrv" "DependOnService" 'MultiString' @("AudioEndpointBuilder", "RpcSs") | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\*\Properties" "{3D6E1656-2E50-4C4C-8D85-D0ACB17B4001},0" 'DWord' 1 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" "DisableProtectedAudio" 'DWord' 1 | Out-Null
+        Set-Reg "HKCU:\SOFTWARE\Microsoft\Multimedia\Audio" "UserDuckingPreference" 'DWord' 3 | Out-Null
+        Log "Audio latency reduction optimizations enabled"
+    }
+    
+    if ($chkInputLagReduction.IsChecked) {
+        # Input lag reduction tweaks
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseSpeed" 'String' "0" | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseThreshold1" 'String' "0" | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "MouseThreshold2" 'String' "0" | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "SmoothMouseXCurve" 'Binary' ([byte[]](0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0xCC,0x0C,0x00,0x00,0x00,0x00,0x00,0x80,0x99,0x19,0x00,0x00,0x00,0x00,0x00,0x40,0x66,0x26,0x00,0x00,0x00,0x00,0x00,0x00,0x33,0x33,0x00,0x00,0x00,0x00,0x00)) | Out-Null
+        Set-Reg "HKCU:\Control Panel\Mouse" "SmoothMouseYCurve" 'Binary' ([byte[]](0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x38,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x70,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xE0,0x00,0x00,0x00,0x00,0x00)) | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" "MouseDataQueueSize" 'DWord' 20 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" "KeyboardDataQueueSize" 'DWord' 20 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 | Out-Null
+        Log "Input lag reduction tweaks enabled"
+    }
+    
+    if ($chkBackgroundSuspend.IsChecked) {
+        # Background process suspension improvements
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 'DWord' 10 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Serialize" "StartupDelayInMSec" 'DWord' 0 | Out-Null
+        Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Background Only" 'String' "False" | Out-Null
+        Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" 'String' "High" | Out-Null
+        Log "Background process suspension improvements enabled"
     }
 
     # SMART GAMING DETECTION & AUTO-OPTIMIZATION
@@ -2327,6 +2450,15 @@ function Set-AdvancedFPSRecommended {
     $chkGameFileOpt.IsChecked = $true
     $chkNetworkGaming.IsChecked = $true
     $chkInputOptimization.IsChecked = $true
+    # New Additional FPS Tweaks
+    $chkDirectX12Opt.IsChecked = $true
+    $chkHardwareAccel.IsChecked = $true
+    $chkAdvGpuScheduler.IsChecked = $true
+    $chkMemoryPool.IsChecked = $true
+    $chkGameModeRegistry.IsChecked = $true
+    $chkAudioLatency.IsChecked = $true
+    $chkInputLagReduction.IsChecked = $true
+    $chkBackgroundSuspend.IsChecked = $true
     Log "Advanced FPS-Boosting recommended settings applied"
 }
 
