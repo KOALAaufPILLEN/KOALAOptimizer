@@ -1,4 +1,4 @@
-# KOALA-UDP Enhanced Gamer Toolkit (All-in-one, WPF) - KORRIGIERTE VERSION
+# KOALA Gaming Optimizer v2.3 (All-in-one, WPF) - KORRIGIERTE VERSION
 # - Works on PowerShell 5.1+ (Windows 10/11)
 # - Enhanced with additional optimizations and game-specific tweaks
 # - Fixed XAML compatibility issues and ContainsKey errors
@@ -171,7 +171,7 @@ function Log {
     # Also log to Windows Event Log for debugging (optional)
     try {
         if ($Level -eq 'Error') {
-            Write-EventLog -LogName Application -Source 'KOALA-UDP' -EventId 1001 -EntryType Error -Message $msg -ErrorAction SilentlyContinue
+            Write-EventLog -LogName Application -Source 'KOALA Gaming Optimizer' -EventId 1001 -EntryType Error -Message $msg -ErrorAction SilentlyContinue
         }
     } catch {
         # Ignore event log errors
@@ -227,7 +227,7 @@ function Require-Admin {
     
     $result = [System.Windows.MessageBox]::Show(
         "Administrator privileges are required for system-level optimizations.`n`nWould you like to:`n• Yes: Restart with admin privileges`n• No: Continue with limited functionality`n• Cancel: Exit application",
-        "KOALA-UDP - Admin Privileges Required", 
+        "KOALA Gaming Optimizer v2.3 - Admin Privileges Required", 
         'YesNoCancel',
         'Question'
     )
@@ -360,7 +360,11 @@ function Get-GPUVendor {
             Log "No dedicated GPU detected"
         }
         
-        return if ($primaryGPU) { $primaryGPU } else { 'Other' }
+        if ($primaryGPU) { 
+            return $primaryGPU 
+        } else { 
+            return 'Other' 
+        }
     } catch { 
         Log "Failed to detect GPU vendor: $_" 'Error'
         'Other' 
@@ -969,7 +973,7 @@ function Restore-FromBackup {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition)" Height="750" Width="900"
+        Title="KOALA Gaming Optimizer v2.3" Height="750" Width="900"
         Background="#1A1625" WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
   <Grid Margin="12">
     <Grid.RowDefinitions>
@@ -981,7 +985,7 @@ function Restore-FromBackup {
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
-      <TextBlock Text="🚀 KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition)" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
+      <TextBlock Text="🚀 KOALA Gaming Optimizer v2.3" FontSize="24" FontWeight="Bold" Foreground="#00FF88" Margin="0,0,0,4"/>
       <TextBlock Text="Advanced Windows gaming optimizations with comprehensive FPS-boosting features and smart game detection!" FontSize="14" Foreground="#B8B3E6" FontStyle="Italic"/>
     </StackPanel>
 
@@ -2397,7 +2401,7 @@ $btnImportConfig.Add_Click({
 
 # ---------- Form Lifecycle ----------
 $form.Add_SourceInitialized({
-    Log "KOALA-UDP Enhanced Gaming Toolkit v2.2 (Enhanced FPS Edition) loaded"
+    Log "KOALA Gaming Optimizer v2.3 loaded"
     Log "Select your optimizations and click 'Recommended' to begin"
     
     # Check and display admin status
@@ -2485,7 +2489,7 @@ $form.Add_Closing({
             $global:PerformanceTimer.Stop()
         }
         
-        Log "KOALA-UDP Gaming Toolkit closed - Timer resolution restored"
+        Log "KOALA Gaming Optimizer v2.3 closed - Timer resolution restored"
     } catch {}
 })
 
@@ -2496,5 +2500,5 @@ $form.MinWidth = 900
 $form.MinHeight = 750
 
 # Show the enhanced interface
-Log "Starting KOALA-UDP Enhanced Gaming Toolkit..."
+Log "Starting KOALA Gaming Optimizer v2.3..."
 [void]$form.ShowDialog()
