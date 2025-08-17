@@ -1,8 +1,8 @@
 @echo off
-REM Enhanced KOALA Optimizer Launcher with UAC support
+REM KOALA Gaming Optimizer v2.3 Launcher with UAC support
 REM This demonstrates the UAC elevation functionality
 
-echo KOALA Gaming Optimizer - Enhanced UAC Launcher
+echo KOALA Gaming Optimizer v2.3 - Enhanced Launcher
 echo ==============================================
 echo.
 
@@ -10,12 +10,12 @@ REM Check if we're already running as admin
 net session >nul 2>&1
 if %errorLevel% == 0 (
     echo ✓ Running with Administrator privileges
-    echo Starting KOALA Optimizer with full functionality...
+    echo Starting KOALA Gaming Optimizer v2.3 with full functionality...
     powershell.exe -ExecutionPolicy Bypass -File "koalaoptimizerps1.ps1"
 ) else (
     echo ⚠ Not running as Administrator
     echo.
-    echo For full functionality, the KOALA Optimizer needs Administrator privileges.
+    echo For full functionality, the KOALA Gaming Optimizer v2.3 needs Administrator privileges.
     echo This will allow:
     echo   • System registry modifications (HKEY_LOCAL_MACHINE)
     echo   • Windows service configuration  

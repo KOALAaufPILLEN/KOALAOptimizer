@@ -1,8 +1,8 @@
-# 🐨 KOALA-UDP Enhanced Gaming Toolkit v2.1 (FIXED)
+# 🐨 KOALA Gaming Optimizer v2.3
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.1-brightgreen.svg?style=for-the-badge)]()
+[![Version](https://img.shields.io/badge/version-2.3-brightgreen.svg?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg?style=for-the-badge&logo=windows)]()
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-012456.svg?style=for-the-badge&logo=powershell)]()
@@ -12,7 +12,11 @@
 
 </div>
 
-**🚀 Advanced Windows Gaming Optimizations with Game-Specific Profiles – ContainsKey Bug Fixed!**  
+**🚀 Advanced Windows Gaming Optimizations with Game-Specific Profiles – PowerShell 5.1 Compatible!**
+
+> ✅ **v2.3 Update**: Fixed critical PowerShell syntax compatibility issue for Windows 10/11 default installations  
+> ✅ **Universal Compatibility**: Now works on ALL Windows systems with PowerShell 5.1 and 7.0+  
+> ✅ **Enhanced GPU Detection**: Improved multi-GPU system support with better error handling  
 
 <div align="center">
 <em>Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungstool für Gamer, zur Reduktion von Latenz, Verbesserung der FPS und Optimierung von Windows-Einstellungen, speziell mit game-spezifischen Profilen und Ein-Klick-Tweaks.</em>
@@ -140,7 +144,7 @@
 ---
 
 ## 🖥️ Screenshot
-![KOALA-UDP Screenshot](https://github.com/KOALAaufPILLEN/KOALAOptimizer/blob/main/screenshot.png)
+![KOALA Gaming Optimizer v2.3 Screenshot](https://github.com/KOALAaufPILLEN/KOALAOptimizer/blob/main/screenshot.png)
 
 ---
 
