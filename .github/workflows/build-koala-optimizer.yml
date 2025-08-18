@@ -14,24 +14,55 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Add MSBuild to PATH
+    - name: Setup .NET Framework
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+
+    - name: Setup MSBuild (fallback for .NET Framework)
       uses: microsoft/setup-msbuild@v2
 
-    - name: Setup NuGet
-      uses: nuget/setup-nuget@v2
-
-    - name: Create packages directory
+    - name: Display environment information
       run: |
-        if not exist "packages" mkdir packages
+        echo "Repository root contents:"
+        dir
+        echo.
+        echo "Project directory contents:"
+        dir "KOALAOptimizer.Testing"
+        echo.
+        echo "Dotnet version:"
+        dotnet --version
+        echo.
+        echo "MSBuild version:"
+        msbuild -version
       shell: cmd
 
-    - name: Restore NuGet packages for the project
+    - name: Restore packages using dotnet
       run: |
-        nuget restore KOALAOptimizer.Testing\packages.config -PackagesDirectory packages
+        echo "Attempting dotnet restore..."
+        dotnet restore "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" --verbosity normal
+      shell: cmd
+      continue-on-error: true
+
+    - name: Restore packages using NuGet (fallback)
+      run: |
+        echo "Using NuGet restore as fallback..."
+        nuget restore "KOALAOptimizer.Testing\packages.config" -PackagesDirectory packages
       shell: cmd
 
-    - name: Build the project
+    - name: Build using dotnet
       run: |
+        echo "Attempting dotnet build..."
+        dotnet build "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        --configuration Release ^
+        --verbosity normal ^
+        --no-restore
+      shell: cmd
+      continue-on-error: true
+
+    - name: Build using MSBuild (fallback)
+      run: |
+        echo "Using MSBuild as fallback..."
         msbuild "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
         /p:Configuration=Release ^
         /p:Platform=AnyCPU ^
@@ -41,20 +72,59 @@ jobs:
         /verbosity:normal
       shell: cmd
 
+    - name: Debug build output directories
+      run: |
+        echo "=== Debugging build output ==="
+        echo "Checking bin directory structure:"
+        if exist "KOALAOptimizer.Testing\bin" (
+          echo "bin directory exists:"
+          dir "KOALAOptimizer.Testing\bin" /s
+        ) else (
+          echo "bin directory does not exist"
+        )
+        echo.
+        echo "Checking obj directory structure:"
+        if exist "KOALAOptimizer.Testing\obj" (
+          echo "obj directory exists:"
+          dir "KOALAOptimizer.Testing\obj" /s
+        ) else (
+          echo "obj directory does not exist"
+        )
+        echo.
+        echo "Searching for executable files:"
+        dir "KOALAOptimizer.Testing" /s *.exe 2>nul || echo "No .exe files found"
+      shell: cmd
+
     - name: Verify build output
       run: |
-        if exist "KOALAOptimizer.Testing\bin\Release\KOALAOptimizer.Testing.exe" (
-          echo Build successful - executable found
+        echo "=== Final verification ==="
+        set "EXPECTED_EXE=KOALAOptimizer.Testing\bin\Release\KOALAOptimizer.Testing.exe"
+        
+        if exist "%EXPECTED_EXE%" (
+          echo ✅ SUCCESS: Executable found at expected location
+          echo File details:
+          dir "%EXPECTED_EXE%"
+          echo.
+          echo "Release directory contents:"
           dir "KOALAOptimizer.Testing\bin\Release\"
+          echo.
+          echo "Executable file size:"
+          for %%A in ("%EXPECTED_EXE%") do echo %%~zA bytes
         ) else (
-          echo Build failed - executable not found
-          exit 1
+          echo ❌ ERROR: Executable not found at expected location: %EXPECTED_EXE%
+          echo.
+          echo "Searching for any KOALAOptimizer.Testing.exe files:"
+          for /r "KOALAOptimizer.Testing" %%f in (KOALAOptimizer.Testing.exe) do (
+            echo Found: %%f
+          )
+          exit /b 1
         )
       shell: cmd
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: KOALAOptimizer-Release
+        name: KOALAOptimizer-Release-${{ github.run_number }}
         path: KOALAOptimizer.Testing/bin/Release/
         if-no-files-found: error
+        retention-days: 90
