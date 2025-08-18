@@ -140,27 +140,66 @@ $GameProfiles = @{
 }
 
 # ---------- Helpers ----------
+# Global variables for logging optimization
+$global:LogBoxAvailable = $false
+
+# Global variables for registry caching (performance optimization)
+$global:RegistryCache = @{}
+
+# Enhanced Set-Reg function with caching
+function Set-Reg { 
+    param($Path,$Name,$Type='DWord',$Value)
+    
+    # Create cache key
+    $cacheKey = "$Path\$Name"
+    
+    # Check if value is already set to avoid redundant operations
+    if ($global:RegistryCache.ContainsKey($cacheKey) -and $global:RegistryCache[$cacheKey] -eq $Value) {
+        return # Value already set, skip operation
+    }
+    
+    try {
+        if (!(Test-Path $Path)) { 
+            New-Item -Path $Path -Force | Out-Null 
+        }
+        New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $Type -Force | Out-Null
+        
+        # Cache the value for future comparisons
+        $global:RegistryCache[$cacheKey] = $Value
+        
+        return $true
+    } catch {
+        Log "Registry operation failed: $Path\$Name = $Value (Error: $_)" 'Warning'
+        return $false
+    }
+}
+
 function Log {
     param([string]$msg, [string]$Level = 'Info')
     
+    # Fast timestamp formatting (optimized)
     $timestamp = [DateTime]::Now.ToString('HH:mm:ss')
     $logMessage = "[$timestamp] [$Level] $msg"
     
-    # Enhanced error handling for UI updates
-    if ($global:LogBox) {
+    # Optimized UI update with cached availability check
+    if ($global:LogBox -and $global:LogBoxAvailable) {
         try {
+            # Use simpler direct access for better performance
+            $global:LogBox.AppendText("$logMessage`r`n")
+            $global:LogBox.ScrollToEnd()
+        } catch {
+            # Fallback to console if UI fails
+            $global:LogBoxAvailable = $false
+            Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
+        }
+    } elseif ($global:LogBox) {
+        try {
+            # Try to establish LogBox availability
             $global:LogBox.Dispatcher.Invoke([Action]{
                 $global:LogBox.AppendText("$logMessage`r`n")
                 $global:LogBox.ScrollToEnd()
             }, [System.Windows.Threading.DispatcherPriority]::Background)
-        } catch [System.InvalidOperationException] {
-            # Fallback for cross-thread operations
-            try {
-                $global:LogBox.AppendText("$logMessage`r`n")
-                $global:LogBox.ScrollToEnd()
-            } catch {
-                Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
-            }
+            $global:LogBoxAvailable = $true
         } catch {
             Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
         }
@@ -168,14 +207,8 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(if($Level -eq 'Error'){'Red'}elseif($Level -eq 'Warning'){'Yellow'}else{'White'})
     }
     
-    # Also log to Windows Event Log for debugging (optional)
-    try {
-        if ($Level -eq 'Error') {
-            Write-EventLog -LogName Application -Source 'KOALA Gaming Optimizer' -EventId 1001 -EntryType Error -Message $msg -ErrorAction SilentlyContinue
-        }
-    } catch {
-        # Ignore event log errors
-    }
+    # Skip event logging for performance optimization (can be re-enabled if needed)
+    # Event logging removed to improve performance
 }
 
 function Test-AdminPrivileges {
@@ -497,26 +530,6 @@ function Get-Reg { param($Path,$Name)
     try { (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name } catch { $null }
 }
 
-function Set-Reg { param($Path,$Name,$Type='DWord',$Value)
-    try {
-        if (-not (Test-Path $Path)) { 
-            New-Item -Path $Path -Force | Out-Null 
-            Log "Created registry path: $Path" 'Info'
-        }
-        New-ItemProperty -Path $Path -Name $Name -PropertyType $Type -Value $Value -Force | Out-Null
-        Log "Set registry: $Path\$Name = $Value ($Type)" 'Info'
-        $true
-    } catch [System.UnauthorizedAccessException] {
-        Log "Access denied setting registry: $Path\$Name (Run as Administrator required)" 'Error'
-        $false
-    } catch [System.Security.SecurityException] {
-        Log "Security exception setting registry: $Path\$Name (Insufficient permissions)" 'Error'
-        $false
-    } catch {
-        Log "Registry set failed: $Path\$Name ($_)" 'Error'
-        $false
-    }
-}
 
 function Set-Reg-Safe { 
     param($Path,$Name,$Type='DWord',$Value,$RequiresAdmin=$false)
@@ -1576,6 +1589,9 @@ $btnCancelServicesRecommended = $form.FindName('btnCancelServicesRecommended')
 
 $lblStatus         = $form.FindName('lblStatus')
 $global:LogBox     = $form.FindName('txtLog')
+
+# Initialize logging optimization
+$global:LogBoxAvailable = ($global:LogBox -ne $null)
 
 # Performance metrics labels
 $lblActiveGames    = $form.FindName('lblActiveGames')
@@ -2669,54 +2685,107 @@ function Set-ServicesRecommended {
     Log "Disable Unneeded Services recommended settings applied"
 }
 
+# Global variables for game detection caching
+$global:LastActiveGames = @()
+$global:LastGameRefresh = [DateTime]::MinValue
+
 function Update-ActiveGames {
     try {
-        # Update active games
+        # Only refresh games every 8 seconds to reduce performance impact
+        $now = Get-Date
+        if (($now - $global:LastGameRefresh).TotalSeconds -lt 8) {
+            return
+        }
+        $global:LastGameRefresh = $now
+        
+        # Update active games with optimized process detection
         $activeGames = @()
         foreach ($profileKey in $GameProfiles.Keys) {
             $profile = $GameProfiles[$profileKey]
             foreach ($processName in $profile.ProcessNames) {
+                # Use faster Get-Process with single name lookup
                 $processes = Get-Process -Name $processName -ErrorAction SilentlyContinue
                 if ($processes) {
                     $activeGames += $profile.DisplayName
+                    break # Break inner loop once found
+                }
+            }
+        }
+        
+        # Only update UI if the active games list actually changed
+        $gamesChanged = $false
+        if ($activeGames.Count -ne $global:LastActiveGames.Count) {
+            $gamesChanged = $true
+        } else {
+            for ($i = 0; $i -lt $activeGames.Count; $i++) {
+                if ($activeGames[$i] -ne $global:LastActiveGames[$i]) {
+                    $gamesChanged = $true
                     break
                 }
             }
         }
         
-        if ($activeGames.Count -gt 0) {
-            $global:lblActiveGames.Text = ($activeGames -join ", ")
-            if ($activeGames.Count -gt 1) {
-                $global:lblActiveGames.Text = "$($activeGames.Count) games"
+        if ($gamesChanged) {
+            if ($activeGames.Count -gt 0) {
+                $global:lblActiveGames.Text = ($activeGames -join ", ")
+                if ($activeGames.Count -gt 1) {
+                    $global:lblActiveGames.Text = "$($activeGames.Count) games"
+                }
+            } else {
+                $global:lblActiveGames.Text = "None"
             }
-        } else {
-            $global:lblActiveGames.Text = "None"
+            $global:LastActiveGames = $activeGames
         }
         
-        # Update last refresh timestamp
-        $global:lblLastRefresh.Text = (Get-Date).ToString("HH:mm:ss")
+        # Update last refresh timestamp only when actually refreshed
+        $global:lblLastRefresh.Text = $now.ToString("HH:mm:ss")
         
     } catch {
-        # Fail silently for active games refresh
+        # Fail silently for active games refresh to avoid performance impact
     }
 }
+    }
+}
+
+# Global variables for performance caching
+$global:LastCpuUsage = 0
+$global:LastMemoryUsage = 0
+$global:LastOptimizationCount = 0
+$global:MetricsUpdateCount = 0
 
 function Update-PerformanceMetrics {
     param([switch]$RunOnce)
     
     try {
-        # Update CPU usage
-        $cpuUsage = Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average
-        $global:lblCpuUsage.Text = "$([math]::Round($cpuUsage, 1))%"
+        # Increment update counter for optimization
+        $global:MetricsUpdateCount++
         
-        # Update memory usage
-        $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-        $totalMemory = $memInfo.TotalVisibleMemorySize / 1024
-        $freeMemory = $memInfo.FreePhysicalMemory / 1024
-        $usedMemory = $totalMemory - $freeMemory
-        $global:lblMemoryUsage.Text = "$([math]::Round($usedMemory, 0)) MB"
+        # Only update CPU/Memory every other cycle to reduce performance impact
+        if ($RunOnce -or ($global:MetricsUpdateCount % 2 -eq 0)) {
+            # Update CPU usage with caching
+            $cpuUsage = Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average
+            $roundedCpuUsage = [math]::Round($cpuUsage, 1)
+            
+            # Only update UI if value changed significantly (>= 1% difference)
+            if ($RunOnce -or [math]::Abs($roundedCpuUsage - $global:LastCpuUsage) -ge 1.0) {
+                $global:lblCpuUsage.Text = "$roundedCpuUsage%"
+                $global:LastCpuUsage = $roundedCpuUsage
+            }
+            
+            # Update memory usage with caching
+            $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+            $totalMemory = $memInfo.TotalVisibleMemorySize / 1024
+            $freeMemory = $memInfo.FreePhysicalMemory / 1024
+            $usedMemory = [math]::Round($totalMemory - $freeMemory, 0)
+            
+            # Only update UI if value changed significantly (>= 50MB difference)
+            if ($RunOnce -or [math]::Abs($usedMemory - $global:LastMemoryUsage) -ge 50) {
+                $global:lblMemoryUsage.Text = "$usedMemory MB"
+                $global:LastMemoryUsage = $usedMemory
+            }
+        }
         
-        # Update optimization status
+        # Update optimization status (lightweight check)
         $optimizationCount = 0
         if ($chkTimerRes.IsChecked) { $optimizationCount++ }
         if ($chkGpuScheduling.IsChecked) { $optimizationCount++ }
@@ -2724,21 +2793,25 @@ function Update-PerformanceMetrics {
         if ($chkCpuCorePark.IsChecked) { $optimizationCount++ }
         if ($chkMemCompression.IsChecked) { $optimizationCount++ }
         
-        if ($optimizationCount -gt 0) {
-            $global:lblOptimizationStatus.Text = "$optimizationCount active"
-        } else {
-            $global:lblOptimizationStatus.Text = "Ready"
+        # Only update UI if optimization count changed
+        if ($RunOnce -or $optimizationCount -ne $global:LastOptimizationCount) {
+            if ($optimizationCount -gt 0) {
+                $global:lblOptimizationStatus.Text = "$optimizationCount active"
+            } else {
+                $global:lblOptimizationStatus.Text = "Ready"
+            }
+            $global:LastOptimizationCount = $optimizationCount
         }
         
     } catch {
-        # Fail silently for metrics
+        # Fail silently for metrics to avoid performance impact
     }
 }
 
 function Start-PerformanceMetricsTimer {
-    # Start a background timer for updating performance metrics
+    # Start a background timer for updating performance metrics (optimized for better performance)
     $timer = New-Object System.Windows.Threading.DispatcherTimer
-    $timer.Interval = [TimeSpan]::FromSeconds(2)
+    $timer.Interval = [TimeSpan]::FromSeconds(4)  # Reduced frequency from 2s to 4s for better performance
     $timer.Add_Tick({
         Update-PerformanceMetrics
     })
