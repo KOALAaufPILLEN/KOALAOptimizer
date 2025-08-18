@@ -249,8 +249,6 @@ namespace KOALAOptimizer.Testing.Services
             try
             {
                 // Get all network interfaces and disable Nagle algorithm
-                var interfacePath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces";
-                
                 using (var interfacesKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"))
                 {
                     if (interfacesKey != null)
