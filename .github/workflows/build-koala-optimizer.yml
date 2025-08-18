@@ -8,17 +8,28 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022  # Fixed runner version
+    runs-on: windows-2022
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup MSBuild
+    - name: Setup .NET Framework
       uses: microsoft/setup-msbuild@v2
+      with:
+        msbuild-architecture: x64
 
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v2
+      with:
+        nuget-version: 'latest'
+
+    - name: Create packages directory
+      run: |
+        if (!(Test-Path "packages")) {
+          New-Item -ItemType Directory -Path "packages"
+        }
+      shell: powershell
 
     - name: Create packages.config if missing
       run: |
@@ -33,10 +44,14 @@ jobs:
       shell: powershell
 
     - name: Restore NuGet packages
-      run: nuget restore KOALAOptimizer.sln -SolutionDirectory .
+      run: |
+        nuget restore KOALAOptimizer.sln -PackagesDirectory packages -Verbosity detailed
+      shell: cmd
 
-    - name: Build the project
-      run: msbuild KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj /p:Configuration=Release /p:Platform="Any CPU"
+    - name: Build the solution
+      run: |
+        msbuild KOALAOptimizer.sln /p:Configuration=Release /p:Platform="Any CPU" /p:RestorePackages=false /verbosity:minimal
+      shell: cmd
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
