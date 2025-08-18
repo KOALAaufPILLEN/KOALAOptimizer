@@ -90,9 +90,10 @@ KOALAOptimizer.Testing/
 ### **Automated Build Pipeline**
 - ✅ **Automatic builds** on every push and pull request
 - ✅ **Windows-latest runners** for optimal compatibility
-- ✅ **MSBuild compilation** with .NET Framework 4.8
-- ✅ **NuGet package restoration** 
-- ✅ **Release artifacts** automatically generated
+- ✅ **Modern .NET CLI** with MSBuild fallback for .NET Framework 4.8
+- ✅ **Comprehensive debugging** and build output verification
+- ✅ **Robust package restoration** with multiple fallback methods
+- ✅ **Release artifacts** automatically generated with detailed logging
 - ✅ **Build time**: ~3-5 minutes typical
 
 ### **Build Status**
@@ -172,27 +173,32 @@ KOALAOptimizer.Testing/
 ## 🛠️ **Build & Development**
 
 ### **Build Requirements**
-- **Visual Studio 2019+** or **MSBuild Tools**
+- **Visual Studio 2019+** or **.NET SDK/MSBuild Tools**
 - **.NET Framework 4.8** (pre-installed on Windows 10/11)
 - **Newtonsoft.Json** package (automatically restored)
 
 ### **Build Commands:**
 ```bash
-# Restore packages
-nuget restore KOALAOptimizer.Testing.csproj
+# Modern approach (recommended)
+dotnet restore KOALAOptimizer.Testing.csproj
+dotnet build KOALAOptimizer.Testing.csproj --configuration Release
 
-# Build release version
+# Legacy approach (fallback)
+nuget restore KOALAOptimizer.Testing.csproj
 msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Release
 
-# Build debug version  
+# Debug builds
+dotnet build KOALAOptimizer.Testing.csproj --configuration Debug
+# OR
 msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Debug
 ```
 
 ### **GitHub Actions Workflow**
 The project uses automated CI/CD with GitHub Actions:
-- Builds on every push and pull request
-- Runs on Windows runners for compatibility
-- Automatically creates release artifacts
+- Builds on every push and pull request using modern .NET CLI
+- Runs on Windows runners for .NET Framework compatibility
+- Comprehensive build debugging and verification steps
+- Automatically creates release artifacts with detailed logging
 - Build logs available in the Actions tab
 
 ---

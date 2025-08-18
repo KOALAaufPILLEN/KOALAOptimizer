@@ -76,20 +76,22 @@ KOALAOptimizer.Testing/
 
 ## 🛠️ **Build Requirements**
 
-- **Visual Studio 2019+** or **MSBuild Tools**
+- **Visual Studio 2019+** or **.NET SDK/MSBuild Tools**
 - **.NET Framework 4.8** (pre-installed on Windows 10/11)
 - **Newtonsoft.Json** package (automatically restored)
 
 ### **Build Commands:**
 ```bash
-# Restore packages
-nuget restore KOALAOptimizer.Testing.csproj
+# Modern approach (recommended)
+dotnet restore KOALAOptimizer.Testing.csproj
+dotnet build KOALAOptimizer.Testing.csproj --configuration Release
 
-# Build release version
+# Legacy approach (fallback)
+nuget restore KOALAOptimizer.Testing.csproj
 msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Release
 
-# Build debug version  
-msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Debug
+# Debug builds
+dotnet build KOALAOptimizer.Testing.csproj --configuration Debug
 ```
 
 ## 🚀 **Deployment**
