@@ -33,7 +33,7 @@ jobs:
       shell: powershell
 
     - name: Restore NuGet packages
-      run: nuget restore KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj
+      run: nuget restore KOALAOptimizer.sln -SolutionDirectory .
 
     - name: Build the project
       run: msbuild KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj /p:Configuration=Release /p:Platform="Any CPU"
