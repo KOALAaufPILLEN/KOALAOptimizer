@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022  # Fixed runner version
 
     steps:
     - name: Checkout code
@@ -19,6 +19,18 @@ jobs:
 
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v2
+
+    - name: Create packages.config if missing
+      run: |
+        if (!(Test-Path "KOALAOptimizer.Testing/packages.config")) {
+          @'
+        <?xml version="1.0" encoding="utf-8"?>
+        <packages>
+          <package id="Newtonsoft.Json" version="13.0.3" targetFramework="net48" />
+        </packages>
+        '@ | Out-File "KOALAOptimizer.Testing/packages.config" -Encoding UTF8
+        }
+      shell: powershell
 
     - name: Restore NuGet packages
       run: nuget restore KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj
