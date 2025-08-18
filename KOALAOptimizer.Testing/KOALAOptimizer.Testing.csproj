@@ -129,7 +129,7 @@
     </Page>
     <Page Include="Themes\SciFiTheme.xaml">
       <SubType>Designer</SubType>
-      <Generator>MSBuild:Config</Generator>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
