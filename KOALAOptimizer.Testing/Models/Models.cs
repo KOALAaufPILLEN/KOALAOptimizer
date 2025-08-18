@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+
+namespace KOALAOptimizer.Testing.Models
+{
+    /// <summary>
+    /// Game profile configuration
+    /// </summary>
+    public class GameProfile
+    {
+        public string GameKey { get; set; }
+        public string DisplayName { get; set; }
+        public List<string> ProcessNames { get; set; } = new List<string>();
+        public ProcessPriority Priority { get; set; } = ProcessPriority.High;
+        public string Affinity { get; set; } = "Auto";
+        public List<string> SpecificTweaks { get; set; } = new List<string>();
+        public bool IsRunning { get; set; }
+        public DateTime? LastDetected { get; set; }
+    }
+
+    /// <summary>
+    /// Process priority levels
+    /// </summary>
+    public enum ProcessPriority
+    {
+        Idle,
+        Normal,
+        High,
+        RealTime
+    }
+
+    /// <summary>
+    /// Registry backup entry
+    /// </summary>
+    public class RegistryBackupEntry
+    {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public object Value { get; set; }
+        public string Type { get; set; }
+        public DateTime BackupTime { get; set; }
+    }
+
+    /// <summary>
+    /// System performance metrics
+    /// </summary>
+    public class PerformanceMetrics
+    {
+        public double CpuUsage { get; set; }
+        public long MemoryUsage { get; set; }
+        public long MemoryAvailable { get; set; }
+        public int ActiveProcesses { get; set; }
+        public double GpuUsage { get; set; }
+        public string GpuName { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    /// <summary>
+    /// Optimization category
+    /// </summary>
+    public class OptimizationCategory
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public List<OptimizationItem> Items { get; set; } = new List<OptimizationItem>();
+        public bool IsExpanded { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Individual optimization item
+    /// </summary>
+    public class OptimizationItem
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public bool IsEnabled { get; set; }
+        public bool RequiresAdmin { get; set; }
+        public string Category { get; set; }
+        public OptimizationType Type { get; set; }
+        public Dictionary<string, object> Parameters { get; set; } = new Dictionary<string, object>();
+    }
+
+    /// <summary>
+    /// Optimization types
+    /// </summary>
+    public enum OptimizationType
+    {
+        Registry,
+        Service,
+        Process,
+        Network,
+        GPU,
+        Power,
+        Memory,
+        Storage
+    }
+
+    /// <summary>
+    /// Backup configuration
+    /// </summary>
+    public class BackupConfiguration
+    {
+        public DateTime CreatedDate { get; set; }
+        public string Version { get; set; }
+        public Dictionary<string, Dictionary<string, object>> Registry { get; set; } = new Dictionary<string, Dictionary<string, object>>();
+        public Dictionary<string, Dictionary<string, object>> RegistryNICs { get; set; } = new Dictionary<string, Dictionary<string, object>>();
+        public Dictionary<string, string> Services { get; set; } = new Dictionary<string, string>();
+        public List<string> AppliedOptimizations { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// GPU vendor information
+    /// </summary>
+    public class GpuInfo
+    {
+        public string Vendor { get; set; }
+        public string Name { get; set; }
+        public string DriverVersion { get; set; }
+        public bool HardwareSchedulingSupported { get; set; }
+    }
+
+    /// <summary>
+    /// Log entry
+    /// </summary>
+    public class LogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public LogLevel Level { get; set; }
+        public string Message { get; set; }
+        public Exception Exception { get; set; }
+    }
+
+    /// <summary>
+    /// Log levels
+    /// </summary>
+    public enum LogLevel
+    {
+        Info,
+        Warning,
+        Error,
+        Debug
+    }
+
+    /// <summary>
+    /// Theme information
+    /// </summary>
+    public class ThemeInfo
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string ResourcePath { get; set; }
+        public string Description { get; set; }
+    }
+
+    /// <summary>
+    /// Network optimization settings
+    /// </summary>
+    public class NetworkOptimization
+    {
+        public bool DisableNagleAlgorithm { get; set; }
+        public bool OptimizeTcpSettings { get; set; }
+        public bool DisableNetworkThrottling { get; set; }
+        public int TcpAckFrequency { get; set; }
+        public bool EnableRSS { get; set; }
+        public bool EnableECN { get; set; }
+    }
+}
