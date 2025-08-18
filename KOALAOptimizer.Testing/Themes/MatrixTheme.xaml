@@ -8,7 +8,7 @@
     <SolidColorBrush x:Key="AccentBrush" Color="#003b00"/>
     <SolidColorBrush x:Key="HoverBrush" Color="#00cc33"/>
     <SolidColorBrush x:Key="TextBrush" Color="#00ff41"/>
-    <SolidColorBrush x:Key="BorderBrush" Value="#008f11"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#008f11"/>
     <SolidColorBrush x:Key="GroupBackgroundBrush" Color="#001100"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#ff0040"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="#00ff41"/>
