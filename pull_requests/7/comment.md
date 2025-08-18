@@ -1,1 +1,0 @@
-Please implement the missing popup menus under each category and ensure the spaceship buttons are visible. The popup menus should show when clicking the 🚀 spaceship button and display the recommended settings for that specific category. Each popup should have checkboxes for the recommended optimizations in that category, excluding visual/theme changes.
