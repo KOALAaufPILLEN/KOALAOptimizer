@@ -63,6 +63,13 @@ namespace KOALAOptimizer.Testing.Services
                     DisplayName = "🟢 Matrix",
                     ResourcePath = "Themes/MatrixTheme.xaml",
                     Description = "Green matrix-style terminal theme with monospace fonts"
+                },
+                new ThemeInfo
+                {
+                    Name = "KOALA",
+                    DisplayName = "🐨 KOALA",
+                    ResourcePath = "Themes/KOALATheme.xaml",
+                    Description = "Natural eucalyptus and koala-inspired theme with calming earth tones"
                 }
             };
         }
