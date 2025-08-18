@@ -993,6 +993,125 @@ function Restore-FromBackup {
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KOALA Gaming Optimizer v2.3" Height="750" Width="900"
         Background="#1A1625" WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
+        
+  <!-- Popup Menus for Spaceship Buttons -->
+  <Window.Resources>
+    <!-- Network Popup -->
+    <Popup x:Name="popupNetwork" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendNetwork}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="300">
+          <TextBlock Text="🌐 Network FPS Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="Select recommended settings to boost FPS:" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupNetworkAck" Content="Disable TCP ACK Delay" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkDelAck" Content="Set TcpDelAckTicks=0" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkTimestamps" Content="Disable TCP Timestamps" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkECN" Content="Disable ECN" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkThrottle" Content="Disable Network Throttling" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkNagle" Content="Disable Nagle Algorithm" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplyNetworkRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelNetworkRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <!-- Enhanced Gaming Popup -->
+    <Popup x:Name="popupEnhancedGaming" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendEnhancedGaming}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="320">
+          <TextBlock Text="🚀 Enhanced Gaming FPS Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="Select recommended settings to boost FPS:" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupEnhancedCpuAffinity" Content="Enhanced CPU Affinity Management" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupAdvancedMemory" Content="Advanced Memory Optimization" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupGpuDriverOpt" Content="GPU Driver Optimizations" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupNetworkLatency" Content="Network Latency Improvements" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupGameMode" Content="Windows Game Mode Enhancements" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupPowerOptimization" Content="Gaming Power Plan Optimization" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplyEnhancedGamingRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelEnhancedGamingRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <!-- Advanced FPS Popup -->
+    <Popup x:Name="popupAdvancedFPS" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendAdvancedFPS}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="340">
+          <TextBlock Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="High-impact performance settings (no visual changes):" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupCpuCorePark" Content="CPU Core Parking Disable" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupCpuCStates" Content="CPU C-States Disable" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupInterruptMod" Content="Interrupt Moderation" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupMMCSS" Content="MMCSS Gaming Priority" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupLargePages" Content="Large Page Support" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupMemCompression" Content="Memory Compression Disable" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupGpuScheduling" Content="Hardware GPU Scheduling" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupInputOptimization" Content="Gaming Input Optimization" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplyAdvancedFPSRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelAdvancedFPSRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <!-- Smart Gaming Popup -->
+    <Popup x:Name="popupSmartGaming" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendSmartGaming}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="300">
+          <TextBlock Text="🎮 Smart Gaming FPS Optimizations" Foreground="#00BFFF" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="Select recommended settings to boost FPS:" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupAutoGameDetection" Content="Automatic Game Detection" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupAutoProfileSwitch" Content="Auto Profile Switching" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupGameSpecificProfiles" Content="Game-Specific Profiles" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupPerformanceMetrics" Content="Performance Metrics Display" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupBackgroundAppSuspend" Content="Background App Suspension" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplySmartGamingRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelSmartGamingRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <!-- System Performance Popup -->
+    <Popup x:Name="popupSystemPerf" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendSystemPerf}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="300">
+          <TextBlock Text="🔧 System Performance FPS Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="Select recommended settings to boost FPS:" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupMemoryManagement" Content="Optimize Memory Management" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupPowerPlan" Content="Ultimate Performance Power Plan" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupCpuScheduling" Content="Optimize CPU Scheduling" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <CheckBox x:Name="popupPageFile" Content="Optimize Page File" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplySystemPerfRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelSystemPerfRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <!-- Services Popup -->
+    <Popup x:Name="popupServices" Placement="Bottom" PlacementTarget="{Binding ElementName=btnRecommendServices}" StaysOpen="False" AllowsTransparency="True">
+      <Border Background="#2D1B3D" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="12">
+        <StackPanel Width="300">
+          <TextBlock Text="🗑️ Services FPS Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+          <TextBlock Text="Select recommended settings to boost FPS:" Foreground="White" FontSize="12" Margin="0,0,0,8"/>
+          <CheckBox x:Name="popupDisableUnneeded" Content="Disable Unneeded Services" Foreground="White" IsChecked="True" Margin="0,2"/>
+          <TextBlock Text="(Disables: Fax, RemoteRegistry, MapsBroker, etc.)" Foreground="#B8B3E6" FontSize="10" Margin="0,2,0,8"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnApplyServicesRecommended" Content="Apply Selected" Background="#4CAF50" Foreground="White" Padding="8,4" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancelServicesRecommended" Content="Cancel" Background="#6B46C1" Foreground="White" Padding="8,4"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
+  </Window.Resources>
+
   <Grid Margin="12">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
@@ -1010,26 +1129,30 @@ function Restore-FromBackup {
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="#252140" BorderThickness="2" BorderBrush="#6B46C1" Padding="10">
       <StackPanel x:Name="TweaksPanel">
 
-        <Grid Margin="0,0,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🌐 Network Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendNetwork" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Network Optimizations category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkAck" Content="Disable TCP ACK Delay" ToolTip="Sets TcpAckFrequency=1 on all active NIC interfaces." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkDelAckTicks" Content="Set TcpDelAckTicks=0" ToolTip="Sets TcpDelAckTicks=0 for faster acknowledgements." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkTcpAutoTune" Content="TCP Autotuning: Normal" ToolTip="netsh int tcp set global autotuninglevel=normal" Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkTcpTimestamps" Content="Disable TCP Timestamps" ToolTip="netsh int tcp set global timestamps=disabled" Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkTcpECN" Content="Disable ECN" ToolTip="netsh int tcp set global ecncapability=disabled" Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkRSS" Content="Enable RSS" ToolTip="Enable Receive-Side Scaling (if supported)." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkRSC" Content="Enable RSC" ToolTip="Enable Receive Segment Coalescing (if supported)." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkThrottle" Content="Disable Network Throttling" ToolTip="Sets NetworkThrottlingIndex to 0xFFFFFFFF." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkNagle" Content="Disable Nagle Algorithm" ToolTip="Disables Nagle's algorithm for reduced latency." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderNetwork" IsExpanded="True" Margin="0,0,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🌐 Network Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendNetwork" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for Network Optimizations category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkAck" Content="Disable TCP ACK Delay" ToolTip="Sets TcpAckFrequency=1 on all active NIC interfaces." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkDelAckTicks" Content="Set TcpDelAckTicks=0" ToolTip="Sets TcpDelAckTicks=0 for faster acknowledgements." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkTcpAutoTune" Content="TCP Autotuning: Normal" ToolTip="netsh int tcp set global autotuninglevel=normal" Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkTcpTimestamps" Content="Disable TCP Timestamps" ToolTip="netsh int tcp set global timestamps=disabled" Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkTcpECN" Content="Disable ECN" ToolTip="netsh int tcp set global ecncapability=disabled" Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkRSS" Content="Enable RSS" ToolTip="Enable Receive-Side Scaling (if supported)." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkRSC" Content="Enable RSC" ToolTip="Enable Receive Segment Coalescing (if supported)." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkThrottle" Content="Disable Network Throttling" ToolTip="Sets NetworkThrottlingIndex to 0xFFFFFFFF." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkNagle" Content="Disable Nagle Algorithm" ToolTip="Disables Nagle's algorithm for reduced latency." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
         <TextBlock Text="🎮 Windows Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
         <WrapPanel Margin="0,0,0,12">
@@ -1043,94 +1166,110 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkHibernation" Content="Disable Hibernation" ToolTip="Disables hibernation to free up disk space." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <Grid Margin="0,8,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🚀 Enhanced Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendEnhancedGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Enhanced Gaming Optimizations category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkEnhancedCpuAffinity" Content="Enhanced CPU Affinity Management" ToolTip="Advanced CPU core assignment for better game performance." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkAdvancedMemory" Content="Advanced Memory Optimization" ToolTip="Enhanced memory allocation and garbage collection tuning." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGpuDriverOpt" Content="GPU Driver Optimizations" ToolTip="Optimizes GPU driver settings for gaming performance." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkNetworkLatency" Content="Network Latency Improvements" ToolTip="Advanced network optimizations for reduced latency." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGameMode" Content="Windows Game Mode Enhancements" ToolTip="Enhanced Windows Game Mode with additional tweaks." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkPowerOptimization" Content="Gaming Power Plan Optimization" ToolTip="Optimizes power settings specifically for gaming performance." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkRealTimeMonitoring" Content="Real-Time Performance Monitoring" ToolTip="Enables real-time system resource monitoring during gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" ToolTip="Advanced process priority and scheduling optimizations." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderEnhancedGaming" IsExpanded="True" Margin="0,8,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🚀 Enhanced Gaming Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendEnhancedGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for Enhanced Gaming Optimizations category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkEnhancedCpuAffinity" Content="Enhanced CPU Affinity Management" ToolTip="Advanced CPU core assignment for better game performance." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkAdvancedMemory" Content="Advanced Memory Optimization" ToolTip="Enhanced memory allocation and garbage collection tuning." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGpuDriverOpt" Content="GPU Driver Optimizations" ToolTip="Optimizes GPU driver settings for gaming performance." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkNetworkLatency" Content="Network Latency Improvements" ToolTip="Advanced network optimizations for reduced latency." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGameMode" Content="Windows Game Mode Enhancements" ToolTip="Enhanced Windows Game Mode with additional tweaks." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkPowerOptimization" Content="Gaming Power Plan Optimization" ToolTip="Optimizes power settings specifically for gaming performance." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkRealTimeMonitoring" Content="Real-Time Performance Monitoring" ToolTip="Enables real-time system resource monitoring during gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" ToolTip="Advanced process priority and scheduling optimizations." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
-        <Grid Margin="0,8,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendAdvancedFPS" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Advanced FPS-Boosting category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkCpuCorePark" Content="CPU Core Parking Disable" ToolTip="Prevents CPU cores from entering sleep states for consistent performance." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkCpuCStates" Content="CPU C-States Disable" ToolTip="Disables deep sleep states that can cause frame drops." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkInterruptMod" Content="Interrupt Moderation" ToolTip="Optimizes network and GPU interrupt handling for smoother gameplay." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkMMCSS" Content="MMCSS Gaming Priority" ToolTip="Prioritizes gaming threads through Multimedia Class Scheduler Service." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkLargePages" Content="Large Page Support" ToolTip="Enables large memory pages for reduced memory latency." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkMemCompression" Content="Memory Compression Disable" ToolTip="Disables Windows memory compression during gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkStandbyMemory" Content="Standby Memory Management" ToolTip="Aggressive standby list cleaning for better memory allocation." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGpuScheduling" Content="Hardware GPU Scheduling" ToolTip="Enables hardware-accelerated GPU scheduling for better performance." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGpuPowerStates" Content="GPU Power States Disable" ToolTip="Prevents GPU from entering power-saving states during gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkShaderCache" Content="Shader Cache Management" ToolTip="Optimizes shader compilation and caching for faster loading." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGameIO" Content="Game File I/O Priority" ToolTip="Sets game directories to high I/O priority for faster loading." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkDiskOptimization" Content="Disk Performance Tweaks" ToolTip="Optimizes file system and disk settings for gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkNetworkGaming" Content="Gaming Network Stack" ToolTip="Optimizes network stack specifically for low-latency gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGamingAudio" Content="Gaming Audio Optimization" ToolTip="Enables exclusive mode audio for lower latency." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkInputOptimization" Content="Gaming Input Optimization" ToolTip="Raw input optimizations and mouse acceleration fixes." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkDirectX12Opt" Content="DirectX 12 Optimizations" ToolTip="Enhanced DirectX 12 API performance optimizations." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkHardwareAccel" Content="Windows Hardware Acceleration" ToolTip="Optimizes Windows hardware acceleration settings." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkAdvGpuScheduler" Content="Advanced GPU Scheduler" ToolTip="Additional GPU scheduler and timeout detection tweaks." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkMemoryPool" Content="Enhanced Memory Pool" ToolTip="Optimizes Windows memory pool allocation for gaming." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGameModeRegistry" Content="Game Mode Registry" ToolTip="Advanced Game Mode registry optimizations." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkAudioLatency" Content="Audio Latency Reduction" ToolTip="Reduces audio latency for gaming and real-time applications." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkInputLagReduction" Content="Input Lag Reduction" ToolTip="Advanced input lag reduction tweaks for mouse and keyboard." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkBackgroundSuspend" Content="Background Process Suspension" ToolTip="Enhanced background process suspension during gaming." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderAdvancedFPS" IsExpanded="True" Margin="0,8,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🎯 Advanced FPS-Boosting Optimizations" Foreground="#FFD700" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendAdvancedFPS" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for Advanced FPS-Boosting category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkCpuCorePark" Content="CPU Core Parking Disable" ToolTip="Prevents CPU cores from entering sleep states for consistent performance." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkCpuCStates" Content="CPU C-States Disable" ToolTip="Disables deep sleep states that can cause frame drops." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkInterruptMod" Content="Interrupt Moderation" ToolTip="Optimizes network and GPU interrupt handling for smoother gameplay." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkMMCSS" Content="MMCSS Gaming Priority" ToolTip="Prioritizes gaming threads through Multimedia Class Scheduler Service." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkLargePages" Content="Large Page Support" ToolTip="Enables large memory pages for reduced memory latency." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkMemCompression" Content="Memory Compression Disable" ToolTip="Disables Windows memory compression during gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkStandbyMemory" Content="Standby Memory Management" ToolTip="Aggressive standby list cleaning for better memory allocation." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGpuScheduling" Content="Hardware GPU Scheduling" ToolTip="Enables hardware-accelerated GPU scheduling for better performance." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGpuPowerStates" Content="GPU Power States Disable" ToolTip="Prevents GPU from entering power-saving states during gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkShaderCache" Content="Shader Cache Management" ToolTip="Optimizes shader compilation and caching for faster loading." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGameIO" Content="Game File I/O Priority" ToolTip="Sets game directories to high I/O priority for faster loading." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkDiskOptimization" Content="Disk Performance Tweaks" ToolTip="Optimizes file system and disk settings for gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkNetworkGaming" Content="Gaming Network Stack" ToolTip="Optimizes network stack specifically for low-latency gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGamingAudio" Content="Gaming Audio Optimization" ToolTip="Enables exclusive mode audio for lower latency." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkInputOptimization" Content="Gaming Input Optimization" ToolTip="Raw input optimizations and mouse acceleration fixes." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkDirectX12Opt" Content="DirectX 12 Optimizations" ToolTip="Enhanced DirectX 12 API performance optimizations." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkHardwareAccel" Content="Windows Hardware Acceleration" ToolTip="Optimizes Windows hardware acceleration settings." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkAdvGpuScheduler" Content="Advanced GPU Scheduler" ToolTip="Additional GPU scheduler and timeout detection tweaks." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkMemoryPool" Content="Enhanced Memory Pool" ToolTip="Optimizes Windows memory pool allocation for gaming." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGameModeRegistry" Content="Game Mode Registry" ToolTip="Advanced Game Mode registry optimizations." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkAudioLatency" Content="Audio Latency Reduction" ToolTip="Reduces audio latency for gaming and real-time applications." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkInputLagReduction" Content="Input Lag Reduction" ToolTip="Advanced input lag reduction tweaks for mouse and keyboard." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkBackgroundSuspend" Content="Background Process Suspension" ToolTip="Enhanced background process suspension during gaming." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
-        <Grid Margin="0,8,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🎮 Smart Gaming Detection &amp; Auto-Optimization" Foreground="#00BFFF" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendSmartGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Smart Gaming Detection category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkAutoGameDetection" Content="Automatic Game Detection" ToolTip="Automatically detects when games are launched and applies optimizations." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkAutoProfileSwitch" Content="Auto Profile Switching" ToolTip="Automatically applies game-specific optimization profiles." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkGameSpecificProfiles" Content="Game-Specific Profiles" ToolTip="Saves and loads per-game optimization settings." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkPerformanceMetrics" Content="Performance Metrics Display" ToolTip="Shows real-time FPS and resource monitoring." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkAutoRevert" Content="Auto-Revert on Game Exit" ToolTip="Automatically restores original settings when games are closed." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkBackgroundAppSuspend" Content="Background App Suspension" ToolTip="Intelligently suspends non-essential apps during gaming." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderSmartGaming" IsExpanded="True" Margin="0,8,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🎮 Smart Gaming Detection &amp; Auto-Optimization" Foreground="#00BFFF" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendSmartGaming" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for Smart Gaming Detection category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkAutoGameDetection" Content="Automatic Game Detection" ToolTip="Automatically detects when games are launched and applies optimizations." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkAutoProfileSwitch" Content="Auto Profile Switching" ToolTip="Automatically applies game-specific optimization profiles." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkGameSpecificProfiles" Content="Game-Specific Profiles" ToolTip="Saves and loads per-game optimization settings." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkPerformanceMetrics" Content="Performance Metrics Display" ToolTip="Shows real-time FPS and resource monitoring." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkAutoRevert" Content="Auto-Revert on Game Exit" ToolTip="Automatically restores original settings when games are closed." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkBackgroundAppSuspend" Content="Background App Suspension" ToolTip="Intelligently suspends non-essential apps during gaming." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
-        <Grid Margin="0,8,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendSystemPerf" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for System Performance category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkMemoryManagement" Content="Optimize Memory Management" ToolTip="Disables paging executive and optimizes memory allocation." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkPowerPlan" Content="Ultimate Performance Power Plan" ToolTip="Sets power plan to Ultimate Performance mode." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkCpuScheduling" Content="Optimize CPU Scheduling" ToolTip="Optimizes CPU scheduling for foreground applications." Foreground="White" Margin="0,5,15,5"/>
-          <CheckBox x:Name="chkPageFile" Content="Optimize Page File" ToolTip="Optimizes virtual memory settings." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderSystemPerf" IsExpanded="True" Margin="0,8,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🔧 System Performance" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendSystemPerf" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for System Performance category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkMemoryManagement" Content="Optimize Memory Management" ToolTip="Disables paging executive and optimizes memory allocation." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkPowerPlan" Content="Ultimate Performance Power Plan" ToolTip="Sets power plan to Ultimate Performance mode." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkCpuScheduling" Content="Optimize CPU Scheduling" ToolTip="Optimizes CPU scheduling for foreground applications." Foreground="White" Margin="0,5,15,5"/>
+            <CheckBox x:Name="chkPageFile" Content="Optimize Page File" ToolTip="Optimizes virtual memory settings." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
         <TextBlock Text="🎯 GPU Vendor Optimizations" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,8,0,6"/>
         <WrapPanel Margin="0,0,0,12">
@@ -1150,18 +1289,22 @@ function Restore-FromBackup {
           <CheckBox x:Name="chkSvcThemes" Content="Disable Themes Service" ToolTip="Disables Windows themes service for performance." Foreground="White" Margin="0,5,15,5"/>
         </WrapPanel>
 
-        <Grid Margin="0,8,0,6">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="🗑️ Disable Unneeded Services" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
-          <Button x:Name="btnRecommendServices" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Apply recommended settings for Disable Unneeded Services category"/>
-        </Grid>
-        <WrapPanel Margin="0,0,0,12">
-          <CheckBox x:Name="chkDisableUnneeded" Content="Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / bthserv" ToolTip="Optional: Disables various unneeded services for gaming." Foreground="White" Margin="0,5,15,5"/>
-        </WrapPanel>
+        <Expander x:Name="expanderServices" IsExpanded="True" Margin="0,8,0,6">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🗑️ Disable Unneeded Services" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+              <Button x:Name="btnRecommendServices" Grid.Column="1" Content="🚀" Width="24" Height="24" Margin="8,0,0,0" Background="#6B46C1" Foreground="White" FontSize="12" Padding="0" ToolTip="Show recommended FPS settings for Disable Unneeded Services category"/>
+            </Grid>
+          </Expander.Header>
+          <WrapPanel Margin="0,0,0,12">
+            <CheckBox x:Name="chkDisableUnneeded" Content="Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / bthserv" ToolTip="Optional: Disables various unneeded services for gaming." Foreground="White" Margin="0,5,15,5"/>
+          </WrapPanel>
+        </Expander>
 
       </StackPanel>
     </ScrollViewer>
@@ -1408,6 +1551,28 @@ $btnRecommendEnhancedGaming = $form.FindName('btnRecommendEnhancedGaming')
 $btnRecommendSmartGaming = $form.FindName('btnRecommendSmartGaming')
 $btnRecommendNetwork = $form.FindName('btnRecommendNetwork')
 $btnRecommendServices = $form.FindName('btnRecommendServices')
+
+# Popup controls
+$popupNetwork = $form.FindName('popupNetwork')
+$popupEnhancedGaming = $form.FindName('popupEnhancedGaming')
+$popupAdvancedFPS = $form.FindName('popupAdvancedFPS')
+$popupSmartGaming = $form.FindName('popupSmartGaming')
+$popupSystemPerf = $form.FindName('popupSystemPerf')
+$popupServices = $form.FindName('popupServices')
+
+# Popup buttons
+$btnApplyNetworkRecommended = $form.FindName('btnApplyNetworkRecommended')
+$btnCancelNetworkRecommended = $form.FindName('btnCancelNetworkRecommended')
+$btnApplyEnhancedGamingRecommended = $form.FindName('btnApplyEnhancedGamingRecommended')
+$btnCancelEnhancedGamingRecommended = $form.FindName('btnCancelEnhancedGamingRecommended')
+$btnApplyAdvancedFPSRecommended = $form.FindName('btnApplyAdvancedFPSRecommended')
+$btnCancelAdvancedFPSRecommended = $form.FindName('btnCancelAdvancedFPSRecommended')
+$btnApplySmartGamingRecommended = $form.FindName('btnApplySmartGamingRecommended')
+$btnCancelSmartGamingRecommended = $form.FindName('btnCancelSmartGamingRecommended')
+$btnApplySystemPerfRecommended = $form.FindName('btnApplySystemPerfRecommended')
+$btnCancelSystemPerfRecommended = $form.FindName('btnCancelSystemPerfRecommended')
+$btnApplyServicesRecommended = $form.FindName('btnApplyServicesRecommended')
+$btnCancelServicesRecommended = $form.FindName('btnCancelServicesRecommended')
 
 $lblStatus         = $form.FindName('lblStatus')
 $global:LogBox     = $form.FindName('txtLog')
@@ -2613,53 +2778,174 @@ $btnRefreshGames.Add_Click({
     }
 })
 
-# Category recommendation button event handlers
+# Category recommendation button event handlers - Updated to show popups
 $btnRecommendSystemPerf.Add_Click({
     try {
-        Set-SystemPerformanceRecommended
+        $popupSystemPerf.IsOpen = $true
+        Log "Showing System Performance FPS recommendations popup"
     } catch {
-        Log "Error applying System Performance recommendations: $_"
+        Log "Error showing System Performance popup: $_"
     }
 })
 
 $btnRecommendAdvancedFPS.Add_Click({
     try {
-        Set-AdvancedFPSRecommended
+        $popupAdvancedFPS.IsOpen = $true
+        Log "Showing Advanced FPS recommendations popup"
     } catch {
-        Log "Error applying Advanced FPS recommendations: $_"
+        Log "Error showing Advanced FPS popup: $_"
     }
 })
 
 $btnRecommendEnhancedGaming.Add_Click({
     try {
-        Set-EnhancedGamingRecommended
+        $popupEnhancedGaming.IsOpen = $true
+        Log "Showing Enhanced Gaming FPS recommendations popup"
     } catch {
-        Log "Error applying Enhanced Gaming recommendations: $_"
+        Log "Error showing Enhanced Gaming popup: $_"
     }
 })
 
 $btnRecommendSmartGaming.Add_Click({
     try {
-        Set-SmartGamingRecommended
+        $popupSmartGaming.IsOpen = $true
+        Log "Showing Smart Gaming FPS recommendations popup"
     } catch {
-        Log "Error applying Smart Gaming recommendations: $_"
+        Log "Error showing Smart Gaming popup: $_"
     }
 })
 
 $btnRecommendNetwork.Add_Click({
     try {
-        Set-NetworkRecommended
+        $popupNetwork.IsOpen = $true
+        Log "Showing Network FPS recommendations popup"
     } catch {
-        Log "Error applying Network recommendations: $_"
+        Log "Error showing Network popup: $_"
     }
 })
 
 $btnRecommendServices.Add_Click({
     try {
-        Set-ServicesRecommended
+        $popupServices.IsOpen = $true
+        Log "Showing Services FPS recommendations popup"
     } catch {
-        Log "Error applying Services recommendations: $_"
+        Log "Error showing Services popup: $_"
     }
+})
+
+# Popup Apply/Cancel button event handlers
+# Network popup handlers
+$btnApplyNetworkRecommended.Add_Click({
+    try {
+        if ($popupNetworkAck.IsChecked) { $chkAck.IsChecked = $true }
+        if ($popupNetworkDelAck.IsChecked) { $chkDelAckTicks.IsChecked = $true }
+        if ($popupNetworkTimestamps.IsChecked) { $chkTcpTimestamps.IsChecked = $true }
+        if ($popupNetworkECN.IsChecked) { $chkTcpECN.IsChecked = $true }
+        if ($popupNetworkThrottle.IsChecked) { $chkThrottle.IsChecked = $true }
+        if ($popupNetworkNagle.IsChecked) { $chkNagle.IsChecked = $true }
+        $popupNetwork.IsOpen = $false
+        Log "Network FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying Network popup selections: $_"
+    }
+})
+
+$btnCancelNetworkRecommended.Add_Click({
+    $popupNetwork.IsOpen = $false
+})
+
+# Enhanced Gaming popup handlers
+$btnApplyEnhancedGamingRecommended.Add_Click({
+    try {
+        if ($popupEnhancedCpuAffinity.IsChecked) { $chkEnhancedCpuAffinity.IsChecked = $true }
+        if ($popupAdvancedMemory.IsChecked) { $chkAdvancedMemory.IsChecked = $true }
+        if ($popupGpuDriverOpt.IsChecked) { $chkGpuDriverOpt.IsChecked = $true }
+        if ($popupNetworkLatency.IsChecked) { $chkNetworkLatency.IsChecked = $true }
+        if ($popupGameMode.IsChecked) { $chkGameMode.IsChecked = $true }
+        if ($popupPowerOptimization.IsChecked) { $chkPowerOptimization.IsChecked = $true }
+        $popupEnhancedGaming.IsOpen = $false
+        Log "Enhanced Gaming FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying Enhanced Gaming popup selections: $_"
+    }
+})
+
+$btnCancelEnhancedGamingRecommended.Add_Click({
+    $popupEnhancedGaming.IsOpen = $false
+})
+
+# Advanced FPS popup handlers
+$btnApplyAdvancedFPSRecommended.Add_Click({
+    try {
+        if ($popupCpuCorePark.IsChecked) { $chkCpuCorePark.IsChecked = $true }
+        if ($popupCpuCStates.IsChecked) { $chkCpuCStates.IsChecked = $true }
+        if ($popupInterruptMod.IsChecked) { $chkInterruptMod.IsChecked = $true }
+        if ($popupMMCSS.IsChecked) { $chkMMCSS.IsChecked = $true }
+        if ($popupLargePages.IsChecked) { $chkLargePages.IsChecked = $true }
+        if ($popupMemCompression.IsChecked) { $chkMemCompression.IsChecked = $true }
+        if ($popupGpuScheduling.IsChecked) { $chkGpuScheduling.IsChecked = $true }
+        if ($popupInputOptimization.IsChecked) { $chkInputOptimization.IsChecked = $true }
+        $popupAdvancedFPS.IsOpen = $false
+        Log "Advanced FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying Advanced FPS popup selections: $_"
+    }
+})
+
+$btnCancelAdvancedFPSRecommended.Add_Click({
+    $popupAdvancedFPS.IsOpen = $false
+})
+
+# Smart Gaming popup handlers
+$btnApplySmartGamingRecommended.Add_Click({
+    try {
+        if ($popupAutoGameDetection.IsChecked) { $chkAutoGameDetection.IsChecked = $true }
+        if ($popupAutoProfileSwitch.IsChecked) { $chkAutoProfileSwitch.IsChecked = $true }
+        if ($popupGameSpecificProfiles.IsChecked) { $chkGameSpecificProfiles.IsChecked = $true }
+        if ($popupPerformanceMetrics.IsChecked) { $chkPerformanceMetrics.IsChecked = $true }
+        if ($popupBackgroundAppSuspend.IsChecked) { $chkBackgroundAppSuspend.IsChecked = $true }
+        $popupSmartGaming.IsOpen = $false
+        Log "Smart Gaming FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying Smart Gaming popup selections: $_"
+    }
+})
+
+$btnCancelSmartGamingRecommended.Add_Click({
+    $popupSmartGaming.IsOpen = $false
+})
+
+# System Performance popup handlers
+$btnApplySystemPerfRecommended.Add_Click({
+    try {
+        if ($popupMemoryManagement.IsChecked) { $chkMemoryManagement.IsChecked = $true }
+        if ($popupPowerPlan.IsChecked) { $chkPowerPlan.IsChecked = $true }
+        if ($popupCpuScheduling.IsChecked) { $chkCpuScheduling.IsChecked = $true }
+        if ($popupPageFile.IsChecked) { $chkPageFile.IsChecked = $true }
+        $popupSystemPerf.IsOpen = $false
+        Log "System Performance FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying System Performance popup selections: $_"
+    }
+})
+
+$btnCancelSystemPerfRecommended.Add_Click({
+    $popupSystemPerf.IsOpen = $false
+})
+
+# Services popup handlers
+$btnApplyServicesRecommended.Add_Click({
+    try {
+        if ($popupDisableUnneeded.IsChecked) { $chkDisableUnneeded.IsChecked = $true }
+        $popupServices.IsOpen = $false
+        Log "Services FPS optimizations applied via popup"
+    } catch {
+        Log "Error applying Services popup selections: $_"
+    }
+})
+
+$btnCancelServicesRecommended.Add_Click({
+    $popupServices.IsOpen = $false
 })
 
 $btnDetect.Add_Click({
