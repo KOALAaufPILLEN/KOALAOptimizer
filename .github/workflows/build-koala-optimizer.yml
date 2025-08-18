@@ -14,22 +14,42 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup .NET Framework
+    - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
-      with:
-        nuget-version: 'latest'
 
-    - name: Restore NuGet packages
+    - name: Create packages directory
       run: |
-        nuget restore KOALAOptimizer.Testing/packages.config -PackagesDirectory packages
+        if not exist "packages" mkdir packages
       shell: cmd
 
-    - name: Build the C# WPF application
+    - name: Restore NuGet packages for the project
       run: |
-        msbuild KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj /p:Configuration=Release /p:Platform="AnyCPU" /p:OutputPath=bin/Release/ /verbosity:minimal
+        nuget restore KOALAOptimizer.Testing\packages.config -PackagesDirectory packages
+      shell: cmd
+
+    - name: Build the project
+      run: |
+        msbuild "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        /p:Configuration=Release ^
+        /p:Platform=AnyCPU ^
+        /p:UseSharedCompilation=false ^
+        /p:BuildInParallel=false ^
+        /p:RestorePackages=false ^
+        /verbosity:normal
+      shell: cmd
+
+    - name: Verify build output
+      run: |
+        if exist "KOALAOptimizer.Testing\bin\Release\KOALAOptimizer.Testing.exe" (
+          echo Build successful - executable found
+          dir "KOALAOptimizer.Testing\bin\Release\"
+        ) else (
+          echo Build failed - executable not found
+          exit 1
+        )
       shell: cmd
 
     - name: Upload build artifacts
@@ -38,9 +58,3 @@ jobs:
         name: KOALAOptimizer-Release
         path: KOALAOptimizer.Testing/bin/Release/
         if-no-files-found: error
-
-    - name: List output files (debug)
-      run: |
-        echo "Contents of Release folder:"
-        dir KOALAOptimizer.Testing\bin\Release\ /s
-      shell: cmd
