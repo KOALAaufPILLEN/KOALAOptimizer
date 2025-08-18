@@ -1,10 +1,10 @@
-name: Build KOALA Optimizer
+name: Build KOALA Optimizer C# Edition
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
   pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
@@ -16,45 +16,31 @@ jobs:
 
     - name: Setup .NET Framework
       uses: microsoft/setup-msbuild@v2
-      with:
-        msbuild-architecture: x64
 
     - name: Setup NuGet
-      uses: NuGet/setup-nuget@v2
+      uses: nuget/setup-nuget@v2
       with:
         nuget-version: 'latest'
 
-    - name: Create packages directory
-      run: |
-        if (!(Test-Path "packages")) {
-          New-Item -ItemType Directory -Path "packages"
-        }
-      shell: powershell
-
-    - name: Create packages.config if missing
-      run: |
-        if (!(Test-Path "KOALAOptimizer.Testing/packages.config")) {
-          @'
-        <?xml version="1.0" encoding="utf-8"?>
-        <packages>
-          <package id="Newtonsoft.Json" version="13.0.3" targetFramework="net48" />
-        </packages>
-        '@ | Out-File "KOALAOptimizer.Testing/packages.config" -Encoding UTF8
-        }
-      shell: powershell
-
     - name: Restore NuGet packages
       run: |
-        nuget restore KOALAOptimizer.sln -PackagesDirectory packages -Verbosity detailed
+        nuget restore KOALAOptimizer.Testing/packages.config -PackagesDirectory packages
       shell: cmd
 
-    - name: Build the solution
+    - name: Build the C# WPF application
       run: |
-        msbuild KOALAOptimizer.sln /p:Configuration=Release /p:Platform="Any CPU" /p:RestorePackages=false /verbosity:minimal
+        msbuild KOALAOptimizer.Testing/KOALAOptimizer.Testing.csproj /p:Configuration=Release /p:Platform="AnyCPU" /p:OutputPath=bin/Release/ /verbosity:minimal
       shell: cmd
 
-    - name: Upload artifact
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: KOALAOptimizer-Release
         path: KOALAOptimizer.Testing/bin/Release/
+        if-no-files-found: error
+
+    - name: List output files (debug)
+      run: |
+        echo "Contents of Release folder:"
+        dir KOALAOptimizer.Testing\bin\Release\ /s
+      shell: cmd
