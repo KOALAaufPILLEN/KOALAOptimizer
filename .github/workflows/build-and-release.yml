@@ -42,28 +42,30 @@ jobs:
     - name: Validate XAML files
       run: |
         echo "Validating XAML file syntax..."
-        python -c "
-        import xml.etree.ElementTree as ET
-        import os
-        xaml_files = []
-        for root, dirs, files in os.walk('KOALAOptimizer.Testing'):
-            for file in files:
-                if file.endswith('.xaml'):
-                    xaml_files.append(os.path.join(root, file))
-        all_valid = True
-        for xaml_file in sorted(xaml_files):
-            try:
-                ET.parse(xaml_file)
-                print(f'✅ {xaml_file} - Valid XML syntax')
-            except Exception as e:
-                print(f'❌ {xaml_file} - Error: {e}')
-                all_valid = False
-        if all_valid:
-            print('🎉 All XAML files have valid syntax!')
-        else:
-            print('💥 Some XAML files have syntax errors!')
-            exit(1)
-        "
+        
+        echo import xml.etree.ElementTree as ET > validate_xaml.py
+        echo import os >> validate_xaml.py
+        echo xaml_files = [] >> validate_xaml.py
+        echo for root, dirs, files in os.walk('KOALAOptimizer.Testing'): >> validate_xaml.py
+        echo     for file in files: >> validate_xaml.py
+        echo         if file.endswith('.xaml'): >> validate_xaml.py
+        echo             xaml_files.append(os.path.join(root, file)) >> validate_xaml.py
+        echo all_valid = True >> validate_xaml.py
+        echo for xaml_file in sorted(xaml_files): >> validate_xaml.py
+        echo     try: >> validate_xaml.py
+        echo         ET.parse(xaml_file) >> validate_xaml.py
+        echo         print(f'✅ {xaml_file} - Valid XML syntax') >> validate_xaml.py
+        echo     except Exception as e: >> validate_xaml.py
+        echo         print(f'❌ {xaml_file} - Error: {e}') >> validate_xaml.py
+        echo         all_valid = False >> validate_xaml.py
+        echo if all_valid: >> validate_xaml.py
+        echo     print('🎉 All XAML files have valid syntax!') >> validate_xaml.py
+        echo else: >> validate_xaml.py
+        echo     print('💥 Some XAML files have syntax errors!') >> validate_xaml.py
+        echo     exit(1) >> validate_xaml.py
+        
+        python validate_xaml.py
+        del validate_xaml.py
       shell: cmd
 
     - name: Restore packages using dotnet
