@@ -67,6 +67,9 @@ namespace KOALAOptimizer.Testing.Views
             // Handle window closing
             this.Closed += MainWindow_Closed;
             
+            // Handle window source initialized for hotkey registration
+            this.SourceInitialized += MainWindow_SourceInitialized;
+            
             // Initialize UI
             InitializeUI();
             
@@ -103,9 +106,6 @@ namespace KOALAOptimizer.Testing.Views
                 
                 // Auto-detect GPU and apply recommendations
                 AutoDetectGpuAndApplyRecommendations();
-                
-                // Initialize crosshair hotkey support
-                InitializeCrosshairHotkey();
             }
             catch (Exception ex)
             {
@@ -1004,18 +1004,45 @@ namespace KOALAOptimizer.Testing.Views
         #region Crosshair Hotkey Support
         
         /// <summary>
+        /// Handle window source initialized - setup hotkey registration
+        /// </summary>
+        private void MainWindow_SourceInitialized(object sender, EventArgs e)
+        {
+            try
+            {
+                // Initialize crosshair hotkey support when window handle is available
+                InitializeCrosshairHotkey();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to initialize hotkeys after window source initialization: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
         /// Initialize crosshair hotkey support
         /// </summary>
         private void InitializeCrosshairHotkey()
         {
             try
             {
-                // Set up window handle for hotkey registration
-                var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
-                if (source != null)
+                var windowHelper = new WindowInteropHelper(this);
+                var hwnd = windowHelper.Handle;
+                
+                if (hwnd != IntPtr.Zero)
                 {
-                    source.AddHook(HwndHook);
-                    _crosshairService.InitializeHotkey(new WindowInteropHelper(this).Handle);
+                    // Set up window handle for hotkey registration
+                    var source = HwndSource.FromHwnd(hwnd);
+                    if (source != null)
+                    {
+                        source.AddHook(HwndHook);
+                        _crosshairService.InitializeHotkey(hwnd);
+                        _logger.LogInfo("Crosshair hotkey system initialized successfully");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Window handle not available for hotkey registration");
                 }
             }
             catch (Exception ex)

@@ -212,7 +212,7 @@
             </TabItem>
             
             <!-- Game Management Tab -->
-            <TabItem Header="🎯 Game Management">
+            <TabItem Header="🎮 Game Management">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
