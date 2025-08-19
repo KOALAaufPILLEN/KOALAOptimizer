@@ -1,6 +1,13 @@
 <Application x:Class="KOALAOptimizer.Testing.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- NUCLEAR APPROACH: ZERO resource dependencies to prevent FrameworkElement.Style errors -->
-    <!-- All styling will be done with hardcoded values or in emergency mode -->
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- NUCLEAR APPROACH: Minimal but valid ResourceDictionary structure -->
+            <!-- This ensures proper XAML compilation while maintaining zero dependencies -->
+        </ResourceDictionary>
+    </Application.Resources>
+    
 </Application>
