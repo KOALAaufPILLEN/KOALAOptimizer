@@ -204,12 +204,12 @@ namespace KOALAOptimizer.Testing.Views
             try
             {
                 var result = MessageBox.Show(
-                    "This will attempt to load themes which may cause FrameworkElement.Style errors.\n\n" +
-                    "Only proceed if you're sure your system can handle theme loading.\n\n" +
+                    "This will attempt to load themes safely without restarting the application.\n\n" +
+                    "If theme loading fails, the application will remain in safe mode.\n\n" +
                     "Do you want to continue?", 
-                    "⚠️ Warning - Theme Loading", 
+                    "🎨 Load Themes", 
                     MessageBoxButton.YesNo, 
-                    MessageBoxImage.Warning);
+                    MessageBoxImage.Question);
                 
                 if (result == MessageBoxResult.Yes)
                 {
@@ -218,24 +218,64 @@ namespace KOALAOptimizer.Testing.Views
 
                     try
                     {
-                        // Attempt to restart with theme loading
-                        LoggingService.EmergencyLog("MinimalMainWindow: User requested theme loading - restarting with --normal flag");
+                        LoggingService.EmergencyLog("MinimalMainWindow: User requested safe theme loading");
                         
-                        System.Diagnostics.Process.Start(
-                            System.Reflection.Assembly.GetExecutingAssembly().Location, 
-                            "--normal");
+                        // Try to load SciFi theme using the existing robust infrastructure
+                        bool themeLoaded = false;
                         
-                        Application.Current.Shutdown();
+                        try
+                        {
+                            LoggingService.EmergencyLog("MinimalMainWindow: Attempting SciFi theme load");
+                            themeLoaded = App.LoadThemeSystematically("pack://application:,,,/Themes/SciFiTheme.xaml");
+                        }
+                        catch (Exception themeEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: SciFi theme load failed: {themeEx.Message}");
+                        }
+                        
+                        if (!themeLoaded)
+                        {
+                            LoggingService.EmergencyLog("MinimalMainWindow: SciFi theme failed, trying fallback");
+                            try
+                            {
+                                themeLoaded = App.LoadMinimalFallbackTheme();
+                            }
+                            catch (Exception fallbackEx)
+                            {
+                                LoggingService.EmergencyLog($"MinimalMainWindow: Fallback theme failed: {fallbackEx.Message}");
+                            }
+                        }
+                        
+                        if (themeLoaded)
+                        {
+                            LoggingService.EmergencyLog("MinimalMainWindow: Theme loaded successfully - switching to main window");
+                            
+                            // Create and show the main window with themes
+                            var mainWindow = new MainWindow();
+                            mainWindow.Show();
+                            
+                            // Close the minimal window
+                            this.Close();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Theme loading failed, but the application remains stable.\n\n" +
+                                          "Continuing in safe mode.", 
+                                          "Theme Loading Failed", 
+                                          MessageBoxButton.OK, MessageBoxImage.Information);
+                            LoggingService.EmergencyLog("MinimalMainWindow: Theme loading failed, staying in safe mode");
+                        }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Failed to restart with theme loading: {ex.Message}", 
-                                      "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        LoggingService.EmergencyLog($"MinimalMainWindow: LoadThemesButton restart error: {ex.Message}");
+                        MessageBox.Show($"An error occurred during theme loading: {ex.Message}\n\n" +
+                                      "The application remains stable in safe mode.", 
+                                      "Theme Loading Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        LoggingService.EmergencyLog($"MinimalMainWindow: LoadThemesButton error: {ex.Message}");
                     }
                     finally
                     {
-                        LoadThemesButton.Content = "🎨 Load Themes (Advanced)";
+                        LoadThemesButton.Content = "🎨 Load Themes";
                         LoadThemesButton.IsEnabled = true;
                     }
                 }
@@ -243,6 +283,74 @@ namespace KOALAOptimizer.Testing.Views
             catch (Exception ex)
             {
                 LoggingService.EmergencyLog($"MinimalMainWindow: LoadThemesButton_Click error: {ex.Message}");
+            }
+        }
+
+        private void EnableCrosshairMinimal_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Crosshair enabled");
+                
+                // Use the existing CrosshairOverlayService
+                var crosshairService = CrosshairOverlayService.Instance;
+                crosshairService?.SetEnabled(true);
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Crosshair service enabled");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: EnableCrosshairMinimal_Checked error: {ex.Message}");
+                
+                // Uncheck the checkbox if enabling failed
+                if (sender is CheckBox checkbox)
+                {
+                    checkbox.IsChecked = false;
+                }
+            }
+        }
+
+        private void EnableCrosshairMinimal_Unchecked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Crosshair disabled");
+                
+                // Use the existing CrosshairOverlayService
+                var crosshairService = CrosshairOverlayService.Instance;
+                crosshairService?.SetEnabled(false);
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Crosshair service disabled");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: EnableCrosshairMinimal_Unchecked error: {ex.Message}");
+            }
+        }
+
+        private void TestCrosshairMinimal_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Test crosshair clicked");
+                
+                // Use the existing CrosshairOverlayService
+                var crosshairService = CrosshairOverlayService.Instance;
+                
+                // Toggle crosshair to show/test it
+                crosshairService?.ToggleOverlay();
+                
+                // Show a helpful message
+                MessageBox.Show("Crosshair toggled!\n\nIf you don't see the crosshair, check that the overlay is enabled.\nPress F1 to toggle crosshair on/off anytime.", 
+                               "Crosshair Test", MessageBoxButton.OK, MessageBoxImage.Information);
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Test crosshair toggled");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: TestCrosshairMinimal_Click error: {ex.Message}");
+                MessageBox.Show($"Test crosshair failed: {ex.Message}", "Crosshair Test Error", 
+                               MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

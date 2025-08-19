@@ -185,7 +185,7 @@ namespace KOALAOptimizer.Testing
                     try
                     {
                         _loggingService.LogStartupMilestone("Attempting fallback theme load");
-                        LoadMinimalFallbackTheme();
+                        LoadMinimalFallbackThemeInternal();
                         _loggingService.LogStartupMilestone("Fallback theme loaded successfully");
                     }
                     catch (Exception fallbackEx)
@@ -413,7 +413,7 @@ namespace KOALAOptimizer.Testing
                     _loggingService?.LogInfo("Attempting to recover from style error...");
                     
                     // First try to load minimal fallback theme
-                    LoadMinimalFallbackTheme();
+                    LoadMinimalFallbackThemeInternal();
                     
                     // Then try to initialize theme service with fallback
                     var themeService = ThemeService.Instance;
@@ -569,7 +569,7 @@ namespace KOALAOptimizer.Testing
                 CaptureDiagnosticSnapshot("PRE_THEME_LOAD");
                 
                 // NEW: Implement systematic phased loading
-                if (LoadThemeSystematically("pack://application:,,,/Themes/SciFiTheme.xaml"))
+                if (LoadThemeSystematicallyInternal("pack://application:,,,/Themes/SciFiTheme.xaml"))
                 {
                     LoggingService.EmergencyLog("LoadInitialTheme: Systematic theme loading succeeded");
                     _loggingService?.LogInfo("SciFi theme loaded systematically and validated successfully");
@@ -599,7 +599,15 @@ namespace KOALAOptimizer.Testing
         /// <summary>
         /// Load theme systematically with progressive enhancement and rollback capability
         /// </summary>
-        private bool LoadThemeSystematically(string themeUri)
+        public static bool LoadThemeSystematically(string themeUri)
+        {
+            return ((App)Application.Current).LoadThemeSystematicallyInternal(themeUri);
+        }
+        
+        /// <summary>
+        /// Internal implementation of systematic theme loading
+        /// </summary>
+        private bool LoadThemeSystematicallyInternal(string themeUri)
         {
             var rollbackPoint = new ResourceDictionary();
             bool success = false;
@@ -966,9 +974,25 @@ namespace KOALAOptimizer.Testing
         }
         
         /// <summary>
+        /// Load minimal fallback theme when primary theme fails - public static wrapper
+        /// </summary>
+        public static bool LoadMinimalFallbackTheme()
+        {
+            try
+            {
+                ((App)Application.Current).LoadMinimalFallbackThemeInternal();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        /// <summary>
         /// Load minimal fallback theme when primary theme fails
         /// </summary>
-        private void LoadMinimalFallbackTheme()
+        private void LoadMinimalFallbackThemeInternal()
         {
             try
             {
