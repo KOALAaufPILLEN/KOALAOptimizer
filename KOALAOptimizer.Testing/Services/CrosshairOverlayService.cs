@@ -574,5 +574,374 @@ namespace KOALAOptimizer.Testing.Services
                 _logger.LogError($"Error disposing crosshair overlay service: {ex.Message}", ex);
             }
         }
+        
+        /// <summary>
+        /// Save current settings as a named profile
+        /// </summary>
+        public bool SaveProfile(string profileName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(profileName))
+                {
+                    _logger.LogWarning("Cannot save profile with empty name");
+                    return false;
+                }
+                
+                // Validate profile name
+                var adminService = AdminService.Instance;
+                var validation = adminService.ValidateInput(profileName, InputType.General);
+                if (!validation.IsValid)
+                {
+                    _logger.LogWarning($"Invalid profile name: {string.Join(", ", validation.Issues)}");
+                    return false;
+                }
+                
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                Directory.CreateDirectory(profileDir);
+                
+                var profilePath = Path.Combine(profileDir, $"{validation.SanitizedInput}.profile");
+                var lines = SerializeSettings(_settings);
+                
+                // Add profile metadata
+                var profileData = new List<string>
+                {
+                    $"ProfileName={validation.SanitizedInput}",
+                    $"CreatedDate={DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                    $"Version=2.3.0",
+                    "---SETTINGS---"
+                };
+                profileData.AddRange(lines);
+                
+                File.WriteAllLines(profilePath, profileData);
+                _logger.LogInfo($"Crosshair profile saved: {validation.SanitizedInput}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to save crosshair profile '{profileName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Load a named profile
+        /// </summary>
+        public bool LoadProfile(string profileName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(profileName))
+                    return false;
+                
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                var profilePath = Path.Combine(profileDir, $"{profileName}.profile");
+                
+                if (!File.Exists(profilePath))
+                {
+                    _logger.LogWarning($"Crosshair profile not found: {profileName}");
+                    return false;
+                }
+                
+                var lines = File.ReadAllLines(profilePath);
+                var settingsStartIndex = Array.IndexOf(lines, "---SETTINGS---");
+                
+                if (settingsStartIndex == -1 || settingsStartIndex >= lines.Length - 1)
+                {
+                    _logger.LogError($"Invalid profile format: {profileName}");
+                    return false;
+                }
+                
+                var settingsLines = lines.Skip(settingsStartIndex + 1).ToArray();
+                var loadedSettings = DeserializeSettings(settingsLines);
+                
+                UpdateSettings(loadedSettings);
+                _logger.LogInfo($"Crosshair profile loaded: {profileName}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to load crosshair profile '{profileName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Get list of available profiles
+        /// </summary>
+        public List<CrosshairProfile> GetAvailableProfiles()
+        {
+            try
+            {
+                var profiles = new List<CrosshairProfile>();
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                
+                if (!Directory.Exists(profileDir))
+                    return profiles;
+                
+                var profileFiles = Directory.GetFiles(profileDir, "*.profile");
+                
+                foreach (var file in profileFiles)
+                {
+                    try
+                    {
+                        var lines = File.ReadAllLines(file);
+                        var profile = new CrosshairProfile
+                        {
+                            Name = Path.GetFileNameWithoutExtension(file),
+                            FilePath = file,
+                            LastModified = File.GetLastWriteTime(file)
+                        };
+                        
+                        // Parse metadata
+                        foreach (var line in lines)
+                        {
+                            if (line == "---SETTINGS---") break;
+                            
+                            var parts = line.Split('=');
+                            if (parts.Length == 2)
+                            {
+                                switch (parts[0].Trim())
+                                {
+                                    case "ProfileName":
+                                        profile.DisplayName = parts[1].Trim();
+                                        break;
+                                    case "CreatedDate":
+                                        DateTime.TryParse(parts[1].Trim(), out DateTime created);
+                                        profile.CreatedDate = created;
+                                        break;
+                                    case "Version":
+                                        profile.Version = parts[1].Trim();
+                                        break;
+                                }
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(profile.DisplayName))
+                            profile.DisplayName = profile.Name;
+                        
+                        profiles.Add(profile);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Failed to read profile {file}: {ex.Message}");
+                    }
+                }
+                
+                return profiles.OrderBy(p => p.DisplayName).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to get available profiles: {ex.Message}", ex);
+                return new List<CrosshairProfile>();
+            }
+        }
+        
+        /// <summary>
+        /// Delete a profile
+        /// </summary>
+        public bool DeleteProfile(string profileName)
+        {
+            try
+            {
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                var profilePath = Path.Combine(profileDir, $"{profileName}.profile");
+                
+                if (File.Exists(profilePath))
+                {
+                    File.Delete(profilePath);
+                    _logger.LogInfo($"Crosshair profile deleted: {profileName}");
+                    return true;
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to delete crosshair profile '{profileName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Export profile to file
+        /// </summary>
+        public bool ExportProfile(string profileName, string exportPath)
+        {
+            try
+            {
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                var profilePath = Path.Combine(profileDir, $"{profileName}.profile");
+                
+                if (!File.Exists(profilePath))
+                    return false;
+                
+                File.Copy(profilePath, exportPath, true);
+                _logger.LogInfo($"Crosshair profile exported: {profileName} to {exportPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to export profile '{profileName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Import profile from file
+        /// </summary>
+        public bool ImportProfile(string importPath, string newProfileName = null)
+        {
+            try
+            {
+                if (!File.Exists(importPath))
+                    return false;
+                
+                var profileDir = Path.Combine(Path.GetDirectoryName(_settingsFilePath), "Profiles");
+                Directory.CreateDirectory(profileDir);
+                
+                var profileName = newProfileName ?? Path.GetFileNameWithoutExtension(importPath);
+                var profilePath = Path.Combine(profileDir, $"{profileName}.profile");
+                
+                File.Copy(importPath, profilePath, true);
+                _logger.LogInfo($"Crosshair profile imported: {profileName} from {importPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to import profile from '{importPath}': {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Create quick-switch profiles for popular games
+        /// </summary>
+        public void CreateGameSpecificProfiles()
+        {
+            try
+            {
+                var gameProfiles = new Dictionary<string, CrosshairSettings>
+                {
+                    ["CS2_Competitive"] = new CrosshairSettings
+                    {
+                        IsEnabled = false,
+                        Style = CrosshairStyle.Plus,
+                        Size = 24,
+                        Thickness = 1,
+                        Red = 0, Green = 255, Blue = 255,
+                        Alpha = 255,
+                        HexColor = "#00FFFF",
+                        Opacity = 0.8,
+                        SelectedTheme = "CS2 Cyan",
+                        ShowOnlyInGames = true,
+                        HotkeyToggle = "F1"
+                    },
+                    ["Valorant_Precise"] = new CrosshairSettings
+                    {
+                        IsEnabled = false,
+                        Style = CrosshairStyle.Cross,
+                        Size = 18,
+                        Thickness = 2,
+                        Red = 255, Green = 0, Blue = 255,
+                        Alpha = 255,
+                        HexColor = "#FF00FF",
+                        Opacity = 0.9,
+                        SelectedTheme = "Valorant Pink",
+                        ShowOnlyInGames = true,
+                        HotkeyToggle = "F1"
+                    },
+                    ["Apex_Legends"] = new CrosshairSettings
+                    {
+                        IsEnabled = false,
+                        Style = CrosshairStyle.Dot,
+                        Size = 8,
+                        Thickness = 3,
+                        Red = 255, Green = 255, Blue = 0,
+                        Alpha = 255,
+                        HexColor = "#FFFF00",
+                        Opacity = 1.0,
+                        SelectedTheme = "Apex Yellow",
+                        ShowOnlyInGames = true,
+                        HotkeyToggle = "F1"
+                    },
+                    ["General_Gaming"] = new CrosshairSettings
+                    {
+                        IsEnabled = false,
+                        Style = CrosshairStyle.Classic,
+                        Size = 20,
+                        Thickness = 2,
+                        Red = 0, Green = 255, Blue = 0,
+                        Alpha = 255,
+                        HexColor = "#00FF00",
+                        Opacity = 1.0,
+                        SelectedTheme = "Classic Green",
+                        ShowOnlyInGames = false,
+                        HotkeyToggle = "F1"
+                    }
+                };
+                
+                foreach (var gameProfile in gameProfiles)
+                {
+                    var tempSettings = _settings;
+                    _settings = gameProfile.Value;
+                    SaveProfile(gameProfile.Key);
+                    _settings = tempSettings;
+                }
+                
+                _logger.LogInfo("Game-specific crosshair profiles created");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to create game-specific profiles: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Get crosshair style options with descriptions
+        /// </summary>
+        public Dictionary<CrosshairStyle, string> GetCrosshairStyleDescriptions()
+        {
+            return new Dictionary<CrosshairStyle, string>
+            {
+                [CrosshairStyle.Classic] = "Traditional crosshair with four lines",
+                [CrosshairStyle.Dot] = "Simple center dot",
+                [CrosshairStyle.Circle] = "Circular crosshair outline",
+                [CrosshairStyle.TShape] = "T-shaped crosshair (no bottom line)",
+                [CrosshairStyle.Plus] = "Plus sign crosshair",
+                [CrosshairStyle.Cross] = "X-shaped diagonal cross",
+                [CrosshairStyle.Custom] = "User-defined custom shape"
+            };
+        }
+        
+        /// <summary>
+        /// Auto-adjust crosshair settings based on display resolution
+        /// </summary>
+        public void AutoAdjustForResolution()
+        {
+            try
+            {
+                var screenWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
+                var screenHeight = System.Windows.SystemParameters.PrimaryScreenHeight;
+                
+                // Scale crosshair size based on resolution
+                var scaleFactor = Math.Max(screenWidth / 1920.0, screenHeight / 1080.0);
+                
+                var adjustedSize = (int)Math.Round(_settings.Size * scaleFactor);
+                var adjustedThickness = Math.Max(1, (int)Math.Round(_settings.Thickness * scaleFactor));
+                
+                _settings.Size = Math.Max(5, Math.Min(100, adjustedSize));
+                _settings.Thickness = Math.Max(1, Math.Min(10, adjustedThickness));
+                
+                UpdateOverlay();
+                SaveSettings();
+                
+                _logger.LogInfo($"Crosshair auto-adjusted for resolution {screenWidth}x{screenHeight}: Size={_settings.Size}, Thickness={_settings.Thickness}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to auto-adjust crosshair for resolution: {ex.Message}", ex);
+            }
+        }
     }
 }

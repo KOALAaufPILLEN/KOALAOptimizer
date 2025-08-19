@@ -231,4 +231,30 @@ namespace KOALAOptimizer.Testing.Models
         public int Thickness { get; set; } = 2;
         public string Description { get; set; }
     }
+    
+    /// <summary>
+    /// Crosshair profile for save/load functionality
+    /// </summary>
+    public class CrosshairProfile
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string FilePath { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime LastModified { get; set; }
+        public string Version { get; set; }
+        public string Description { get; set; }
+    }
+    
+    /// <summary>
+    /// Game launcher information
+    /// </summary>
+    public class LauncherInfo
+    {
+        public string Name { get; set; }
+        public string ProcessName { get; set; }
+        public string[] CommonGames { get; set; }
+        public string InstallPath { get; set; }
+        public bool IsRunning { get; set; }
+    }
 }
