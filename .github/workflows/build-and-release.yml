@@ -135,22 +135,6 @@ jobs:
         if-no-files-found: error
         retention-days: 90
 
-    - name: Create release package (on release)
-      if: github.event_name == 'release'
-      run: |
-        echo "Creating release package..."
-        cd "KOALAOptimizer.Testing\bin\Release"
-        
-        # Create release directory structure
-        mkdir "KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}"
-        cd "KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}"
-        
-        # Copy main executable and dependencies
-        copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
-        copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config"
-        copy "..\*.dll" .
-        
-    # Sanitize the release tag name for safe directory usage (Windows)
     - name: Sanitize release tag name
       if: github.event_name == 'release'
       run: |
@@ -161,17 +145,11 @@ jobs:
       run: |
         echo "Creating release package..."
         cd "KOALAOptimizer.Testing\bin\Release"
-        
-        REM Create release directory structure
         mkdir "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
         cd "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
-        
-        REM Copy main executable and dependencies
         copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
         copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config"
         copy "..\*.dll" .
-        
-        REM Create README for release
         echo KOALA Gaming Optimizer v${{ github.event.release.tag_name }} - C# Edition > README.txt
         echo. >> README.txt
         echo Professional gaming optimization tool with advanced features: >> README.txt
@@ -184,12 +162,8 @@ jobs:
         echo IMPORTANT: Run as Administrator for full optimization features >> README.txt
         echo. >> README.txt
         echo Visit: https://github.com/KOALAaufPILLEN/KOALAOptimizer >> README.txt
-        
         cd ..
-        
-        # Create ZIP package
         powershell -Command "Compress-Archive -Path 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}' -DestinationPath 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip'"
-        
         echo "Release package created: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip"
       shell: cmd
 
@@ -202,13 +176,3 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
         asset_name: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
-        
-     - name: Upload release asset (on release)
-  if: github.event_name == 'release'
-  uses: actions/upload-release-asset@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    upload_url: ${{ github.event.release.upload_url }}
-    asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
-    asset_name: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
