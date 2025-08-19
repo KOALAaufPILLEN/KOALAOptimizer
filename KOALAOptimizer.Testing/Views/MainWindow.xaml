@@ -167,7 +167,7 @@
                         </Expander>
                         
                         <!-- Smart Gaming Detection & Auto-Optimization -->
-                        <Expander Header="🧠 Smart Gaming Detection & Auto-Optimization" 
+                        <Expander Header="🧠 Smart Gaming Detection &amp; Auto-Optimization" 
                                   Style="{DynamicResource GroupBoxStyle}" Margin="5">
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="chkAutoGameDetection" Content="Auto Game Detection" 
@@ -214,7 +214,7 @@
                         </Expander>
                         
                         <!-- Power Management & Performance -->
-                        <Expander Header="⚡ Power Management & Performance" 
+                        <Expander Header="⚡ Power Management &amp; Performance" 
                                   Style="{DynamicResource GroupBoxStyle}" Margin="5">
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="chkUltimatePerformancePowerPlan" Content="Ultimate Performance Power Plan" 
@@ -244,7 +244,7 @@
                         </Expander>
                         
                         <!-- Enhanced GPU & DirectX -->
-                        <Expander Header="🎮 Enhanced GPU & DirectX" 
+                        <Expander Header="🎮 Enhanced GPU &amp; DirectX" 
                                   Style="{DynamicResource GroupBoxStyle}" Margin="5">
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="chkAdvancedGpuScheduling" Content="Advanced GPU Scheduling" 
@@ -261,7 +261,7 @@
                         </Expander>
                         
                         <!-- MMCSS & System Services -->
-                        <Expander Header="🔧 MMCSS & System Services" 
+                        <Expander Header="🔧 MMCSS &amp; System Services" 
                                   Style="{DynamicResource GroupBoxStyle}" Margin="5">
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="chkConfigureMMCSS" Content="MMCSS Gaming Priority" 
