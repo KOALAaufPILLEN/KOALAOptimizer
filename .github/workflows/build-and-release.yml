@@ -181,4 +181,11 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
         asset_name: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
-        asset_content_type: application/zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Installing GitHub CLI..."
+        choco install gh -y
+        echo "Uploading release asset using gh CLI..."
+        gh release upload "${{ github.event.release.tag_name }}" "KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip" --repo "${{ github.repository }}" --clobber
+      shell: cmd
