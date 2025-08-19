@@ -354,8 +354,8 @@ namespace KOALAOptimizer.Testing
                 {
                     _loggingService?.LogError($"Failed to apply fallback theme: {themeEx.Message}", themeEx);
                     
-                    bool isGerman = e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
-                                   System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("de");
+                    isGerman = e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
+                              System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("de");
                     
                     if (isGerman)
                     {
