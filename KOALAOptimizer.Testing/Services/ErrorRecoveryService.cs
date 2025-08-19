@@ -48,7 +48,7 @@ namespace KOALAOptimizer.Testing.Services
         private void InitializeRecoveryActions()
         {
             // Registry operation recovery
-            RegisterRecoveryAction("RegistryAccessFailed", async () =>
+            RegisterRecoveryAction("RegistryAccessFailed", () =>
             {
                 _logger?.LogWarning("Attempting registry access recovery...");
                 
@@ -59,7 +59,7 @@ namespace KOALAOptimizer.Testing.Services
                     ShowUserFriendlyError("Registry Access Error", 
                         "Registry operations require administrator privileges.\n\n" +
                         "Solution: Restart the application as Administrator.");
-                    return false;
+                    return Task.FromResult(false);
                 }
                 
                 // Attempt to backup current state before retry
@@ -68,16 +68,16 @@ namespace KOALAOptimizer.Testing.Services
                     var registryService = RegistryOptimizationService.Instance;
                     // Force backup creation as safety measure
                     _logger?.LogInfo("Creating safety backup before registry recovery");
-                    return true;
+                    return Task.FromResult(true);
                 }
                 catch
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
             });
             
             // Theme loading recovery
-            RegisterRecoveryAction("ThemeLoadingFailed", async () =>
+            RegisterRecoveryAction("ThemeLoadingFailed", () =>
             {
                 _logger?.LogWarning("Attempting theme loading recovery...");
                 
@@ -91,16 +91,16 @@ namespace KOALAOptimizer.Testing.Services
                         "The selected theme could not be loaded.\n\n" +
                         "Solution: Switching to default theme. You can try loading themes again from the theme menu.");
                     
-                    return true;
+                    return Task.FromResult(true);
                 }
                 catch
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
             });
             
             // Performance monitoring recovery
-            RegisterRecoveryAction("PerformanceMonitoringFailed", async () =>
+            RegisterRecoveryAction("PerformanceMonitoringFailed", () =>
             {
                 _logger?.LogWarning("Attempting performance monitoring recovery...");
                 
@@ -112,16 +112,16 @@ namespace KOALAOptimizer.Testing.Services
                         "Performance monitoring encountered an error.\n\n" +
                         "Solution: Performance monitoring has been restarted. Some metrics may be temporarily unavailable.");
                     
-                    return true;
+                    return Task.FromResult(true);
                 }
                 catch
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
             });
             
             // Crosshair overlay recovery
-            RegisterRecoveryAction("CrosshairOverlayFailed", async () =>
+            RegisterRecoveryAction("CrosshairOverlayFailed", () =>
             {
                 _logger?.LogWarning("Attempting crosshair overlay recovery...");
                 
@@ -133,11 +133,11 @@ namespace KOALAOptimizer.Testing.Services
                         "The crosshair overlay encountered an error.\n\n" +
                         "Solution: Crosshair has been reset to safe mode. You can reconfigure it in the crosshair settings.");
                     
-                    return true;
+                    return Task.FromResult(true);
                 }
                 catch
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
             });
         }
