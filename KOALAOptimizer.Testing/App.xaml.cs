@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using KOALAOptimizer.Testing.Services;
@@ -14,72 +16,217 @@ namespace KOALAOptimizer.Testing
         private AdminService _adminService;
         private CrosshairOverlayService _crosshairService;
         
-        protected override void OnStartup(StartupEventArgs e)
+        /// <summary>
+        /// Application constructor with early error detection
+        /// </summary>
+        public App()
         {
-            // Initialize core services FIRST before anything else
-            _loggingService = LoggingService.Instance;
-            _adminService = AdminService.Instance;
-            _crosshairService = CrosshairOverlayService.Instance;
-            
-            // Set up global exception handling EARLY
-            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            
-            _loggingService.LogInfo("KOALA Gaming Optimizer v2.3 C# Edition - Starting...");
-            
-            // Load theme with robust error handling BEFORE base.OnStartup()
             try
             {
-                LoadInitialTheme();
-            }
-            catch (Exception themeEx)
-            {
-                _loggingService.LogError($"Critical theme loading error: {themeEx.Message}", themeEx);
+                // Emergency logging at the very start
+                LoggingService.EmergencyLog("App constructor: Application starting...");
+                LoggingService.EmergencyLog($"App constructor: Assembly version {Assembly.GetExecutingAssembly().GetName().Version}");
+                LoggingService.EmergencyLog($"App constructor: Runtime version {Environment.Version}");
+                LoggingService.EmergencyLog($"App constructor: Working directory {Environment.CurrentDirectory}");
                 
-                // Try to load a minimal fallback theme
+                // Initialize component
+                InitializeComponent();
+                LoggingService.EmergencyLog("App constructor: InitializeComponent completed successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"App constructor: CRITICAL ERROR - {ex.Message}");
+                LoggingService.EmergencyLog($"App constructor: Exception details - {ex}");
+                
+                // Try to show error message and exit gracefully
                 try
                 {
-                    LoadMinimalFallbackTheme();
+                    MessageBox.Show($"Critical startup error in App constructor:\n\n{ex.Message}\n\nThe application cannot continue. Please check the emergency log in your temp folder.", 
+                                   "KOALA Gaming Optimizer - Critical Startup Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                catch (Exception fallbackEx)
+                catch
                 {
-                    _loggingService.LogError($"Failed to load even fallback theme: {fallbackEx.Message}", fallbackEx);
-                    // Continue with default system theme
+                    // If even MessageBox fails, force exit
+                    Environment.Exit(1);
                 }
+                throw;
             }
+        }
+        
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            LoggingService.EmergencyLog("OnStartup: Method entry");
             
-            base.OnStartup(e);
-            
-            // Initialize theme service after basic startup
             try
             {
-                var themeService = ThemeService.Instance;
-                _loggingService.LogInfo("Theme service initialized");
+                // Initialize core services FIRST before anything else
+                LoggingService.EmergencyLog("OnStartup: Initializing core services...");
                 
-                // Validate that the default theme is properly loaded
-                var currentTheme = themeService.GetCurrentTheme();
-                if (currentTheme == null)
+                try
                 {
-                    _loggingService.LogWarning("No default theme loaded, applying SciFi theme");
-                    themeService.ApplyTheme("SciFi");
+                    _loggingService = LoggingService.Instance;
+                    _loggingService.LogStartupMilestone("LoggingService initialized");
                 }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"OnStartup: CRITICAL - LoggingService initialization failed: {ex.Message}");
+                    throw new InvalidOperationException("Failed to initialize logging service", ex);
+                }
+                
+                try
+                {
+                    _adminService = AdminService.Instance;
+                    _loggingService.LogStartupMilestone("AdminService initialized");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.LogError($"AdminService initialization failed: {ex.Message}", ex);
+                    _loggingService.LogWarning("Continuing without AdminService - some features may be limited");
+                    _adminService = null;
+                }
+                
+                try
+                {
+                    _crosshairService = CrosshairOverlayService.Instance;
+                    _loggingService.LogStartupMilestone("CrosshairOverlayService initialized");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.LogError($"CrosshairOverlayService initialization failed: {ex.Message}", ex);
+                    _loggingService.LogWarning("Continuing without CrosshairOverlayService - crosshair features will be disabled");
+                    _crosshairService = null;
+                }
+                
+                // Set up global exception handling EARLY
+                _loggingService.LogStartupMilestone("Setting up global exception handlers");
+                this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+                AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+                
+                // Log system information
+                LogSystemInformation();
+                
+                _loggingService.LogInfo("KOALA Gaming Optimizer v2.3 C# Edition - Starting...");
+                _loggingService.LogStartupMilestone("Core initialization complete");
+                
+                // Load theme with robust error handling BEFORE base.OnStartup()
+                _loggingService.LogStartupMilestone("Loading initial theme");
+                try
+                {
+                    LoadInitialTheme();
+                    _loggingService.LogStartupMilestone("Initial theme loaded successfully");
+                }
+                catch (Exception themeEx)
+                {
+                    _loggingService.LogError($"Critical theme loading error: {themeEx.Message}", themeEx);
+                    
+                    // Try to load a minimal fallback theme
+                    try
+                    {
+                        _loggingService.LogStartupMilestone("Attempting fallback theme load");
+                        LoadMinimalFallbackTheme();
+                        _loggingService.LogStartupMilestone("Fallback theme loaded successfully");
+                    }
+                    catch (Exception fallbackEx)
+                    {
+                        _loggingService.LogError($"Failed to load even fallback theme: {fallbackEx.Message}", fallbackEx);
+                        _loggingService.LogWarning("Continuing with system default theme");
+                    }
+                }
+                
+                _loggingService.LogStartupMilestone("Calling base.OnStartup");
+                base.OnStartup(e);
+                _loggingService.LogStartupMilestone("base.OnStartup completed");
+                
+                // Initialize theme service after basic startup
+                try
+                {
+                    _loggingService.LogStartupMilestone("Initializing ThemeService");
+                    var themeService = ThemeService.Instance;
+                    _loggingService.LogInfo("Theme service initialized");
+                    
+                    // Validate that the default theme is properly loaded
+                    var currentTheme = themeService.GetCurrentTheme();
+                    if (currentTheme == null)
+                    {
+                        _loggingService.LogWarning("No default theme loaded, applying SciFi theme");
+                        if (themeService.ApplyTheme("SciFi"))
+                        {
+                            _loggingService.LogStartupMilestone("SciFi theme applied successfully");
+                        }
+                        else
+                        {
+                            _loggingService.LogWarning("Failed to apply SciFi theme, continuing with current state");
+                        }
+                    }
+                    else
+                    {
+                        _loggingService.LogStartupMilestone($"Current theme: {currentTheme.DisplayName}");
+                    }
+                }
+                catch (Exception themeEx)
+                {
+                    _loggingService.LogError($"Failed to initialize theme service: {themeEx.Message}", themeEx);
+                    _loggingService.LogWarning("Continuing without theme service - theme switching will be disabled");
+                }
+                
+                // Check admin privileges
+                if (_adminService != null)
+                {
+                    try
+                    {
+                        if (!_adminService.IsRunningAsAdmin())
+                        {
+                            _loggingService.LogWarning("Not running as administrator. Some optimizations may be limited.");
+                        }
+                        else
+                        {
+                            _loggingService.LogInfo("Running with administrator privileges - All optimizations available");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.LogError($"Failed to check admin privileges: {ex.Message}", ex);
+                    }
+                }
+                
+                if (_crosshairService != null)
+                {
+                    _loggingService.LogInfo("Crosshair overlay service initialized");
+                }
+                
+                _loggingService.LogStartupMilestone("Application startup completed successfully");
+                _loggingService.LogInfo("KOALA Gaming Optimizer is ready for use");
             }
-            catch (Exception themeEx)
+            catch (Exception ex)
             {
-                _loggingService.LogError($"Failed to initialize theme service: {themeEx.Message}", themeEx);
+                // Final catch-all for any startup errors
+                var errorMessage = $"Critical startup error: {ex.Message}";
+                LoggingService.EmergencyLog($"OnStartup: FATAL ERROR - {errorMessage}");
+                LoggingService.EmergencyLog($"OnStartup: Exception details - {ex}");
+                
+                try
+                {
+                    _loggingService?.LogError($"FATAL STARTUP ERROR: {ex.Message}", ex);
+                }
+                catch { /* Ignore if logging fails */ }
+                
+                // Show error to user and exit gracefully
+                try
+                {
+                    MessageBox.Show($"{errorMessage}\n\nException Details:\n{ex}\n\nPlease check the log files for more information.", 
+                                   "KOALA Gaming Optimizer - Fatal Startup Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // If MessageBox fails, just log and exit
+                    LoggingService.EmergencyLog("OnStartup: CRITICAL - Even MessageBox failed, forcing exit");
+                }
+                
+                // Exit the application
+                Environment.Exit(1);
             }
-            
-            // Check admin privileges
-            if (!_adminService.IsRunningAsAdmin())
-            {
-                _loggingService.LogWarning("Not running as administrator. Some optimizations may be limited.");
-            }
-            else
-            {
-                _loggingService.LogInfo("Running with administrator privileges - All optimizations available");
-            }
-            
-            _loggingService.LogInfo("Crosshair overlay service initialized");
         }
         
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
@@ -138,28 +285,104 @@ namespace KOALAOptimizer.Testing
         
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
+            var errorMessage = "Unknown unhandled exception";
+            Exception exception = null;
+            
             if (e.ExceptionObject is Exception ex)
             {
+                exception = ex;
+                errorMessage = ex.Message;
                 _loggingService?.LogError($"Unhandled domain exception: {ex.Message}", ex);
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: {ex.Message}");
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: Exception details - {ex}");
+            }
+            else
+            {
+                errorMessage = e.ExceptionObject?.ToString() ?? "Unknown exception object";
+                _loggingService?.LogError($"Unhandled domain exception (non-Exception): {errorMessage}");
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: Non-Exception object - {errorMessage}");
+            }
+            
+            _loggingService?.LogError($"IsTerminating: {e.IsTerminating}");
+            LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: IsTerminating = {e.IsTerminating}");
+            
+            // If this is a terminating exception, try to show error message
+            if (e.IsTerminating)
+            {
+                try
+                {
+                    var message = $"A fatal unhandled exception occurred:\n\n{errorMessage}\n\n" +
+                                 "The application will now terminate. Please check the log files for more details.";
+                    
+                    MessageBox.Show(message, "KOALA Gaming Optimizer - Fatal Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // If even MessageBox fails, just log
+                    LoggingService.EmergencyLog("CurrentDomain_UnhandledException: CRITICAL - MessageBox failed");
+                }
             }
         }
         
         protected override void OnExit(ExitEventArgs e)
         {
-            _loggingService?.LogInfo("KOALA Gaming Optimizer - Shutting down...");
+            LoggingService.EmergencyLog($"OnExit: Application exiting with code {e.ApplicationExitCode}");
+            _loggingService?.LogInfo($"KOALA Gaming Optimizer - Shutting down (exit code: {e.ApplicationExitCode})...");
             
             // Cleanup services
             try
             {
-                TimerResolutionService.Instance?.RestoreOriginalResolution();
-                ProcessManagementService.Instance?.StopBackgroundMonitoring();
-                PerformanceMonitoringService.Instance?.StopMonitoring();
-                _crosshairService?.Dispose();
+                _loggingService?.LogInfo("Cleaning up services...");
+                
+                try
+                {
+                    TimerResolutionService.Instance?.RestoreOriginalResolution();
+                    _loggingService?.LogInfo("TimerResolutionService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up TimerResolutionService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    ProcessManagementService.Instance?.StopBackgroundMonitoring();
+                    _loggingService?.LogInfo("ProcessManagementService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up ProcessManagementService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    PerformanceMonitoringService.Instance?.StopMonitoring();
+                    _loggingService?.LogInfo("PerformanceMonitoringService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up PerformanceMonitoringService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    _crosshairService?.Dispose();
+                    _loggingService?.LogInfo("CrosshairOverlayService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up CrosshairOverlayService: {ex.Message}", ex);
+                }
             }
             catch (Exception ex)
             {
-                _loggingService?.LogError($"Error during shutdown: {ex.Message}", ex);
+                LoggingService.EmergencyLog($"OnExit: Error during service cleanup: {ex.Message}");
+                _loggingService?.LogError($"Error during service cleanup: {ex.Message}", ex);
             }
+            
+            _loggingService?.LogInfo("KOALA Gaming Optimizer shutdown complete");
+            LoggingService.EmergencyLog("OnExit: Shutdown complete, calling base.OnExit");
             
             base.OnExit(e);
         }
@@ -246,6 +469,36 @@ namespace KOALAOptimizer.Testing
                 }
             }
             return true;
+        }
+        
+        /// <summary>
+        /// Log comprehensive system information for debugging
+        /// </summary>
+        private void LogSystemInformation()
+        {
+            try
+            {
+                _loggingService.LogInfo("=== SYSTEM INFORMATION ===");
+                _loggingService.LogInfo($"OS Version: {Environment.OSVersion}");
+                _loggingService.LogInfo($"CLR Version: {Environment.Version}");
+                _loggingService.LogInfo($"Machine Name: {Environment.MachineName}");
+                _loggingService.LogInfo($"User Name: {Environment.UserName}");
+                _loggingService.LogInfo($"Working Directory: {Environment.CurrentDirectory}");
+                _loggingService.LogInfo($"Assembly Location: {Assembly.GetExecutingAssembly().Location}");
+                _loggingService.LogInfo($"Assembly Version: {Assembly.GetExecutingAssembly().GetName().Version}");
+                _loggingService.LogInfo($"Command Line: {Environment.CommandLine}");
+                _loggingService.LogInfo($"Process ID: {Process.GetCurrentProcess().Id}");
+                _loggingService.LogInfo($"Thread ID: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                _loggingService.LogInfo($"Is 64-bit OS: {Environment.Is64BitOperatingSystem}");
+                _loggingService.LogInfo($"Is 64-bit Process: {Environment.Is64BitProcess}");
+                _loggingService.LogInfo($"Processor Count: {Environment.ProcessorCount}");
+                _loggingService.LogInfo($"Available Memory: {GC.GetTotalMemory(false):N0} bytes");
+                _loggingService.LogInfo("=========================");
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.LogError($"Failed to log system information: {ex.Message}", ex);
+            }
         }
     }
 }
