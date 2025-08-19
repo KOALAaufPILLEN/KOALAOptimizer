@@ -1,6 +1,7 @@
 <Window x:Class="KOALAOptimizer.Testing.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:KOALAOptimizer.Testing.Views"
         Title="🐨 KOALA Gaming Optimizer v2.3 - C# Edition" 
         Width="1000" Height="750" 
         MinWidth="900" MinHeight="750"
@@ -205,8 +206,13 @@
                 </ScrollViewer>
             </TabItem>
             
+            <!-- Crosshair Overlay Tab -->
+            <TabItem Header="🎯 Crosshair Overlay">
+                <local:CrosshairSettingsControl x:Name="CrosshairSettings"/>
+            </TabItem>
+            
             <!-- Game Management Tab -->
-            <TabItem Header="🎯 Game Management">
+            <TabItem Header="🎮 Game Management">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
