@@ -381,7 +381,7 @@
                 </Grid>
             </TabItem>
             
-            <!-- Backup & Restore Tab -->
+            <!-- Backup &amp; Restore Tab -->
             <TabItem Header="💾 Backup &amp; Restore">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>

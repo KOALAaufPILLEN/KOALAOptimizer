@@ -53,6 +53,29 @@ namespace KOALAOptimizer.Testing.Models
     }
 
     /// <summary>
+    /// Windows service information
+    /// </summary>
+    public class ServiceInfo
+    {
+        public string ServiceName { get; set; }
+        public string DisplayName { get; set; }
+        public string Status { get; set; }
+        public string StartType { get; set; }
+    }
+
+    /// <summary>
+    /// Service backup information for restoration
+    /// </summary>
+    public class ServiceBackupInfo
+    {
+        public string ServiceName { get; set; }
+        public string DisplayName { get; set; }
+        public string OriginalStatus { get; set; }
+        public string OriginalStartType { get; set; }
+        public DateTime BackupTime { get; set; }
+    }
+
+    /// <summary>
     /// System performance metrics
     /// </summary>
     public class PerformanceMetrics
