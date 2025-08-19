@@ -24,7 +24,9 @@ namespace KOALAOptimizer.Testing.Services
         {
             _logger = LoggingService.Instance;
             _availableThemes = InitializeThemes();
-            _currentTheme = _availableThemes.First(); // Default to first theme (Sci-Fi)
+            
+            // Don't assume a theme is loaded, let the application handle initial theme loading
+            _currentTheme = null;
             
             _logger.LogInfo("Theme service initialized");
         }
@@ -87,7 +89,60 @@ namespace KOALAOptimizer.Testing.Services
         /// </summary>
         public ThemeInfo GetCurrentTheme()
         {
+            // If current theme is null, try to detect from loaded resources
+            if (_currentTheme == null)
+            {
+                DetectCurrentTheme();
+            }
             return _currentTheme;
+        }
+        
+        /// <summary>
+        /// Detect which theme is currently loaded by examining application resources
+        /// </summary>
+        private void DetectCurrentTheme()
+        {
+            try
+            {
+                var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
+                var loadedTheme = mergedDictionaries.FirstOrDefault(d => 
+                    d.Source != null && d.Source.ToString().Contains("Themes/"));
+                
+                if (loadedTheme != null)
+                {
+                    var sourceString = loadedTheme.Source.ToString();
+                    var themeFileName = sourceString.Split('/').LastOrDefault();
+                    
+                    // Map theme file names to theme info
+                    switch (themeFileName)
+                    {
+                        case "SciFiTheme.xaml":
+                            _currentTheme = _availableThemes.FirstOrDefault(t => t.Name == "SciFi");
+                            break;
+                        case "GamingTheme.xaml":
+                            _currentTheme = _availableThemes.FirstOrDefault(t => t.Name == "Gaming");
+                            break;
+                        case "ClassicTheme.xaml":
+                            _currentTheme = _availableThemes.FirstOrDefault(t => t.Name == "Classic");
+                            break;
+                        case "MatrixTheme.xaml":
+                            _currentTheme = _availableThemes.FirstOrDefault(t => t.Name == "Matrix");
+                            break;
+                        case "KOALATheme.xaml":
+                            _currentTheme = _availableThemes.FirstOrDefault(t => t.Name == "KOALA");
+                            break;
+                    }
+                    
+                    if (_currentTheme != null)
+                    {
+                        _logger.LogInfo($"Detected current theme: {_currentTheme.DisplayName}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to detect current theme: {ex.Message}");
+            }
         }
         
         /// <summary>
