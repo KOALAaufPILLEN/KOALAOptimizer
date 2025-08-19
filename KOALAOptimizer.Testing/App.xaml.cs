@@ -11,6 +11,7 @@ namespace KOALAOptimizer.Testing
     {
         private LoggingService _loggingService;
         private AdminService _adminService;
+        private CrosshairOverlayService _crosshairService;
         
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -19,6 +20,7 @@ namespace KOALAOptimizer.Testing
             // Initialize core services
             _loggingService = LoggingService.Instance;
             _adminService = AdminService.Instance;
+            _crosshairService = CrosshairOverlayService.Instance;
             
             // Set up global exception handling
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
@@ -35,6 +37,8 @@ namespace KOALAOptimizer.Testing
             {
                 _loggingService.LogInfo("Running with administrator privileges - All optimizations available");
             }
+            
+            _loggingService.LogInfo("Crosshair overlay service initialized");
         }
         
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
@@ -67,6 +71,7 @@ namespace KOALAOptimizer.Testing
                 TimerResolutionService.Instance?.RestoreOriginalResolution();
                 ProcessManagementService.Instance?.StopBackgroundMonitoring();
                 PerformanceMonitoringService.Instance?.StopMonitoring();
+                _crosshairService?.Dispose();
             }
             catch (Exception ex)
             {

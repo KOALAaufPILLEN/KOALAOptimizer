@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using KOALAOptimizer.Testing.Models;
 using KOALAOptimizer.Testing.Services;
@@ -28,6 +29,7 @@ namespace KOALAOptimizer.Testing.Views
         private readonly RegistryOptimizationService _registryService;
         private readonly GpuDetectionService _gpuService;
         private readonly TimerResolutionService _timerService;
+        private readonly CrosshairOverlayService _crosshairService;
         
         // Data collections for UI binding
         private readonly ObservableCollection<string> _logMessages;
@@ -49,6 +51,7 @@ namespace KOALAOptimizer.Testing.Views
             _registryService = RegistryOptimizationService.Instance;
             _gpuService = GpuDetectionService.Instance;
             _timerService = TimerResolutionService.Instance;
+            _crosshairService = CrosshairOverlayService.Instance;
             
             // Initialize data collections
             _logMessages = new ObservableCollection<string>();
@@ -100,6 +103,9 @@ namespace KOALAOptimizer.Testing.Views
                 
                 // Auto-detect GPU and apply recommendations
                 AutoDetectGpuAndApplyRecommendations();
+                
+                // Initialize crosshair hotkey support
+                InitializeCrosshairHotkey();
             }
             catch (Exception ex)
             {
@@ -995,6 +1001,48 @@ namespace KOALAOptimizer.Testing.Views
         
         #endregion
         
+        #region Crosshair Hotkey Support
+        
+        /// <summary>
+        /// Initialize crosshair hotkey support
+        /// </summary>
+        private void InitializeCrosshairHotkey()
+        {
+            try
+            {
+                // Set up window handle for hotkey registration
+                var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+                if (source != null)
+                {
+                    source.AddHook(HwndHook);
+                    _crosshairService.InitializeHotkey(new WindowInteropHelper(this).Handle);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to initialize crosshair hotkey: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Window procedure hook for handling hotkey messages
+        /// </summary>
+        private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_HOTKEY = 0x0312;
+            
+            if (msg == WM_HOTKEY)
+            {
+                var hotkeyId = wParam.ToInt32();
+                _crosshairService.HandleHotkey(hotkeyId);
+                handled = true;
+            }
+            
+            return IntPtr.Zero;
+        }
+        
+        #endregion
+        
         /// <summary>
         /// Handle window closing
         /// </summary>
@@ -1011,6 +1059,9 @@ namespace KOALAOptimizer.Testing.Views
                 
                 // Cleanup timer resolution
                 _timerService?.RestoreOriginalResolution();
+                
+                // Cleanup crosshair service
+                _crosshairService?.Dispose();
                 
                 _logger?.LogInfo("KOALA Gaming Optimizer - Application closed");
             }

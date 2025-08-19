@@ -1,0 +1,128 @@
+<Window x:Class="KOALAOptimizer.Testing.Views.CrosshairWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Crosshair Overlay" 
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        IsHitTestVisible="False"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+    
+    <Grid>
+        <!-- Crosshair Canvas -->
+        <Canvas x:Name="CrosshairCanvas" 
+                Width="100" 
+                Height="100"
+                Background="Transparent">
+            
+            <!-- Classic Cross Shape -->
+            <Grid x:Name="ClassicCross" 
+                  Width="50" Height="50" 
+                  Canvas.Left="25" Canvas.Top="25"
+                  Visibility="Collapsed">
+                <!-- Horizontal line -->
+                <Rectangle x:Name="HorizontalLine"
+                          Width="40" Height="2"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+                <!-- Vertical line -->
+                <Rectangle x:Name="VerticalLine"
+                          Width="2" Height="40"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+            </Grid>
+            
+            <!-- Dot Shape -->
+            <Ellipse x:Name="DotShape"
+                    Width="6" Height="6"
+                    Fill="Lime"
+                    Canvas.Left="47" Canvas.Top="47"
+                    Visibility="Collapsed"/>
+            
+            <!-- Circle Shape -->
+            <Ellipse x:Name="CircleShape"
+                    Width="30" Height="30"
+                    Stroke="Lime"
+                    StrokeThickness="2"
+                    Fill="Transparent"
+                    Canvas.Left="35" Canvas.Top="35"
+                    Visibility="Collapsed"/>
+            
+            <!-- T-Shape -->
+            <Grid x:Name="TShape" 
+                  Width="50" Height="50" 
+                  Canvas.Left="25" Canvas.Top="25"
+                  Visibility="Collapsed">
+                <!-- Horizontal line (top) -->
+                <Rectangle x:Name="TShapeHorizontal"
+                          Width="30" Height="2"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Top"
+                          Margin="0,10,0,0"/>
+                <!-- Vertical line -->
+                <Rectangle x:Name="TShapeVertical"
+                          Width="2" Height="30"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Top"
+                          Margin="0,10,0,0"/>
+            </Grid>
+            
+            <!-- Plus Shape -->
+            <Grid x:Name="PlusShape" 
+                  Width="50" Height="50" 
+                  Canvas.Left="25" Canvas.Top="25"
+                  Visibility="Collapsed">
+                <!-- Horizontal line -->
+                <Rectangle x:Name="PlusHorizontal"
+                          Width="25" Height="3"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+                <!-- Vertical line -->
+                <Rectangle x:Name="PlusVertical"
+                          Width="3" Height="25"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+            </Grid>
+            
+            <!-- Cross Shape (X) -->
+            <Grid x:Name="CrossShape" 
+                  Width="50" Height="50" 
+                  Canvas.Left="25" Canvas.Top="25"
+                  Visibility="Collapsed">
+                <!-- Diagonal line 1 -->
+                <Rectangle x:Name="CrossDiagonal1"
+                          Width="2" Height="35"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          RenderTransformOrigin="0.5,0.5">
+                    <Rectangle.RenderTransform>
+                        <RotateTransform Angle="45"/>
+                    </Rectangle.RenderTransform>
+                </Rectangle>
+                <!-- Diagonal line 2 -->
+                <Rectangle x:Name="CrossDiagonal2"
+                          Width="2" Height="35"
+                          Fill="Lime"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          RenderTransformOrigin="0.5,0.5">
+                    <Rectangle.RenderTransform>
+                        <RotateTransform Angle="-45"/>
+                    </Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
+            
+        </Canvas>
+    </Grid>
+</Window>

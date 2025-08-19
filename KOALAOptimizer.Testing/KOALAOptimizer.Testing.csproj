@@ -66,6 +66,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\CrosshairWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\CrosshairSettingsControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -74,10 +82,19 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Views\CrosshairWindow.xaml.cs">
+      <DependentUpon>CrosshairWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\CrosshairSettingsControl.xaml.cs">
+      <DependentUpon>CrosshairSettingsControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Models.cs" />
     <Compile Include="Services\AdminService.cs" />
+    <Compile Include="Services\CrosshairOverlayService.cs" />
     <Compile Include="Services\GpuDetectionService.cs" />
     <Compile Include="Services\LoggingService.cs" />
     <Compile Include="Services\PerformanceMonitoringService.cs" />

@@ -164,4 +164,56 @@ namespace KOALAOptimizer.Testing.Models
         public bool EnableRSS { get; set; }
         public bool EnableECN { get; set; }
     }
+
+    /// <summary>
+    /// Crosshair overlay styles
+    /// </summary>
+    public enum CrosshairStyle
+    {
+        Classic,
+        Dot,
+        Circle,
+        TShape,
+        Plus,
+        Cross,
+        Custom
+    }
+
+    /// <summary>
+    /// Crosshair overlay settings
+    /// </summary>
+    public class CrosshairSettings
+    {
+        public bool IsEnabled { get; set; } = false;
+        public CrosshairStyle Style { get; set; } = CrosshairStyle.Classic;
+        public int Size { get; set; } = 20;
+        public int Thickness { get; set; } = 2;
+        public int Red { get; set; } = 0;
+        public int Green { get; set; } = 255;
+        public int Blue { get; set; } = 0;
+        public int Alpha { get; set; } = 255;
+        public string HexColor { get; set; } = "#00FF00";
+        public double Opacity { get; set; } = 1.0;
+        public string SelectedTheme { get; set; } = "Classic Green";
+        public bool ShowOnlyInGames { get; set; } = false;
+        public string HotkeyToggle { get; set; } = "F1";
+    }
+
+    /// <summary>
+    /// Predefined crosshair theme
+    /// </summary>
+    public class CrosshairTheme
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string HexColor { get; set; }
+        public int Red { get; set; }
+        public int Green { get; set; }
+        public int Blue { get; set; }
+        public int Alpha { get; set; } = 255;
+        public CrosshairStyle Style { get; set; } = CrosshairStyle.Classic;
+        public int Size { get; set; } = 20;
+        public int Thickness { get; set; } = 2;
+        public string Description { get; set; }
+    }
 }
