@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
@@ -500,9 +501,22 @@ namespace KOALAOptimizer.Testing
                 if (ValidateEssentialResources(themeDict))
                 {
                     LoggingService.EmergencyLog("LoadInitialTheme: Essential resources validated");
-                    Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
-                    LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added to application resources");
-                    _loggingService?.LogInfo("Initial theme loaded successfully");
+                    
+                    // Additionally validate all referenced styles
+                    if (ValidateAllReferencedStyles(themeDict))
+                    {
+                        LoggingService.EmergencyLog("LoadInitialTheme: All referenced styles validated");
+                        Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
+                        LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added to application resources");
+                        _loggingService?.LogInfo("Initial theme loaded successfully with complete style validation");
+                    }
+                    else
+                    {
+                        LoggingService.EmergencyLog("LoadInitialTheme: Referenced styles validation failed - some styles missing");
+                        Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
+                        LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added despite missing styles (fallbacks should handle)");
+                        _loggingService?.LogWarning("Initial theme loaded with some missing styles - fallbacks will be used");
+                    }
                 }
                 else
                 {
@@ -626,6 +640,81 @@ namespace KOALAOptimizer.Testing
             }
             
             LoggingService.EmergencyLog($"ValidateEssentialResources: Validation result: {allValid}");
+            return allValid;
+        }
+        
+        /// <summary>
+        /// Enhanced validation to check for all styles referenced by Views
+        /// </summary>
+        private bool ValidateAllReferencedStyles(ResourceDictionary themeDict)
+        {
+            if (themeDict == null)
+            {
+                LoggingService.EmergencyLog("ValidateAllReferencedStyles: Theme dictionary is null");
+                _loggingService?.LogWarning("Theme dictionary is null during style validation");
+                return false;
+            }
+
+            // All styles that are referenced with DynamicResource in Views
+            string[] referencedStyles = { 
+                "MainWindowStyle", "GroupBoxStyle", "FeatureTextStyle", "SciFiCheckBoxStyle",
+                "DescriptionTextStyle", "ModernScrollViewerStyle", "ModernComboBoxStyle", 
+                "ModernSliderStyle", "ValueTextStyle", "ModernTextBoxStyle", "ModernButtonStyle",
+                "AccentButtonStyle", "ModernDataGridStyle", "OptimizationButtonStyle", 
+                "PrimaryButtonStyle", "DangerButtonStyle"
+            };
+            
+            LoggingService.EmergencyLog($"ValidateAllReferencedStyles: Checking {referencedStyles.Length} referenced styles");
+            
+            bool allValid = true;
+            var missingStyles = new List<string>();
+            
+            foreach (var styleKey in referencedStyles)
+            {
+                try
+                {
+                    if (!themeDict.Contains(styleKey))
+                    {
+                        // Check in merged dictionaries and application resources
+                        bool foundInMerged = false;
+                        foreach (var mergedDict in Application.Current.Resources.MergedDictionaries)
+                        {
+                            if (mergedDict.Contains(styleKey))
+                            {
+                                foundInMerged = true;
+                                LoggingService.EmergencyLog($"ValidateAllReferencedStyles: Style {styleKey} found in merged dictionary");
+                                break;
+                            }
+                        }
+                        
+                        if (!foundInMerged && !Application.Current.Resources.Contains(styleKey))
+                        {
+                            LoggingService.EmergencyLog($"ValidateAllReferencedStyles: MISSING STYLE: {styleKey}");
+                            _loggingService?.LogWarning($"Theme missing referenced style: {styleKey}");
+                            missingStyles.Add(styleKey);
+                            allValid = false;
+                        }
+                    }
+                    else
+                    {
+                        LoggingService.EmergencyLog($"ValidateAllReferencedStyles: Found style: {styleKey}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"ValidateAllReferencedStyles: Error checking style {styleKey}: {ex.Message}");
+                    _loggingService?.LogError($"Error validating style {styleKey}: {ex.Message}", ex);
+                    allValid = false;
+                }
+            }
+            
+            if (missingStyles.Count > 0)
+            {
+                LoggingService.EmergencyLog($"ValidateAllReferencedStyles: CRITICAL - Missing {missingStyles.Count} styles: {string.Join(", ", missingStyles)}");
+                _loggingService?.LogError($"Theme validation failed - Missing styles: {string.Join(", ", missingStyles)}");
+            }
+            
+            LoggingService.EmergencyLog($"ValidateAllReferencedStyles: Validation completed - All valid: {allValid}");
             return allValid;
         }
         
