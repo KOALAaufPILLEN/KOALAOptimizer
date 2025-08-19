@@ -1,0 +1,212 @@
+name: Build and Release KOALA Optimizer C# Edition
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Framework
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+
+    - name: Setup MSBuild (fallback for .NET Framework)
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Display environment information
+      run: |
+        echo "Repository root contents:"
+        dir
+        echo.
+        echo "Project directory contents:"
+        dir "KOALAOptimizer.Testing"
+        echo.
+        echo "Dotnet version:"
+        dotnet --version
+        echo.
+        echo "MSBuild version:"
+        msbuild -version
+      shell: cmd
+
+    - name: Restore packages using dotnet
+      run: |
+        echo "Attempting dotnet restore..."
+        dotnet restore "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" --verbosity normal
+      shell: cmd
+      continue-on-error: true
+
+    - name: Restore packages using NuGet (fallback)
+      run: |
+        echo "Using NuGet restore as fallback..."
+        if exist "KOALAOptimizer.Testing\packages.config" (
+          nuget restore "KOALAOptimizer.Testing\packages.config" -PackagesDirectory packages
+        ) else (
+          echo "No packages.config found - using modern PackageReference style"
+        )
+      shell: cmd
+
+    - name: Build using dotnet
+      run: |
+        echo "Attempting dotnet build..."
+        dotnet build "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        --configuration Release ^
+        --verbosity normal ^
+        --no-restore
+      shell: cmd
+      continue-on-error: true
+
+    - name: Build using MSBuild (fallback)
+      run: |
+        echo "Using MSBuild as fallback..."
+        msbuild "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        /p:Configuration=Release ^
+        /p:Platform=AnyCPU ^
+        /p:UseSharedCompilation=false ^
+        /p:BuildInParallel=false ^
+        /p:RestorePackages=false ^
+        /verbosity:normal
+      shell: cmd
+
+    - name: Debug build output directories
+      run: |
+        echo "=== Debugging build output ==="
+        echo "Checking bin directory structure:"
+        if exist "KOALAOptimizer.Testing\bin" (
+          echo "bin directory exists:"
+          dir "KOALAOptimizer.Testing\bin" /s
+        ) else (
+          echo "bin directory does not exist"
+        )
+        echo.
+        echo "Checking obj directory structure:"
+        if exist "KOALAOptimizer.Testing\obj" (
+          echo "obj directory exists:"
+          dir "KOALAOptimizer.Testing\obj" /s
+        ) else (
+          echo "obj directory does not exist"
+        )
+        echo.
+        echo "Searching for executable files:"
+        dir "KOALAOptimizer.Testing" /s *.exe 2>nul || echo "No .exe files found"
+      shell: cmd
+
+    - name: Verify build output
+      run: |
+        echo "=== Final verification ==="
+        set "EXPECTED_EXE=KOALAOptimizer.Testing\bin\Release\KOALAOptimizer.Testing.exe"
+        
+        if exist "%EXPECTED_EXE%" (
+          echo ✅ SUCCESS: Executable found at expected location
+          echo File details:
+          dir "%EXPECTED_EXE%"
+          echo.
+          echo "Release directory contents:"
+          dir "KOALAOptimizer.Testing\bin\Release\"
+          echo.
+          echo "Executable file size:"
+          for %%A in ("%EXPECTED_EXE%") do echo %%~zA bytes
+        ) else (
+          echo ❌ ERROR: Executable not found at expected location: %EXPECTED_EXE%
+          echo.
+          echo "Searching for any KOALAOptimizer.Testing.exe files:"
+          for /r "KOALAOptimizer.Testing" %%f in (KOALAOptimizer.Testing.exe) do (
+            echo Found: %%f
+          )
+          exit /b 1
+        )
+      shell: cmd
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALAOptimizer-Release-${{ github.run_number }}
+        path: KOALAOptimizer.Testing/bin/Release/
+        if-no-files-found: error
+        retention-days: 90
+
+    - name: Create release package (on release)
+      if: github.event_name == 'release'
+      run: |
+        echo "Creating release package..."
+        cd "KOALAOptimizer.Testing\bin\Release"
+        
+        # Create release directory structure
+        mkdir "KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}"
+        cd "KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}"
+        
+        # Copy main executable and dependencies
+        copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
+        copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config"
+        copy "..\*.dll" .
+        
+    # Sanitize the release tag name for safe directory usage (Windows)
+    - name: Sanitize release tag name
+      if: github.event_name == 'release'
+      run: |
+        powershell -Command "$SafeTag = '${{ github.event.release.tag_name }}' -replace '[:\\/\\*\\?\"<>\\|]', '_'; echo SANITIZED_TAG_NAME=$SafeTag >> %GITHUB_ENV%"
+
+    - name: Create release package (on release)
+      if: github.event_name == 'release'
+      run: |
+        echo "Creating release package..."
+        cd "KOALAOptimizer.Testing\bin\Release"
+        
+        REM Create release directory structure
+        mkdir "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
+        cd "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
+        
+        REM Copy main executable and dependencies
+        copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
+        copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config"
+        copy "..\*.dll" .
+        
+        REM Create README for release
+        echo KOALA Gaming Optimizer v${{ github.event.release.tag_name }} - C# Edition > README.txt
+        echo. >> README.txt
+        echo Professional gaming optimization tool with advanced features: >> README.txt
+        echo - Real-time performance monitoring and FPS optimization >> README.txt
+        echo - Smart game detection and automatic optimization profiles >> README.txt
+        echo - Registry optimization with automatic backup/restore >> README.txt
+        echo - Custom crosshair overlay with multiple styles >> README.txt
+        echo - Professional gaming themes and advanced UI >> README.txt
+        echo. >> README.txt
+        echo IMPORTANT: Run as Administrator for full optimization features >> README.txt
+        echo. >> README.txt
+        echo Visit: https://github.com/KOALAaufPILLEN/KOALAOptimizer >> README.txt
+        
+        cd ..
+        
+        # Create ZIP package
+        powershell -Command "Compress-Archive -Path 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}' -DestinationPath 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip'"
+        
+        echo "Release package created: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip"
+      shell: cmd
+
+    - name: Upload release asset (on release)
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
+        asset_name: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Installing GitHub CLI..."
+        choco install gh -y
+        echo "Uploading release asset using gh CLI..."
+        gh release upload "${{ github.event.release.tag_name }}" "KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip" --repo "${{ github.repository }}" --clobber
+      shell: cmd
