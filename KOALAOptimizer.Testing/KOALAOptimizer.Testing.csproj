@@ -119,8 +119,10 @@
   <ItemGroup>
     <Compile Include="Models\Models.cs" />
     <Compile Include="Services\AdminService.cs" />
+    <Compile Include="Services\ApplicationHealthService.cs" />
     <Compile Include="Services\AudioOptimizationService.cs" />
     <Compile Include="Services\CrosshairOverlayService.cs" />
+    <Compile Include="Services\ErrorRecoveryService.cs" />
     <Compile Include="Services\GpuDetectionService.cs" />
     <Compile Include="Services\LoggingService.cs" />
     <Compile Include="Services\NetworkOptimizationService.cs" />
