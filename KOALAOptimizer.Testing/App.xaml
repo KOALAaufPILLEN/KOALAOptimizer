@@ -5,8 +5,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Default theme -->
-                <ResourceDictionary Source="Themes/SciFiTheme.xaml"/>
+                <!-- Theme will be loaded programmatically with error handling -->
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Global Styles -->
