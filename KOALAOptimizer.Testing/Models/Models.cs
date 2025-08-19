@@ -259,6 +259,438 @@ namespace KOALAOptimizer.Testing.Models
     }
     
     /// <summary>
+    /// Process allocation profile for smart resource management
+    /// </summary>
+    public class ProcessAllocationProfile
+    {
+        public string Name { get; set; }
+        public string[] ProcessPatterns { get; set; }
+        public CpuAffinityStrategy CpuAffinityStrategy { get; set; }
+        public ProcessPriorityClass Priority { get; set; }
+        public MemoryPriority MemoryPriority { get; set; }
+        public bool IoBoost { get; set; }
+    }
+    
+    /// <summary>
+    /// CPU affinity assignment strategies
+    /// </summary>
+    public enum CpuAffinityStrategy
+    {
+        AllCores,
+        HighPerformanceCores,
+        EfficiencyCores,
+        DedicatedCores
+    }
+    
+    /// <summary>
+    /// Memory priority levels
+    /// </summary>
+    public enum MemoryPriority
+    {
+        Low,
+        Normal,
+        High,
+        Critical
+    }
+    
+    /// <summary>
+    /// Individual process allocation result
+    /// </summary>
+    public class ProcessAllocation
+    {
+        public int ProcessId { get; set; }
+        public string ProcessName { get; set; }
+        public string Profile { get; set; }
+        public IntPtr CpuAffinity { get; set; }
+        public ProcessPriorityClass Priority { get; set; }
+        public MemoryPriority MemoryPriority { get; set; }
+        public bool IoBoost { get; set; }
+        public DateTime AllocatedAt { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Resource allocation status
+    /// </summary>
+    public class ResourceAllocationStatus
+    {
+        public bool IsRunning { get; set; }
+        public int TotalCores { get; set; }
+        public List<ProcessAllocation> AllocatedProcesses { get; set; } = new List<ProcessAllocation>();
+        public DateTime LastUpdate { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Resource allocation event arguments
+    /// </summary>
+    public class ResourceAllocationEventArgs : EventArgs
+    {
+        public List<ProcessAllocation> Allocations { get; set; } = new List<ProcessAllocation>();
+    }
+    
+    /// <summary>
+    /// Memory information details
+    /// </summary>
+    public class MemoryInfo
+    {
+        public double TotalMemoryMB { get; set; }
+        public double AvailableMemoryMB { get; set; }
+        public double UsedMemoryMB { get; set; }
+        public double UsagePercentage { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+    
+    /// <summary>
+    /// Memory optimization result
+    /// </summary>
+    public class MemoryOptimizationResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public MemoryInfo BeforeOptimization { get; set; }
+        public MemoryInfo AfterOptimization { get; set; }
+        public double MemoryFreed { get; set; }
+        public int ProcessesTrimmed { get; set; }
+        public bool SystemCacheCleared { get; set; }
+        public bool GarbageCollectionPerformed { get; set; }
+        public bool StandbyMemoryCleared { get; set; }
+        public DateTime CompletedAt { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Memory optimization status
+    /// </summary>
+    public class MemoryOptimizationStatus
+    {
+        public bool IsRunning { get; set; }
+        public bool IsDefragmenting { get; set; }
+        public MemoryInfo CurrentMemoryInfo { get; set; }
+        public double FragmentationPercentage { get; set; }
+        public DateTime LastOptimization { get; set; }
+    }
+    
+    /// <summary>
+    /// Memory optimization event arguments
+    /// </summary>
+    public class MemoryOptimizationEventArgs : EventArgs
+    {
+        public MemoryOptimizationResult Result { get; set; }
+    }
+    
+    /// <summary>
+    /// Memory status event arguments
+    /// </summary>
+    public class MemoryStatusEventArgs : EventArgs
+    {
+        public MemoryInfo MemoryInfo { get; set; }
+    }
+    
+    /// <summary>
+    /// Disk drive type
+    /// </summary>
+    public enum DriveType
+    {
+        Unknown,
+        SSD,
+        HDD,
+        Hybrid
+    }
+    
+    /// <summary>
+    /// Disk health status
+    /// </summary>
+    public enum DiskHealth
+    {
+        Unknown,
+        Good,
+        Warning,
+        Critical
+    }
+    
+    /// <summary>
+    /// Disk alert types
+    /// </summary>
+    public enum DiskAlertType
+    {
+        LowSpace,
+        HealthIssue,
+        PerformanceIssue
+    }
+    
+    /// <summary>
+    /// Disk information details
+    /// </summary>
+    public class DiskInfo
+    {
+        public string DriveLetter { get; set; }
+        public string Label { get; set; }
+        public DriveType DriveType { get; set; }
+        public double TotalSizeGB { get; set; }
+        public double FreeSpaceGB { get; set; }
+        public double UsagePercentage { get; set; }
+        public string FileSystem { get; set; }
+        public DiskHealth Health { get; set; }
+        public DateTime LastChecked { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Disk optimization result
+    /// </summary>
+    public class DiskOptimizationResult
+    {
+        public string DiskLetter { get; set; }
+        public DriveType DiskType { get; set; }
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public List<string> OptimizationsApplied { get; set; } = new List<string>();
+        public DateTime CompletedAt { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Disk optimization status
+    /// </summary>
+    public class DiskOptimizationStatus
+    {
+        public bool IsMonitoring { get; set; }
+        public int TotalDisks { get; set; }
+        public int SSDCount { get; set; }
+        public int HDDCount { get; set; }
+        public DateTime LastScan { get; set; }
+    }
+    
+    /// <summary>
+    /// Disk optimization event arguments
+    /// </summary>
+    public class DiskOptimizationEventArgs : EventArgs
+    {
+        public DiskOptimizationResult Result { get; set; }
+    }
+    
+    /// <summary>
+    /// Disk health event arguments
+    /// </summary>
+    public class DiskHealthEventArgs : EventArgs
+    {
+        public DiskInfo DiskInfo { get; set; }
+        public DiskAlertType AlertType { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance snapshot for historical tracking
+    /// </summary>
+    public class PerformanceSnapshot
+    {
+        public DateTime Timestamp { get; set; }
+        public double CpuUsage { get; set; }
+        public long MemoryUsage { get; set; }
+        public long MemoryAvailable { get; set; }
+        public double GpuUsage { get; set; }
+        public int ActiveProcesses { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance trend types
+    /// </summary>
+    public enum TrendType
+    {
+        Stable,
+        Increasing,
+        Decreasing,
+        Volatile
+    }
+    
+    /// <summary>
+    /// Trend severity levels
+    /// </summary>
+    public enum TrendSeverity
+    {
+        Info,
+        Warning,
+        Critical
+    }
+    
+    /// <summary>
+    /// Bottleneck types
+    /// </summary>
+    public enum BottleneckType
+    {
+        CPU,
+        Memory,
+        GPU,
+        Disk,
+        Network
+    }
+    
+    /// <summary>
+    /// Bottleneck severity levels
+    /// </summary>
+    public enum BottleneckSeverity
+    {
+        Low,
+        Medium,
+        High,
+        Critical
+    }
+    
+    /// <summary>
+    /// Performance trend analysis result
+    /// </summary>
+    public class PerformanceTrend
+    {
+        public string MetricName { get; set; }
+        public TrendType Type { get; set; }
+        public TrendSeverity Severity { get; set; }
+        public double Direction { get; set; }
+        public double Strength { get; set; }
+        public double CurrentValue { get; set; }
+        public double AverageValue { get; set; }
+        public double MinValue { get; set; }
+        public double MaxValue { get; set; }
+        public int DataPoints { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance bottleneck detection result
+    /// </summary>
+    public class PerformanceBottleneck
+    {
+        public BottleneckType Type { get; set; }
+        public BottleneckSeverity Severity { get; set; }
+        public double CurrentValue { get; set; }
+        public string Description { get; set; }
+        public List<string> Recommendations { get; set; } = new List<string>();
+        public DateTime DetectedAt { get; set; } = DateTime.Now;
+    }
+    
+    /// <summary>
+    /// Performance prediction result
+    /// </summary>
+    public class PerformancePrediction
+    {
+        public string MetricName { get; set; }
+        public double CurrentValue { get; set; }
+        public double Prediction5Min { get; set; }
+        public double Prediction10Min { get; set; }
+        public double Prediction30Min { get; set; }
+        public double Confidence { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance trending status
+    /// </summary>
+    public class PerformanceTrendingStatus
+    {
+        public bool IsRunning { get; set; }
+        public int DataPointsCollected { get; set; }
+        public int MetricsTracked { get; set; }
+        public DateTime LastAnalysis { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance trend event arguments
+    /// </summary>
+    public class PerformanceTrendEventArgs : EventArgs
+    {
+        public PerformanceTrend Trend { get; set; }
+    }
+    
+    /// <summary>
+    /// Bottleneck detected event arguments
+    /// </summary>
+    public class BottleneckDetectedEventArgs : EventArgs
+    {
+        public PerformanceBottleneck Bottleneck { get; set; }
+    }
+    
+    /// <summary>
+    /// Performance prediction event arguments
+    /// </summary>
+    public class PerformancePredictionEventArgs : EventArgs
+    {
+        public List<PerformancePrediction> Predictions { get; set; } = new List<PerformancePrediction>();
+    }
+    
+    /// <summary>
+    /// FPS optimization severity levels
+    /// </summary>
+    public enum FpsOptimizationSeverity
+    {
+        Low,
+        Medium,
+        High,
+        Critical
+    }
+    
+    /// <summary>
+    /// FPS reading data
+    /// </summary>
+    public class FpsReading
+    {
+        public DateTime Timestamp { get; set; }
+        public double Fps { get; set; }
+        public string ProcessName { get; set; }
+        public string GameName { get; set; }
+    }
+    
+    /// <summary>
+    /// FPS optimization result
+    /// </summary>
+    public class FpsOptimization
+    {
+        public string GameName { get; set; }
+        public double CurrentFps { get; set; }
+        public double AverageFps { get; set; }
+        public double MinFps { get; set; }
+        public FpsOptimizationSeverity Severity { get; set; }
+        public bool Success { get; set; }
+        public List<string> OptimizationsApplied { get; set; } = new List<string>();
+        public DateTime Timestamp { get; set; }
+    }
+    
+    /// <summary>
+    /// FPS statistics over a time period
+    /// </summary>
+    public class FpsStatistics
+    {
+        public string GameName { get; set; }
+        public double AverageFps { get; set; }
+        public double MinFps { get; set; }
+        public double MaxFps { get; set; }
+        public double FpsStability { get; set; }
+        public int ReadingCount { get; set; }
+        public TimeSpan TimeRange { get; set; }
+    }
+    
+    /// <summary>
+    /// FPS monitoring status
+    /// </summary>
+    public class FpsMonitoringStatus
+    {
+        public bool IsMonitoring { get; set; }
+        public string CurrentGame { get; set; }
+        public int ReadingsCollected { get; set; }
+        public double CurrentFps { get; set; }
+        public DateTime LastReading { get; set; }
+    }
+    
+    /// <summary>
+    /// FPS changed event arguments
+    /// </summary>
+    public class FpsChangedEventArgs : EventArgs
+    {
+        public FpsReading FpsReading { get; set; }
+    }
+    
+    /// <summary>
+    /// FPS optimization event arguments
+    /// </summary>
+    public class FpsOptimizationEventArgs : EventArgs
+    {
+        public FpsOptimization Optimization { get; set; }
+    }
+    
+    /// <summary>
     /// System health assessment
     /// </summary>
     public class SystemHealthAssessment
