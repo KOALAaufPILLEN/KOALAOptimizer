@@ -80,7 +80,7 @@ namespace KOALAOptimizer.Testing.Views
                     // Set button background to theme color
                     try
                     {
-                        var color = (Color)ColorConverter.ConvertFromString(theme.HexColor);
+                        var color = (System.Windows.Media.Color)ColorConverter.ConvertFromString(theme.HexColor);
                         button.Background = new SolidColorBrush(color);
                         button.Foreground = GetContrastColor(color);
                     }
@@ -103,7 +103,7 @@ namespace KOALAOptimizer.Testing.Views
         /// <summary>
         /// Get contrasting text color for background
         /// </summary>
-        private Brush GetContrastColor(Color backgroundColor)
+        private Brush GetContrastColor(System.Windows.Media.Color backgroundColor)
         {
             // Calculate luminance
             var luminance = (0.299 * backgroundColor.R + 0.587 * backgroundColor.G + 0.114 * backgroundColor.B) / 255;
@@ -283,7 +283,7 @@ namespace KOALAOptimizer.Testing.Views
                 {
                     _isUpdating = true;
                     
-                    var color = (Color)ColorConverter.ConvertFromString(hexColor);
+                    var color = (System.Windows.Media.Color)ColorConverter.ConvertFromString(hexColor);
                     sliderRed.Value = color.R;
                     sliderGreen.Value = color.G;
                     sliderBlue.Value = color.B;
@@ -335,7 +335,7 @@ namespace KOALAOptimizer.Testing.Views
                 var g = (byte)sliderGreen.Value;
                 var b = (byte)sliderBlue.Value;
                 
-                var color = Color.FromRgb(r, g, b);
+                var color = System.Windows.Media.Color.FromRgb(r, g, b);
                 btnColorPreview.Background = new SolidColorBrush(color);
             }
             catch (Exception ex)
@@ -413,7 +413,7 @@ namespace KOALAOptimizer.Testing.Views
         /// </summary>
         private void DrawPreviewCrosshair(CrosshairSettings settings)
         {
-            var color = Color.FromArgb((byte)settings.Alpha, (byte)settings.Red, (byte)settings.Green, (byte)settings.Blue);
+            var color = System.Windows.Media.Color.FromArgb((byte)settings.Alpha, (byte)settings.Red, (byte)settings.Green, (byte)settings.Blue);
             var brush = new SolidColorBrush(color);
             
             var centerX = PreviewCanvas.Width / 2;

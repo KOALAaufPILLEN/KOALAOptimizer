@@ -67,7 +67,7 @@ namespace KOALAOptimizer.Testing.Views
                 HideAllShapes();
                 
                 // Create brush from settings
-                var color = Color.FromArgb((byte)settings.Alpha, (byte)settings.Red, (byte)settings.Green, (byte)settings.Blue);
+                var color = System.Windows.Media.Color.FromArgb((byte)settings.Alpha, (byte)settings.Red, (byte)settings.Green, (byte)settings.Blue);
                 var brush = new SolidColorBrush(color);
                 
                 // Show and configure the appropriate shape
