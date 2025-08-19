@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.Win32;
-using Newtonsoft.Json;
 using KOALAOptimizer.Testing.Models;
 
 namespace KOALAOptimizer.Testing.Services
@@ -83,8 +83,8 @@ namespace KOALAOptimizer.Testing.Services
                 BackupServiceSettings(backup);
                 
                 // Save backup to file
-                var json = JsonConvert.SerializeObject(backup, Formatting.Indented);
-                File.WriteAllText(_backupFilePath, json);
+                var backupText = SerializeBackup(backup);
+                File.WriteAllText(_backupFilePath, backupText);
                 
                 _logger.LogInfo($"Registry backup created successfully: {_backupFilePath}");
                 return true;
@@ -111,8 +111,8 @@ namespace KOALAOptimizer.Testing.Services
                 
                 _logger.LogInfo("Restoring registry from backup...");
                 
-                var json = File.ReadAllText(_backupFilePath);
-                var backup = JsonConvert.DeserializeObject<BackupConfiguration>(json);
+                var backupText = File.ReadAllText(_backupFilePath);
+                var backup = DeserializeBackup(backupText);
                 
                 if (backup == null)
                 {
@@ -646,6 +646,85 @@ namespace KOALAOptimizer.Testing.Services
         {
             _registryCache.Clear();
             _logger.LogInfo("Registry cache cleared");
+        }
+        
+        /// <summary>
+        /// Simple backup serialization (replaces JSON dependency)
+        /// </summary>
+        private string SerializeBackup(BackupConfiguration backup)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("[KOALA Backup Configuration]");
+            sb.AppendLine($"CreatedDate={backup.CreatedDate:O}");
+            sb.AppendLine($"Version={backup.Version}");
+            sb.AppendLine();
+            
+            sb.AppendLine("[Registry Entries]");
+            foreach (var entry in backup.RegistryEntries ?? new Dictionary<string, object>())
+            {
+                sb.AppendLine($"{entry.Key}={entry.Value}");
+            }
+            sb.AppendLine();
+            
+            sb.AppendLine("[Services]");
+            foreach (var service in backup.ServiceSettings ?? new Dictionary<string, bool>())
+            {
+                sb.AppendLine($"{service.Key}={service.Value}");
+            }
+            
+            return sb.ToString();
+        }
+        
+        /// <summary>
+        /// Simple backup deserialization (replaces JSON dependency)
+        /// </summary>
+        private BackupConfiguration DeserializeBackup(string backupText)
+        {
+            var backup = new BackupConfiguration
+            {
+                RegistryEntries = new Dictionary<string, object>(),
+                ServiceSettings = new Dictionary<string, bool>()
+            };
+            
+            var lines = backupText.Split('\n');
+            string currentSection = "";
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+                
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    currentSection = trimmedLine;
+                    continue;
+                }
+                
+                var parts = trimmedLine.Split('=');
+                if (parts.Length != 2) continue;
+                
+                var key = parts[0];
+                var value = parts[1];
+                
+                switch (currentSection)
+                {
+                    case "[KOALA Backup Configuration]":
+                        if (key == "CreatedDate" && DateTime.TryParse(value, out var date))
+                            backup.CreatedDate = date;
+                        else if (key == "Version")
+                            backup.Version = value;
+                        break;
+                    case "[Registry Entries]":
+                        backup.RegistryEntries[key] = value;
+                        break;
+                    case "[Services]":
+                        if (bool.TryParse(value, out var boolValue))
+                            backup.ServiceSettings[key] = boolValue;
+                        break;
+                }
+            }
+            
+            return backup;
         }
     }
 }

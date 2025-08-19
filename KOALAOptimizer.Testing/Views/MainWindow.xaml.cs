@@ -61,6 +61,9 @@ namespace KOALAOptimizer.Testing.Views
             };
             _uiUpdateTimer.Tick += UiUpdateTimer_Tick;
             
+            // Handle window closing
+            this.Closed += MainWindow_Closed;
+            
             // Initialize UI
             InitializeUI();
             
@@ -993,28 +996,28 @@ namespace KOALAOptimizer.Testing.Views
         #endregion
         
         /// <summary>
-        /// Window closing event
+        /// Handle window closing
         /// </summary>
-        protected override void OnClosed(EventArgs e)
+        /// <param name="sender">Event sender</param>
+        /// <param name="e">Event arguments</param>
+        private void MainWindow_Closed(object sender, EventArgs e)
         {
             try
             {
                 // Stop services
-                _uiUpdateTimer.Stop();
-                _performanceService.StopMonitoring();
-                _processService.StopBackgroundMonitoring();
+                _uiUpdateTimer?.Stop();
+                _performanceService?.StopMonitoring();
+                _processService?.StopBackgroundMonitoring();
                 
                 // Cleanup timer resolution
-                _timerService.RestoreOriginalResolution();
+                _timerService?.RestoreOriginalResolution();
                 
-                _logger.LogInfo("KOALA Gaming Optimizer - Application closed");
+                _logger?.LogInfo("KOALA Gaming Optimizer - Application closed");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error during shutdown: {ex.Message}", ex);
+                _logger?.LogError($"Error during shutdown: {ex.Message}", ex);
             }
-            
-            base.OnClosed(e);
         }
     }
 }
