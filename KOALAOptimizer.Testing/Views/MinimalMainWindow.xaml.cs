@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using KOALAOptimizer.Testing.Services;
@@ -12,9 +11,7 @@ namespace KOALAOptimizer.Testing.Views
     /// </summary>
     public partial class MinimalMainWindow : Window
     {
-        private ILoggingService _loggingService;
-        private OptimizationService _optimizationService;
-        private SystemService _systemService;
+        // NUCLEAR APPROACH: No service dependencies - completely self-contained
 
         public MinimalMainWindow()
         {
@@ -24,7 +21,6 @@ namespace KOALAOptimizer.Testing.Views
                 InitializeComponent();
                 LoggingService.EmergencyLog("MinimalMainWindow: InitializeComponent completed");
                 
-                InitializeServices();
                 LoadSystemInformation();
                 
                 LoggingService.EmergencyLog("MinimalMainWindow: Initialization complete");
@@ -36,76 +32,80 @@ namespace KOALAOptimizer.Testing.Views
             }
         }
 
-        private void InitializeServices()
+        private void LoadSystemInformation()
         {
             try
             {
-                _loggingService = LoggingService.Instance;
-                _optimizationService = OptimizationService.Instance;
-                _systemService = SystemService.Instance;
+                // NUCLEAR APPROACH: Basic system info without external services
+                var systemInfo = $"System: {Environment.OSVersion}\n" +
+                               $"CLR Version: {Environment.Version}\n" +
+                               $"Machine: {Environment.MachineName}\n" +
+                               $"User: {Environment.UserName}\n" +
+                               $"64-bit OS: {Environment.Is64BitOperatingSystem}\n" +
+                               $"64-bit Process: {Environment.Is64BitProcess}\n" +
+                               $"Processor Count: {Environment.ProcessorCount}\n" +
+                               $"Working Set: {Environment.WorkingSet / 1024 / 1024} MB\n" +
+                               "\n=== NUCLEAR MODE ACTIVE ===\n" +
+                               "Full system information requires normal mode.\n" +
+                               "This is a safe minimal display.";
                 
-                LoggingService.EmergencyLog("MinimalMainWindow: Services initialized");
+                SystemInfoTextBlock.Text = systemInfo;
             }
             catch (Exception ex)
             {
-                LoggingService.EmergencyLog($"MinimalMainWindow: Service initialization error: {ex.Message}");
-                // Continue without services if needed
-            }
-        }
-
-        private async void LoadSystemInformation()
-        {
-            try
-            {
-                if (_systemService != null)
-                {
-                    var systemInfo = await _systemService.GetSystemInfoAsync();
-                    SystemInfoTextBlock.Text = systemInfo;
-                }
-                else
-                {
-                    SystemInfoTextBlock.Text = "System service unavailable - running in minimal mode";
-                }
-            }
-            catch (Exception ex)
-            {
-                SystemInfoTextBlock.Text = $"Error loading system info: {ex.Message}";
+                SystemInfoTextBlock.Text = $"Error loading system info: {ex.Message}\n\nNUCLEAR MODE: Basic error display";
                 LoggingService.EmergencyLog($"MinimalMainWindow: LoadSystemInformation error: {ex.Message}");
             }
         }
 
-        private async void RecommendedButton_Click(object sender, RoutedEventArgs e)
+        private void RecommendedButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (_optimizationService == null)
-                {
-                    MessageBox.Show("Optimization service not available", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                RecommendedButton.Content = "🔄 Applying...";
+                // NUCLEAR APPROACH: Simple user feedback without external services
+                RecommendedButton.Content = "🔄 Processing...";
                 RecommendedButton.IsEnabled = false;
 
-                // Apply the checked optimizations
+                // Show the user what would be optimized
                 var selectedOptimizations = GetSelectedOptimizations();
-                bool success = await _optimizationService.ApplyOptimizationsAsync(selectedOptimizations);
-
-                if (success)
+                
+                if (selectedOptimizations.Length == 0)
                 {
-                    MessageBox.Show("Recommended optimizations applied successfully!", 
-                                  "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    _loggingService?.LogInfo("Recommended optimizations applied successfully from minimal window");
+                    MessageBox.Show("Please select at least one optimization to apply.", 
+                                  "No Optimizations Selected", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Some optimizations failed. Check the log for details.", 
-                                  "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    var optimizationList = string.Join("\n• ", selectedOptimizations);
+                    var result = MessageBox.Show(
+                        $"🚨 NUCLEAR MODE: Selected optimizations:\n\n• {optimizationList}\n\n" +
+                        "⚠️ Note: Full optimization functionality requires normal mode.\n" +
+                        "This is a safe preview of selected optimizations.\n\n" +
+                        "Restart with '--normal' flag for full functionality?", 
+                        "Nuclear Mode - Optimization Preview", 
+                        MessageBoxButton.YesNo, 
+                        MessageBoxImage.Information);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            System.Diagnostics.Process.Start(
+                                System.Reflection.Assembly.GetExecutingAssembly().Location, 
+                                "--normal");
+                            Application.Current.Shutdown();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to restart in normal mode: {ex.Message}", 
+                                          "Restart Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error applying optimizations: {ex.Message}", 
+                MessageBox.Show($"Error in optimization preview: {ex.Message}", 
                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 LoggingService.EmergencyLog($"MinimalMainWindow: RecommendedButton_Click error: {ex.Message}");
             }
@@ -136,45 +136,46 @@ namespace KOALAOptimizer.Testing.Views
             return optimizations.ToArray();
         }
 
-        private async void RevertAllButton_Click(object sender, RoutedEventArgs e)
+        private void RevertAllButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var result = MessageBox.Show("Are you sure you want to revert all optimizations?", 
-                                           "Confirm Revert", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                // NUCLEAR APPROACH: Simple revert functionality without external services
+                var result = MessageBox.Show(
+                    "🚨 NUCLEAR MODE: Revert Functionality\n\n" +
+                    "⚠️ Full revert functionality requires normal mode.\n" +
+                    "This mode provides safe basic operation only.\n\n" +
+                    "Would you like to restart in normal mode for full revert capabilities?", 
+                    "Nuclear Mode - Revert Preview", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Question);
                 
                 if (result == MessageBoxResult.Yes)
                 {
-                    if (_optimizationService != null)
+                    try
                     {
-                        RevertAllButton.Content = "🔄 Reverting...";
+                        RevertAllButton.Content = "🔄 Restarting...";
                         RevertAllButton.IsEnabled = false;
-
-                        bool success = await _optimizationService.RevertAllOptimizationsAsync();
                         
-                        if (success)
-                        {
-                            MessageBox.Show("All optimizations reverted successfully!", 
-                                          "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Some optimizations could not be reverted. Check the log for details.", 
-                                          "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }
+                        System.Diagnostics.Process.Start(
+                            System.Reflection.Assembly.GetExecutingAssembly().Location, 
+                            "--normal");
+                        Application.Current.Shutdown();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to restart in normal mode: {ex.Message}", 
+                                      "Restart Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        RevertAllButton.Content = "🔄 Revert All";
+                        RevertAllButton.IsEnabled = true;
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error reverting optimizations: {ex.Message}", 
+                MessageBox.Show($"Error in revert preview: {ex.Message}", 
                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 LoggingService.EmergencyLog($"MinimalMainWindow: RevertAllButton_Click error: {ex.Message}");
-            }
-            finally
-            {
-                RevertAllButton.Content = "🔄 Revert All";
-                RevertAllButton.IsEnabled = true;
             }
         }
 
@@ -198,7 +199,7 @@ namespace KOALAOptimizer.Testing.Views
             }
         }
 
-        private async void LoadThemesButton_Click(object sender, RoutedEventArgs e)
+        private void LoadThemesButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
