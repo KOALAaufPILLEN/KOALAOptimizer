@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -131,6 +132,9 @@ namespace KOALAOptimizer.Testing.Services
                 {
                     var runningProcesses = Process.GetProcesses().Select(p => p.ProcessName.ToLower()).ToHashSet();
                     
+                    // Check for game launcher processes
+                    CheckGameLaunchers(runningProcesses);
+                    
                     foreach (var profile in _gameProfiles.Values)
                     {
                         bool wasRunning = profile.IsRunning;
@@ -170,6 +174,145 @@ namespace KOALAOptimizer.Testing.Services
             {
                 _logger.LogError($"Error monitoring game processes: {ex.Message}", ex);
             }
+        }
+        
+        /// <summary>
+        /// Check for game launcher processes and their associated games
+        /// </summary>
+        private void CheckGameLaunchers(HashSet<string> runningProcesses)
+        {
+            try
+            {
+                var gameLaunchers = new Dictionary<string, LauncherInfo>
+                {
+                    ["steam"] = new LauncherInfo 
+                    { 
+                        Name = "Steam", 
+                        ProcessName = "steam",
+                        CommonGames = new[] { "csgo", "dota2", "tf2", "left4dead2", "counter-strike2" }
+                    },
+                    ["epicgameslauncher"] = new LauncherInfo 
+                    { 
+                        Name = "Epic Games", 
+                        ProcessName = "epicgameslauncher",
+                        CommonGames = new[] { "fortnite", "rocketleague", "unrealtournament" }
+                    },
+                    ["battle.net"] = new LauncherInfo 
+                    { 
+                        Name = "Battle.net", 
+                        ProcessName = "battle.net",
+                        CommonGames = new[] { "overwatch", "wow", "diablo", "hearthstone", "starcraft2" }
+                    },
+                    ["origin"] = new LauncherInfo 
+                    { 
+                        Name = "Origin", 
+                        ProcessName = "origin",
+                        CommonGames = new[] { "battlefield", "fifa", "apex", "titanfall" }
+                    },
+                    ["uplay"] = new LauncherInfo 
+                    { 
+                        Name = "Ubisoft Connect", 
+                        ProcessName = "uplay",
+                        CommonGames = new[] { "assassinscreed", "farcry", "rainbow6", "watchdogs" }
+                    },
+                    ["riotclientux"] = new LauncherInfo 
+                    { 
+                        Name = "Riot Games", 
+                        ProcessName = "riotclientux",
+                        CommonGames = new[] { "valorant", "leagueoflegends", "teamfighttactics" }
+                    }
+                };
+                
+                foreach (var launcher in gameLaunchers)
+                {
+                    if (runningProcesses.Contains(launcher.Key))
+                    {
+                        // Launcher is running, check for associated games
+                        foreach (var gameName in launcher.Value.CommonGames)
+                        {
+                            if (runningProcesses.Any(proc => proc.Contains(gameName)))
+                            {
+                                // Try to find or create a profile for this game
+                                var gameProfile = GetOrCreateGameProfile(gameName, launcher.Value.Name);
+                                if (gameProfile != null && !gameProfile.IsRunning)
+                                {
+                                    _logger.LogInfo($"Game detected via {launcher.Value.Name}: {gameProfile.DisplayName}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error checking game launchers: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Get or create a game profile for detected games
+        /// </summary>
+        private GameProfile GetOrCreateGameProfile(string gameName, string launcherName)
+        {
+            try
+            {
+                // Check if we already have a profile for this game
+                var existingProfile = _gameProfiles.Values.FirstOrDefault(p => 
+                    p.ProcessNames.Any(proc => proc.ToLower().Contains(gameName.ToLower())));
+                
+                if (existingProfile != null)
+                    return existingProfile;
+                
+                // Create a new profile
+                var newProfile = new GameProfile
+                {
+                    GameKey = $"{gameName}_{launcherName}",
+                    DisplayName = FormatGameName(gameName),
+                    ProcessNames = new List<string> { gameName },
+                    Priority = ProcessPriority.High,
+                    SpecificTweaks = new List<string> { "HighPriority" },
+                    IsRunning = false
+                };
+                
+                _gameProfiles[newProfile.GameKey] = newProfile;
+                _logger.LogInfo($"Created new game profile: {newProfile.DisplayName} (via {launcherName})");
+                
+                return newProfile;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating game profile for {gameName}: {ex.Message}", ex);
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// Format game name for display
+        /// </summary>
+        private string FormatGameName(string gameName)
+        {
+            // Convert common game process names to display names
+            var gameNameMap = new Dictionary<string, string>
+            {
+                ["csgo"] = "Counter-Strike: Global Offensive",
+                ["counter-strike2"] = "Counter-Strike 2",
+                ["valorant"] = "VALORANT",
+                ["leagueoflegends"] = "League of Legends",
+                ["overwatch"] = "Overwatch 2",
+                ["rocketleague"] = "Rocket League",
+                ["fortnite"] = "Fortnite",
+                ["apex"] = "Apex Legends",
+                ["battlefield"] = "Battlefield",
+                ["rainbow6"] = "Rainbow Six Siege",
+                ["dota2"] = "Dota 2"
+            };
+            
+            if (gameNameMap.ContainsKey(gameName.ToLower()))
+                return gameNameMap[gameName.ToLower()];
+            
+            // Default formatting: capitalize first letter of each word
+            return string.Join(" ", gameName.Split('_', '-')
+                .Select(word => char.ToUpper(word[0]) + word.Substring(1).ToLower()));
         }
         
         /// <summary>
@@ -387,6 +530,276 @@ namespace KOALAOptimizer.Testing.Services
         /// Check if monitoring is active
         /// </summary>
         public bool IsMonitoring => _isMonitoring;
+        
+        /// <summary>
+        /// Add or update a game profile
+        /// </summary>
+        public bool AddGameProfile(GameProfile profile)
+        {
+            try
+            {
+                if (profile == null || string.IsNullOrEmpty(profile.GameKey))
+                    return false;
+                
+                lock (_lockObject)
+                {
+                    _gameProfiles[profile.GameKey] = profile;
+                    _logger.LogInfo($"Game profile added/updated: {profile.DisplayName}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to add game profile: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Remove a game profile
+        /// </summary>
+        public bool RemoveGameProfile(string gameKey)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(gameKey))
+                    return false;
+                
+                lock (_lockObject)
+                {
+                    if (_gameProfiles.ContainsKey(gameKey))
+                    {
+                        var profile = _gameProfiles[gameKey];
+                        _gameProfiles.Remove(gameKey);
+                        _logger.LogInfo($"Game profile removed: {profile.DisplayName}");
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to remove game profile: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Save game profiles to file
+        /// </summary>
+        public bool SaveProfilesToFile(string filePath)
+        {
+            try
+            {
+                var profileData = new List<string>();
+                
+                lock (_lockObject)
+                {
+                    profileData.Add("# KOALA Game Detection Profiles");
+                    profileData.Add($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    profileData.Add($"# Version: 2.3.0");
+                    profileData.Add("");
+                    
+                    foreach (var profile in _gameProfiles.Values)
+                    {
+                        profileData.Add($"[{profile.GameKey}]");
+                        profileData.Add($"DisplayName={profile.DisplayName}");
+                        profileData.Add($"ProcessNames={string.Join(",", profile.ProcessNames)}");
+                        profileData.Add($"Priority={profile.Priority}");
+                        profileData.Add($"Affinity={profile.Affinity}");
+                        profileData.Add($"SpecificTweaks={string.Join(",", profile.SpecificTweaks)}");
+                        profileData.Add("");
+                    }
+                }
+                
+                File.WriteAllLines(filePath, profileData);
+                _logger.LogInfo($"Game profiles saved to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to save game profiles: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Load game profiles from file
+        /// </summary>
+        public bool LoadProfilesFromFile(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                    return false;
+                
+                var lines = File.ReadAllLines(filePath);
+                var profiles = new Dictionary<string, GameProfile>();
+                GameProfile currentProfile = null;
+                
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+                    
+                    // Skip comments and empty lines
+                    if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("#"))
+                        continue;
+                    
+                    // Section header
+                    if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                    {
+                        var gameKey = trimmedLine.Substring(1, trimmedLine.Length - 2);
+                        currentProfile = new GameProfile
+                        {
+                            GameKey = gameKey,
+                            ProcessNames = new List<string>(),
+                            SpecificTweaks = new List<string>()
+                        };
+                        profiles[gameKey] = currentProfile;
+                        continue;
+                    }
+                    
+                    // Profile properties
+                    if (currentProfile != null && trimmedLine.Contains("="))
+                    {
+                        var parts = trimmedLine.Split('=');
+                        if (parts.Length >= 2)
+                        {
+                            var key = parts[0].Trim();
+                            var value = string.Join("=", parts.Skip(1)).Trim();
+                            
+                            switch (key)
+                            {
+                                case "DisplayName":
+                                    currentProfile.DisplayName = value;
+                                    break;
+                                case "ProcessNames":
+                                    currentProfile.ProcessNames = value.Split(',').Select(s => s.Trim()).ToList();
+                                    break;
+                                case "Priority":
+                                    if (Enum.TryParse(value, out ProcessPriority priority))
+                                        currentProfile.Priority = priority;
+                                    break;
+                                case "Affinity":
+                                    currentProfile.Affinity = value;
+                                    break;
+                                case "SpecificTweaks":
+                                    currentProfile.SpecificTweaks = value.Split(',').Select(s => s.Trim()).ToList();
+                                    break;
+                            }
+                        }
+                    }
+                }
+                
+                lock (_lockObject)
+                {
+                    _gameProfiles.Clear();
+                    foreach (var profile in profiles)
+                    {
+                        _gameProfiles[profile.Key] = profile.Value;
+                    }
+                }
+                
+                _logger.LogInfo($"Loaded {profiles.Count} game profiles from: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to load game profiles: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Export profiles for sharing
+        /// </summary>
+        public bool ExportProfiles(string exportPath)
+        {
+            try
+            {
+                return SaveProfilesToFile(exportPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to export profiles: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Import profiles from file
+        /// </summary>
+        public bool ImportProfiles(string importPath, bool mergeWithExisting = true)
+        {
+            try
+            {
+                if (!mergeWithExisting)
+                {
+                    return LoadProfilesFromFile(importPath);
+                }
+                
+                // Merge with existing profiles
+                var tempProfiles = new Dictionary<string, GameProfile>();
+                lock (_lockObject)
+                {
+                    foreach (var profile in _gameProfiles)
+                    {
+                        tempProfiles[profile.Key] = profile.Value;
+                    }
+                }
+                
+                var result = LoadProfilesFromFile(importPath);
+                
+                if (result && mergeWithExisting)
+                {
+                    lock (_lockObject)
+                    {
+                        // Restore existing profiles that weren't in the import
+                        foreach (var profile in tempProfiles)
+                        {
+                            if (!_gameProfiles.ContainsKey(profile.Key))
+                            {
+                                _gameProfiles[profile.Key] = profile.Value;
+                            }
+                        }
+                    }
+                }
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to import profiles: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Create optimization profile for detected game
+        /// </summary>
+        public bool CreateOptimizationProfile(string gameName, ProcessPriority priority = ProcessPriority.High, string[] specificTweaks = null)
+        {
+            try
+            {
+                var gameKey = gameName.Replace(" ", "").Replace(":", "");
+                var profile = new GameProfile
+                {
+                    GameKey = gameKey,
+                    DisplayName = gameName,
+                    ProcessNames = new List<string> { gameName.ToLower().Replace(" ", "").Replace(":", "") },
+                    Priority = priority,
+                    Affinity = "Auto",
+                    SpecificTweaks = specificTweaks?.ToList() ?? new List<string> { "HighPriority" }
+                };
+                
+                return AddGameProfile(profile);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to create optimization profile for {gameName}: {ex.Message}", ex);
+                return false;
+            }
+        }
         
         /// <summary>
         /// Cleanup resources
