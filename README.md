@@ -3,7 +3,6 @@
 <div align="center">
 
 [![Version](https://img.shields.io/badge/version-2.3--C%23-brightgreen.svg?style=for-the-badge)]()
-[![Build Status](https://img.shields.io/github/actions/workflow/status/KOALAaufPILLEN/KOALAOptimizer/build-koala-optimizer.yml?style=for-the-badge&logo=github)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078d4.svg?style=for-the-badge&logo=windows)]()
 [![.NET](https://img.shields.io/badge/.NET-Framework%204.8-512BD4.svg?style=for-the-badge&logo=dotnet)]()
