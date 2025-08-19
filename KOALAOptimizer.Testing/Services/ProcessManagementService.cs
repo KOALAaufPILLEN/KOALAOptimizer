@@ -36,7 +36,7 @@ namespace KOALAOptimizer.Testing.Services
                 LoggingService.EmergencyLog($"ProcessManagementService: {_gameProfiles?.Count ?? 0} game profiles loaded");
                 
                 // Initialize monitoring timer (but don't start it yet)
-                _monitoringTimer = new Timer(MonitoringCallback, null, Timeout.Infinite, Timeout.Infinite);
+                _monitoringTimer = new Timer(MonitorGameProcesses, null, Timeout.Infinite, Timeout.Infinite);
                 LoggingService.EmergencyLog("ProcessManagementService: Monitoring timer created");
                 
                 LoggingService.EmergencyLog("ProcessManagementService: Initialization completed");
