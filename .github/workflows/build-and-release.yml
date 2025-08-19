@@ -43,27 +43,27 @@ jobs:
       run: |
         echo "Validating XAML file syntax..."
         python -c "
-import xml.etree.ElementTree as ET
-import os
-xaml_files = []
-for root, dirs, files in os.walk('KOALAOptimizer.Testing'):
-    for file in files:
-        if file.endswith('.xaml'):
-            xaml_files.append(os.path.join(root, file))
-all_valid = True
-for xaml_file in sorted(xaml_files):
-    try:
-        ET.parse(xaml_file)
-        print(f'✅ {xaml_file} - Valid XML syntax')
-    except Exception as e:
-        print(f'❌ {xaml_file} - Error: {e}')
-        all_valid = False
-if all_valid:
-    print('🎉 All XAML files have valid syntax!')
-else:
-    print('💥 Some XAML files have syntax errors!')
-    exit(1)
-"
+        import xml.etree.ElementTree as ET
+        import os
+        xaml_files = []
+        for root, dirs, files in os.walk('KOALAOptimizer.Testing'):
+            for file in files:
+                if file.endswith('.xaml'):
+                    xaml_files.append(os.path.join(root, file))
+        all_valid = True
+        for xaml_file in sorted(xaml_files):
+            try:
+                ET.parse(xaml_file)
+                print(f'✅ {xaml_file} - Valid XML syntax')
+            except Exception as e:
+                print(f'❌ {xaml_file} - Error: {e}')
+                all_valid = False
+        if all_valid:
+            print('🎉 All XAML files have valid syntax!')
+        else:
+            print('💥 Some XAML files have syntax errors!')
+            exit(1)
+        "
       shell: cmd
 
     - name: Restore packages using dotnet
