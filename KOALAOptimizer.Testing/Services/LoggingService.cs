@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
 using KOALAOptimizer.Testing.Models;
@@ -17,19 +18,63 @@ namespace KOALAOptimizer.Testing.Services
         
         private readonly object _lock = new object();
         private readonly string _logFilePath;
+        private readonly string _emergencyLogPath;
+        private static bool _consoleAllocated = false;
+        
+        // Win32 API for console allocation
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AllocConsole();
+        
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool FreeConsole();
         
         public ObservableCollection<LogEntry> LogEntries { get; private set; }
         
         private LoggingService()
         {
-            LogEntries = new ObservableCollection<LogEntry>();
-            
-            // Create log file path
-            var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "KOALAOptimizer");
-            Directory.CreateDirectory(logDirectory);
-            _logFilePath = Path.Combine(logDirectory, $"koala-log-{DateTime.Now:yyyy-MM-dd}.txt");
-            
-            LogInfo("Logging service initialized");
+            try
+            {
+                LogEntries = new ObservableCollection<LogEntry>();
+                
+                // Create emergency log file first (in temp if AppData fails)
+                _emergencyLogPath = Path.Combine(Path.GetTempPath(), $"koala-emergency-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+                
+                // Try to create proper log directory
+                string logDirectory;
+                try
+                {
+                    logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "KOALAOptimizer");
+                    Directory.CreateDirectory(logDirectory);
+                    _logFilePath = Path.Combine(logDirectory, $"koala-log-{DateTime.Now:yyyy-MM-dd}.txt");
+                }
+                catch
+                {
+                    // Fallback to temp directory
+                    logDirectory = Path.GetTempPath();
+                    _logFilePath = Path.Combine(logDirectory, $"koala-log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+                }
+                
+                // Allocate console for debug builds
+                #if DEBUG
+                EnsureConsoleAllocated();
+                #endif
+                
+                // Emergency startup log
+                EmergencyLog("LoggingService: Initializing...");
+                EmergencyLog($"LoggingService: Log file path: {_logFilePath}");
+                EmergencyLog($"LoggingService: Emergency log path: {_emergencyLogPath}");
+                
+                LogInfo("Logging service initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                // Last resort - write to emergency log and console
+                EmergencyLog($"LoggingService: CRITICAL - Failed to initialize: {ex.Message}");
+                EmergencyLog($"LoggingService: Exception details: {ex}");
+                throw;
+            }
         }
         
         /// <summary>
@@ -214,6 +259,69 @@ namespace KOALAOptimizer.Testing.Services
             {
                 LogError($"Failed to export logs: {ex.Message}", ex);
             }
+        }
+        
+        /// <summary>
+        /// Emergency logging method that bypasses normal logging infrastructure
+        /// Used for critical startup errors when normal logging might fail
+        /// </summary>
+        public static void EmergencyLog(string message)
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            var logMessage = $"[{timestamp}] [EMERGENCY] {message}";
+            
+            try
+            {
+                // Write to console if available
+                Console.WriteLine(logMessage);
+            }
+            catch { /* Ignore console errors */ }
+            
+            try
+            {
+                // Write to emergency file
+                var emergencyPath = Path.Combine(Path.GetTempPath(), $"koala-emergency-{DateTime.Now:yyyy-MM-dd}.txt");
+                File.AppendAllText(emergencyPath, logMessage + Environment.NewLine);
+            }
+            catch { /* Ignore file errors */ }
+        }
+        
+        /// <summary>
+        /// Ensure console is allocated for debug output
+        /// </summary>
+        private static void EnsureConsoleAllocated()
+        {
+            if (!_consoleAllocated)
+            {
+                try
+                {
+                    AllocConsole();
+                    _consoleAllocated = true;
+                    Console.WriteLine("KOALA Gaming Optimizer - Debug Console Allocated");
+                    Console.WriteLine($"Startup Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    Console.WriteLine("=====================================");
+                }
+                catch (Exception ex)
+                {
+                    // If console allocation fails, just continue
+                    System.Diagnostics.Debug.WriteLine($"Failed to allocate console: {ex.Message}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Log startup milestone with enhanced detail
+        /// </summary>
+        public void LogStartupMilestone(string milestone, string details = null)
+        {
+            var message = $"STARTUP MILESTONE: {milestone}";
+            if (!string.IsNullOrEmpty(details))
+            {
+                message += $" - {details}";
+            }
+            
+            LogInfo(message);
+            EmergencyLog(message); // Also write to emergency log for critical tracking
         }
     }
 }

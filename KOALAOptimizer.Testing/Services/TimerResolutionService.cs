@@ -27,7 +27,19 @@ namespace KOALAOptimizer.Testing.Services
         
         private TimerResolutionService()
         {
-            _logger = LoggingService.Instance;
+            try
+            {
+                LoggingService.EmergencyLog("TimerResolutionService: Initializing...");
+                _logger = LoggingService.Instance;
+                LoggingService.EmergencyLog("TimerResolutionService: Initialization completed");
+                _logger?.LogInfo("Timer resolution service initialized");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"TimerResolutionService: Initialization failed - {ex.Message}");
+                _logger = null;
+            }
+        }
         }
         
         /// <summary>

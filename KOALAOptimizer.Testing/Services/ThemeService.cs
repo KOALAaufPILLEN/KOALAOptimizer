@@ -22,13 +22,42 @@ namespace KOALAOptimizer.Testing.Services
         
         private ThemeService()
         {
-            _logger = LoggingService.Instance;
-            _availableThemes = InitializeThemes();
-            
-            // Don't assume a theme is loaded, let the application handle initial theme loading
-            _currentTheme = null;
-            
-            _logger.LogInfo("Theme service initialized");
+            try
+            {
+                LoggingService.EmergencyLog("ThemeService: Initializing...");
+                
+                _logger = LoggingService.Instance;
+                LoggingService.EmergencyLog("ThemeService: LoggingService obtained");
+                
+                _availableThemes = InitializeThemes();
+                LoggingService.EmergencyLog($"ThemeService: {_availableThemes?.Count ?? 0} themes initialized");
+                
+                // Don't assume a theme is loaded, let the application handle initial theme loading
+                _currentTheme = null;
+                
+                // Try to detect current theme if any
+                try
+                {
+                    DetectCurrentTheme();
+                    LoggingService.EmergencyLog($"ThemeService: Current theme detected: {_currentTheme?.DisplayName ?? "None"}");
+                }
+                catch (Exception detectEx)
+                {
+                    _logger?.LogWarning($"Failed to detect current theme: {detectEx.Message}");
+                    LoggingService.EmergencyLog($"ThemeService: Theme detection failed: {detectEx.Message}");
+                }
+                
+                _logger?.LogInfo("Theme service initialized");
+                LoggingService.EmergencyLog("ThemeService: Initialization completed successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ThemeService: CRITICAL - Initialization failed: {ex.Message}");
+                _logger?.LogError($"Critical error initializing ThemeService: {ex.Message}", ex);
+                // Initialize with empty theme list to prevent null reference issues
+                _availableThemes = new List<ThemeInfo>();
+                _currentTheme = null;
+            }
         }
         
         /// <summary>

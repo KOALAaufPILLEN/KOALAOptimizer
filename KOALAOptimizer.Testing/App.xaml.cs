@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using KOALAOptimizer.Testing.Services;
@@ -14,72 +16,281 @@ namespace KOALAOptimizer.Testing
         private AdminService _adminService;
         private CrosshairOverlayService _crosshairService;
         
-        protected override void OnStartup(StartupEventArgs e)
+        /// <summary>
+        /// Static constructor for early initialization
+        /// </summary>
+        static App()
         {
-            // Initialize core services FIRST before anything else
-            _loggingService = LoggingService.Instance;
-            _adminService = AdminService.Instance;
-            _crosshairService = CrosshairOverlayService.Instance;
-            
-            // Set up global exception handling EARLY
-            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            
-            _loggingService.LogInfo("KOALA Gaming Optimizer v2.3 C# Edition - Starting...");
-            
-            // Load theme with robust error handling BEFORE base.OnStartup()
             try
             {
-                LoadInitialTheme();
-            }
-            catch (Exception themeEx)
-            {
-                _loggingService.LogError($"Critical theme loading error: {themeEx.Message}", themeEx);
+                LoggingService.EmergencyLog("App static constructor: Starting early initialization");
                 
-                // Try to load a minimal fallback theme
+                // Log basic system information early
+                LoggingService.EmergencyLog($"App static constructor: OS Version = {Environment.OSVersion}");
+                LoggingService.EmergencyLog($"App static constructor: CLR Version = {Environment.Version}");
+                LoggingService.EmergencyLog($"App static constructor: Is64BitOS = {Environment.Is64BitOperatingSystem}");
+                LoggingService.EmergencyLog($"App static constructor: Is64BitProcess = {Environment.Is64BitProcess}");
+                LoggingService.EmergencyLog($"App static constructor: ProcessorCount = {Environment.ProcessorCount}");
+                
+                LoggingService.EmergencyLog("App static constructor: Early initialization complete");
+            }
+            catch (Exception ex)
+            {
+                // Even emergency logging failed - this is very bad
                 try
                 {
-                    LoadMinimalFallbackTheme();
+                    System.Diagnostics.Debug.WriteLine($"CRITICAL: App static constructor failed: {ex}");
+                    Console.WriteLine($"CRITICAL: App static constructor failed: {ex}");
                 }
-                catch (Exception fallbackEx)
+                catch
                 {
-                    _loggingService.LogError($"Failed to load even fallback theme: {fallbackEx.Message}", fallbackEx);
-                    // Continue with default system theme
+                    // Can't do anything more
                 }
             }
-            
-            base.OnStartup(e);
-            
-            // Initialize theme service after basic startup
+        }
+        
+        /// <summary>
+        /// Application constructor with early error detection
+        /// </summary>
+        public App()
+        {
             try
             {
-                var themeService = ThemeService.Instance;
-                _loggingService.LogInfo("Theme service initialized");
+                // Emergency logging at the very start
+                LoggingService.EmergencyLog("App constructor: Application starting...");
+                LoggingService.EmergencyLog($"App constructor: Assembly version {Assembly.GetExecutingAssembly().GetName().Version}");
+                LoggingService.EmergencyLog($"App constructor: Runtime version {Environment.Version}");
+                LoggingService.EmergencyLog($"App constructor: Working directory {Environment.CurrentDirectory}");
                 
-                // Validate that the default theme is properly loaded
-                var currentTheme = themeService.GetCurrentTheme();
-                if (currentTheme == null)
+                // Initialize component
+                InitializeComponent();
+                LoggingService.EmergencyLog("App constructor: InitializeComponent completed successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"App constructor: CRITICAL ERROR - {ex.Message}");
+                LoggingService.EmergencyLog($"App constructor: Exception details - {ex}");
+                
+                // Try to show error message and exit gracefully
+                try
                 {
-                    _loggingService.LogWarning("No default theme loaded, applying SciFi theme");
-                    themeService.ApplyTheme("SciFi");
+                    MessageBox.Show($"Critical startup error in App constructor:\n\n{ex.Message}\n\nThe application cannot continue. Please check the emergency log in your temp folder.", 
+                                   "KOALA Gaming Optimizer - Critical Startup Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // If even MessageBox fails, force exit
+                    Environment.Exit(1);
+                }
+                throw;
+            }
+        }
+        
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            LoggingService.EmergencyLog("OnStartup: Method entry");
+            
+            try
+            {
+                // Initialize core services FIRST before anything else
+                LoggingService.EmergencyLog("OnStartup: Initializing core services...");
+                
+                try
+                {
+                    _loggingService = LoggingService.Instance;
+                    _loggingService.LogStartupMilestone("LoggingService initialized");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"OnStartup: CRITICAL - LoggingService initialization failed: {ex.Message}");
+                    throw new InvalidOperationException("Failed to initialize logging service", ex);
+                }
+                
+                try
+                {
+                    _adminService = AdminService.Instance;
+                    _loggingService.LogStartupMilestone("AdminService initialized");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.LogError($"AdminService initialization failed: {ex.Message}", ex);
+                    _loggingService.LogWarning("Continuing without AdminService - some features may be limited");
+                    _adminService = null;
+                }
+                
+                try
+                {
+                    _crosshairService = CrosshairOverlayService.Instance;
+                    _loggingService.LogStartupMilestone("CrosshairOverlayService initialized");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.LogError($"CrosshairOverlayService initialization failed: {ex.Message}", ex);
+                    _loggingService.LogWarning("Continuing without CrosshairOverlayService - crosshair features will be disabled");
+                    _crosshairService = null;
+                }
+                
+                // Set up global exception handling EARLY
+                _loggingService.LogStartupMilestone("Setting up global exception handlers");
+                this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+                AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+                
+                // Log system information
+                LogSystemInformation();
+                
+                _loggingService.LogInfo("KOALA Gaming Optimizer v2.3 C# Edition - Starting...");
+                _loggingService.LogStartupMilestone("Core initialization complete");
+                
+                // Load theme with robust error handling BEFORE base.OnStartup()
+                _loggingService.LogStartupMilestone("Loading initial theme");
+                try
+                {
+                    LoadInitialTheme();
+                    _loggingService.LogStartupMilestone("Initial theme loaded successfully");
+                }
+                catch (Exception themeEx)
+                {
+                    _loggingService.LogError($"Critical theme loading error: {themeEx.Message}", themeEx);
+                    
+                    // Try to load a minimal fallback theme
+                    try
+                    {
+                        _loggingService.LogStartupMilestone("Attempting fallback theme load");
+                        LoadMinimalFallbackTheme();
+                        _loggingService.LogStartupMilestone("Fallback theme loaded successfully");
+                    }
+                    catch (Exception fallbackEx)
+                    {
+                        _loggingService.LogError($"Failed to load even fallback theme: {fallbackEx.Message}", fallbackEx);
+                        _loggingService.LogWarning("Continuing with system default theme");
+                    }
+                }
+                
+                _loggingService.LogStartupMilestone("Calling base.OnStartup");
+                base.OnStartup(e);
+                _loggingService.LogStartupMilestone("base.OnStartup completed");
+                
+                // Initialize theme service after basic startup
+                try
+                {
+                    _loggingService.LogStartupMilestone("Initializing ThemeService");
+                    var themeService = ThemeService.Instance;
+                    _loggingService.LogInfo("Theme service initialized");
+                    
+                    // Validate that the default theme is properly loaded
+                    var currentTheme = themeService.GetCurrentTheme();
+                    if (currentTheme == null)
+                    {
+                        _loggingService.LogWarning("No default theme loaded, applying SciFi theme");
+                        if (themeService.ApplyTheme("SciFi"))
+                        {
+                            _loggingService.LogStartupMilestone("SciFi theme applied successfully");
+                        }
+                        else
+                        {
+                            _loggingService.LogWarning("Failed to apply SciFi theme, continuing with current state");
+                        }
+                    }
+                    else
+                    {
+                        _loggingService.LogStartupMilestone($"Current theme: {currentTheme.DisplayName}");
+                    }
+                }
+                catch (Exception themeEx)
+                {
+                    _loggingService.LogError($"Failed to initialize theme service: {themeEx.Message}", themeEx);
+                    _loggingService.LogWarning("Continuing without theme service - theme switching will be disabled");
+                }
+                
+                // Check admin privileges
+                if (_adminService != null)
+                {
+                    try
+                    {
+                        if (!_adminService.IsRunningAsAdmin())
+                        {
+                            _loggingService.LogWarning("Not running as administrator. Some optimizations may be limited.");
+                        }
+                        else
+                        {
+                            _loggingService.LogInfo("Running with administrator privileges - All optimizations available");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.LogError($"Failed to check admin privileges: {ex.Message}", ex);
+                    }
+                }
+                
+                if (_crosshairService != null)
+                {
+                    _loggingService.LogInfo("Crosshair overlay service initialized");
+                }
+                
+                _loggingService.LogStartupMilestone("Application startup completed successfully");
+                _loggingService.LogInfo("KOALA Gaming Optimizer is ready for use");
+                
+                // Create and show main window with error handling
+                _loggingService.LogStartupMilestone("Creating main window");
+                try
+                {
+                    var mainWindow = new Views.MainWindow();
+                    LoggingService.EmergencyLog("OnStartup: MainWindow instance created");
+                    
+                    mainWindow.Show();
+                    LoggingService.EmergencyLog("OnStartup: MainWindow.Show() called successfully");
+                    _loggingService.LogStartupMilestone("Main window displayed successfully");
+                }
+                catch (Exception windowEx)
+                {
+                    LoggingService.EmergencyLog($"OnStartup: CRITICAL - MainWindow creation/show failed: {windowEx.Message}");
+                    _loggingService.LogError($"Failed to create or show main window: {windowEx.Message}", windowEx);
+                    
+                    // Show error and exit
+                    try
+                    {
+                        MessageBox.Show($"Failed to create the main window:\n\n{windowEx.Message}\n\nThe application cannot continue.", 
+                                       "KOALA Gaming Optimizer - Window Creation Error", 
+                                       MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch
+                    {
+                        LoggingService.EmergencyLog("OnStartup: CRITICAL - Even error MessageBox failed");
+                    }
+                    
+                    Environment.Exit(1);
                 }
             }
-            catch (Exception themeEx)
+            catch (Exception ex)
             {
-                _loggingService.LogError($"Failed to initialize theme service: {themeEx.Message}", themeEx);
+                // Final catch-all for any startup errors
+                var errorMessage = $"Critical startup error: {ex.Message}";
+                LoggingService.EmergencyLog($"OnStartup: FATAL ERROR - {errorMessage}");
+                LoggingService.EmergencyLog($"OnStartup: Exception details - {ex}");
+                
+                try
+                {
+                    _loggingService?.LogError($"FATAL STARTUP ERROR: {ex.Message}", ex);
+                }
+                catch { /* Ignore if logging fails */ }
+                
+                // Show error to user and exit gracefully
+                try
+                {
+                    MessageBox.Show($"{errorMessage}\n\nException Details:\n{ex}\n\nPlease check the log files for more information.", 
+                                   "KOALA Gaming Optimizer - Fatal Startup Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // If MessageBox fails, just log and exit
+                    LoggingService.EmergencyLog("OnStartup: CRITICAL - Even MessageBox failed, forcing exit");
+                }
+                
+                // Exit the application
+                Environment.Exit(1);
             }
-            
-            // Check admin privileges
-            if (!_adminService.IsRunningAsAdmin())
-            {
-                _loggingService.LogWarning("Not running as administrator. Some optimizations may be limited.");
-            }
-            else
-            {
-                _loggingService.LogInfo("Running with administrator privileges - All optimizations available");
-            }
-            
-            _loggingService.LogInfo("Crosshair overlay service initialized");
         }
         
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
@@ -138,28 +349,104 @@ namespace KOALAOptimizer.Testing
         
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
+            var errorMessage = "Unknown unhandled exception";
+            Exception exception = null;
+            
             if (e.ExceptionObject is Exception ex)
             {
+                exception = ex;
+                errorMessage = ex.Message;
                 _loggingService?.LogError($"Unhandled domain exception: {ex.Message}", ex);
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: {ex.Message}");
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: Exception details - {ex}");
+            }
+            else
+            {
+                errorMessage = e.ExceptionObject?.ToString() ?? "Unknown exception object";
+                _loggingService?.LogError($"Unhandled domain exception (non-Exception): {errorMessage}");
+                LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: Non-Exception object - {errorMessage}");
+            }
+            
+            _loggingService?.LogError($"IsTerminating: {e.IsTerminating}");
+            LoggingService.EmergencyLog($"CurrentDomain_UnhandledException: IsTerminating = {e.IsTerminating}");
+            
+            // If this is a terminating exception, try to show error message
+            if (e.IsTerminating)
+            {
+                try
+                {
+                    var message = $"A fatal unhandled exception occurred:\n\n{errorMessage}\n\n" +
+                                 "The application will now terminate. Please check the log files for more details.";
+                    
+                    MessageBox.Show(message, "KOALA Gaming Optimizer - Fatal Error", 
+                                   MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // If even MessageBox fails, just log
+                    LoggingService.EmergencyLog("CurrentDomain_UnhandledException: CRITICAL - MessageBox failed");
+                }
             }
         }
         
         protected override void OnExit(ExitEventArgs e)
         {
-            _loggingService?.LogInfo("KOALA Gaming Optimizer - Shutting down...");
+            LoggingService.EmergencyLog($"OnExit: Application exiting with code {e.ApplicationExitCode}");
+            _loggingService?.LogInfo($"KOALA Gaming Optimizer - Shutting down (exit code: {e.ApplicationExitCode})...");
             
             // Cleanup services
             try
             {
-                TimerResolutionService.Instance?.RestoreOriginalResolution();
-                ProcessManagementService.Instance?.StopBackgroundMonitoring();
-                PerformanceMonitoringService.Instance?.StopMonitoring();
-                _crosshairService?.Dispose();
+                _loggingService?.LogInfo("Cleaning up services...");
+                
+                try
+                {
+                    TimerResolutionService.Instance?.RestoreOriginalResolution();
+                    _loggingService?.LogInfo("TimerResolutionService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up TimerResolutionService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    ProcessManagementService.Instance?.StopBackgroundMonitoring();
+                    _loggingService?.LogInfo("ProcessManagementService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up ProcessManagementService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    PerformanceMonitoringService.Instance?.StopMonitoring();
+                    _loggingService?.LogInfo("PerformanceMonitoringService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up PerformanceMonitoringService: {ex.Message}", ex);
+                }
+                
+                try
+                {
+                    _crosshairService?.Dispose();
+                    _loggingService?.LogInfo("CrosshairOverlayService cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.LogError($"Error cleaning up CrosshairOverlayService: {ex.Message}", ex);
+                }
             }
             catch (Exception ex)
             {
-                _loggingService?.LogError($"Error during shutdown: {ex.Message}", ex);
+                LoggingService.EmergencyLog($"OnExit: Error during service cleanup: {ex.Message}");
+                _loggingService?.LogError($"Error during service cleanup: {ex.Message}", ex);
             }
+            
+            _loggingService?.LogInfo("KOALA Gaming Optimizer shutdown complete");
+            LoggingService.EmergencyLog("OnExit: Shutdown complete, calling base.OnExit");
             
             base.OnExit(e);
         }
@@ -172,23 +459,32 @@ namespace KOALAOptimizer.Testing
             try
             {
                 _loggingService?.LogInfo("Loading initial SciFi theme...");
+                LoggingService.EmergencyLog("LoadInitialTheme: Starting theme load");
+                
                 var themeUri = new Uri("pack://application:,,,/Themes/SciFiTheme.xaml", UriKind.Absolute);
+                LoggingService.EmergencyLog($"LoadInitialTheme: Theme URI created: {themeUri}");
+                
                 var themeDict = new ResourceDictionary { Source = themeUri };
+                LoggingService.EmergencyLog("LoadInitialTheme: ResourceDictionary created");
                 
                 // Validate essential resources exist
                 if (ValidateEssentialResources(themeDict))
                 {
+                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resources validated");
                     Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
+                    LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added to application resources");
                     _loggingService?.LogInfo("Initial theme loaded successfully");
                 }
                 else
                 {
+                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resource validation failed");
                     throw new InvalidOperationException("SciFi theme is missing essential resources");
                 }
             }
             catch (Exception ex)
             {
-                _loggingService?.LogError($"Failed to load SciFi theme: {ex.Message}");
+                LoggingService.EmergencyLog($"LoadInitialTheme: FAILED - {ex.Message}");
+                _loggingService?.LogError($"Failed to load SciFi theme: {ex.Message}", ex);
                 throw;
             }
         }
@@ -198,33 +494,63 @@ namespace KOALAOptimizer.Testing
         /// </summary>
         private void LoadMinimalFallbackTheme()
         {
-            _loggingService?.LogInfo("Loading minimal fallback theme...");
-            
-            // Create a minimal theme with essential resources
-            var fallbackDict = new ResourceDictionary();
-            
-            // Add essential brushes
-            fallbackDict.Add("BackgroundBrush", new SolidColorBrush(Colors.DarkSlateGray));
-            fallbackDict.Add("TextBrush", new SolidColorBrush(Colors.White));
-            fallbackDict.Add("PrimaryBrush", new SolidColorBrush(Colors.CornflowerBlue));
-            fallbackDict.Add("AccentBrush", new SolidColorBrush(Colors.Orange));
-            fallbackDict.Add("BorderBrush", new SolidColorBrush(Colors.Gray));
-            fallbackDict.Add("GroupBackgroundBrush", new SolidColorBrush(Colors.DimGray));
-            fallbackDict.Add("HoverBrush", new SolidColorBrush(Colors.LightBlue));
-            fallbackDict.Add("DarkBackgroundBrush", new SolidColorBrush(Colors.Black));
-            fallbackDict.Add("DangerBrush", new SolidColorBrush(Colors.Red));
-            fallbackDict.Add("SuccessBrush", new SolidColorBrush(Colors.Green));
-            fallbackDict.Add("WarningBrush", new SolidColorBrush(Colors.Yellow));
-            fallbackDict.Add("SecondaryBrush", new SolidColorBrush(Colors.LightGray));
-            
-            // Add minimal window style
-            var windowStyle = new Style(typeof(Window));
-            windowStyle.Setters.Add(new Setter(Window.BackgroundProperty, fallbackDict["BackgroundBrush"]));
-            windowStyle.Setters.Add(new Setter(Window.ForegroundProperty, fallbackDict["TextBrush"]));
-            fallbackDict.Add("MainWindowStyle", windowStyle);
-            
-            Application.Current.Resources.MergedDictionaries.Insert(0, fallbackDict);
-            _loggingService?.LogInfo("Minimal fallback theme loaded");
+            try
+            {
+                _loggingService?.LogInfo("Loading minimal fallback theme...");
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Starting fallback theme creation");
+                
+                // Create a minimal theme with essential resources
+                var fallbackDict = new ResourceDictionary();
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: ResourceDictionary created");
+                
+                // Add essential brushes with validation
+                try
+                {
+                    fallbackDict.Add("BackgroundBrush", new SolidColorBrush(Colors.DarkSlateGray));
+                    fallbackDict.Add("TextBrush", new SolidColorBrush(Colors.White));
+                    fallbackDict.Add("PrimaryBrush", new SolidColorBrush(Colors.CornflowerBlue));
+                    fallbackDict.Add("AccentBrush", new SolidColorBrush(Colors.Orange));
+                    fallbackDict.Add("BorderBrush", new SolidColorBrush(Colors.Gray));
+                    fallbackDict.Add("GroupBackgroundBrush", new SolidColorBrush(Colors.DimGray));
+                    fallbackDict.Add("HoverBrush", new SolidColorBrush(Colors.LightBlue));
+                    fallbackDict.Add("DarkBackgroundBrush", new SolidColorBrush(Colors.Black));
+                    fallbackDict.Add("DangerBrush", new SolidColorBrush(Colors.Red));
+                    fallbackDict.Add("SuccessBrush", new SolidColorBrush(Colors.Green));
+                    fallbackDict.Add("WarningBrush", new SolidColorBrush(Colors.Yellow));
+                    fallbackDict.Add("SecondaryBrush", new SolidColorBrush(Colors.LightGray));
+                    LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Brushes added successfully");
+                }
+                catch (Exception brushEx)
+                {
+                    LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: Failed to add brushes: {brushEx.Message}");
+                    throw new InvalidOperationException("Failed to create fallback theme brushes", brushEx);
+                }
+                
+                // Add minimal window style
+                try
+                {
+                    var windowStyle = new Style(typeof(Window));
+                    windowStyle.Setters.Add(new Setter(Window.BackgroundProperty, fallbackDict["BackgroundBrush"]));
+                    windowStyle.Setters.Add(new Setter(Window.ForegroundProperty, fallbackDict["TextBrush"]));
+                    fallbackDict.Add("MainWindowStyle", windowStyle);
+                    LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Window style added successfully");
+                }
+                catch (Exception styleEx)
+                {
+                    LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: Failed to add window style: {styleEx.Message}");
+                    // Continue without window style if it fails
+                }
+                
+                Application.Current.Resources.MergedDictionaries.Insert(0, fallbackDict);
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Fallback theme applied to application");
+                _loggingService?.LogInfo("Minimal fallback theme loaded");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: CRITICAL FAILURE - {ex.Message}");
+                _loggingService?.LogError($"Failed to load minimal fallback theme: {ex.Message}", ex);
+                throw;
+            }
         }
         
         /// <summary>
@@ -232,20 +558,118 @@ namespace KOALAOptimizer.Testing
         /// </summary>
         private bool ValidateEssentialResources(ResourceDictionary themeDict)
         {
+            if (themeDict == null)
+            {
+                LoggingService.EmergencyLog("ValidateEssentialResources: Theme dictionary is null");
+                _loggingService?.LogWarning("Theme dictionary is null during validation");
+                return false;
+            }
+
             string[] essentialResources = { 
                 "BackgroundBrush", "TextBrush", "PrimaryBrush", 
                 "AccentBrush", "BorderBrush", "MainWindowStyle" 
             };
             
+            LoggingService.EmergencyLog($"ValidateEssentialResources: Checking {essentialResources.Length} essential resources");
+            
+            bool allValid = true;
             foreach (var resourceKey in essentialResources)
             {
-                if (!themeDict.Contains(resourceKey))
+                try
                 {
-                    _loggingService?.LogWarning($"Theme missing essential resource: {resourceKey}");
-                    return false;
+                    if (!themeDict.Contains(resourceKey))
+                    {
+                        LoggingService.EmergencyLog($"ValidateEssentialResources: Missing resource: {resourceKey}");
+                        _loggingService?.LogWarning($"Theme missing essential resource: {resourceKey}");
+                        allValid = false;
+                    }
+                    else
+                    {
+                        LoggingService.EmergencyLog($"ValidateEssentialResources: Found resource: {resourceKey}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"ValidateEssentialResources: Error checking resource {resourceKey}: {ex.Message}");
+                    _loggingService?.LogError($"Error validating resource {resourceKey}: {ex.Message}", ex);
+                    allValid = false;
                 }
             }
-            return true;
+            
+            LoggingService.EmergencyLog($"ValidateEssentialResources: Validation result: {allValid}");
+            return allValid;
+        }
+        
+        /// <summary>
+        /// Log comprehensive system information for debugging
+        /// </summary>
+        private void LogSystemInformation()
+        {
+            try
+            {
+                _loggingService.LogInfo("=== SYSTEM INFORMATION ===");
+                _loggingService.LogInfo($"OS Version: {Environment.OSVersion}");
+                _loggingService.LogInfo($"CLR Version: {Environment.Version}");
+                _loggingService.LogInfo($"Machine Name: {Environment.MachineName}");
+                _loggingService.LogInfo($"User Name: {Environment.UserName}");
+                _loggingService.LogInfo($"Working Directory: {Environment.CurrentDirectory}");
+                _loggingService.LogInfo($"Assembly Location: {Assembly.GetExecutingAssembly().Location}");
+                _loggingService.LogInfo($"Assembly Version: {Assembly.GetExecutingAssembly().GetName().Version}");
+                _loggingService.LogInfo($"Command Line: {Environment.CommandLine}");
+                _loggingService.LogInfo($"Process ID: {Process.GetCurrentProcess().Id}");
+                _loggingService.LogInfo($"Thread ID: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                _loggingService.LogInfo($"Is 64-bit OS: {Environment.Is64BitOperatingSystem}");
+                _loggingService.LogInfo($"Is 64-bit Process: {Environment.Is64BitProcess}");
+                _loggingService.LogInfo($"Processor Count: {Environment.ProcessorCount}");
+                _loggingService.LogInfo($"Available Memory: {GC.GetTotalMemory(false):N0} bytes");
+                _loggingService.LogInfo("=========================");
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.LogError($"Failed to log system information: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Test error handling mechanisms - can be called for validation
+        /// </summary>
+        public static void TestErrorHandling()
+        {
+            LoggingService.EmergencyLog("TestErrorHandling: Starting error handling tests");
+            
+            try
+            {
+                // Test 1: Emergency logging
+                LoggingService.EmergencyLog("TestErrorHandling: Test 1 - Emergency logging works");
+                
+                // Test 2: Service instance creation
+                try
+                {
+                    var testLogging = LoggingService.Instance;
+                    testLogging?.LogInfo("TestErrorHandling: Test 2 - LoggingService instance creation works");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"TestErrorHandling: Test 2 FAILED - LoggingService: {ex.Message}");
+                }
+                
+                // Test 3: Other service instances
+                try
+                {
+                    var testAdmin = AdminService.Instance;
+                    LoggingService.EmergencyLog("TestErrorHandling: Test 3 - AdminService instance creation works");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"TestErrorHandling: Test 3 FAILED - AdminService: {ex.Message}");
+                }
+                
+                LoggingService.EmergencyLog("TestErrorHandling: All tests completed");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"TestErrorHandling: CRITICAL - Test framework failed: {ex.Message}");
+            }
         }
     }
 }

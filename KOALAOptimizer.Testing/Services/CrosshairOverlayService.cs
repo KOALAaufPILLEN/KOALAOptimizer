@@ -40,18 +40,56 @@ namespace KOALAOptimizer.Testing.Services
         
         private CrosshairOverlayService()
         {
-            _logger = LoggingService.Instance;
-            _predefinedThemes = InitializePredefinedThemes();
-            _settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-                                           "KOALAOptimizer", "crosshair_settings.txt");
-            
-            // Create directory if it doesn't exist
-            Directory.CreateDirectory(Path.GetDirectoryName(_settingsFilePath));
-            
-            // Load or create default settings
-            LoadSettings();
-            
-            _logger.LogInfo("Crosshair overlay service initialized");
+            try
+            {
+                LoggingService.EmergencyLog("CrosshairOverlayService: Initializing...");
+                
+                _logger = LoggingService.Instance;
+                LoggingService.EmergencyLog("CrosshairOverlayService: LoggingService obtained");
+                
+                _predefinedThemes = InitializePredefinedThemes();
+                LoggingService.EmergencyLog("CrosshairOverlayService: Predefined themes initialized");
+                
+                try
+                {
+                    _settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+                                                   "KOALAOptimizer", "crosshair_settings.txt");
+                    
+                    // Create directory if it doesn't exist
+                    Directory.CreateDirectory(Path.GetDirectoryName(_settingsFilePath));
+                    LoggingService.EmergencyLog($"CrosshairOverlayService: Settings directory created at {Path.GetDirectoryName(_settingsFilePath)}");
+                }
+                catch (Exception dirEx)
+                {
+                    _logger?.LogError($"Failed to create crosshair settings directory: {dirEx.Message}", dirEx);
+                    // Fallback to temp directory
+                    _settingsFilePath = Path.Combine(Path.GetTempPath(), "crosshair_settings.txt");
+                    LoggingService.EmergencyLog($"CrosshairOverlayService: Using fallback settings path: {_settingsFilePath}");
+                }
+                
+                // Load or create default settings
+                try
+                {
+                    LoadSettings();
+                    LoggingService.EmergencyLog("CrosshairOverlayService: Settings loaded successfully");
+                }
+                catch (Exception settingsEx)
+                {
+                    _logger?.LogError($"Failed to load crosshair settings: {settingsEx.Message}", settingsEx);
+                    LoggingService.EmergencyLog($"CrosshairOverlayService: Settings load failed, using defaults");
+                    // Create default settings if loading fails
+                    _settings = new CrosshairSettings();
+                }
+                
+                _logger?.LogInfo("Crosshair overlay service initialized");
+                LoggingService.EmergencyLog("CrosshairOverlayService: Initialization completed successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"CrosshairOverlayService: CRITICAL - Initialization failed: {ex.Message}");
+                _logger?.LogError($"Critical error initializing CrosshairOverlayService: {ex.Message}", ex);
+                // Don't rethrow - allow app to continue without crosshair functionality
+            }
         }
         
         /// <summary>
