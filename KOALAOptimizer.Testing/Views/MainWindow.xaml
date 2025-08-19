@@ -302,7 +302,7 @@
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="chkOptimizeMemoryManagement" Content="Optimize Memory Management" 
                                           Style="{DynamicResource SciFiCheckBoxStyle}"/>
-                                <CheckBox x:Name="chkUltimatePerformancePowerPlan" Content="Ultimate Performance Power Plan" 
+                                <CheckBox x:Name="chkUltimatePerformancePowerPlan2" Content="Ultimate Performance Power Plan" 
                                           Style="{DynamicResource SciFiCheckBoxStyle}"/>
                                 <CheckBox x:Name="chkOptimizeCpuScheduling" Content="Optimize CPU Scheduling" 
                                           Style="{DynamicResource SciFiCheckBoxStyle}"/>
