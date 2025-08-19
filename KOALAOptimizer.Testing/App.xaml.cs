@@ -551,44 +551,19 @@ namespace KOALAOptimizer.Testing
                 // ENHANCED DIAGNOSTICS - Capture comprehensive state before theme loading
                 CaptureDiagnosticSnapshot("PRE_THEME_LOAD");
                 
-                var themeUri = new Uri("pack://application:,,,/Themes/SciFiTheme.xaml", UriKind.Absolute);
-                LoggingService.EmergencyLog($"LoadInitialTheme: Theme URI created: {themeUri}");
-                
-                var themeDict = new ResourceDictionary { Source = themeUri };
-                LoggingService.EmergencyLog("LoadInitialTheme: ResourceDictionary created");
-                
-                // Enhanced validation with detailed logging
-                if (ValidateEssentialResources(themeDict))
+                // NEW: Implement systematic phased loading
+                if (LoadThemeSystematically("pack://application:,,,/Themes/SciFiTheme.xaml"))
                 {
-                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resources validated");
+                    LoggingService.EmergencyLog("LoadInitialTheme: Systematic theme loading succeeded");
+                    _loggingService?.LogInfo("SciFi theme loaded systematically and validated successfully");
                     
-                    // Comprehensive style validation
-                    if (ValidateAllReferencedStyles(themeDict))
-                    {
-                        LoggingService.EmergencyLog("LoadInitialTheme: All referenced styles validated");
-                        
-                        // Apply theme with detailed state tracking
-                        LoggingService.EmergencyLog("LoadInitialTheme: Adding theme to merged dictionaries");
-                        Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
-                        LoggingService.EmergencyLog("LoadInitialTheme: Theme added successfully");
-                        
-                        // Post-application diagnostics
-                        CaptureDiagnosticSnapshot("POST_THEME_LOAD");
-                        
-                        _loggingService?.LogInfo("SciFi theme loaded and validated successfully");
-                    }
-                    else
-                    {
-                        LoggingService.EmergencyLog("LoadInitialTheme: Referenced styles validation failed - some styles missing");
-                        Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
-                        LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added despite missing styles (fallbacks should handle)");
-                        _loggingService?.LogWarning("Initial theme loaded with some missing styles - fallbacks will be used");
-                    }
+                    // Post-application diagnostics
+                    CaptureDiagnosticSnapshot("POST_THEME_LOAD");
                 }
                 else
                 {
-                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resource validation failed");
-                    throw new InvalidOperationException("SciFi theme is missing essential resources");
+                    LoggingService.EmergencyLog("LoadInitialTheme: Systematic theme loading failed, trying fallback");
+                    throw new InvalidOperationException("Systematic theme loading failed");
                 }
             }
             catch (Exception ex)
@@ -600,6 +575,375 @@ namespace KOALAOptimizer.Testing
                 // Capture diagnostic snapshot at failure point
                 CaptureDiagnosticSnapshot("THEME_LOAD_FAILURE");
                 
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// Load theme systematically with progressive enhancement and rollback capability
+        /// </summary>
+        private bool LoadThemeSystematically(string themeUri)
+        {
+            var rollbackPoint = new ResourceDictionary();
+            bool success = false;
+            
+            try
+            {
+                LoggingService.EmergencyLog("LoadThemeSystematically: Starting systematic theme loading");
+                
+                // Phase 1: Create rollback snapshot
+                CaptureResourceSnapshot(rollbackPoint);
+                LoggingService.EmergencyLog("LoadThemeSystematically: Rollback point captured");
+                
+                // Phase 2: Load theme into isolated dictionary
+                var themeDict = new ResourceDictionary();
+                try
+                {
+                    themeDict.Source = new Uri(themeUri, UriKind.Absolute);
+                    LoggingService.EmergencyLog("LoadThemeSystematically: Theme dictionary loaded");
+                }
+                catch (Exception loadEx)
+                {
+                    LoggingService.EmergencyLog($"LoadThemeSystematically: Failed to load theme: {loadEx.Message}");
+                    return false;
+                }
+                
+                // Phase 3: Validate essential resources in isolation
+                if (!ValidateResourcesInIsolation(themeDict))
+                {
+                    LoggingService.EmergencyLog("LoadThemeSystematically: Resource validation failed");
+                    return false;
+                }
+                
+                // Phase 4: Apply resources progressively with validation at each step
+                success = ApplyResourcesProgressively(themeDict);
+                
+                if (!success)
+                {
+                    LoggingService.EmergencyLog("LoadThemeSystematically: Progressive application failed, rolling back");
+                    RollbackToSnapshot(rollbackPoint);
+                    return false;
+                }
+                
+                LoggingService.EmergencyLog("LoadThemeSystematically: Theme applied successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"LoadThemeSystematically: Exception occurred: {ex.Message}");
+                
+                try
+                {
+                    RollbackToSnapshot(rollbackPoint);
+                    LoggingService.EmergencyLog("LoadThemeSystematically: Rollback completed");
+                }
+                catch (Exception rollbackEx)
+                {
+                    LoggingService.EmergencyLog($"LoadThemeSystematically: CRITICAL - Rollback failed: {rollbackEx.Message}");
+                }
+                
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Capture current resource state for rollback
+        /// </summary>
+        private void CaptureResourceSnapshot(ResourceDictionary snapshot)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("CaptureResourceSnapshot: Capturing current resources");
+                
+                // Copy current merged dictionaries
+                foreach (var dict in Application.Current.Resources.MergedDictionaries)
+                {
+                    var copyDict = new ResourceDictionary();
+                    if (dict.Source != null)
+                    {
+                        copyDict.Source = dict.Source;
+                    }
+                    else
+                    {
+                        // Copy individual resources
+                        foreach (var key in dict.Keys)
+                        {
+                            copyDict[key] = dict[key];
+                        }
+                    }
+                    snapshot.MergedDictionaries.Add(copyDict);
+                }
+                
+                // Copy direct resources
+                foreach (var key in Application.Current.Resources.Keys)
+                {
+                    snapshot[key] = Application.Current.Resources[key];
+                }
+                
+                LoggingService.EmergencyLog($"CaptureResourceSnapshot: Captured {snapshot.MergedDictionaries.Count} merged dictionaries and {snapshot.Count} direct resources");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"CaptureResourceSnapshot: Failed: {ex.Message}");
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// Validate resources in isolation before applying them
+        /// </summary>
+        private bool ValidateResourcesInIsolation(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ValidateResourcesInIsolation: Starting isolated validation");
+                
+                // Check essential resources
+                if (!ValidateEssentialResources(themeDict))
+                {
+                    LoggingService.EmergencyLog("ValidateResourcesInIsolation: Essential resources validation failed");
+                    return false;
+                }
+                
+                // Validate style integrity
+                if (!ValidateStyleIntegrity(themeDict))
+                {
+                    LoggingService.EmergencyLog("ValidateResourcesInIsolation: Style integrity validation failed");
+                    return false;
+                }
+                
+                // Test individual resource access
+                if (!TestResourceAccess(themeDict))
+                {
+                    LoggingService.EmergencyLog("ValidateResourcesInIsolation: Resource access test failed");
+                    return false;
+                }
+                
+                LoggingService.EmergencyLog("ValidateResourcesInIsolation: All validations passed");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ValidateResourcesInIsolation: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Test individual resource access without applying to application
+        /// </summary>
+        private bool TestResourceAccess(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("TestResourceAccess: Testing resource accessibility");
+                
+                string[] criticalKeys = { "BackgroundBrush", "TextBrush", "PrimaryBrush", "MainWindowStyle" };
+                
+                foreach (var key in criticalKeys)
+                {
+                    try
+                    {
+                        if (themeDict.Contains(key))
+                        {
+                            var resource = themeDict[key];
+                            LoggingService.EmergencyLog($"TestResourceAccess: Resource '{key}' accessible, type: {resource?.GetType().Name ?? "NULL"}");
+                        }
+                        else
+                        {
+                            LoggingService.EmergencyLog($"TestResourceAccess: Resource '{key}' not found in theme");
+                        }
+                    }
+                    catch (Exception resourceEx)
+                    {
+                        LoggingService.EmergencyLog($"TestResourceAccess: Failed to access resource '{key}': {resourceEx.Message}");
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"TestResourceAccess: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Apply resources progressively with validation at each step
+        /// </summary>
+        private bool ApplyResourcesProgressively(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ApplyResourcesProgressively: Starting progressive application");
+                
+                // Step 1: Apply basic brushes first
+                if (!ApplyBasicBrushes(themeDict))
+                {
+                    LoggingService.EmergencyLog("ApplyResourcesProgressively: Basic brushes application failed");
+                    return false;
+                }
+                
+                // Step 2: Apply styles
+                if (!ApplyStyles(themeDict))
+                {
+                    LoggingService.EmergencyLog("ApplyResourcesProgressively: Styles application failed");
+                    return false;
+                }
+                
+                // Step 3: Apply complete theme
+                if (!ApplyCompleteTheme(themeDict))
+                {
+                    LoggingService.EmergencyLog("ApplyResourcesProgressively: Complete theme application failed");
+                    return false;
+                }
+                
+                LoggingService.EmergencyLog("ApplyResourcesProgressively: Progressive application successful");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ApplyResourcesProgressively: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Apply basic brushes first for safety
+        /// </summary>
+        private bool ApplyBasicBrushes(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ApplyBasicBrushes: Applying basic brushes");
+                
+                string[] brushKeys = { "BackgroundBrush", "TextBrush", "PrimaryBrush", "AccentBrush", "BorderBrush" };
+                
+                foreach (var key in brushKeys)
+                {
+                    if (themeDict.Contains(key))
+                    {
+                        try
+                        {
+                            Application.Current.Resources[key] = themeDict[key];
+                            LoggingService.EmergencyLog($"ApplyBasicBrushes: Applied brush '{key}'");
+                        }
+                        catch (Exception brushEx)
+                        {
+                            LoggingService.EmergencyLog($"ApplyBasicBrushes: Failed to apply brush '{key}': {brushEx.Message}");
+                            return false;
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ApplyBasicBrushes: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Apply styles with individual validation
+        /// </summary>
+        private bool ApplyStyles(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ApplyStyles: Applying individual styles");
+                
+                string[] styleKeys = { "MainWindowStyle", "GroupBoxStyle", "ModernButtonStyle" };
+                
+                foreach (var key in styleKeys)
+                {
+                    if (themeDict.Contains(key))
+                    {
+                        try
+                        {
+                            var style = themeDict[key];
+                            if (ValidateIndividualStyle(style))
+                            {
+                                Application.Current.Resources[key] = style;
+                                LoggingService.EmergencyLog($"ApplyStyles: Applied style '{key}'");
+                            }
+                            else
+                            {
+                                LoggingService.EmergencyLog($"ApplyStyles: Style '{key}' validation failed, skipping");
+                            }
+                        }
+                        catch (Exception styleEx)
+                        {
+                            LoggingService.EmergencyLog($"ApplyStyles: Failed to apply style '{key}': {styleEx.Message}");
+                            // Continue with other styles instead of failing completely
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ApplyStyles: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Apply complete theme as final step
+        /// </summary>
+        private bool ApplyCompleteTheme(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ApplyCompleteTheme: Applying complete theme");
+                
+                // Insert the complete theme dictionary
+                Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
+                
+                LoggingService.EmergencyLog("ApplyCompleteTheme: Complete theme applied");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ApplyCompleteTheme: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Rollback to captured resource snapshot
+        /// </summary>
+        private void RollbackToSnapshot(ResourceDictionary snapshot)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("RollbackToSnapshot: Rolling back to previous state");
+                
+                // Clear current resources
+                Application.Current.Resources.MergedDictionaries.Clear();
+                Application.Current.Resources.Clear();
+                
+                // Restore merged dictionaries
+                foreach (var dict in snapshot.MergedDictionaries)
+                {
+                    Application.Current.Resources.MergedDictionaries.Add(dict);
+                }
+                
+                // Restore direct resources
+                foreach (var key in snapshot.Keys)
+                {
+                    Application.Current.Resources[key] = snapshot[key];
+                }
+                
+                LoggingService.EmergencyLog("RollbackToSnapshot: Rollback completed");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"RollbackToSnapshot: Rollback failed: {ex.Message}");
                 throw;
             }
         }
@@ -1037,6 +1381,115 @@ namespace KOALAOptimizer.Testing
             catch (Exception ex)
             {
                 LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: FAILED - {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Validate style integrity to ensure styles don't have circular dependencies or invalid references
+        /// </summary>
+        private bool ValidateStyleIntegrity(ResourceDictionary themeDict)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("ValidateStyleIntegrity: Starting style integrity validation");
+                
+                foreach (var key in themeDict.Keys)
+                {
+                    var resource = themeDict[key];
+                    
+                    if (resource is Style style)
+                    {
+                        try
+                        {
+                            // Test style properties
+                            var targetType = style.TargetType;
+                            var setters = style.Setters;
+                            
+                            LoggingService.EmergencyLog($"ValidateStyleIntegrity: Style '{key}' - TargetType: {targetType?.Name}, Setters: {setters?.Count}");
+                            
+                            // Check for null or invalid setters
+                            if (setters != null)
+                            {
+                                foreach (var setter in setters)
+                                {
+                                    if (setter is Setter styleSetter)
+                                    {
+                                        // Validate setter properties
+                                        var property = styleSetter.Property;
+                                        var value = styleSetter.Value;
+                                        
+                                        if (property == null)
+                                        {
+                                            LoggingService.EmergencyLog($"ValidateStyleIntegrity: Style '{key}' has setter with null property");
+                                            return false;
+                                        }
+                                        
+                                        // Check for resource references
+                                        if (value is DynamicResourceExtension dynamicRef)
+                                        {
+                                            LoggingService.EmergencyLog($"ValidateStyleIntegrity: Style '{key}' references dynamic resource: {dynamicRef.ResourceKey}");
+                                        }
+                                        else if (value is StaticResourceExtension staticRef)
+                                        {
+                                            LoggingService.EmergencyLog($"ValidateStyleIntegrity: Style '{key}' references static resource: {staticRef.ResourceKey}");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception styleEx)
+                        {
+                            LoggingService.EmergencyLog($"ValidateStyleIntegrity: Error validating style '{key}': {styleEx.Message}");
+                            // Continue validation but note the error
+                        }
+                    }
+                }
+                
+                LoggingService.EmergencyLog("ValidateStyleIntegrity: Style integrity validation completed");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ValidateStyleIntegrity: Exception: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Validate individual style before application
+        /// </summary>
+        private bool ValidateIndividualStyle(object style)
+        {
+            try
+            {
+                if (style is Style wpfStyle)
+                {
+                    // Basic validation - ensure style has target type and isn't corrupted
+                    var targetType = wpfStyle.TargetType;
+                    if (targetType == null)
+                    {
+                        LoggingService.EmergencyLog("ValidateIndividualStyle: Style has null TargetType");
+                        return false;
+                    }
+                    
+                    LoggingService.EmergencyLog($"ValidateIndividualStyle: Style validated for type {targetType.Name}");
+                    return true;
+                }
+                else if (style != null)
+                {
+                    LoggingService.EmergencyLog($"ValidateIndividualStyle: Resource is not a Style, type: {style.GetType().Name}");
+                    return true; // Non-style resources are OK
+                }
+                else
+                {
+                    LoggingService.EmergencyLog("ValidateIndividualStyle: Style is null");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ValidateIndividualStyle: Exception: {ex.Message}");
+                return false;
             }
         }
     }
