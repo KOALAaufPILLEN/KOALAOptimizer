@@ -18,7 +18,19 @@ namespace KOALAOptimizer.Testing.Services
         
         private AdminService()
         {
-            _logger = LoggingService.Instance;
+            try
+            {
+                LoggingService.EmergencyLog("AdminService: Initializing...");
+                _logger = LoggingService.Instance;
+                LoggingService.EmergencyLog("AdminService: LoggingService obtained successfully");
+                _logger?.LogInfo("AdminService initialized");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"AdminService: Initialization failed - {ex.Message}");
+                // Don't rethrow - allow service to continue with limited functionality
+                _logger = null;
+            }
         }
         
         /// <summary>

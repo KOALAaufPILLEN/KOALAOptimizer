@@ -17,6 +17,39 @@ namespace KOALAOptimizer.Testing
         private CrosshairOverlayService _crosshairService;
         
         /// <summary>
+        /// Static constructor for early initialization
+        /// </summary>
+        static App()
+        {
+            try
+            {
+                LoggingService.EmergencyLog("App static constructor: Starting early initialization");
+                
+                // Log basic system information early
+                LoggingService.EmergencyLog($"App static constructor: OS Version = {Environment.OSVersion}");
+                LoggingService.EmergencyLog($"App static constructor: CLR Version = {Environment.Version}");
+                LoggingService.EmergencyLog($"App static constructor: Is64BitOS = {Environment.Is64BitOperatingSystem}");
+                LoggingService.EmergencyLog($"App static constructor: Is64BitProcess = {Environment.Is64BitProcess}");
+                LoggingService.EmergencyLog($"App static constructor: ProcessorCount = {Environment.ProcessorCount}");
+                
+                LoggingService.EmergencyLog("App static constructor: Early initialization complete");
+            }
+            catch (Exception ex)
+            {
+                // Even emergency logging failed - this is very bad
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"CRITICAL: App static constructor failed: {ex}");
+                    Console.WriteLine($"CRITICAL: App static constructor failed: {ex}");
+                }
+                catch
+                {
+                    // Can't do anything more
+                }
+            }
+        }
+        
+        /// <summary>
         /// Application constructor with early error detection
         /// </summary>
         public App()
@@ -197,6 +230,37 @@ namespace KOALAOptimizer.Testing
                 
                 _loggingService.LogStartupMilestone("Application startup completed successfully");
                 _loggingService.LogInfo("KOALA Gaming Optimizer is ready for use");
+                
+                // Create and show main window with error handling
+                _loggingService.LogStartupMilestone("Creating main window");
+                try
+                {
+                    var mainWindow = new Views.MainWindow();
+                    LoggingService.EmergencyLog("OnStartup: MainWindow instance created");
+                    
+                    mainWindow.Show();
+                    LoggingService.EmergencyLog("OnStartup: MainWindow.Show() called successfully");
+                    _loggingService.LogStartupMilestone("Main window displayed successfully");
+                }
+                catch (Exception windowEx)
+                {
+                    LoggingService.EmergencyLog($"OnStartup: CRITICAL - MainWindow creation/show failed: {windowEx.Message}");
+                    _loggingService.LogError($"Failed to create or show main window: {windowEx.Message}", windowEx);
+                    
+                    // Show error and exit
+                    try
+                    {
+                        MessageBox.Show($"Failed to create the main window:\n\n{windowEx.Message}\n\nThe application cannot continue.", 
+                                       "KOALA Gaming Optimizer - Window Creation Error", 
+                                       MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch
+                    {
+                        LoggingService.EmergencyLog("OnStartup: CRITICAL - Even error MessageBox failed");
+                    }
+                    
+                    Environment.Exit(1);
+                }
             }
             catch (Exception ex)
             {
@@ -395,23 +459,32 @@ namespace KOALAOptimizer.Testing
             try
             {
                 _loggingService?.LogInfo("Loading initial SciFi theme...");
+                LoggingService.EmergencyLog("LoadInitialTheme: Starting theme load");
+                
                 var themeUri = new Uri("pack://application:,,,/Themes/SciFiTheme.xaml", UriKind.Absolute);
+                LoggingService.EmergencyLog($"LoadInitialTheme: Theme URI created: {themeUri}");
+                
                 var themeDict = new ResourceDictionary { Source = themeUri };
+                LoggingService.EmergencyLog("LoadInitialTheme: ResourceDictionary created");
                 
                 // Validate essential resources exist
                 if (ValidateEssentialResources(themeDict))
                 {
+                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resources validated");
                     Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
+                    LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added to application resources");
                     _loggingService?.LogInfo("Initial theme loaded successfully");
                 }
                 else
                 {
+                    LoggingService.EmergencyLog("LoadInitialTheme: Essential resource validation failed");
                     throw new InvalidOperationException("SciFi theme is missing essential resources");
                 }
             }
             catch (Exception ex)
             {
-                _loggingService?.LogError($"Failed to load SciFi theme: {ex.Message}");
+                LoggingService.EmergencyLog($"LoadInitialTheme: FAILED - {ex.Message}");
+                _loggingService?.LogError($"Failed to load SciFi theme: {ex.Message}", ex);
                 throw;
             }
         }
@@ -421,33 +494,63 @@ namespace KOALAOptimizer.Testing
         /// </summary>
         private void LoadMinimalFallbackTheme()
         {
-            _loggingService?.LogInfo("Loading minimal fallback theme...");
-            
-            // Create a minimal theme with essential resources
-            var fallbackDict = new ResourceDictionary();
-            
-            // Add essential brushes
-            fallbackDict.Add("BackgroundBrush", new SolidColorBrush(Colors.DarkSlateGray));
-            fallbackDict.Add("TextBrush", new SolidColorBrush(Colors.White));
-            fallbackDict.Add("PrimaryBrush", new SolidColorBrush(Colors.CornflowerBlue));
-            fallbackDict.Add("AccentBrush", new SolidColorBrush(Colors.Orange));
-            fallbackDict.Add("BorderBrush", new SolidColorBrush(Colors.Gray));
-            fallbackDict.Add("GroupBackgroundBrush", new SolidColorBrush(Colors.DimGray));
-            fallbackDict.Add("HoverBrush", new SolidColorBrush(Colors.LightBlue));
-            fallbackDict.Add("DarkBackgroundBrush", new SolidColorBrush(Colors.Black));
-            fallbackDict.Add("DangerBrush", new SolidColorBrush(Colors.Red));
-            fallbackDict.Add("SuccessBrush", new SolidColorBrush(Colors.Green));
-            fallbackDict.Add("WarningBrush", new SolidColorBrush(Colors.Yellow));
-            fallbackDict.Add("SecondaryBrush", new SolidColorBrush(Colors.LightGray));
-            
-            // Add minimal window style
-            var windowStyle = new Style(typeof(Window));
-            windowStyle.Setters.Add(new Setter(Window.BackgroundProperty, fallbackDict["BackgroundBrush"]));
-            windowStyle.Setters.Add(new Setter(Window.ForegroundProperty, fallbackDict["TextBrush"]));
-            fallbackDict.Add("MainWindowStyle", windowStyle);
-            
-            Application.Current.Resources.MergedDictionaries.Insert(0, fallbackDict);
-            _loggingService?.LogInfo("Minimal fallback theme loaded");
+            try
+            {
+                _loggingService?.LogInfo("Loading minimal fallback theme...");
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Starting fallback theme creation");
+                
+                // Create a minimal theme with essential resources
+                var fallbackDict = new ResourceDictionary();
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: ResourceDictionary created");
+                
+                // Add essential brushes with validation
+                try
+                {
+                    fallbackDict.Add("BackgroundBrush", new SolidColorBrush(Colors.DarkSlateGray));
+                    fallbackDict.Add("TextBrush", new SolidColorBrush(Colors.White));
+                    fallbackDict.Add("PrimaryBrush", new SolidColorBrush(Colors.CornflowerBlue));
+                    fallbackDict.Add("AccentBrush", new SolidColorBrush(Colors.Orange));
+                    fallbackDict.Add("BorderBrush", new SolidColorBrush(Colors.Gray));
+                    fallbackDict.Add("GroupBackgroundBrush", new SolidColorBrush(Colors.DimGray));
+                    fallbackDict.Add("HoverBrush", new SolidColorBrush(Colors.LightBlue));
+                    fallbackDict.Add("DarkBackgroundBrush", new SolidColorBrush(Colors.Black));
+                    fallbackDict.Add("DangerBrush", new SolidColorBrush(Colors.Red));
+                    fallbackDict.Add("SuccessBrush", new SolidColorBrush(Colors.Green));
+                    fallbackDict.Add("WarningBrush", new SolidColorBrush(Colors.Yellow));
+                    fallbackDict.Add("SecondaryBrush", new SolidColorBrush(Colors.LightGray));
+                    LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Brushes added successfully");
+                }
+                catch (Exception brushEx)
+                {
+                    LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: Failed to add brushes: {brushEx.Message}");
+                    throw new InvalidOperationException("Failed to create fallback theme brushes", brushEx);
+                }
+                
+                // Add minimal window style
+                try
+                {
+                    var windowStyle = new Style(typeof(Window));
+                    windowStyle.Setters.Add(new Setter(Window.BackgroundProperty, fallbackDict["BackgroundBrush"]));
+                    windowStyle.Setters.Add(new Setter(Window.ForegroundProperty, fallbackDict["TextBrush"]));
+                    fallbackDict.Add("MainWindowStyle", windowStyle);
+                    LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Window style added successfully");
+                }
+                catch (Exception styleEx)
+                {
+                    LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: Failed to add window style: {styleEx.Message}");
+                    // Continue without window style if it fails
+                }
+                
+                Application.Current.Resources.MergedDictionaries.Insert(0, fallbackDict);
+                LoggingService.EmergencyLog("LoadMinimalFallbackTheme: Fallback theme applied to application");
+                _loggingService?.LogInfo("Minimal fallback theme loaded");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"LoadMinimalFallbackTheme: CRITICAL FAILURE - {ex.Message}");
+                _loggingService?.LogError($"Failed to load minimal fallback theme: {ex.Message}", ex);
+                throw;
+            }
         }
         
         /// <summary>
@@ -455,20 +558,46 @@ namespace KOALAOptimizer.Testing
         /// </summary>
         private bool ValidateEssentialResources(ResourceDictionary themeDict)
         {
+            if (themeDict == null)
+            {
+                LoggingService.EmergencyLog("ValidateEssentialResources: Theme dictionary is null");
+                _loggingService?.LogWarning("Theme dictionary is null during validation");
+                return false;
+            }
+
             string[] essentialResources = { 
                 "BackgroundBrush", "TextBrush", "PrimaryBrush", 
                 "AccentBrush", "BorderBrush", "MainWindowStyle" 
             };
             
+            LoggingService.EmergencyLog($"ValidateEssentialResources: Checking {essentialResources.Length} essential resources");
+            
+            bool allValid = true;
             foreach (var resourceKey in essentialResources)
             {
-                if (!themeDict.Contains(resourceKey))
+                try
                 {
-                    _loggingService?.LogWarning($"Theme missing essential resource: {resourceKey}");
-                    return false;
+                    if (!themeDict.Contains(resourceKey))
+                    {
+                        LoggingService.EmergencyLog($"ValidateEssentialResources: Missing resource: {resourceKey}");
+                        _loggingService?.LogWarning($"Theme missing essential resource: {resourceKey}");
+                        allValid = false;
+                    }
+                    else
+                    {
+                        LoggingService.EmergencyLog($"ValidateEssentialResources: Found resource: {resourceKey}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"ValidateEssentialResources: Error checking resource {resourceKey}: {ex.Message}");
+                    _loggingService?.LogError($"Error validating resource {resourceKey}: {ex.Message}", ex);
+                    allValid = false;
                 }
             }
-            return true;
+            
+            LoggingService.EmergencyLog($"ValidateEssentialResources: Validation result: {allValid}");
+            return allValid;
         }
         
         /// <summary>
