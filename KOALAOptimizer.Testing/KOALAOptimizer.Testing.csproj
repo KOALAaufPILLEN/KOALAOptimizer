@@ -119,6 +119,7 @@
   <ItemGroup>
     <Compile Include="Models\Models.cs" />
     <Compile Include="Services\AdminService.cs" />
+    <Compile Include="Services\AnalyticsService.cs" />
     <Compile Include="Services\ApplicationHealthService.cs" />
     <Compile Include="Services\AudioOptimizationService.cs" />
     <Compile Include="Services\CrosshairOverlayService.cs" />
@@ -132,6 +133,7 @@
     <Compile Include="Services\RegistryOptimizationService.cs" />
     <Compile Include="Services\ServiceManagementService.cs" />
     <Compile Include="Services\SmartGameDetectionService.cs" />
+    <Compile Include="Services\SystemDiagnosticsService.cs" />
     <Compile Include="Services\ThemeService.cs" />
     <Compile Include="Services\TimerResolutionService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
