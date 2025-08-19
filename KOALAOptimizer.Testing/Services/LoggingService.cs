@@ -280,10 +280,18 @@ namespace KOALAOptimizer.Testing.Services
             try
             {
                 // Write to emergency file
-                var emergencyPath = Path.Combine(Path.GetTempPath(), $"koala-emergency-{DateTime.Now:yyyy-MM-dd}.txt");
+                var emergencyPath = GetEmergencyLogPath();
                 File.AppendAllText(emergencyPath, logMessage + Environment.NewLine);
             }
             catch { /* Ignore file errors */ }
+        }
+        
+        /// <summary>
+        /// Get the path to the emergency log file
+        /// </summary>
+        public static string GetEmergencyLogPath()
+        {
+            return Path.Combine(Path.GetTempPath(), $"koala-emergency-{DateTime.Now:yyyy-MM-dd}.txt");
         }
         
         /// <summary>

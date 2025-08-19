@@ -94,6 +94,20 @@ namespace KOALAOptimizer.Testing
             
             try
             {
+                // EMERGENCY BYPASS MODE - If startup fails, try ultra-minimal mode
+                bool emergencyMode = false;
+                if (e.Args != null && e.Args.Contains("--emergency"))
+                {
+                    emergencyMode = true;
+                    LoggingService.EmergencyLog("OnStartup: EMERGENCY MODE ACTIVATED");
+                }
+                
+                if (emergencyMode)
+                {
+                    CreateEmergencyWindow();
+                    return;
+                }
+                
                 // Initialize core services FIRST before anything else
                 LoggingService.EmergencyLog("OnStartup: Initializing core services...");
                 
@@ -105,7 +119,10 @@ namespace KOALAOptimizer.Testing
                 catch (Exception ex)
                 {
                     LoggingService.EmergencyLog($"OnStartup: CRITICAL - LoggingService initialization failed: {ex.Message}");
-                    throw new InvalidOperationException("Failed to initialize logging service", ex);
+                    // Try emergency mode if service initialization fails
+                    LoggingService.EmergencyLog("OnStartup: Attempting emergency mode due to service failure");
+                    CreateEmergencyWindow();
+                    return;
                 }
                 
                 try
@@ -297,11 +314,14 @@ namespace KOALAOptimizer.Testing
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             _loggingService?.LogError($"Unhandled UI exception: {e.Exception.Message}", e.Exception);
+            LoggingService.EmergencyLog($"App_DispatcherUnhandledException: {e.Exception.Message}");
+            LoggingService.EmergencyLog($"App_DispatcherUnhandledException: Exception details - {e.Exception}");
             
             // Special handling for style/resource related exceptions
             string errorMessage = e.Exception.Message;
             string errorTitle = "KOALA Gaming Optimizer - Error";
             bool isStyleError = false;
+            bool shouldTriggerEmergencyMode = false;
             
             if (e.Exception.Message.Contains("FrameworkElement.Style") || 
                 e.Exception.Message.Contains("resource") ||
@@ -313,10 +333,46 @@ namespace KOALAOptimizer.Testing
                 e.Exception.Message.Contains("System.Windows.FrameworkElement.Style"))
             {
                 isStyleError = true;
+                LoggingService.EmergencyLog("App_DispatcherUnhandledException: Style error detected");
+                
+                // If this is a FrameworkElement.Style error during startup, trigger emergency mode
+                if (e.Exception.Message.Contains("FrameworkElement.Style") ||
+                    e.Exception.Message.Contains("Beim Festlegen der Eigenschaft"))
+                {
+                    shouldTriggerEmergencyMode = true;
+                    LoggingService.EmergencyLog("App_DispatcherUnhandledException: FrameworkElement.Style error - triggering emergency mode");
+                }
                 
                 // Detect language for better error messages
                 bool isGerman = e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
                                System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("de");
+                
+                if (shouldTriggerEmergencyMode)
+                {
+                    LoggingService.EmergencyLog("App_DispatcherUnhandledException: Attempting emergency mode activation");
+                    
+                    try
+                    {
+                        // Close all existing windows first
+                        foreach (Window window in Application.Current.Windows)
+                        {
+                            if (window != null && window.IsLoaded)
+                            {
+                                window.Close();
+                            }
+                        }
+                        
+                        // Create emergency window
+                        CreateEmergencyWindow();
+                        e.Handled = true;
+                        return;
+                    }
+                    catch (Exception emergencyEx)
+                    {
+                        LoggingService.EmergencyLog($"App_DispatcherUnhandledException: Emergency mode failed: {emergencyEx.Message}");
+                        // Continue with normal error handling if emergency mode fails
+                    }
+                }
                 
                 if (isGerman)
                 {
@@ -331,6 +387,7 @@ namespace KOALAOptimizer.Testing
                                   "This usually happens when theme files are corrupted or missing essential styles.\n\n" +
                                   "Technical details: " + e.Exception.Message;
                     errorTitle = "KOALA Gaming Optimizer - Theme Error";
+                }
                 }
                 
                 // Try to apply fallback theme
@@ -491,24 +548,34 @@ namespace KOALAOptimizer.Testing
                 _loggingService?.LogInfo("Loading initial SciFi theme...");
                 LoggingService.EmergencyLog("LoadInitialTheme: Starting theme load");
                 
+                // ENHANCED DIAGNOSTICS - Capture comprehensive state before theme loading
+                CaptureDiagnosticSnapshot("PRE_THEME_LOAD");
+                
                 var themeUri = new Uri("pack://application:,,,/Themes/SciFiTheme.xaml", UriKind.Absolute);
                 LoggingService.EmergencyLog($"LoadInitialTheme: Theme URI created: {themeUri}");
                 
                 var themeDict = new ResourceDictionary { Source = themeUri };
                 LoggingService.EmergencyLog("LoadInitialTheme: ResourceDictionary created");
                 
-                // Validate essential resources exist
+                // Enhanced validation with detailed logging
                 if (ValidateEssentialResources(themeDict))
                 {
                     LoggingService.EmergencyLog("LoadInitialTheme: Essential resources validated");
                     
-                    // Additionally validate all referenced styles
+                    // Comprehensive style validation
                     if (ValidateAllReferencedStyles(themeDict))
                     {
                         LoggingService.EmergencyLog("LoadInitialTheme: All referenced styles validated");
+                        
+                        // Apply theme with detailed state tracking
+                        LoggingService.EmergencyLog("LoadInitialTheme: Adding theme to merged dictionaries");
                         Application.Current.Resources.MergedDictionaries.Insert(0, themeDict);
-                        LoggingService.EmergencyLog("LoadInitialTheme: Theme dictionary added to application resources");
-                        _loggingService?.LogInfo("Initial theme loaded successfully with complete style validation");
+                        LoggingService.EmergencyLog("LoadInitialTheme: Theme added successfully");
+                        
+                        // Post-application diagnostics
+                        CaptureDiagnosticSnapshot("POST_THEME_LOAD");
+                        
+                        _loggingService?.LogInfo("SciFi theme loaded and validated successfully");
                     }
                     else
                     {
@@ -527,7 +594,12 @@ namespace KOALAOptimizer.Testing
             catch (Exception ex)
             {
                 LoggingService.EmergencyLog($"LoadInitialTheme: FAILED - {ex.Message}");
+                LoggingService.EmergencyLog($"LoadInitialTheme: Exception details - {ex}");
                 _loggingService?.LogError($"Failed to load SciFi theme: {ex.Message}", ex);
+                
+                // Capture diagnostic snapshot at failure point
+                CaptureDiagnosticSnapshot("THEME_LOAD_FAILURE");
+                
                 throw;
             }
         }
@@ -787,6 +859,184 @@ namespace KOALAOptimizer.Testing
             catch (Exception ex)
             {
                 LoggingService.EmergencyLog($"TestErrorHandling: CRITICAL - Test framework failed: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Create an ultra-minimal emergency window with zero styling dependencies
+        /// </summary>
+        private void CreateEmergencyWindow()
+        {
+            try
+            {
+                LoggingService.EmergencyLog("CreateEmergencyWindow: Starting emergency window creation");
+                
+                // Create the specialized emergency main window
+                var emergencyWindow = new Views.EmergencyMainWindow();
+                
+                LoggingService.EmergencyLog("CreateEmergencyWindow: Emergency window created successfully");
+                
+                // Show the window
+                emergencyWindow.Show();
+                
+                LoggingService.EmergencyLog("CreateEmergencyWindow: Emergency window displayed");
+                
+                // Make this the main window
+                this.MainWindow = emergencyWindow;
+                
+                LoggingService.EmergencyLog("CreateEmergencyWindow: Emergency mode initialization complete");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"CreateEmergencyWindow: CRITICAL FAILURE - {ex.Message}");
+                LoggingService.EmergencyLog($"CreateEmergencyWindow: Exception details - {ex}");
+                
+                // If even the specialized emergency window fails, fall back to ultra-basic window
+                try
+                {
+                    LoggingService.EmergencyLog("CreateEmergencyWindow: Attempting ultra-basic fallback window");
+                    
+                    var fallbackWindow = new Window
+                    {
+                        Title = "KOALA Gaming Optimizer - Critical Emergency Mode",
+                        Width = 600,
+                        Height = 400,
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                        Background = System.Windows.Media.Brushes.DarkRed,
+                        Foreground = System.Windows.Media.Brushes.White,
+                        Content = new StackPanel
+                        {
+                            Margin = new Thickness(20),
+                            Children =
+                            {
+                                new TextBlock
+                                {
+                                    Text = "🐨 KOALA Gaming Optimizer - Critical Emergency Mode",
+                                    FontSize = 16,
+                                    FontWeight = FontWeights.Bold,
+                                    Margin = new Thickness(0, 0, 0, 20),
+                                    TextWrapping = TextWrapping.Wrap
+                                },
+                                new TextBlock
+                                {
+                                    Text = $"Critical startup failure. Even emergency mode failed.\n\nError: {ex.Message}\n\nThe application cannot start properly.",
+                                    Margin = new Thickness(0, 0, 0, 20),
+                                    TextWrapping = TextWrapping.Wrap
+                                },
+                                new Button
+                                {
+                                    Content = "Exit Application",
+                                    Width = 150,
+                                    Height = 30,
+                                    Background = System.Windows.Media.Brushes.Black,
+                                    Foreground = System.Windows.Media.Brushes.White
+                                }
+                            }
+                        }
+                    };
+                    
+                    // Add close handler
+                    if (fallbackWindow.Content is StackPanel panel && 
+                        panel.Children[panel.Children.Count - 1] is Button exitButton)
+                    {
+                        exitButton.Click += (s, e) => Application.Current.Shutdown();
+                    }
+                    
+                    fallbackWindow.Show();
+                    this.MainWindow = fallbackWindow;
+                    
+                    LoggingService.EmergencyLog("CreateEmergencyWindow: Ultra-basic fallback window created");
+                }
+                catch (Exception fallbackEx)
+                {
+                    LoggingService.EmergencyLog($"CreateEmergencyWindow: Even ultra-basic fallback failed: {fallbackEx.Message}");
+                    
+                    // If even the fallback window fails, show a basic message box and exit
+                    try
+                    {
+                        MessageBox.Show(
+                            $"Critical startup failure. All emergency modes failed.\n\n" +
+                            $"Primary Error: {ex.Message}\n" +
+                            $"Fallback Error: {fallbackEx.Message}\n\n" +
+                            $"The application cannot start. Please check the emergency log in your temp folder.",
+                            "KOALA Gaming Optimizer - Critical Failure",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                    catch
+                    {
+                        // If even MessageBox fails, just exit
+                        LoggingService.EmergencyLog("CreateEmergencyWindow: MessageBox also failed - force exit");
+                    }
+                    
+                    Environment.Exit(1);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Capture comprehensive diagnostic snapshot for debugging
+        /// </summary>
+        private void CaptureDiagnosticSnapshot(string phase)
+        {
+            try
+            {
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Starting diagnostic capture");
+                
+                // Application state
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Application.Current = {(Application.Current != null ? "Available" : "NULL")}");
+                
+                if (Application.Current != null)
+                {
+                    LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Application.Current.Resources = {(Application.Current.Resources != null ? "Available" : "NULL")}");
+                    
+                    if (Application.Current.Resources != null)
+                    {
+                        LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: MergedDictionaries.Count = {Application.Current.Resources.MergedDictionaries.Count}");
+                        LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Direct Resources.Count = {Application.Current.Resources.Count}");
+                        
+                        // Log current merged dictionaries
+                        for (int i = 0; i < Application.Current.Resources.MergedDictionaries.Count; i++)
+                        {
+                            var dict = Application.Current.Resources.MergedDictionaries[i];
+                            var source = dict.Source?.ToString() ?? "No Source";
+                            LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: MergedDict[{i}] = {source} (Count: {dict.Count})");
+                        }
+                        
+                        // Check for critical resources
+                        string[] criticalResources = { "BackgroundBrush", "TextBrush", "PrimaryBrush", "MainWindowStyle" };
+                        foreach (var resource in criticalResources)
+                        {
+                            bool exists = Application.Current.Resources.Contains(resource);
+                            LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Resource '{resource}' = {(exists ? "FOUND" : "MISSING")}");
+                            
+                            if (exists)
+                            {
+                                var resourceValue = Application.Current.Resources[resource];
+                                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Resource '{resource}' type = {resourceValue?.GetType().Name ?? "NULL"}");
+                            }
+                        }
+                    }
+                    
+                    LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: MainWindow = {(Application.Current.MainWindow != null ? "Available" : "NULL")}");
+                    LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Windows.Count = {Application.Current.Windows.Count}");
+                }
+                
+                // System state
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Current Thread = {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Is UI Thread = {Application.Current?.Dispatcher.CheckAccess() ?? false}");
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Culture = {System.Globalization.CultureInfo.CurrentCulture.Name}");
+                
+                // Assembly state
+                var assembly = Assembly.GetExecutingAssembly();
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Assembly Location = {assembly.Location}");
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Assembly Version = {assembly.GetName().Version}");
+                
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: Diagnostic capture complete");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"DIAGNOSTIC_SNAPSHOT[{phase}]: FAILED - {ex.Message}");
             }
         }
     }
