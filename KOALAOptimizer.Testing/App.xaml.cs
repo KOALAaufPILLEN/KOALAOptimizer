@@ -307,13 +307,30 @@ namespace KOALAOptimizer.Testing
                 e.Exception.Message.Contains("StaticResource") ||
                 e.Exception.Message.Contains("DynamicResource") ||
                 e.Exception.Message.Contains("ResourceDictionary") ||
-                e.Exception.Message.Contains("pack://application"))
+                e.Exception.Message.Contains("pack://application") ||
+                e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
+                e.Exception.Message.Contains("System.Windows.FrameworkElement.Style"))
             {
                 isStyleError = true;
-                errorMessage = "A theme or style error occurred. The application will attempt to continue with default styling.\n\n" +
-                              "This usually happens when theme files are corrupted or missing essential styles.\n\n" +
-                              "Technical details: " + e.Exception.Message;
-                errorTitle = "KOALA Gaming Optimizer - Theme Error";
+                
+                // Detect language for better error messages
+                bool isGerman = e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
+                               System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("de");
+                
+                if (isGerman)
+                {
+                    errorMessage = "Ein Design- oder Stilfehler ist aufgetreten. Die Anwendung wird versuchen, mit der Standardgestaltung fortzufahren.\n\n" +
+                                  "Dies passiert normalerweise, wenn Designdateien beschädigt oder wichtige Stile fehlen.\n\n" +
+                                  "Technische Details: " + e.Exception.Message;
+                    errorTitle = "KOALA Gaming Optimizer - Design-Fehler";
+                }
+                else
+                {
+                    errorMessage = "A theme or style error occurred. The application will attempt to continue with default styling.\n\n" +
+                                  "This usually happens when theme files are corrupted or missing essential styles.\n\n" +
+                                  "Technical details: " + e.Exception.Message;
+                    errorTitle = "KOALA Gaming Optimizer - Theme Error";
+                }
                 
                 // Try to apply fallback theme
                 try
@@ -336,8 +353,20 @@ namespace KOALAOptimizer.Testing
                 catch (Exception themeEx)
                 {
                     _loggingService?.LogError($"Failed to apply fallback theme: {themeEx.Message}", themeEx);
-                    errorMessage += "\n\nAdditional error: Failed to load fallback theme. " +
-                                   "Please reinstall the application or contact support.";
+                    
+                    bool isGerman = e.Exception.Message.Contains("Beim Festlegen der Eigenschaft") ||
+                                   System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("de");
+                    
+                    if (isGerman)
+                    {
+                        errorMessage += "\n\nZusätzlicher Fehler: Fallback-Design konnte nicht geladen werden. " +
+                                       "Bitte installieren Sie die Anwendung neu oder wenden Sie sich an den Support.";
+                    }
+                    else
+                    {
+                        errorMessage += "\n\nAdditional error: Failed to load fallback theme. " +
+                                       "Please reinstall the application or contact support.";
+                    }
                 }
             }
             

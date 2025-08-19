@@ -29,6 +29,30 @@
                 <Setter Property="ResizeMode" Value="CanResize"/>
             </Style>
             
+            <!-- Essential fallback styles to prevent UserControl failures -->
+            <Style x:Key="FeatureTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Margin" Value="0,2"/>
+            </Style>
+            
+            <Style x:Key="DescriptionTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryBrush}"/>
+                <Setter Property="FontStyle" Value="Italic"/>
+                <Setter Property="Margin" Value="0,1"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            
+            <Style x:Key="ValueTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            
             <!-- Global Styles -->
             <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="24"/>
