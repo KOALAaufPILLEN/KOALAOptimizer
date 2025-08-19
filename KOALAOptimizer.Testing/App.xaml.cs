@@ -92,21 +92,29 @@ namespace KOALAOptimizer.Testing
         
         protected override void OnStartup(StartupEventArgs e)
         {
-            LoggingService.EmergencyLog("OnStartup: Method entry");
+            LoggingService.EmergencyLog("OnStartup: Method entry - NUCLEAR APPROACH ACTIVATED");
             
             try
             {
-                // EMERGENCY BYPASS MODE - If startup fails, try ultra-minimal mode
-                bool emergencyMode = false;
-                if (e.Args != null && e.Args.Contains("--emergency"))
+                // NUCLEAR APPROACH: START IN EMERGENCY MODE BY DEFAULT
+                // Only attempt normal startup if explicitly requested via --normal flag
+                bool normalMode = false;
+                if (e.Args != null && e.Args.Contains("--normal"))
                 {
-                    emergencyMode = true;
-                    LoggingService.EmergencyLog("OnStartup: EMERGENCY MODE ACTIVATED");
+                    normalMode = true;
+                    LoggingService.EmergencyLog("OnStartup: NORMAL MODE REQUESTED - attempting theme loading");
+                }
+                else
+                {
+                    // DEFAULT TO MINIMAL SAFE MODE - zero theme dependencies
+                    LoggingService.EmergencyLog("OnStartup: MINIMAL SAFE MODE - DEFAULT STARTUP (no themes)");
+                    CreateMinimalWindow();
+                    return;
                 }
                 
-                if (emergencyMode)
+                if (!normalMode)
                 {
-                    CreateEmergencyWindow();
+                    CreateMinimalWindow();
                     return;
                 }
                 
@@ -364,8 +372,16 @@ namespace KOALAOptimizer.Testing
                             }
                         }
                         
-                        // Create emergency window
-                        CreateEmergencyWindow();
+                        // Create minimal safe window first, fallback to emergency window
+                        try 
+                        {
+                            CreateMinimalWindow();
+                        }
+                        catch (Exception minimalEx)
+                        {
+                            LoggingService.EmergencyLog($"App_DispatcherUnhandledException: Minimal mode failed, trying emergency: {minimalEx.Message}");
+                            CreateEmergencyWindow();
+                        }
                         e.Handled = true;
                         return;
                     }
@@ -1315,6 +1331,58 @@ namespace KOALAOptimizer.Testing
                     }
                     
                     Environment.Exit(1);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Create a safe minimal window with zero styling dependencies
+        /// NUCLEAR APPROACH: No themes, no DynamicResource references
+        /// </summary>
+        private void CreateMinimalWindow()
+        {
+            try
+            {
+                LoggingService.EmergencyLog("CreateMinimalWindow: Starting minimal window creation");
+                
+                // Create the safe minimal main window with hardcoded styling
+                var minimalWindow = new Views.MinimalMainWindow();
+                
+                LoggingService.EmergencyLog("CreateMinimalWindow: Minimal window created successfully");
+                
+                // Show the window
+                minimalWindow.Show();
+                
+                LoggingService.EmergencyLog("CreateMinimalWindow: Minimal window displayed");
+                
+                // Make this the main window
+                this.MainWindow = minimalWindow;
+                
+                LoggingService.EmergencyLog("CreateMinimalWindow: Safe mode initialization complete");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"CreateMinimalWindow: Failed to create minimal window: {ex.Message}");
+                
+                // Fallback to emergency window if minimal window fails
+                try
+                {
+                    LoggingService.EmergencyLog("CreateMinimalWindow: Falling back to emergency window");
+                    CreateEmergencyWindow();
+                }
+                catch (Exception fallbackEx)
+                {
+                    LoggingService.EmergencyLog($"CreateMinimalWindow: Emergency fallback also failed: {fallbackEx.Message}");
+                    
+                    // Last resort - show basic message box and exit
+                    MessageBox.Show(
+                        "Critical error: Unable to start application in any mode.\n\n" +
+                        "Error details:\n" + ex.Message + "\n\nFallback error:\n" + fallbackEx.Message,
+                        "🐨 KOALA Gaming Optimizer - Critical Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    
+                    Application.Current.Shutdown(1);
                 }
             }
         }
