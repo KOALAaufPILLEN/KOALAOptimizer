@@ -27,11 +27,31 @@ namespace KOALAOptimizer.Testing.Services
         
         private ProcessManagementService()
         {
-            _logger = LoggingService.Instance;
-            _gameProfiles = InitializeGameProfiles();
-            
-            // Start monitoring timer (every 5 seconds)
-            _monitoringTimer = new Timer(MonitorGameProcesses, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+            try
+            {
+                LoggingService.EmergencyLog("ProcessManagementService: Initializing...");
+                _logger = LoggingService.Instance;
+                
+                _gameProfiles = InitializeGameProfiles();
+                LoggingService.EmergencyLog($"ProcessManagementService: {_gameProfiles?.Count ?? 0} game profiles loaded");
+                
+                // Initialize monitoring timer (but don't start it yet)
+                _monitoringTimer = new Timer(MonitoringCallback, null, Timeout.Infinite, Timeout.Infinite);
+                LoggingService.EmergencyLog("ProcessManagementService: Monitoring timer created");
+                
+                LoggingService.EmergencyLog("ProcessManagementService: Initialization completed");
+                _logger?.LogInfo("Process management service initialized");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"ProcessManagementService: Initialization failed - {ex.Message}");
+                _logger?.LogError($"Failed to initialize ProcessManagementService: {ex.Message}", ex);
+                
+                // Initialize with minimal state to prevent null reference errors
+                _gameProfiles = new Dictionary<string, GameProfile>();
+                _monitoringTimer = null;
+                _logger = null;
+            }
         }
         
         /// <summary>

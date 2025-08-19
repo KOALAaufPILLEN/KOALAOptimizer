@@ -26,7 +26,10 @@ namespace KOALAOptimizer.Testing.Services
         
         private PerformanceMonitoringService()
         {
-            _logger = LoggingService.Instance;
+            try
+            {
+                LoggingService.EmergencyLog("PerformanceMonitoringService: Initializing...");
+                _logger = LoggingService.Instance;
             
             try
             {
@@ -43,11 +46,24 @@ namespace KOALAOptimizer.Testing.Services
                 
                 CurrentMetrics = new PerformanceMetrics { Timestamp = DateTime.Now };
                 
+                LoggingService.EmergencyLog("PerformanceMonitoringService: Initialization completed");
                 _logger.LogInfo("Performance monitoring service initialized");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to initialize performance monitoring: {ex.Message}", ex);
+                LoggingService.EmergencyLog($"PerformanceMonitoringService: Initialization failed - {ex.Message}");
+                _logger?.LogError($"Failed to initialize performance monitoring: {ex.Message}", ex);
+                
+                // Initialize with minimal state
+                CurrentMetrics = new PerformanceMetrics { Timestamp = DateTime.Now };
+            }
+            }
+            catch (Exception criticalEx)
+            {
+                LoggingService.EmergencyLog($"PerformanceMonitoringService: CRITICAL failure - {criticalEx.Message}");
+                // Initialize minimal state to prevent null reference errors
+                CurrentMetrics = new PerformanceMetrics { Timestamp = DateTime.Now };
+                _logger = null;
             }
         }
         

@@ -629,5 +629,47 @@ namespace KOALAOptimizer.Testing
                 _loggingService?.LogError($"Failed to log system information: {ex.Message}", ex);
             }
         }
+        
+        /// <summary>
+        /// Test error handling mechanisms - can be called for validation
+        /// </summary>
+        public static void TestErrorHandling()
+        {
+            LoggingService.EmergencyLog("TestErrorHandling: Starting error handling tests");
+            
+            try
+            {
+                // Test 1: Emergency logging
+                LoggingService.EmergencyLog("TestErrorHandling: Test 1 - Emergency logging works");
+                
+                // Test 2: Service instance creation
+                try
+                {
+                    var testLogging = LoggingService.Instance;
+                    testLogging?.LogInfo("TestErrorHandling: Test 2 - LoggingService instance creation works");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"TestErrorHandling: Test 2 FAILED - LoggingService: {ex.Message}");
+                }
+                
+                // Test 3: Other service instances
+                try
+                {
+                    var testAdmin = AdminService.Instance;
+                    LoggingService.EmergencyLog("TestErrorHandling: Test 3 - AdminService instance creation works");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.EmergencyLog($"TestErrorHandling: Test 3 FAILED - AdminService: {ex.Message}");
+                }
+                
+                LoggingService.EmergencyLog("TestErrorHandling: All tests completed");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"TestErrorHandling: CRITICAL - Test framework failed: {ex.Message}");
+            }
+        }
     }
 }
