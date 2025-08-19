@@ -1,5 +1,7 @@
 using System;
+using System.Drawing;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Forms;
 using KOALAOptimizer.Testing.Models;
@@ -155,8 +157,8 @@ namespace KOALAOptimizer.Testing.Views
             
             // Center the dot
             var canvasCenter = CrosshairCanvas.Width / 2;
-            DotShape.SetValue(Canvas.LeftProperty, canvasCenter - DotShape.Width / 2);
-            DotShape.SetValue(Canvas.TopProperty, canvasCenter - DotShape.Height / 2);
+            System.Windows.Controls.Canvas.SetLeft(DotShape, canvasCenter - DotShape.Width / 2);
+            System.Windows.Controls.Canvas.SetTop(DotShape, canvasCenter - DotShape.Height / 2);
         }
         
         /// <summary>
@@ -172,8 +174,8 @@ namespace KOALAOptimizer.Testing.Views
             
             // Center the circle
             var canvasCenter = CrosshairCanvas.Width / 2;
-            CircleShape.SetValue(Canvas.LeftProperty, canvasCenter - CircleShape.Width / 2);
-            CircleShape.SetValue(Canvas.TopProperty, canvasCenter - CircleShape.Height / 2);
+            System.Windows.Controls.Canvas.SetLeft(CircleShape, canvasCenter - CircleShape.Width / 2);
+            System.Windows.Controls.Canvas.SetTop(CircleShape, canvasCenter - CircleShape.Height / 2);
         }
         
         /// <summary>

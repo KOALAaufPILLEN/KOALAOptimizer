@@ -660,14 +660,17 @@ namespace KOALAOptimizer.Testing.Services
             sb.AppendLine();
             
             sb.AppendLine("[Registry Entries]");
-            foreach (var entry in backup.RegistryEntries ?? new Dictionary<string, object>())
+            foreach (var pathEntry in backup.Registry ?? new Dictionary<string, Dictionary<string, object>>())
             {
-                sb.AppendLine($"{entry.Key}={entry.Value}");
+                foreach (var valueEntry in pathEntry.Value)
+                {
+                    sb.AppendLine($"{pathEntry.Key}\\{valueEntry.Key}={valueEntry.Value}");
+                }
             }
             sb.AppendLine();
             
             sb.AppendLine("[Services]");
-            foreach (var service in backup.ServiceSettings ?? new Dictionary<string, bool>())
+            foreach (var service in backup.Services ?? new Dictionary<string, string>())
             {
                 sb.AppendLine($"{service.Key}={service.Value}");
             }
@@ -682,8 +685,8 @@ namespace KOALAOptimizer.Testing.Services
         {
             var backup = new BackupConfiguration
             {
-                RegistryEntries = new Dictionary<string, object>(),
-                ServiceSettings = new Dictionary<string, bool>()
+                Registry = new Dictionary<string, Dictionary<string, object>>(),
+                Services = new Dictionary<string, string>()
             };
             
             var lines = backupText.Split('\n');
@@ -715,11 +718,19 @@ namespace KOALAOptimizer.Testing.Services
                             backup.Version = value;
                         break;
                     case "[Registry Entries]":
-                        backup.RegistryEntries[key] = value;
+                        // Parse path\name format
+                        var lastBackslash = key.LastIndexOf('\\');
+                        if (lastBackslash > 0)
+                        {
+                            var path = key.Substring(0, lastBackslash);
+                            var name = key.Substring(lastBackslash + 1);
+                            if (!backup.Registry.ContainsKey(path))
+                                backup.Registry[path] = new Dictionary<string, object>();
+                            backup.Registry[path][name] = value;
+                        }
                         break;
                     case "[Services]":
-                        if (bool.TryParse(value, out var boolValue))
-                            backup.ServiceSettings[key] = boolValue;
+                        backup.Services[key] = value;
                         break;
                 }
             }

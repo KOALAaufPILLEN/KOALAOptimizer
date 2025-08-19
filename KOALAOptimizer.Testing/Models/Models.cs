@@ -42,6 +42,17 @@ namespace KOALAOptimizer.Testing.Models
     }
 
     /// <summary>
+    /// Service backup entry
+    /// </summary>
+    public class ServiceBackupEntry
+    {
+        public string ServiceName { get; set; }
+        public string StartType { get; set; }
+        public string Status { get; set; }
+        public DateTime BackupTime { get; set; }
+    }
+
+    /// <summary>
     /// System performance metrics
     /// </summary>
     public class PerformanceMetrics
@@ -106,6 +117,10 @@ namespace KOALAOptimizer.Testing.Models
         public Dictionary<string, Dictionary<string, object>> RegistryNICs { get; set; } = new Dictionary<string, Dictionary<string, object>>();
         public Dictionary<string, string> Services { get; set; } = new Dictionary<string, string>();
         public List<string> AppliedOptimizations { get; set; } = new List<string>();
+        
+        // Additional properties for backward compatibility with RegistryOptimizationService
+        public List<RegistryBackupEntry> RegistryEntries { get; set; } = new List<RegistryBackupEntry>();
+        public List<ServiceBackupEntry> ServiceSettings { get; set; } = new List<ServiceBackupEntry>();
     }
 
     /// <summary>

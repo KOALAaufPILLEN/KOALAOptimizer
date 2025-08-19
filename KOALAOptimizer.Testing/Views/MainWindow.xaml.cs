@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using KOALAOptimizer.Testing.Models;
 using KOALAOptimizer.Testing.Services;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 
 namespace KOALAOptimizer.Testing.Views
 {
@@ -586,7 +587,7 @@ namespace KOALAOptimizer.Testing.Views
                 if (dialog.ShowDialog() == true)
                 {
                     var config = GetCurrentConfiguration();
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented);
+                    var json = JsonConvert.SerializeObject(config, Formatting.Indented);
                     File.WriteAllText(dialog.FileName, json);
                     
                     _logger.LogInfo($"Configuration exported to: {dialog.FileName}");
@@ -618,7 +619,7 @@ namespace KOALAOptimizer.Testing.Views
                 if (dialog.ShowDialog() == true)
                 {
                     var json = File.ReadAllText(dialog.FileName);
-                    var config = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+                    var config = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
                     
                     ApplyConfiguration(config);
                     
