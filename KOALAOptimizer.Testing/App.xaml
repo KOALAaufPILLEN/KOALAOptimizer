@@ -7,6 +7,28 @@
                 <!-- Theme will be loaded programmatically with error handling -->
             </ResourceDictionary.MergedDictionaries>
             
+            <!-- Fallback brushes - will be overridden by theme loading -->
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#6b46c1"/>
+            <SolidColorBrush x:Key="SecondaryBrush" Color="#9ca3af"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#6b46c1"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#6b46c1"/>
+            <SolidColorBrush x:Key="HoverBrush" Color="#8b5cf6"/>
+            <SolidColorBrush x:Key="TextBrush" Color="#ffffff"/>
+            <SolidColorBrush x:Key="GroupBackgroundBrush" Color="#374151"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#1a1a2e"/>
+            <SolidColorBrush x:Key="DarkBackgroundBrush" Color="#0f172a"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="#f59e0b"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#10b981"/>
+            <SolidColorBrush x:Key="DangerBrush" Color="#ef4444"/>
+            
+            <!-- Fallback MainWindow style -->
+            <Style x:Key="MainWindowStyle" TargetType="Window">
+                <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="WindowStyle" Value="SingleBorderWindow"/>
+                <Setter Property="ResizeMode" Value="CanResize"/>
+            </Style>
+            
             <!-- Global Styles -->
             <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="24"/>
