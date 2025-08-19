@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using KOALAOptimizer.Testing.Services;
 
 namespace KOALAOptimizer.Testing.Views
@@ -351,6 +352,161 @@ namespace KOALAOptimizer.Testing.Views
                 LoggingService.EmergencyLog($"MinimalMainWindow: TestCrosshairMinimal_Click error: {ex.Message}");
                 MessageBox.Show($"Test crosshair failed: {ex.Message}", "Crosshair Test Error", 
                                MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void ApplyOptimizations_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Apply optimizations clicked");
+                
+                btnApplyOptimizations.Content = "🔄 Applying...";
+                btnApplyOptimizations.IsEnabled = false;
+
+                // Use the existing RegistryOptimizationService
+                var optimizationService = RegistryOptimizationService.Instance;
+                
+                // Apply basic optimizations based on checkboxes
+                var result = MessageBox.Show(
+                    "This will apply the selected gaming optimizations to your system.\n\n" +
+                    "Some changes require administrator privileges and may require a restart.\n\n" +
+                    "Continue?", 
+                    "Apply Gaming Optimizations", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Question);
+                
+                if (result == MessageBoxResult.Yes)
+                {
+                    bool anyApplied = false;
+                    
+                    // Apply selected optimizations
+                    if (chkHighPrecisionTimer.IsChecked == true)
+                    {
+                        // Use TimerResolutionService for high precision timer
+                        try
+                        {
+                            TimerResolutionService.Instance?.SetHighResolution();
+                            anyApplied = true;
+                            LoggingService.EmergencyLog("MinimalMainWindow: High precision timer applied");
+                        }
+                        catch (Exception timerEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: Timer optimization failed: {timerEx.Message}");
+                        }
+                    }
+                    
+                    if (anyApplied)
+                    {
+                        MessageBox.Show("Selected optimizations have been applied successfully!\n\n" +
+                                      "Some changes may require a restart to take full effect.", 
+                                      "Optimizations Applied", 
+                                      MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("No optimizations were applied. Please check your selection and try again.", 
+                                      "No Changes Made", 
+                                      MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Apply optimizations completed");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: ApplyOptimizations_Click error: {ex.Message}");
+                MessageBox.Show($"Failed to apply optimizations: {ex.Message}", "Optimization Error", 
+                               MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                btnApplyOptimizations.Content = "🚀 Apply Optimizations";
+                btnApplyOptimizations.IsEnabled = true;
+            }
+        }
+
+        private void ResetOptimizations_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Reset optimizations clicked");
+                
+                var result = MessageBox.Show(
+                    "This will reset timer optimizations to default values.\n\n" +
+                    "Continue?", 
+                    "Reset Optimizations", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Question);
+                
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        TimerResolutionService.Instance?.RestoreOriginalResolution();
+                        MessageBox.Show("Timer optimizations have been reset to default values.", 
+                                      "Reset Complete", 
+                                      MessageBoxButton.OK, MessageBoxImage.Information);
+                        LoggingService.EmergencyLog("MinimalMainWindow: Timer optimizations reset");
+                    }
+                    catch (Exception resetEx)
+                    {
+                        LoggingService.EmergencyLog($"MinimalMainWindow: Reset failed: {resetEx.Message}");
+                        MessageBox.Show($"Failed to reset some optimizations: {resetEx.Message}", 
+                                      "Reset Error", 
+                                      MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: ResetOptimizations_Click error: {ex.Message}");
+            }
+        }
+
+        private void StartMonitoring_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Start monitoring clicked");
+                
+                // Use the existing PerformanceMonitoringService
+                var monitoringService = PerformanceMonitoringService.Instance;
+                monitoringService?.StartMonitoring();
+                
+                txtPerformanceStatus.Text = "Performance monitoring active...";
+                txtPerformanceStatus.Foreground = new SolidColorBrush(Colors.LightGreen);
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Performance monitoring started");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: StartMonitoring_Click error: {ex.Message}");
+                txtPerformanceStatus.Text = $"Monitoring start failed: {ex.Message}";
+                txtPerformanceStatus.Foreground = new SolidColorBrush(Colors.Red);
+            }
+        }
+
+        private void StopMonitoring_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoggingService.EmergencyLog("MinimalMainWindow: Stop monitoring clicked");
+                
+                // Use the existing PerformanceMonitoringService
+                var monitoringService = PerformanceMonitoringService.Instance;
+                monitoringService?.StopMonitoring();
+                
+                txtPerformanceStatus.Text = "Performance monitoring stopped";
+                txtPerformanceStatus.Foreground = new SolidColorBrush(Colors.LightGray);
+                
+                LoggingService.EmergencyLog("MinimalMainWindow: Performance monitoring stopped");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.EmergencyLog($"MinimalMainWindow: StopMonitoring_Click error: {ex.Message}");
+                txtPerformanceStatus.Text = $"Stop monitoring failed: {ex.Message}";
+                txtPerformanceStatus.Foreground = new SolidColorBrush(Colors.Red);
             }
         }
     }
