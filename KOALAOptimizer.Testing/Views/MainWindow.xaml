@@ -166,6 +166,115 @@
                             </StackPanel>
                         </Expander>
                         
+                        <!-- Smart Gaming Detection & Auto-Optimization -->
+                        <Expander Header="🧠 Smart Gaming Detection & Auto-Optimization" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkAutoGameDetection" Content="Auto Game Detection" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkAutoProfileSwitch" Content="Auto Profile Switching" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkGameSpecificProfiles" Content="Game-Specific Profiles" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkPerformanceMetrics" Content="Real-Time Performance Metrics" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkAutoRevert" Content="Auto Revert Optimizations" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkBackgroundAppSuspend" Content="Background App Suspension" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Audio and Input Optimizations -->
+                        <Expander Header="🔊 Audio and Input Optimizations" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkAudioLatency" Content="Audio Latency Reduction" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkInputLagReduction" Content="Input Lag Reduction" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkAdvancedInputOptimization" Content="Advanced Input Optimization" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Advanced Network Gaming -->
+                        <Expander Header="🌐 Advanced Network Gaming" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkAdvancedTcpSettings" Content="Advanced TCP Settings" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkReceiveSideScaling" Content="Receive Side Scaling (RSS)" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkNetworkLatencyOptimization" Content="Network Latency Optimization" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkBackgroundNetworkThrottling" Content="Disable Background Network Throttling" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Power Management & Performance -->
+                        <Expander Header="⚡ Power Management & Performance" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkUltimatePerformancePowerPlan" Content="Ultimate Performance Power Plan" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkDisableCpuCoreParking" Content="Disable CPU Core Parking" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkOptimizeCpuCStates" Content="Optimize CPU C-States" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkOptimizeInterruptModeration" Content="Optimize Interrupt Moderation" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Memory Management -->
+                        <Expander Header="💾 Advanced Memory Management" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkLargePageSupport" Content="Large Page Support" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkDisableMemoryCompression" Content="Disable Memory Compression" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkOptimizeStandbyMemory" Content="Optimize Standby Memory" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkAdvancedMemoryManagement" Content="Advanced Memory Management" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Enhanced GPU & DirectX -->
+                        <Expander Header="🎮 Enhanced GPU & DirectX" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkAdvancedGpuScheduling" Content="Advanced GPU Scheduling" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkDisableGpuPowerStates" Content="Disable GPU Power States" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkOptimizeShaderCache" Content="Optimize Shader Cache" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkOptimizeDirectX12" Content="DirectX 12 Optimizations" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkEnableHardwareAcceleration" Content="Enable Hardware Acceleration" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- MMCSS & System Services -->
+                        <Expander Header="🔧 MMCSS & System Services" 
+                                  Style="{DynamicResource GroupBoxStyle}" Margin="5">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkConfigureMMCSS" Content="MMCSS Gaming Priority" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkDisableUnnecessaryServices" Content="Disable Unnecessary Services" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}"/>
+                                <CheckBox x:Name="chkOptimizeGameMode" Content="Optimize Windows Game Mode" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                                <CheckBox x:Name="chkOptimizeBackgroundSuspension" Content="Optimize Background Process Suspension" 
+                                          Style="{DynamicResource SciFiCheckBoxStyle}" IsChecked="True"/>
+                            </StackPanel>
+                        </Expander>
+                        
                         <!-- Background Services -->
                         <Expander Header="🔧 Background Services" 
                                   Style="{DynamicResource GroupBoxStyle}" Margin="5">
