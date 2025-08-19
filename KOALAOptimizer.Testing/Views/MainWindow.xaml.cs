@@ -121,8 +121,30 @@ namespace KOALAOptimizer.Testing.Views
         /// </summary>
         private void SetupThemeSelector()
         {
-            ThemeComboBox.ItemsSource = _themeService.GetAvailableThemes().Select(t => t.DisplayName);
-            ThemeComboBox.SelectedItem = _themeService.GetCurrentTheme().DisplayName;
+            try
+            {
+                var availableThemes = _themeService.GetAvailableThemes();
+                ThemeComboBox.ItemsSource = availableThemes.Select(t => t.DisplayName);
+                
+                var currentTheme = _themeService.GetCurrentTheme();
+                if (currentTheme != null)
+                {
+                    ThemeComboBox.SelectedItem = currentTheme.DisplayName;
+                }
+                else
+                {
+                    // Default to first available theme if current theme detection fails
+                    if (availableThemes.Any())
+                    {
+                        ThemeComboBox.SelectedIndex = 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to setup theme selector: {ex.Message}", ex);
+                // Continue without theme selector functionality rather than crash
+            }
         }
         
         /// <summary>
@@ -294,7 +316,12 @@ namespace KOALAOptimizer.Testing.Views
                     
                     if (theme != null)
                     {
-                        _themeService.ApplyTheme(theme);
+                        bool success = _themeService.ApplyTheme(theme);
+                        if (!success)
+                        {
+                            _logger.LogWarning($"Failed to apply theme: {theme.DisplayName}");
+                            // Could add user notification here if needed
+                        }
                     }
                 }
             }
