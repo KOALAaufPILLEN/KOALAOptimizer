@@ -14,7 +14,6 @@ namespace KOALAOptimizer.Testing.Services
         
         private readonly LoggingService _logger;
         private bool _isHighResolutionSet = false;
-        private uint _originalResolution = 0;
         
         // Windows API imports for timer resolution
         [DllImport("winmm.dll", EntryPoint = "timeBeginPeriod")]
