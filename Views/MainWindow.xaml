@@ -1,0 +1,7 @@
+<Window x:Class="KOALAOptimizer.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Smart Gaming Detection &amp; Auto-Optimization" 
+        Height="450" Width="800">
+    <!-- Other XAML content -->
+</Window>
