@@ -54,14 +54,14 @@ jobs:
         echo for xaml_file in sorted(xaml_files): >> validate_xaml.py
         echo     try: >> validate_xaml.py
         echo         ET.parse(xaml_file) >> validate_xaml.py
-        echo         print(f'✅ {xaml_file} - Valid XML syntax') >> validate_xaml.py
+        echo         print(f'[OK] {xaml_file} - Valid XML syntax') >> validate_xaml.py
         echo     except Exception as e: >> validate_xaml.py
-        echo         print(f'❌ {xaml_file} - Error: {e}') >> validate_xaml.py
+        echo         print(f'[ERROR] {xaml_file} - Error: {e}') >> validate_xaml.py
         echo         all_valid = False >> validate_xaml.py
         echo if all_valid: >> validate_xaml.py
-        echo     print('🎉 All XAML files have valid syntax!') >> validate_xaml.py
+        echo     print('[SUCCESS] All XAML files have valid syntax!') >> validate_xaml.py
         echo else: >> validate_xaml.py
-        echo     print('💥 Some XAML files have syntax errors!') >> validate_xaml.py
+        echo     print('[FAILED] Some XAML files have syntax errors!') >> validate_xaml.py
         echo     exit(1) >> validate_xaml.py
         
         python validate_xaml.py
@@ -136,7 +136,7 @@ jobs:
         set "EXPECTED_EXE=KOALAOptimizer.Testing\bin\Release\KOALAOptimizer.Testing.exe"
         
         if exist "%EXPECTED_EXE%" (
-          echo ✅ SUCCESS: Executable found at expected location
+          echo [SUCCESS] Executable found at expected location
           echo File details:
           dir "%EXPECTED_EXE%"
           echo.
@@ -146,7 +146,7 @@ jobs:
           echo "Executable file size:"
           for %%A in ("%EXPECTED_EXE%") do echo %%~zA bytes
         ) else (
-          echo ❌ ERROR: Executable not found at expected location: %EXPECTED_EXE%
+          echo [ERROR] Executable not found at expected location: %EXPECTED_EXE%
           echo.
           echo "Searching for any KOALAOptimizer.Testing.exe files:"
           for /r "KOALAOptimizer.Testing" %%f in (KOALAOptimizer.Testing.exe) do (
