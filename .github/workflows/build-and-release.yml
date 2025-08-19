@@ -138,7 +138,10 @@ jobs:
     - name: Sanitize release tag name
       if: github.event_name == 'release'
       run: |
-        powershell -Command "$SafeTag = '${{ github.event.release.tag_name }}' -replace '[:\\/\\*\\?\"<>\\|]', '_'; echo SANITIZED_TAG_NAME=$SafeTag >> %GITHUB_ENV%"
+        $SafeTag = '${{ github.event.release.tag_name }}' -replace '[:\\/\*\?"<>\|]', '_'
+        Write-Output "SANITIZED_TAG_NAME=$SafeTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        Write-Output "Sanitized tag name: $SafeTag"
+      shell: powershell
 
     - name: Create release package (on release)
       if: github.event_name == 'release'
@@ -148,8 +151,8 @@ jobs:
         mkdir "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
         cd "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
         copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
-        copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config"
-        copy "..\*.dll" .
+        copy "..\KOALAOptimizer.Testing.exe.config" "KOALA-Gaming-Optimizer.exe.config" 2>nul || echo "Config file not found, skipping"
+        copy "..\*.dll" . 2>nul || echo "No DLL files found, skipping"
         echo KOALA Gaming Optimizer v${{ github.event.release.tag_name }} - C# Edition > README.txt
         echo. >> README.txt
         echo Professional gaming optimization tool with advanced features: >> README.txt
@@ -163,8 +166,9 @@ jobs:
         echo. >> README.txt
         echo Visit: https://github.com/KOALAaufPILLEN/KOALAOptimizer >> README.txt
         cd ..
-        powershell -Command "Compress-Archive -Path 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}' -DestinationPath 'KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip'"
-        echo "Release package created: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip"
+        powershell -Command "Compress-Archive -Path 'KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}' -DestinationPath 'KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip'"
+        echo "Release package created: KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%.zip"
+        dir "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%.zip"
       shell: cmd
 
     - name: Upload release asset (on release)
@@ -174,5 +178,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
-        asset_name: KOALA-Gaming-Optimizer-v${{ github.event.release.tag_name }}.zip
+        asset_path: KOALAOptimizer.Testing/bin/Release/KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip
+        asset_name: KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip
+        asset_content_type: application/zip

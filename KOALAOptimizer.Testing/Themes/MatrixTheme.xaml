@@ -13,6 +13,7 @@
     <SolidColorBrush x:Key="DangerBrush" Color="#ff0040"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="#00ff41"/>
     <SolidColorBrush x:Key="WarningBrush" Color="#ffff00"/>
+    <SolidColorBrush x:Key="DarkBackgroundBrush" Color="#000800"/>
     
     <!-- Window Style -->
     <Style x:Key="MainWindowStyle" TargetType="Window">
@@ -221,4 +222,65 @@
         <Setter Property="HeadersVisibility" Value="Column"/>
         <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
     </Style>
+    
+    <!-- Missing Button Styles -->
+    <Style x:Key="ModernButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Margin" Value="3"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+    </Style>
+    
+    <Style x:Key="AccentButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Margin" Value="5"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+    </Style>
+    
+    <!-- Missing Text Styles -->
+    <Style x:Key="FeatureTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+    </Style>
+    
+    <Style x:Key="DescriptionTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}"/>
+        <Setter Property="FontStyle" Value="Italic"/>
+        <Setter Property="Margin" Value="0,1"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+    </Style>
+    
+    <Style x:Key="ValueTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="Margin" Value="5,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontFamily" Value="Consolas, Courier New, monospace"/>
+    </Style>
+    
+    <!-- Missing Slider Style -->
+    <Style x:Key="ModernSliderStyle" TargetType="Slider">
+        <Setter Property="Background" Value="{StaticResource GroupBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Margin" Value="5"/>
+    </Style>
+    
 </ResourceDictionary>
