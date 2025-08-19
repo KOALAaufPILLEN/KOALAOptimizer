@@ -388,7 +388,6 @@ namespace KOALAOptimizer.Testing
                                   "Technical details: " + e.Exception.Message;
                     errorTitle = "KOALA Gaming Optimizer - Theme Error";
                 }
-                }
                 
                 // Try to apply fallback theme
                 try
