@@ -1,0 +1,127 @@
+<Window x:Class="KOALAOptimizer.Testing.Views.MinimalMainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🐨 KOALA Gaming Optimizer v2.3 - Safe Mode" 
+        Width="1000" Height="750" 
+        MinWidth="900" MinHeight="750"
+        Background="DarkSlateGray"
+        Foreground="White"
+        WindowStartupLocation="CenterScreen">
+    
+    <!-- NUCLEAR APPROACH: Zero dependencies - all hardcoded styling -->
+    <Grid Background="DarkSlateGray">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Section -->
+        <StackPanel Grid.Row="0" Margin="20,15,20,10" Background="DimGray">
+            <TextBlock Text="🚀 KOALA Gaming Optimizer v2.3 - Safe Mode" 
+                       FontSize="24" FontWeight="Bold" 
+                       Foreground="LightBlue" Margin="0,0,0,4"/>
+            <TextBlock Text="Running in safe mode with zero theme dependencies to prevent FrameworkElement.Style errors" 
+                       FontSize="14" FontStyle="Italic"
+                       Foreground="LightGray"/>
+            
+            <!-- Theme Loading Option -->
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <Button x:Name="LoadThemesButton" Content="🎨 Load Themes (Advanced)" 
+                        Width="200" Height="30" 
+                        Background="DarkGreen" Foreground="White" BorderBrush="Green"
+                        Click="LoadThemesButton_Click"/>
+                <TextBlock Text="⚠️ Only enable if you're sure themes work on your system" 
+                           Foreground="Yellow" VerticalAlignment="Center" Margin="10,0"/>
+            </StackPanel>
+        </StackPanel>
+        
+        <!-- Main Content -->
+        <TabControl x:Name="MinimalTabControl" Grid.Row="1" Margin="10" Background="DarkGray">
+            
+            <!-- Basic Optimizations Tab -->
+            <TabItem Header="🎮 Gaming Optimizations">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="DarkGray" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- Essential Gaming Optimizations -->
+                        <GroupBox Header="🚀 Essential Gaming Optimizations" 
+                                  Background="DimGray" BorderBrush="Gray" Foreground="White"
+                                  Margin="5" Padding="10">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkDisableNagle" Content="Disable TCP ACK Delay (Nagle Algorithm)" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkSystemResponsiveness" Content="System Responsiveness (0)" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkDisableGameDVR" Content="Disable Game DVR" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkEnableGpuScheduling" Content="Enable GPU Hardware Scheduling" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkHighPrecisionTimer" Content="High Precision Timer" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkCpuCorePark" Content="CPU Core Parking Disable" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkMMCSS" Content="MMCSS Gaming Priority" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- Advanced Optimizations -->
+                        <GroupBox Header="⚡ Advanced Gaming Features" 
+                                  Background="DimGray" BorderBrush="Gray" Foreground="White"
+                                  Margin="5" Padding="10">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="chkGamesTaskHighPriority" Content="Games Task: High Priority" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkNetworkLatency" Content="Network Latency Improvements" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkGameMode" Content="Windows Game Mode Enhancements" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkProcessOptimization" Content="Process Optimization Enhancements" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkDisableNetworkThrottling" Content="Disable Network Throttling" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- System Info Tab -->
+            <TabItem Header="💻 System Info">
+                <Grid Margin="10">
+                    <GroupBox Header="System Information" 
+                              Background="DimGray" BorderBrush="Gray" Foreground="White"
+                              Margin="5" Padding="10">
+                        <ScrollViewer>
+                            <TextBlock x:Name="SystemInfoTextBlock" 
+                                       Text="Loading system information..." 
+                                       FontFamily="Consolas, Courier New, monospace" 
+                                       Foreground="White"
+                                       Margin="10"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+            
+        </TabControl>
+        
+        <!-- Footer / Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
+            <Button x:Name="RecommendedButton" Content="🚀 Apply Recommended" 
+                    Width="180" Height="40" Margin="5"
+                    Background="DarkBlue" Foreground="White" BorderBrush="Blue"
+                    FontSize="16" FontWeight="Bold"
+                    Click="RecommendedButton_Click"/>
+            <Button x:Name="RevertAllButton" Content="🔄 Revert All" 
+                    Width="140" Height="40" Margin="5"
+                    Background="DarkRed" Foreground="White" BorderBrush="Red"
+                    Click="RevertAllButton_Click"/>
+            <Button x:Name="SystemInfoButton" Content="💻 System Info" 
+                    Width="140" Height="40" Margin="5"
+                    Background="DarkGreen" Foreground="White" BorderBrush="Green"
+                    Click="SystemInfoButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
