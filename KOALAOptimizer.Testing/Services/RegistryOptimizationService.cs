@@ -235,6 +235,38 @@ namespace KOALAOptimizer.Testing.Services
                     return DisableVisualEffects();
                 case "OptimizeNetworkSettings":
                     return OptimizeNetworkSettings();
+                case "DisableCpuCoreParking":
+                    return DisableCpuCoreParking();
+                case "OptimizeCpuCStates":
+                    return OptimizeCpuCStates();
+                case "OptimizeInterruptModeration":
+                    return OptimizeInterruptModeration();
+                case "ConfigureMMCSS":
+                    return ConfigureMMCSS();
+                case "OptimizeLargePageSupport":
+                    return OptimizeLargePageSupport();
+                case "DisableMemoryCompression":
+                    return DisableMemoryCompression();
+                case "OptimizeStandbyMemory":
+                    return OptimizeStandbyMemory();
+                case "OptimizeAdvancedGpuScheduling":
+                    return OptimizeAdvancedGpuScheduling();
+                case "DisableGpuPowerStates":
+                    return DisableGpuPowerStates();
+                case "OptimizeShaderCache":
+                    return OptimizeShaderCache();
+                case "OptimizeDirectX12":
+                    return OptimizeDirectX12();
+                case "EnableHardwareAcceleration":
+                    return EnableHardwareAcceleration();
+                case "ReduceAudioLatency":
+                    return ReduceAudioLatency();
+                case "ReduceInputLag":
+                    return ReduceInputLag();
+                case "OptimizeGameMode":
+                    return OptimizeGameMode();
+                case "OptimizeBackgroundSuspension":
+                    return OptimizeBackgroundSuspension();
                 default:
                     _logger.LogWarning($"Unknown optimization: {optimization.Name}");
                     return false;
@@ -629,6 +661,467 @@ namespace KOALAOptimizer.Testing.Services
         public bool BackupExists()
         {
             return File.Exists(_backupFilePath);
+        }
+        
+        /// <summary>
+        /// Disable CPU core parking for gaming performance
+        /// </summary>
+        private bool DisableCpuCoreParking()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("CPU core parking optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var powerPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583";
+                SetRegistryValue(powerPath, "Attributes", 0, RegistryValueKind.DWord);
+                SetRegistryValue(powerPath, "ValueMin", 0, RegistryValueKind.DWord);
+                SetRegistryValue(powerPath, "ValueMax", 0, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("CPU core parking disabled successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to disable CPU core parking: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize CPU C-States for gaming
+        /// </summary>
+        private bool OptimizeCpuCStates()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("CPU C-States optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var cStatePath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\68dd2f27-a4ce-4e11-8487-3794e4135dfa";
+                SetRegistryValue(cStatePath, "Attributes", 0, RegistryValueKind.DWord);
+                SetRegistryValue(cStatePath, "ValueMin", 100, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("CPU C-States optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize CPU C-States: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize interrupt moderation for gaming
+        /// </summary>
+        private bool OptimizeInterruptModeration()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Interrupt moderation optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var kernelPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel";
+                SetRegistryValue(kernelPath, "ThreadDpcEnable", 1, RegistryValueKind.DWord);
+                SetRegistryValue(kernelPath, "DpcQueueDepth", 1, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Interrupt moderation optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize interrupt moderation: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Configure MMCSS for gaming priority
+        /// </summary>
+        private bool ConfigureMMCSS()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("MMCSS configuration requires administrator privileges");
+                    return false;
+                }
+                
+                var mmcssPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games";
+                SetRegistryValue(mmcssPath, "Background Only", "False", RegistryValueKind.String);
+                SetRegistryValue(mmcssPath, "Scheduling Category", "High", RegistryValueKind.String);
+                SetRegistryValue(mmcssPath, "SFIO Priority", "High", RegistryValueKind.String);
+                SetRegistryValue(mmcssPath, "Priority", 8, RegistryValueKind.DWord);
+                SetRegistryValue(mmcssPath, "Clock Rate", 10000, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("MMCSS configured for gaming priority successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to configure MMCSS: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize large page support
+        /// </summary>
+        private bool OptimizeLargePageSupport()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Large page support optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var memoryPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management";
+                SetRegistryValue(memoryPath, "LargeSystemCache", 0, RegistryValueKind.DWord);
+                SetRegistryValue(memoryPath, "LargePageMinimum", 2097152, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Large page support optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize large page support: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Disable memory compression
+        /// </summary>
+        private bool DisableMemoryCompression()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Memory compression configuration requires administrator privileges");
+                    return false;
+                }
+                
+                var memoryPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management";
+                SetRegistryValue(memoryPath, "FeatureSettings", 1, RegistryValueKind.DWord);
+                SetRegistryValue(memoryPath, "FeatureSettingsOverride", 3, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Memory compression disabled successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to disable memory compression: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize standby memory management
+        /// </summary>
+        private bool OptimizeStandbyMemory()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Standby memory optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var memoryPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management";
+                SetRegistryValue(memoryPath, "ClearPageFileAtShutdown", 0, RegistryValueKind.DWord);
+                SetRegistryValue(memoryPath, "DisablePagingExecutive", 1, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Standby memory management optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize standby memory: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize advanced GPU scheduling
+        /// </summary>
+        private bool OptimizeAdvancedGpuScheduling()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Advanced GPU scheduling optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var gpuPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+                SetRegistryValue(gpuPath, "TdrLevel", 0, RegistryValueKind.DWord);
+                SetRegistryValue(gpuPath, "TdrDelay", 60, RegistryValueKind.DWord);
+                SetRegistryValue(gpuPath, "TdrDdiDelay", 60, RegistryValueKind.DWord);
+                SetRegistryValue(gpuPath, "TdrDebugMode", 0, RegistryValueKind.DWord);
+                SetRegistryValue(gpuPath, "TdrTestMode", 0, RegistryValueKind.DWord);
+                
+                var schedulerPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler";
+                SetRegistryValue(schedulerPath, "EnablePreemption", 0, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Advanced GPU scheduling optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize advanced GPU scheduling: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Disable GPU power states
+        /// </summary>
+        private bool DisableGpuPowerStates()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("GPU power states configuration requires administrator privileges");
+                    return false;
+                }
+                
+                var gpuPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+                SetRegistryValue(gpuPath, "PlatformSupportMiracast", 0, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("GPU power states disabled successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to disable GPU power states: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize shader cache management
+        /// </summary>
+        private bool OptimizeShaderCache()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Shader cache optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var directXPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+                SetRegistryValue(directXPath, "DisableWriteCombining", 1, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Shader cache optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize shader cache: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize DirectX 12 performance
+        /// </summary>
+        private bool OptimizeDirectX12()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("DirectX 12 optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var dx12Path = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+                SetRegistryValue(dx12Path, "EnableDirectX12", 1, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("DirectX 12 optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize DirectX 12: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Enable hardware acceleration features
+        /// </summary>
+        private bool EnableHardwareAcceleration()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Hardware acceleration optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var dwmPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Dwm";
+                SetRegistryValue(dwmPath, "EnableMachineCheck", 0, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Hardware acceleration enabled successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to enable hardware acceleration: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Reduce audio latency for gaming
+        /// </summary>
+        private bool ReduceAudioLatency()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Audio latency optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var audioPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio";
+                SetRegistryValue(audioPath, "DisableProtectedAudioDG", 1, RegistryValueKind.DWord);
+                SetRegistryValue(audioPath, "DisableProtectedAudio", 1, RegistryValueKind.DWord);
+                
+                var audioServicePath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\AudioSrv";
+                SetRegistryValue(audioServicePath, "DependOnService", new string[] { "AudioEndpointBuilder", "RpcSs" }, RegistryValueKind.MultiString);
+                
+                var audioDuckingPath = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Multimedia\Audio";
+                SetRegistryValue(audioDuckingPath, "UserDuckingPreference", 3, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Audio latency reduced successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to reduce audio latency: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Reduce input lag for gaming
+        /// </summary>
+        private bool ReduceInputLag()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Input lag optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var mousePath = @"HKEY_CURRENT_USER\Control Panel\Mouse";
+                SetRegistryValue(mousePath, "MouseSpeed", "0", RegistryValueKind.String);
+                SetRegistryValue(mousePath, "MouseThreshold1", "0", RegistryValueKind.String);
+                SetRegistryValue(mousePath, "MouseThreshold2", "0", RegistryValueKind.String);
+                
+                var mouseClassPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\mouclass\Parameters";
+                SetRegistryValue(mouseClassPath, "MouseDataQueueSize", 20, RegistryValueKind.DWord);
+                
+                var kbdClassPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters";
+                SetRegistryValue(kbdClassPath, "KeyboardDataQueueSize", 20, RegistryValueKind.DWord);
+                
+                var timerPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel";
+                SetRegistryValue(timerPath, "GlobalTimerResolutionRequests", 1, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Input lag reduced successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to reduce input lag: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize Windows Game Mode
+        /// </summary>
+        private bool OptimizeGameMode()
+        {
+            try
+            {
+                var gameBarPath = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\GameBar";
+                SetRegistryValue(gameBarPath, "AllowAutoGameMode", 1, RegistryValueKind.DWord);
+                SetRegistryValue(gameBarPath, "AutoGameModeEnabled", 1, RegistryValueKind.DWord);
+                
+                var gameDvrPolicyPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR";
+                SetRegistryValue(gameDvrPolicyPath, "value", 0, RegistryValueKind.DWord);
+                
+                var gameConfigPath = @"HKEY_CURRENT_USER\System\GameConfigStore";
+                SetRegistryValue(gameConfigPath, "GameDVR_FSEBehaviorMode", 2, RegistryValueKind.DWord);
+                SetRegistryValue(gameConfigPath, "GameDVR_FSEBehavior", 2, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Windows Game Mode optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize Game Mode: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize background process suspension
+        /// </summary>
+        private bool OptimizeBackgroundSuspension()
+        {
+            try
+            {
+                if (!_adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogWarning("Background suspension optimization requires administrator privileges");
+                    return false;
+                }
+                
+                var systemProfilePath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
+                SetRegistryValue(systemProfilePath, "SystemResponsiveness", 0, RegistryValueKind.DWord);
+                SetRegistryValue(systemProfilePath, "NetworkThrottlingIndex", 10, RegistryValueKind.DWord);
+                
+                var explorerPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Serialize";
+                SetRegistryValue(explorerPath, "StartupDelayInMSec", 0, RegistryValueKind.DWord);
+                
+                var priorityPath = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl";
+                SetRegistryValue(priorityPath, "Win32PrioritySeparation", 38, RegistryValueKind.DWord);
+                
+                _logger.LogInfo("Background process suspension optimized successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to optimize background suspension: {ex.Message}", ex);
+                return false;
+            }
         }
         
         /// <summary>

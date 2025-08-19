@@ -416,6 +416,66 @@ namespace KOALAOptimizer.Testing.Views
                         }
                     }
                     
+                    // Apply audio latency optimization
+                    if (chkAudioLatency.IsChecked == true)
+                    {
+                        try
+                        {
+                            AudioOptimizationService.Instance?.ReduceAudioLatency();
+                            anyApplied = true;
+                            LoggingService.EmergencyLog("MinimalMainWindow: Audio latency optimization applied");
+                        }
+                        catch (Exception audioEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: Audio optimization failed: {audioEx.Message}");
+                        }
+                    }
+                    
+                    // Apply smart game detection
+                    if (chkAutoGameDetection.IsChecked == true)
+                    {
+                        try
+                        {
+                            SmartGameDetectionService.Instance?.StartDetection(true, false, true);
+                            anyApplied = true;
+                            LoggingService.EmergencyLog("MinimalMainWindow: Smart game detection started");
+                        }
+                        catch (Exception gameEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: Game detection failed: {gameEx.Message}");
+                        }
+                    }
+                    
+                    // Apply CPU core parking optimization
+                    if (chkCpuCorePark.IsChecked == true)
+                    {
+                        try
+                        {
+                            PowerManagementService.Instance?.DisableCpuCoreParking();
+                            anyApplied = true;
+                            LoggingService.EmergencyLog("MinimalMainWindow: CPU core parking disabled");
+                        }
+                        catch (Exception cpuEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: CPU optimization failed: {cpuEx.Message}");
+                        }
+                    }
+                    
+                    // Apply MMCSS configuration
+                    if (chkMMCSS.IsChecked == true)
+                    {
+                        try
+                        {
+                            ServiceManagementService.Instance?.ConfigureMMCSSForGaming();
+                            anyApplied = true;
+                            LoggingService.EmergencyLog("MinimalMainWindow: MMCSS configured for gaming");
+                        }
+                        catch (Exception mmcssEx)
+                        {
+                            LoggingService.EmergencyLog($"MinimalMainWindow: MMCSS configuration failed: {mmcssEx.Message}");
+                        }
+                    }
+                    
                     if (anyApplied)
                     {
                         MessageBox.Show("Selected optimizations have been applied successfully!\n\n" +

@@ -32,6 +32,11 @@ namespace KOALAOptimizer.Testing.Views
         private readonly GpuDetectionService _gpuService;
         private readonly TimerResolutionService _timerService;
         private readonly CrosshairOverlayService _crosshairService;
+        private readonly NetworkOptimizationService _networkService;
+        private readonly AudioOptimizationService _audioService;
+        private readonly PowerManagementService _powerService;
+        private readonly ServiceManagementService _serviceManagementService;
+        private readonly SmartGameDetectionService _gameDetectionService;
         
         // Data collections for UI binding
         private readonly ObservableCollection<string> _logMessages;
@@ -54,6 +59,11 @@ namespace KOALAOptimizer.Testing.Views
             _gpuService = GpuDetectionService.Instance;
             _timerService = TimerResolutionService.Instance;
             _crosshairService = CrosshairOverlayService.Instance;
+            _networkService = NetworkOptimizationService.Instance;
+            _audioService = AudioOptimizationService.Instance;
+            _powerService = PowerManagementService.Instance;
+            _serviceManagementService = ServiceManagementService.Instance;
+            _gameDetectionService = SmartGameDetectionService.Instance;
             
             // Initialize data collections
             _logMessages = new ObservableCollection<string>();
@@ -74,6 +84,10 @@ namespace KOALAOptimizer.Testing.Views
             
             // Initialize UI
             InitializeUI();
+            
+            // Setup event handlers for smart game detection
+            _gameDetectionService.GameDetected += GameDetectionService_GameDetected;
+            _gameDetectionService.GameStopped += GameDetectionService_GameStopped;
             
             _logger.LogInfo("KOALA Gaming Optimizer C# Edition - Main window loaded");
         }
@@ -859,6 +873,72 @@ namespace KOALAOptimizer.Testing.Views
             if (chkDisableNetworkThrottling.IsChecked == true)
                 optimizations.Add(new OptimizationItem { Name = "OptimizeNetworkSettings", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
             
+            // Advanced System Performance Optimizations
+            if (chkDisableCpuCoreParking.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "DisableCpuCoreParking", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Power });
+            
+            if (chkOptimizeCpuCStates.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeCpuCStates", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Power });
+            
+            if (chkOptimizeInterruptModeration.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeInterruptModeration", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
+            
+            if (chkConfigureMMCSS.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "ConfigureMMCSS", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
+            
+            if (chkLargePageSupport.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeLargePageSupport", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Memory });
+            
+            if (chkDisableMemoryCompression.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "DisableMemoryCompression", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Memory });
+            
+            if (chkOptimizeStandbyMemory.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeStandbyMemory", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Memory });
+            
+            // Enhanced GPU Optimizations
+            if (chkAdvancedGpuScheduling.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeAdvancedGpuScheduling", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.GPU });
+            
+            if (chkDisableGpuPowerStates.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "DisableGpuPowerStates", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.GPU });
+            
+            if (chkOptimizeShaderCache.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeShaderCache", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.GPU });
+            
+            if (chkOptimizeDirectX12.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeDirectX12", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.GPU });
+            
+            if (chkEnableHardwareAcceleration.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "EnableHardwareAcceleration", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.GPU });
+            
+            // Audio and Input Optimizations
+            if (chkAudioLatency.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "ReduceAudioLatency", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
+            
+            if (chkInputLagReduction.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "ReduceInputLag", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
+            
+            // Network Gaming Optimizations
+            if (chkAdvancedTcpSettings.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "ApplyAdvancedTcpSettings", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Network });
+            
+            if (chkReceiveSideScaling.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "EnableReceiveSideScaling", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Network });
+            
+            if (chkBackgroundNetworkThrottling.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "DisableBackgroundNetworkThrottling", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Network });
+            
+            // Game Mode and Background Process Management
+            if (chkOptimizeGameMode.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeGameMode", IsEnabled = true, RequiresAdmin = false, Type = OptimizationType.Registry });
+            
+            if (chkOptimizeBackgroundSuspension.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "OptimizeBackgroundSuspension", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Registry });
+            
+            // Service Management
+            if (chkDisableUnnecessaryServices.IsChecked == true)
+                optimizations.Add(new OptimizationItem { Name = "DisableUnnecessaryServices", IsEnabled = true, RequiresAdmin = true, Type = OptimizationType.Service });
+            
             return optimizations;
         }
         
@@ -869,13 +949,74 @@ namespace KOALAOptimizer.Testing.Views
         {
             try
             {
+                var registryOptimizations = optimizations.Where(o => o.Type == OptimizationType.Registry).ToList();
+                var networkOptimizations = optimizations.Where(o => o.Type == OptimizationType.Network).ToList();
+                var powerOptimizations = optimizations.Where(o => o.Type == OptimizationType.Power).ToList();
+                var serviceOptimizations = optimizations.Where(o => o.Type == OptimizationType.Service).ToList();
+                
                 // Apply registry optimizations
-                _registryService.ApplyGamingOptimizations(optimizations);
+                if (registryOptimizations.Any())
+                {
+                    _registryService.ApplyGamingOptimizations(registryOptimizations);
+                }
+                
+                // Apply network optimizations
+                foreach (var opt in networkOptimizations)
+                {
+                    switch (opt.Name)
+                    {
+                        case "ApplyAdvancedTcpSettings":
+                            _networkService.ApplyAdvancedTcpSettings();
+                            break;
+                        case "EnableReceiveSideScaling":
+                            _networkService.EnableReceiveSideScaling();
+                            break;
+                        case "DisableBackgroundNetworkThrottling":
+                            _networkService.DisableBackgroundNetworkThrottling();
+                            break;
+                    }
+                }
+                
+                // Apply power optimizations
+                foreach (var opt in powerOptimizations)
+                {
+                    switch (opt.Name)
+                    {
+                        case "DisableCpuCoreParking":
+                            _powerService.DisableCpuCoreParking();
+                            break;
+                        case "OptimizeCpuCStates":
+                            _powerService.OptimizeCpuCStates();
+                            break;
+                    }
+                }
+                
+                // Apply service optimizations
+                foreach (var opt in serviceOptimizations)
+                {
+                    switch (opt.Name)
+                    {
+                        case "DisableUnnecessaryServices":
+                            _serviceManagementService.DisableUnnecessaryServices();
+                            break;
+                    }
+                }
                 
                 // Apply timer resolution if enabled
                 if (chkHighPrecisionTimer.IsChecked == true)
                 {
                     _timerService.SetHighPrecisionTimer();
+                }
+                
+                // Start smart game detection if enabled
+                if (chkAutoGameDetection.IsChecked == true)
+                {
+                    var enableAutoProfile = chkAutoProfileSwitch.IsChecked == true;
+                    var enableAutoRevert = chkAutoRevert.IsChecked == true;
+                    var enableBackgroundSuspension = chkBackgroundAppSuspend.IsChecked == true;
+                    
+                    _gameDetectionService.StartDetection(enableAutoProfile, enableAutoRevert, enableBackgroundSuspension);
+                    _logger.LogInfo("Smart game detection started");
                 }
                 
                 _logger.LogInfo($"Applied {optimizations.Count} optimizations successfully");
@@ -1156,6 +1297,64 @@ namespace KOALAOptimizer.Testing.Views
         
         #endregion
         
+        #region Smart Game Detection Event Handlers
+        
+        /// <summary>
+        /// Handle game detected event
+        /// </summary>
+        private void GameDetectionService_GameDetected(object sender, GameProfile gameProfile)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    _logger.LogInfo($"🎮 Game detected: {gameProfile.DisplayName}");
+                    
+                    // Update running games display
+                    RefreshRunningGames();
+                    
+                    // Show notification in performance status
+                    if (PerformanceStatusText != null)
+                    {
+                        PerformanceStatusText.Text = $"🎮 Game active: {gameProfile.DisplayName} | Optimizations applied";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error handling game detected event: {ex.Message}", ex);
+                }
+            });
+        }
+        
+        /// <summary>
+        /// Handle game stopped event
+        /// </summary>
+        private void GameDetectionService_GameStopped(object sender, GameProfile gameProfile)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    _logger.LogInfo($"🎮 Game stopped: {gameProfile.DisplayName}");
+                    
+                    // Update running games display
+                    RefreshRunningGames();
+                    
+                    // Update performance status
+                    if (PerformanceStatusText != null)
+                    {
+                        PerformanceStatusText.Text = "Performance monitoring active | No games detected";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error handling game stopped event: {ex.Message}", ex);
+                }
+            });
+        }
+        
+        #endregion
+        
         /// <summary>
         /// Handle window closing
         /// </summary>
@@ -1169,6 +1368,7 @@ namespace KOALAOptimizer.Testing.Views
                 _uiUpdateTimer?.Stop();
                 _performanceService?.StopMonitoring();
                 _processService?.StopBackgroundMonitoring();
+                _gameDetectionService?.StopDetection();
                 
                 // Cleanup timer resolution
                 _timerService?.RestoreOriginalResolution();

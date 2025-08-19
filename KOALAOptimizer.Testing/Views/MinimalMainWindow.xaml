@@ -69,6 +69,14 @@
                                           Foreground="White" Margin="2" IsChecked="True"/>
                                 <CheckBox x:Name="chkMMCSS" Content="MMCSS Gaming Priority" 
                                           Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkAutoGameDetection" Content="Smart Game Detection" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkAudioLatency" Content="Audio Latency Reduction" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkInputLagReduction" Content="Input Lag Reduction" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
+                                <CheckBox x:Name="chkAdvancedMemory" Content="Advanced Memory Optimization" 
+                                          Foreground="White" Margin="2" IsChecked="True"/>
                                 
                                 <!-- Apply Buttons -->
                                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
