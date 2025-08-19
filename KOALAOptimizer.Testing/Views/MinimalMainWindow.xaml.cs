@@ -406,7 +406,7 @@ namespace KOALAOptimizer.Testing.Views
                         // Use TimerResolutionService for high precision timer
                         try
                         {
-                            TimerResolutionService.Instance?.SetHighResolution();
+                            TimerResolutionService.Instance?.SetHighPrecisionTimer();
                             anyApplied = true;
                             LoggingService.EmergencyLog("MinimalMainWindow: High precision timer applied");
                         }

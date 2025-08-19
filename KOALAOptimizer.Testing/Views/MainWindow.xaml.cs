@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +13,7 @@ using System.Windows.Threading;
 using KOALAOptimizer.Testing.Models;
 using KOALAOptimizer.Testing.Services;
 using Microsoft.Win32;
-using Newtonsoft.Json;
+
 
 namespace KOALAOptimizer.Testing.Views
 {
@@ -614,7 +615,7 @@ namespace KOALAOptimizer.Testing.Views
                 if (dialog.ShowDialog() == true)
                 {
                     var config = GetCurrentConfiguration();
-                    var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                    var json = SerializeConfigurationToJson(config);
                     File.WriteAllText(dialog.FileName, json);
                     
                     _logger.LogInfo($"Configuration exported to: {dialog.FileName}");
@@ -646,7 +647,7 @@ namespace KOALAOptimizer.Testing.Views
                 if (dialog.ShowDialog() == true)
                 {
                     var json = File.ReadAllText(dialog.FileName);
-                    var config = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+                    var config = DeserializeConfigurationFromJson(json);
                     
                     ApplyConfiguration(config);
                     
@@ -1025,6 +1026,63 @@ namespace KOALAOptimizer.Testing.Views
                 chkAmdTweaks.IsChecked = config["AmdTweaks"];
             if (config.ContainsKey("IntelTweaks"))
                 chkIntelTweaks.IsChecked = config["IntelTweaks"];
+        }
+        
+        /// <summary>
+        /// Simple JSON serialization for configuration (replaces Newtonsoft.Json dependency)
+        /// </summary>
+        private string SerializeConfigurationToJson(Dictionary<string, bool> config)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            
+            int count = 0;
+            foreach (var kvp in config)
+            {
+                sb.Append($"  \"{kvp.Key}\": {kvp.Value.ToString().ToLower()}");
+                if (count < config.Count - 1)
+                    sb.Append(",");
+                sb.AppendLine();
+                count++;
+            }
+            
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+        
+        /// <summary>
+        /// Simple JSON deserialization for configuration (replaces Newtonsoft.Json dependency)
+        /// </summary>
+        private Dictionary<string, bool> DeserializeConfigurationFromJson(string json)
+        {
+            var config = new Dictionary<string, bool>();
+            
+            // Remove whitespace and braces
+            json = json.Trim().Trim('{', '}');
+            
+            // Split by lines and parse each key-value pair
+            var lines = json.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim().TrimEnd(',');
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+                
+                // Parse "key": value format
+                var colonIndex = trimmedLine.IndexOf(':');
+                if (colonIndex > 0)
+                {
+                    var key = trimmedLine.Substring(0, colonIndex).Trim().Trim('"');
+                    var valueStr = trimmedLine.Substring(colonIndex + 1).Trim();
+                    
+                    if (bool.TryParse(valueStr, out bool value))
+                    {
+                        config[key] = value;
+                    }
+                }
+            }
+            
+            return config;
         }
         
         #endregion
