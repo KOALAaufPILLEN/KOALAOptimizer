@@ -40,7 +40,6 @@ namespace KOALAOptimizer.Testing.Services
                 _logger = null;
             }
         }
-        }
         
         /// <summary>
         /// Set high precision timer (1ms resolution) for gaming performance
