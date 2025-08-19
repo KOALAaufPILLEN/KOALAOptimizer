@@ -118,9 +118,26 @@ namespace KOALAOptimizer.Testing.Services
                     return false;
                 }
                 
-                // Load the theme resource dictionary
+                // Load the theme resource dictionary with validation
                 var themeUri = new Uri($"pack://application:,,,/{theme.ResourcePath}", UriKind.Absolute);
-                var themeDict = new ResourceDictionary { Source = themeUri };
+                ResourceDictionary themeDict;
+                
+                try
+                {
+                    themeDict = new ResourceDictionary { Source = themeUri };
+                    
+                    // Validate that the theme has essential resources
+                    if (!ValidateThemeResources(themeDict))
+                    {
+                        _logger.LogWarning($"Theme '{theme.DisplayName}' is missing essential resources, attempting fallback");
+                        return ApplyFallbackTheme();
+                    }
+                }
+                catch (Exception loadEx)
+                {
+                    _logger.LogError($"Failed to load theme resource '{theme.ResourcePath}': {loadEx.Message}");
+                    return ApplyFallbackTheme();
+                }
                 
                 // Clear existing theme resources and apply new theme
                 var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
@@ -149,6 +166,80 @@ namespace KOALAOptimizer.Testing.Services
             catch (Exception ex)
             {
                 _logger.LogError($"Failed to apply theme '{theme?.DisplayName}': {ex.Message}", ex);
+                return ApplyFallbackTheme();
+            }
+        }
+        
+        /// <summary>
+        /// Validate that theme has essential resources
+        /// </summary>
+        private bool ValidateThemeResources(ResourceDictionary themeDict)
+        {
+            try
+            {
+                // Check for essential brushes that should be present in every theme
+                string[] essentialResources = { 
+                    "BackgroundBrush", "TextBrush", "PrimaryBrush", 
+                    "AccentBrush", "BorderBrush", "MainWindowStyle" 
+                };
+                
+                foreach (var resourceKey in essentialResources)
+                {
+                    if (!themeDict.Contains(resourceKey))
+                    {
+                        _logger.LogWarning($"Theme missing essential resource: {resourceKey}");
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error validating theme resources: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Apply fallback theme when primary theme fails
+        /// </summary>
+        private bool ApplyFallbackTheme()
+        {
+            try
+            {
+                _logger.LogInfo("Attempting to apply fallback SciFi theme");
+                var fallbackTheme = _availableThemes.FirstOrDefault(t => t.Name == "SciFi");
+                
+                if (fallbackTheme != null && fallbackTheme != _currentTheme)
+                {
+                    // Try to apply fallback theme (avoid infinite recursion)
+                    var themeUri = new Uri($"pack://application:,,,/{fallbackTheme.ResourcePath}", UriKind.Absolute);
+                    var themeDict = new ResourceDictionary { Source = themeUri };
+                    
+                    var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
+                    var existingThemes = mergedDictionaries
+                        .Where(d => d.Source != null && d.Source.ToString().Contains("Themes/"))
+                        .ToList();
+                    
+                    foreach (var existingTheme in existingThemes)
+                    {
+                        mergedDictionaries.Remove(existingTheme);
+                    }
+                    
+                    mergedDictionaries.Insert(0, themeDict);
+                    _currentTheme = fallbackTheme;
+                    _logger.LogInfo("Fallback theme applied successfully");
+                    return true;
+                }
+                else
+                {
+                    _logger.LogError("No fallback theme available or already using fallback");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to apply fallback theme: {ex.Message}");
                 return false;
             }
         }
