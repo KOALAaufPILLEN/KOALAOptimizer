@@ -21,9 +21,9 @@
             <TextBlock Text="🚀 KOALA Gaming Optimizer v2.3 - Safe Mode" 
                        FontSize="24" FontWeight="Bold" 
                        Foreground="LightBlue" Margin="0,0,0,4"/>
-            <TextBlock Text="Running in safe mode with zero theme dependencies to prevent FrameworkElement.Style errors" 
+            <TextBlock Text="✅ Stable startup achieved! Enhanced with crosshair controls, optimization features, and safe theme loading." 
                        FontSize="14" FontStyle="Italic"
-                       Foreground="LightGray"/>
+                       Foreground="LightGreen"/>
             
             <!-- Theme Loading Option -->
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
@@ -34,6 +34,12 @@
                 <TextBlock Text="✨ Safe theme loading without restart" 
                            Foreground="LightGreen" VerticalAlignment="Center" Margin="10,0"/>
             </StackPanel>
+            
+            <!-- Status Indicator -->
+            <TextBlock x:Name="txtApplicationStatus" 
+                       Text="🛡️ Running in safe mode - all core features available" 
+                       Margin="0,5,0,0" FontWeight="Bold"
+                       Foreground="LightBlue"/>
         </StackPanel>
         
         <!-- Main Content -->

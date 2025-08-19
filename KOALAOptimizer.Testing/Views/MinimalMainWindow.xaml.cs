@@ -216,6 +216,8 @@ namespace KOALAOptimizer.Testing.Views
                 {
                     LoadThemesButton.Content = "🔄 Loading...";
                     LoadThemesButton.IsEnabled = false;
+                    txtApplicationStatus.Text = "⏳ Loading themes safely...";
+                    txtApplicationStatus.Foreground = new SolidColorBrush(Colors.Orange);
 
                     try
                     {
@@ -251,12 +253,26 @@ namespace KOALAOptimizer.Testing.Views
                         {
                             LoggingService.EmergencyLog("MinimalMainWindow: Theme loaded successfully - switching to main window");
                             
-                            // Create and show the main window with themes
-                            var mainWindow = new MainWindow();
-                            mainWindow.Show();
-                            
-                            // Close the minimal window
-                            this.Close();
+                            try
+                            {
+                                // Give the theme system a moment to stabilize
+                                System.Threading.Thread.Sleep(100);
+                                
+                                // Create and show the main window with themes
+                                var mainWindow = new MainWindow();
+                                mainWindow.Show();
+                                
+                                // Close the minimal window
+                                this.Close();
+                            }
+                            catch (Exception mainWindowEx)
+                            {
+                                LoggingService.EmergencyLog($"MinimalMainWindow: Failed to create MainWindow: {mainWindowEx.Message}");
+                                MessageBox.Show("Theme loaded successfully, but failed to switch to the main interface.\n\n" +
+                                              "You can restart the application normally to use the themed interface.", 
+                                              "Interface Switch Failed", 
+                                              MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
                         }
                         else
                         {
@@ -265,6 +281,8 @@ namespace KOALAOptimizer.Testing.Views
                                           "Theme Loading Failed", 
                                           MessageBoxButton.OK, MessageBoxImage.Information);
                             LoggingService.EmergencyLog("MinimalMainWindow: Theme loading failed, staying in safe mode");
+                            txtApplicationStatus.Text = "🛡️ Theme loading failed - continuing in safe mode";
+                            txtApplicationStatus.Foreground = new SolidColorBrush(Colors.Yellow);
                         }
                     }
                     catch (Exception ex)
@@ -273,6 +291,8 @@ namespace KOALAOptimizer.Testing.Views
                                       "The application remains stable in safe mode.", 
                                       "Theme Loading Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                         LoggingService.EmergencyLog($"MinimalMainWindow: LoadThemesButton error: {ex.Message}");
+                        txtApplicationStatus.Text = "🛡️ Error during theme loading - safe mode maintained";
+                        txtApplicationStatus.Foreground = new SolidColorBrush(Colors.Red);
                     }
                     finally
                     {
