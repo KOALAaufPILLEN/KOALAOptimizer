@@ -1,0 +1,44 @@
+name: Build KOALA V3
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    
+    - name: Build and Package
+      run: |
+        echo "Building KOALA Optimizer V3..."
+        cd KOALAOptimizer.Testing
+        dotnet restore
+        dotnet build -c Release
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ../output
+        cd ..
+        echo "Build complete!"
+        dir output
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-V3-${{ github.run_number }}
+        path: output/KOALAOptimizer.exe
+    
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      run: |
+        gh release delete v3-latest -y 2>nul
+        gh release create v3-latest output/KOALAOptimizer.exe --title "KOALA V3 Latest" --notes "Latest build of KOALA Gaming Optimizer V3" --latest
+      env:
+        GH_TOKEN: ${{ github.token }}
+      continue-on-error: true
