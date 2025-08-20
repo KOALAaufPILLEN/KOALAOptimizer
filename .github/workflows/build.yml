@@ -1,60 +1,56 @@
-name: Build and Release KOALA Optimizer C# Edition
+name: Build KOALA Optimizer V3
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
     branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-2022
-
+    
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
-
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.x'
-
-    - name: Restore packages
-      run: dotnet restore "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj"
-
-    - name: Build project
-      run: dotnet build "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" -c Release
-
-    - name: Publish as single file
+    
+    - name: Build Single EXE
       run: |
-        dotnet publish "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
-
-    - name: List published files
+        cd KOALAOptimizer.Testing
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ../output
+        cd ..
+        dir output
+    
+    - name: Prepare Release Package
       run: |
-        echo "Files in publish directory:"
-        dir publish
+        mkdir release
+        copy output\KOALAOptimizer.Testing.exe release\KOALA-Optimizer.exe
+        echo KOALA Gaming Optimizer V3 > release\README.txt
+        echo By KOALAaufPILLEN >> release\README.txt
+        dir release
       shell: cmd
-
-    - name: Create artifact directory
+    
+    - name: Upload Artifact V4
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-Optimizer-EXE
+        path: release/
+        retention-days: 90
+    
+    - name: Create ZIP and Release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       run: |
-        mkdir artifact
-        copy publish\*.exe artifact\
-        echo KOALA Gaming Optimizer V3 > artifact\README.txt
-        echo Created by KOALAaufPILLEN >> artifact\README.txt
-        echo Build Date: 2025-08-20 18:44:36 >> artifact\README.txt
-        dir artifact
-      shell: cmd
-
-    - name: Upload executable artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: KOALA-Optimizer-V3
-        path: artifact/*
-
-    - name: Alternative upload (if v3 fails)
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: KOALA-Optimizer-V3-alt
-        path: publish/KOALAOptimizer.Testing.exe
+        powershell Compress-Archive -Path release\* -DestinationPath KOALA-V3.zip
+        
+        gh release create v3.0.${{ github.run_number }} KOALA-V3.zip `
+          --title "KOALA V3 Build ${{ github.run_number }}" `
+          --notes "KOALA Gaming Optimizer V3 - Download KOALA-V3.zip" `
+          --latest
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: powershell
+      continue-on-error: true
