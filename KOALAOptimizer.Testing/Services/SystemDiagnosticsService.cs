@@ -231,7 +231,7 @@ namespace KOALAOptimizer.Testing.Services
                             var driveInfo = new DriveInformation
                             {
                                 Name = drive.Name,
-                                DriveType = drive.DriveType.ToString(),
+                                DriveType = ((System.IO.DriveType)drive.DriveType).ToString(),
                                 FileSystem = drive.DriveFormat,
                                 TotalSize = drive.TotalSize,
                                 FreeSpace = drive.AvailableFreeSpace,

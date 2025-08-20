@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace KOALAOptimizer.Testing.Models
 {
@@ -931,5 +932,25 @@ namespace KOALAOptimizer.Testing.Models
     public class DiagnosticsEventArgs : EventArgs
     {
         public SystemHealthReport Report { get; set; }
+    }
+    
+    /// <summary>
+    /// Game detected event arguments
+    /// </summary>
+    public class GameDetectedEventArgs : EventArgs
+    {
+        public GameProfile GameProfile { get; set; }
+        public DateTime DetectionTime { get; set; }
+        public int ProcessId { get; set; }
+    }
+    
+    /// <summary>
+    /// Game closed event arguments
+    /// </summary>
+    public class GameClosedEventArgs : EventArgs
+    {
+        public GameProfile GameProfile { get; set; }
+        public DateTime ClosedTime { get; set; }
+        public TimeSpan SessionDuration { get; set; }
     }
 }
