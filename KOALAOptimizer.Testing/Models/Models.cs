@@ -31,6 +31,49 @@ namespace KOALAOptimizer.Testing.Models
     }
 
     /// <summary>
+    /// Game-specific optimization tweaks from PowerShell version
+    /// </summary>
+    public enum GameSpecificTweak
+    {
+        DisableNagle,
+        HighPrecisionTimer,
+        NetworkOptimization,
+        AntiCheatOptimization,
+        GPUScheduling,
+        MemoryOptimization,
+        SourceEngineOptimization,
+        BF6Optimization,
+        AffinityOptimization,
+        HighPriority
+    }
+
+    /// <summary>
+    /// Game-specific tweak configuration
+    /// </summary>
+    public class GameSpecificTweakConfig
+    {
+        public GameSpecificTweak TweakType { get; set; }
+        public string Description { get; set; }
+        public bool RequiresAdmin { get; set; }
+        public List<RegistryOptimization> RegistryChanges { get; set; } = new List<RegistryOptimization>();
+        public List<string> ServiceChanges { get; set; } = new List<string>();
+        public List<string> NetworkChanges { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// Registry optimization entry
+    /// </summary>
+    public class RegistryOptimization
+    {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public object Value { get; set; }
+        public string Type { get; set; }
+        public string Description { get; set; }
+        public bool RequiresAdmin { get; set; } = true;
+    }
+
+    /// <summary>
     /// Registry backup entry
     /// </summary>
     public class RegistryBackupEntry

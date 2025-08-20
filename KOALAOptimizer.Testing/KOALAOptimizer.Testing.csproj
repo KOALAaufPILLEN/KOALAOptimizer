@@ -126,6 +126,7 @@
     <Compile Include="Services\DiskOptimizationService.cs" />
     <Compile Include="Services\ErrorRecoveryService.cs" />
     <Compile Include="Services\FpsMonitoringService.cs" />
+    <Compile Include="Services\GameSpecificTweakService.cs" />
     <Compile Include="Services\GpuDetectionService.cs" />
     <Compile Include="Services\LoggingService.cs" />
     <Compile Include="Services\MemoryDefragmentationService.cs" />
