@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Management;
+using System.Threading.Tasks;
 using KOALAOptimizer.Testing.Models;
 
 namespace KOALAOptimizer.Testing.Services
