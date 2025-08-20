@@ -1,0 +1,35 @@
+name: Force Create Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  release:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    
+    - name: Build and Release
+      run: |
+        cd KOALAOptimizer.Testing
+        dotnet publish KOALAOptimizer.Testing.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ../release
+        cd ..
+        
+        echo Creating ZIP package...
+        powershell Compress-Archive -Path release\KOALAOptimizer.Testing.exe -DestinationPath KOALA-V3.zip
+        
+        echo Creating GitHub Release...
+        gh release delete v3.0.0 -y 2>nul || echo "No previous release"
+        gh release create v3.0.0 KOALA-V3.zip --title "KOALA Optimizer V3" --notes "Download KOALA-V3.zip and run the EXE inside!" --latest
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: cmd
