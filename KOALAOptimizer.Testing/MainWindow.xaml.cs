@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;  // <-- THIS WAS MISSING!
 using System.Diagnostics;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using System.IO;
