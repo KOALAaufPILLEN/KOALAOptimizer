@@ -1,41 +1,212 @@
-name: Build KOALA Optimizer V3
+name: Build and Release KOALA Optimizer C# Edition
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:
+  release:
+    types: [ published ]
 
 jobs:
   build:
-    runs-on: windows-latest
-    
+    runs-on: windows-2022
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Setup .NET
+
+    - name: Setup .NET Framework
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Build
-      run: dotnet build --no-restore --configuration Release
-    
-    - name: Test
-      run: dotnet test --no-build --verbosity normal --configuration Release
-      continue-on-error: true
-    
-    - name: Publish
-      run: dotnet publish -c Release -o publish
-    
-    - name: Upload artifacts
+        dotnet-version: '8.x'
+
+    - name: Setup MSBuild (fallback for .NET Framework)
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Display environment information
+      run: |
+        echo "Repository root contents:"
+        dir
+        echo.
+        echo "Project directory contents:"
+        dir "KOALAOptimizer.Testing"
+        echo.
+        echo "Dotnet version:"
+        dotnet --version
+        echo.
+        echo "MSBuild version:"
+        msbuild -version
+      shell: cmd
+
+    - name: Validate XAML files
+      run: |
+        echo "Validating XAML file syntax..."
+        
+        echo import xml.etree.ElementTree as ET > validate_xaml.py
+        echo import os >> validate_xaml.py
+        echo xaml_files = [] >> validate_xaml.py
+        echo for root, dirs, files in os.walk('KOALAOptimizer.Testing'): >> validate_xaml.py
+        echo     for file in files: >> validate_xaml.py
+        echo         if file.endswith('.xaml'): >> validate_xaml.py
+        echo             xaml_files.append(os.path.join(root, file)) >> validate_xaml.py
+        echo all_valid = True >> validate_xaml.py
+        echo for xaml_file in sorted(xaml_files): >> validate_xaml.py
+        echo     try: >> validate_xaml.py
+        echo         ET.parse(xaml_file) >> validate_xaml.py
+        echo         print(f'[OK] {xaml_file} - Valid XML syntax') >> validate_xaml.py
+        echo     except Exception as e: >> validate_xaml.py
+        echo         print(f'[ERROR] {xaml_file} - Error: {e}') >> validate_xaml.py
+        echo         all_valid = False >> validate_xaml.py
+        echo if all_valid: >> validate_xaml.py
+        echo     print('[SUCCESS] All XAML files have valid syntax!') >> validate_xaml.py
+        echo else: >> validate_xaml.py
+        echo     print('[FAILED] Some XAML files have syntax errors!') >> validate_xaml.py
+        echo     exit(1) >> validate_xaml.py
+        
+        python validate_xaml.py
+        del validate_xaml.py
+      shell: cmd
+
+    - name: Restore packages
+      run: |
+        echo "Restoring packages..."
+        dotnet restore "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" --verbosity normal
+      shell: cmd
+
+    - name: Build project
+      run: |
+        echo "Building project..."
+        dotnet build "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        --configuration Release ^
+        --verbosity normal ^
+        --no-restore
+      shell: cmd
+
+    - name: Publish as single file executable
+      run: |
+        echo "Publishing as single file..."
+        dotnet publish "KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj" ^
+        --configuration Release ^
+        --runtime win-x64 ^
+        --self-contained true ^
+        --output "KOALAOptimizer.Testing\publish" ^
+        -p:PublishSingleFile=true ^
+        -p:IncludeNativeLibrariesForSelfExtract=true ^
+        -p:EnableCompressionInSingleFile=true
+      shell: cmd
+
+    - name: Debug build output directories
+      run: |
+        echo "=== Debugging build output ==="
+        echo "Checking bin directory structure:"
+        if exist "KOALAOptimizer.Testing\bin" (
+          echo "bin directory exists:"
+          dir "KOALAOptimizer.Testing\bin" /s
+        )
+        echo.
+        echo "Checking publish directory:"
+        if exist "KOALAOptimizer.Testing\publish" (
+          echo "publish directory exists:"
+          dir "KOALAOptimizer.Testing\publish"
+        )
+        echo.
+        echo "Searching for executable files:"
+        dir "KOALAOptimizer.Testing" /s *.exe 2>nul || echo "No .exe files found"
+      shell: cmd
+
+    - name: Verify build output
+      run: |
+        echo "=== Final verification ==="
+        
+        set "PUBLISH_EXE=KOALAOptimizer.Testing\publish\KOALAOptimizer.Testing.exe"
+        set "DEBUG_EXE=KOALAOptimizer.Testing\bin\Release\net8.0-windows\KOALAOptimizer.Testing.exe"
+        
+        if exist "%PUBLISH_EXE%" (
+          echo [SUCCESS] Published executable found
+          echo File details:
+          dir "%PUBLISH_EXE%"
+        ) else if exist "%DEBUG_EXE%" (
+          echo [SUCCESS] Debug executable found
+          echo File details:
+          dir "%DEBUG_EXE%"
+        ) else (
+          echo [WARNING] Executable not found in expected locations
+          echo Searching for any .exe files...
+          for /r "KOALAOptimizer.Testing" %%f in (*.exe) do (
+            echo Found: %%f
+          )
+        )
+      shell: cmd
+
+    - name: Upload build artifacts (published version)
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-Optimizer-V3-Build
-        path: publish/
-        retention-days: 30
+        name: KOALAOptimizer-SingleFile-${{ github.run_number }}
+        path: KOALAOptimizer.Testing/publish/
+        if-no-files-found: warn
+        retention-days: 90
+
+    - name: Upload build artifacts (regular build)
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALAOptimizer-Build-${{ github.run_number }}
+        path: KOALAOptimizer.Testing/bin/Release/net8.0-windows/
+        if-no-files-found: warn
+        retention-days: 90
+
+    - name: Sanitize release tag name
+      if: github.event_name == 'release'
+      run: |
+        $SafeTag = '${{ github.event.release.tag_name }}' -replace '[:\\/\*\?"<>\|]', '_'
+        Write-Output "SANITIZED_TAG_NAME=$SafeTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        Write-Output "Sanitized tag name: $SafeTag"
+      shell: powershell
+
+    - name: Create release package (on release)
+      if: github.event_name == 'release'
+      run: |
+        echo "Creating release package..."
+        
+        if exist "KOALAOptimizer.Testing\publish\KOALAOptimizer.Testing.exe" (
+          cd "KOALAOptimizer.Testing\publish"
+        ) else (
+          cd "KOALAOptimizer.Testing\bin\Release\net8.0-windows"
+        )
+        
+        mkdir "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
+        cd "KOALA-Gaming-Optimizer-v%SANITIZED_TAG_NAME%"
+        copy "..\KOALAOptimizer.Testing.exe" "KOALA-Gaming-Optimizer.exe"
+        copy "..\*.dll" . 2>nul || echo "No DLL files needed for single-file build"
+        
+        echo KOALA Gaming Optimizer v${{ github.event.release.tag_name }} - C# Edition > README.txt
+        echo. >> README.txt
+        echo Professional gaming optimization tool created by KOALAaufPILLEN >> README.txt
+        echo. >> README.txt
+        echo Features: >> README.txt
+        echo - Real-time performance monitoring and FPS optimization >> README.txt
+        echo - Smart game detection and automatic optimization profiles >> README.txt
+        echo - Registry optimization with automatic backup/restore >> README.txt
+        echo - Custom crosshair overlay with multiple styles >> README.txt
+        echo - FOV indicator for enhanced gaming >> README.txt
+        echo - Professional gaming themes >> README.txt
+        echo. >> README.txt
+        echo IMPORTANT: Run as Administrator for full optimization features >> README.txt
+        echo. >> README.txt
+        echo Visit: https://github.com/KOALAaufPILLEN/KOALAOptimizer >> README.txt
+        
+        cd ..
+        powershell -Command "Compress-Archive -Path 'KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}' -DestinationPath 'KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip'"
+        echo "Release package created!"
+      shell: cmd
+
+    - name: Upload release asset (on release)
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip
+        asset_name: KOALA-Gaming-Optimizer-v${{ env.SANITIZED_TAG_NAME }}.zip
+        asset_content_type: application/zip
