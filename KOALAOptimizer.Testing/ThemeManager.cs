@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows;
 
@@ -26,11 +26,21 @@ namespace KOALAOptimizer
 
             string prefix = theme.ToString();
             
-            app.Resources["BackgroundBrush"] = app.Resources[$"{prefix}BackgroundBrush"];
-            app.Resources["ForegroundBrush"] = app.Resources[$"{prefix}ForegroundBrush"];
-            app.Resources["AccentBrush"] = app.Resources[$"{prefix}AccentBrush"];
-            app.Resources["SecondaryBackgroundBrush"] = app.Resources[$"{prefix}SecondaryBackgroundBrush"];
-            app.Resources["DangerBrush"] = app.Resources[$"{prefix}DangerBrush"];
+            // Check if resources exist before applying
+            if (app.Resources.Contains($"{prefix}BackgroundBrush"))
+                app.Resources["BackgroundBrush"] = app.Resources[$"{prefix}BackgroundBrush"];
+            
+            if (app.Resources.Contains($"{prefix}ForegroundBrush"))
+                app.Resources["ForegroundBrush"] = app.Resources[$"{prefix}ForegroundBrush"];
+            
+            if (app.Resources.Contains($"{prefix}AccentBrush"))
+                app.Resources["AccentBrush"] = app.Resources[$"{prefix}AccentBrush"];
+            
+            if (app.Resources.Contains($"{prefix}SecondaryBackgroundBrush"))
+                app.Resources["SecondaryBackgroundBrush"] = app.Resources[$"{prefix}SecondaryBackgroundBrush"];
+            
+            if (app.Resources.Contains($"{prefix}DangerBrush"))
+                app.Resources["DangerBrush"] = app.Resources[$"{prefix}DangerBrush"];
         }
 
         public static void SaveThemePreference(ThemeType theme)
