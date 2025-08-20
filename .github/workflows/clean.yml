@@ -1,4 +1,4 @@
-name: Build KOALA V3 Complete
+name: Build KOALA V3 Working
 
 on:
   push:
@@ -17,424 +17,413 @@ jobs:
       with:
         dotnet-version: '8.x'
     
-    - name: CREATE COMPLETE KOALA V3
+    - name: CREATE KOALA V3 FILES
       run: |
         cd KOALAOptimizer.Testing
         
-        echo "=== CLEANING ==="
-        rmdir /s /q bin 2>nul
-        rmdir /s /q obj 2>nul
-        del *.cs *.xaml *.csproj 2>nul
+        # Clean up
+        Remove-Item -Path bin, obj -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path *.cs, *.xaml, *.csproj -Force -ErrorAction SilentlyContinue
         
-        echo "=== CREATING COMPLETE MAINWINDOW.XAML ==="
-        (
-          echo ^<Window x:Class="KOALAOptimizer.MainWindow"
-          echo         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-          echo         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-          echo         Title="🐨 KOALA Gaming Optimizer V3 Ultimate" Height="900" Width="1400"
-          echo         Background="#0a0a0a" WindowStartupLocation="CenterScreen"^>
-          echo     ^<Grid^>
-          echo         ^<Grid.RowDefinitions^>
-          echo             ^<RowDefinition Height="80"/^>
-          echo             ^<RowDefinition Height="*"/^>
-          echo             ^<RowDefinition Height="30"/^>
-          echo         ^</Grid.RowDefinitions^>
-          echo.
-          echo         ^<!-- Header --^>
-          echo         ^<Border Grid.Row="0"^>
-          echo             ^<Border.Background^>
-          echo                 ^<LinearGradientBrush StartPoint="0,0" EndPoint="1,0"^>
-          echo                     ^<GradientStop Color="#00ff00" Offset="0"/^>
-          echo                     ^<GradientStop Color="#00aa00" Offset="1"/^>
-          echo                 ^</LinearGradientBrush^>
-          echo             ^</Border.Background^>
-          echo             ^<TextBlock Text="🐨 KOALA GAMING OPTIMIZER V3 ULTIMATE" FontSize="28" FontWeight="Bold" 
-          echo                        HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black"/^>
-          echo         ^</Border^>
-          echo.
-          echo         ^<!-- Main TabControl --^>
-          echo         ^<TabControl Grid.Row="1" Background="#0a0a0a" BorderThickness="0"^>
-          echo             ^<!-- OPTIMIZER Tab --^>
-          echo             ^<TabItem Header="🚀 OPTIMIZER"^>
-          echo                 ^<Grid Margin="20"^>
-          echo                     ^<Grid.ColumnDefinitions^>
-          echo                         ^<ColumnDefinition/^>
-          echo                         ^<ColumnDefinition/^>
-          echo                     ^</Grid.ColumnDefinitions^>
-          echo                     ^<StackPanel Grid.Column="0" Margin="0,0,10,0"^>
-          echo                         ^<Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10"^>
-          echo                             ^<StackPanel^>
-          echo                                 ^<TextBlock Text="SYSTEM INFORMATION" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/^>
-          echo                                 ^<TextBlock Name="SystemInfoText" Foreground="White" TextWrapping="Wrap"/^>
-          echo                                 ^<TextBlock Name="AdminStatusText" Foreground="Yellow" Margin="0,5,0,0"/^>
-          echo                             ^</StackPanel^>
-          echo                         ^</Border^>
-          echo                         ^<Border Background="#1a1a1a" CornerRadius="5" Padding="15"^>
-          echo                             ^<StackPanel^>
-          echo                                 ^<TextBlock Text="OPTIMIZATION MODE" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/^>
-          echo                                 ^<RadioButton Name="SafeModeRadio" Content="✅ SAFE MODE" IsChecked="True" Foreground="White"/^>
-          echo                                 ^<RadioButton Name="PerformanceRadio" Content="⚡ PERFORMANCE MODE" Foreground="#ff9900"/^>
-          echo                                 ^<RadioButton Name="KernelModeRadio" Content="🔥 KERNEL MODE" Foreground="#ff0000"/^>
-          echo                                 ^<Button Name="OptimizeButton" Content="⚡ OPTIMIZE NOW" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="40" Margin="0,10,0,5" Click="OptimizeButton_Click"/^>
-          echo                                 ^<Button Name="RestoreButton" Content="🔄 RESTORE" Background="#ff3333" Foreground="White" Height="40" Click="RestoreButton_Click"/^>
-          echo                             ^</StackPanel^>
-          echo                         ^</Border^>
-          echo                     ^</StackPanel^>
-          echo                     ^<ScrollViewer Grid.Column="1"^>
-          echo                         ^<TextBox Name="LogText" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True" FontFamily="Consolas"/^>
-          echo                     ^</ScrollViewer^>
-          echo                 ^</Grid^>
-          echo             ^</TabItem^>
-          echo.
-          echo             ^<!-- CROSSHAIR Tab --^>
-          echo             ^<TabItem Header="🎯 CROSSHAIR"^>
-          echo                 ^<Grid Margin="20"^>
-          echo                     ^<StackPanel^>
-          echo                         ^<CheckBox Name="CrosshairEnabled" Content="Enable Crosshair Overlay" Foreground="White" FontSize="16"/^>
-          echo                         ^<ComboBox Name="CrosshairType" Height="30" Margin="0,10"^>
-          echo                             ^<ComboBoxItem^>Classic Cross^</ComboBoxItem^>
-          echo                             ^<ComboBoxItem^>Dot^</ComboBoxItem^>
-          echo                             ^<ComboBoxItem^>Circle^</ComboBoxItem^>
-          echo                         ^</ComboBox^>
-          echo                         ^<Slider Name="CrosshairSize" Minimum="1" Maximum="50" Value="10"/^>
-          echo                         ^<Button Content="Apply Crosshair" Background="#00ff00" Height="40" Click="ApplyCrosshair_Click"/^>
-          echo                     ^</StackPanel^>
-          echo                 ^</Grid^>
-          echo             ^</TabItem^>
-          echo.
-          echo             ^<!-- FOV Tab --^>
-          echo             ^<TabItem Header="👁️ FOV"^>
-          echo                 ^<Grid Margin="20"^>
-          echo                     ^<StackPanel^>
-          echo                         ^<TextBlock Text="Field of View" Foreground="White" FontSize="16"/^>
-          echo                         ^<Slider Name="FovSlider" Minimum="60" Maximum="120" Value="90"/^>
-          echo                         ^<Button Content="Apply FOV" Background="#00ff00" Height="40" Click="ApplyFov_Click"/^>
-          echo                     ^</StackPanel^>
-          echo                 ^</Grid^>
-          echo             ^</TabItem^>
-          echo.
-          echo             ^<!-- PROCESS Tab --^>
-          echo             ^<TabItem Header="🎮 PROCESS"^>
-          echo                 ^<Grid Margin="20"^>
-          echo                     ^<DataGrid Name="ProcessGrid" Background="#1a1a1a" Foreground="White"/^>
-          echo                 ^</Grid^>
-          echo             ^</TabItem^>
-          echo         ^</TabControl^>
-          echo.
-          echo         ^<Border Grid.Row="2" Background="#00ff00"^>
-          echo             ^<TextBlock Name="StatusText" Text="Ready - KOALA V3" Foreground="Black" FontWeight="Bold" Margin="10,0"/^>
-          echo         ^</Border^>
-          echo     ^</Grid^>
-          echo ^</Window^>
-        ) > MainWindow.xaml
+        # Create MainWindow.xaml
+        @'
+        <Window x:Class="KOALAOptimizer.MainWindow"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                Title="KOALA Gaming Optimizer V3 Ultimate" Height="900" Width="1400"
+                Background="#0a0a0a" WindowStartupLocation="CenterScreen">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="80"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
         
-        echo "=== CREATING MAINWINDOW.XAML.CS WITH ALL FEATURES ==="
-        (
-          echo using System;
-          echo using System.Collections.Generic;
-          echo using System.Diagnostics;
-          echo using System.Management;
-          echo using System.Runtime.InteropServices;
-          echo using System.Windows;
-          echo using System.Windows.Controls;
-          echo using System.Windows.Media;
-          echo using Microsoft.Win32;
-          echo using System.IO;
-          echo using System.Text.Json;
-          echo using System.Threading.Tasks;
-          echo.
-          echo namespace KOALAOptimizer
-          echo {
-          echo     public partial class MainWindow : Window
-          echo     {
-          echo         private Dictionary^<string, object^> backupData = new Dictionary^<string, object^>^(^);
-          echo         private readonly string backupPath = "KOALA-Backup.json";
-          echo.
-          echo         [DllImport^("winmm.dll"^)]
-          echo         static extern uint timeBeginPeriod^(uint period^);
-          echo.
-          echo         [DllImport^("winmm.dll"^)]
-          echo         static extern uint timeEndPeriod^(uint period^);
-          echo.
-          echo         public MainWindow^(^)
-          echo         {
-          echo             InitializeComponent^(^);
-          echo             LoadSystemInfo^(^);
-          echo             CheckAdminStatus^(^);
-          echo             timeBeginPeriod^(1^);
-          echo         }
-          echo.
-          echo         private void LoadSystemInfo^(^)
-          echo         {
-          echo             try
-          echo             {
-          echo                 string info = "";
-          echo                 using ^(var searcher = new ManagementObjectSearcher^("SELECT * FROM Win32_OperatingSystem"^)^)
-          echo                 {
-          echo                     foreach ^(var obj in searcher.Get^(^)^)
-          echo                     {
-          echo                         info += $"OS: {obj["Caption"]} ^({obj["Version"]}^)\n";
-          echo                     }
-          echo                 }
-          echo                 using ^(var searcher = new ManagementObjectSearcher^("SELECT * FROM Win32_Processor"^)^)
-          echo                 {
-          echo                     foreach ^(var obj in searcher.Get^(^)^)
-          echo                     {
-          echo                         info += $"CPU: {obj["Name"]}\n";
-          echo                         info += $"Cores: {obj["NumberOfLogicalProcessors"]}\n";
-          echo                     }
-          echo                 }
-          echo                 using ^(var searcher = new ManagementObjectSearcher^("SELECT * FROM Win32_ComputerSystem"^)^)
-          echo                 {
-          echo                     foreach ^(var obj in searcher.Get^(^)^)
-          echo                     {
-          echo                         var ram = Convert.ToDouble^(obj["TotalPhysicalMemory"]^) / ^(1024 * 1024 * 1024^);
-          echo                         info += $"RAM: {ram:F1} GB\n";
-          echo                     }
-          echo                 }
-          echo                 using ^(var searcher = new ManagementObjectSearcher^("SELECT * FROM Win32_VideoController"^)^)
-          echo                 {
-          echo                     foreach ^(var obj in searcher.Get^(^)^)
-          echo                     {
-          echo                         var name = obj["Name"]?.ToString^(^);
-          echo                         if ^(!string.IsNullOrEmpty^(name^) ^&^& !name.Contains^("Microsoft"^)^)
-          echo                         {
-          echo                             info += $"GPU: {name}\n";
-          echo                             break;
-          echo                         }
-          echo                     }
-          echo                 }
-          echo                 SystemInfoText.Text = info;
-          echo                 SystemInfoText.Foreground = new SolidColorBrush^(Colors.LightGreen^);
-          echo             }
-          echo             catch ^(Exception ex^)
-          echo             {
-          echo                 SystemInfoText.Text = $"Error: {ex.Message}";
-          echo             }
-          echo         }
-          echo.
-          echo         private void CheckAdminStatus^(^)
-          echo         {
-          echo             var identity = System.Security.Principal.WindowsIdentity.GetCurrent^(^);
-          echo             var principal = new System.Security.Principal.WindowsPrincipal^(identity^);
-          echo             bool isAdmin = principal.IsInRole^(System.Security.Principal.WindowsBuiltInRole.Administrator^);
-          echo             AdminStatusText.Text = isAdmin ? "✓ Administrator Mode" : "⚠ Run as Admin";
-          echo             AdminStatusText.Foreground = new SolidColorBrush^(isAdmin ? Colors.LightGreen : Colors.Yellow^);
-          echo         }
-          echo.
-          echo         private void LogMessage^(string message^)
-          echo         {
-          echo             string timestamp = DateTime.Now.ToString^("HH:mm:ss"^);
-          echo             LogText.AppendText^($"[{timestamp}] {message}\n"^);
-          echo             LogText.ScrollToEnd^(^);
-          echo         }
-          echo.
-          echo         private void OptimizeButton_Click^(object sender, RoutedEventArgs e^)
-          echo         {
-          echo             Task.Run^(^(^) =^> RunOptimizations^(^)^);
-          echo         }
-          echo.
-          echo         private async void RunOptimizations^(^)
-          echo         {
-          echo             await Dispatcher.InvokeAsync^(^(^) =^>
-          echo             {
-          echo                 LogText.Clear^(^);
-          echo                 LogMessage^("🐨 KOALA Optimizer V3 Starting..."^);
-          echo                 StatusText.Text = "Optimizing...";
-          echo             }^);
-          echo.
-          echo             // GPU Optimizations
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Applying GPU optimizations..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
-          echo                     "HwSchMode", 2, RegistryValueKind.DWord^);
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
-          echo                     "GPU Priority", 8, RegistryValueKind.DWord^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ GPU optimized"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             // CPU Optimizations
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Applying CPU optimizations..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
-          echo                     "Win32PrioritySeparation", 38, RegistryValueKind.DWord^);
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
-          echo                     "SystemResponsiveness", 0, RegistryValueKind.DWord^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ CPU optimized"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             // Memory Optimizations
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Applying memory optimizations..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
-          echo                     "DisablePagingExecutive", 1, RegistryValueKind.DWord^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ Memory optimized"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             // Network Optimizations
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Applying network optimizations..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
-          echo                     "TcpNoDelay", 1, RegistryValueKind.DWord^);
-          echo                 Registry.SetValue^(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
-          echo                     "NetworkThrottlingIndex", 0xFFFFFFFF, RegistryValueKind.DWord^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ Network optimized"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             // Disable Game DVR
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Disabling Game DVR..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_CURRENT_USER\System\GameConfigStore",
-          echo                     "GameDVR_Enabled", 0, RegistryValueKind.DWord^);
-          echo                 Registry.SetValue^(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR",
-          echo                     "AppCaptureEnabled", 0, RegistryValueKind.DWord^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ Game DVR disabled"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             // Mouse Settings
-          echo             await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("Optimizing mouse settings..."^)^);
-          echo             try
-          echo             {
-          echo                 Registry.SetValue^(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-          echo                     "MouseSpeed", "0", RegistryValueKind.String^);
-          echo                 Registry.SetValue^(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-          echo                     "MouseThreshold1", "0", RegistryValueKind.String^);
-          echo                 Registry.SetValue^(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-          echo                     "MouseThreshold2", "0", RegistryValueKind.String^);
-          echo                 await Dispatcher.InvokeAsync^(^(^) =^> LogMessage^("✓ Mouse optimized"^)^);
-          echo             }
-          echo             catch { }
-          echo.
-          echo             await Dispatcher.InvokeAsync^(^(^) =^>
-          echo             {
-          echo                 LogMessage^("✅ Optimization complete!"^);
-          echo                 StatusText.Text = "Complete - System optimized";
-          echo                 MessageBox.Show^("Optimization complete!\nRestart recommended.", "KOALA V3", MessageBoxButton.OK, MessageBoxImage.Information^);
-          echo             }^);
-          echo         }
-          echo.
-          echo         private void RestoreButton_Click^(object sender, RoutedEventArgs e^)
-          echo         {
-          echo             MessageBox.Show^("Restore functionality", "KOALA V3"^);
-          echo         }
-          echo.
-          echo         private void ApplyCrosshair_Click^(object sender, RoutedEventArgs e^)
-          echo         {
-          echo             LogMessage^("Crosshair overlay applied"^);
-          echo         }
-          echo.
-          echo         private void ApplyFov_Click^(object sender, RoutedEventArgs e^)
-          echo         {
-          echo             LogMessage^($"FOV set to {FovSlider.Value}"^);
-          echo         }
-          echo.
-          echo         protected override void OnClosed^(EventArgs e^)
-          echo         {
-          echo             base.OnClosed^(e^);
-          echo             timeEndPeriod^(1^);
-          echo         }
-          echo     }
-          echo }
-        ) > MainWindow.xaml.cs
+                <!-- Header -->
+                <Border Grid.Row="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#00ff00" Offset="0"/>
+                            <GradientStop Color="#00aa00" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <TextBlock Text="KOALA GAMING OPTIMIZER V3 ULTIMATE" FontSize="28" FontWeight="Bold" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black"/>
+                </Border>
         
-        echo "=== CREATING APP.XAML ==="
-        (
-          echo ^<Application x:Class="KOALAOptimizer.App"
-          echo              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-          echo              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-          echo              StartupUri="MainWindow.xaml"^>
-          echo     ^<Application.Resources^>
-          echo     ^</Application.Resources^>
-          echo ^</Application^>
-        ) > App.xaml
+                <!-- Main Content -->
+                <TabControl Grid.Row="1" Background="#0a0a0a" BorderThickness="0">
+                    <!-- OPTIMIZER Tab -->
+                    <TabItem Header="OPTIMIZER">
+                        <Grid Margin="20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="400"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
         
-        echo "=== CREATING APP.XAML.CS ==="
-        (
-          echo using System.Windows;
-          echo.
-          echo namespace KOALAOptimizer
-          echo {
-          echo     public partial class App : Application
-          echo     {
-          echo     }
-          echo }
-        ) > App.xaml.cs
+                            <StackPanel Grid.Column="0">
+                                <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="SYSTEM INFORMATION" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                                        <TextBlock Name="SystemInfoText" Foreground="White" TextWrapping="Wrap"/>
+                                        <TextBlock Name="AdminStatusText" Foreground="Yellow" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Border>
         
-        echo "=== CREATING PROJECT FILE ==="
-        (
-          echo ^<Project Sdk="Microsoft.NET.Sdk"^>
-          echo   ^<PropertyGroup^>
-          echo     ^<OutputType^>WinExe^</OutputType^>
-          echo     ^<TargetFramework^>net8.0-windows^</TargetFramework^>
-          echo     ^<RuntimeIdentifier^>win-x64^</RuntimeIdentifier^>
-          echo     ^<UseWPF^>true^</UseWPF^>
-          echo     ^<AssemblyName^>KOALAOptimizer^</AssemblyName^>
-          echo     ^<RootNamespace^>KOALAOptimizer^</RootNamespace^>
-          echo     ^<ApplicationIcon^>koala.ico^</ApplicationIcon^>
-          echo     ^<GenerateAssemblyInfo^>false^</GenerateAssemblyInfo^>
-          echo     ^<PublishSingleFile^>true^</PublishSingleFile^>
-          echo     ^<SelfContained^>true^</SelfContained^>
-          echo   ^</PropertyGroup^>
-          echo   ^<ItemGroup^>
-          echo     ^<PackageReference Include="System.Management" Version="8.0.0" /^>
-          echo     ^<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" /^>
-          echo   ^</ItemGroup^>
-          echo ^</Project^>
-        ) > KOALAOptimizer.Testing.csproj
+                                <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
+                                    <StackPanel>
+                                        <TextBlock Text="OPTIMIZATION MODE" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                                        <RadioButton Name="SafeModeRadio" Content="SAFE MODE" IsChecked="True" Foreground="White"/>
+                                        <RadioButton Name="PerformanceRadio" Content="PERFORMANCE MODE" Foreground="#ff9900"/>
+                                        <Button Name="OptimizeButton" Content="OPTIMIZE NOW" Background="#00ff00" Foreground="Black" 
+                                                FontWeight="Bold" Height="40" Margin="0,10,0,5" Click="OptimizeButton_Click"/>
+                                        <Button Name="RestoreButton" Content="RESTORE" Background="#ff3333" Foreground="White" 
+                                                Height="40" Click="RestoreButton_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
         
-        echo "=== CREATING AssemblyInfo ==="
-        if not exist Properties mkdir Properties
-        (
-          echo using System.Reflection;
-          echo [assembly: AssemblyTitle^("KOALA Optimizer V3 Ultimate"^)]
-          echo [assembly: AssemblyCompany^("KOALAaufPILLEN"^)]
-          echo [assembly: AssemblyProduct^("KOALA Gaming Optimizer"^)]
-          echo [assembly: AssemblyVersion^("3.0.0.0"^)]
-        ) > Properties\AssemblyInfo.cs
+                            <ScrollViewer Grid.Column="1" Margin="20,0,0,0">
+                                <TextBox Name="LogText" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True" FontFamily="Consolas"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </TabItem>
         
-        echo.
-        echo "=== RESTORE ==="
+                    <!-- CROSSHAIR Tab -->
+                    <TabItem Header="CROSSHAIR">
+                        <Grid Margin="20">
+                            <StackPanel>
+                                <CheckBox Name="CrosshairEnabled" Content="Enable Crosshair Overlay" Foreground="White" FontSize="16"/>
+                                <ComboBox Name="CrosshairType" Height="30" Margin="0,10">
+                                    <ComboBoxItem>Classic Cross</ComboBoxItem>
+                                    <ComboBoxItem>Dot</ComboBoxItem>
+                                    <ComboBoxItem>Circle</ComboBoxItem>
+                                </ComboBox>
+                                <Slider Name="CrosshairSize" Minimum="1" Maximum="50" Value="10"/>
+                                <Button Content="Apply Crosshair" Background="#00ff00" Height="40" Click="ApplyCrosshair_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+        
+                    <!-- FOV Tab -->
+                    <TabItem Header="FOV">
+                        <Grid Margin="20">
+                            <StackPanel>
+                                <TextBlock Text="Field of View" Foreground="White" FontSize="16"/>
+                                <Slider Name="FovSlider" Minimum="60" Maximum="120" Value="90"/>
+                                <Button Content="Apply FOV" Background="#00ff00" Height="40" Click="ApplyFov_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+        
+                    <!-- PROCESS Tab -->
+                    <TabItem Header="PROCESS">
+                        <Grid Margin="20">
+                            <DataGrid Name="ProcessGrid" Background="#1a1a1a" Foreground="White"/>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+        
+                <Border Grid.Row="2" Background="#00ff00">
+                    <TextBlock Name="StatusText" Text="Ready - KOALA V3 by KOALAaufPILLEN" Foreground="Black" FontWeight="Bold" Margin="10,0"/>
+                </Border>
+            </Grid>
+        </Window>
+        '@ | Out-File -FilePath MainWindow.xaml -Encoding UTF8
+        
+        # Create MainWindow.xaml.cs
+        @'
+        using System;
+        using System.Collections.Generic;
+        using System.Diagnostics;
+        using System.Management;
+        using System.Runtime.InteropServices;
+        using System.Windows;
+        using System.Windows.Controls;
+        using System.Windows.Media;
+        using Microsoft.Win32;
+        using System.IO;
+        using System.Text.Json;
+        using System.Threading.Tasks;
+        
+        namespace KOALAOptimizer
+        {
+            public partial class MainWindow : Window
+            {
+                private Dictionary<string, object> backupData = new Dictionary<string, object>();
+                private readonly string backupPath = "KOALA-Backup.json";
+        
+                [DllImport("winmm.dll")]
+                static extern uint timeBeginPeriod(uint period);
+        
+                [DllImport("winmm.dll")]
+                static extern uint timeEndPeriod(uint period);
+        
+                public MainWindow()
+                {
+                    InitializeComponent();
+                    LoadSystemInfo();
+                    CheckAdminStatus();
+                    timeBeginPeriod(1);
+                }
+        
+                private void LoadSystemInfo()
+                {
+                    try
+                    {
+                        string info = "";
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem"))
+                        {
+                            foreach (var obj in searcher.Get())
+                            {
+                                info += $"OS: {obj["Caption"]} ({obj["Version"]})\n";
+                            }
+                        }
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor"))
+                        {
+                            foreach (var obj in searcher.Get())
+                            {
+                                info += $"CPU: {obj["Name"]}\n";
+                                info += $"Cores: {obj["NumberOfLogicalProcessors"]}\n";
+                            }
+                        }
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_ComputerSystem"))
+                        {
+                            foreach (var obj in searcher.Get())
+                            {
+                                var ram = Convert.ToDouble(obj["TotalPhysicalMemory"]) / (1024 * 1024 * 1024);
+                                info += $"RAM: {ram:F1} GB\n";
+                            }
+                        }
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController"))
+                        {
+                            foreach (var obj in searcher.Get())
+                            {
+                                var name = obj["Name"]?.ToString();
+                                if (!string.IsNullOrEmpty(name) && !name.Contains("Microsoft"))
+                                {
+                                    info += $"GPU: {name}\n";
+                                    break;
+                                }
+                            }
+                        }
+                        SystemInfoText.Text = info;
+                        SystemInfoText.Foreground = new SolidColorBrush(Colors.LightGreen);
+                    }
+                    catch (Exception ex)
+                    {
+                        SystemInfoText.Text = $"Error: {ex.Message}";
+                    }
+                }
+        
+                private void CheckAdminStatus()
+                {
+                    var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+                    var principal = new System.Security.Principal.WindowsPrincipal(identity);
+                    bool isAdmin = principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+                    AdminStatusText.Text = isAdmin ? "Administrator Mode Active" : "Run as Admin for full features";
+                    AdminStatusText.Foreground = new SolidColorBrush(isAdmin ? Colors.LightGreen : Colors.Yellow);
+                }
+        
+                private void LogMessage(string message)
+                {
+                    string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                    LogText.AppendText($"[{timestamp}] {message}\n");
+                    LogText.ScrollToEnd();
+                }
+        
+                private void OptimizeButton_Click(object sender, RoutedEventArgs e)
+                {
+                    Task.Run(() => RunOptimizations());
+                }
+        
+                private async void RunOptimizations()
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        LogText.Clear();
+                        LogMessage("KOALA Optimizer V3 Starting...");
+                        StatusText.Text = "Optimizing...";
+                    });
+        
+                    // GPU Optimizations
+                    await Dispatcher.InvokeAsync(() => LogMessage("Applying GPU optimizations..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
+                            "HwSchMode", 2, RegistryValueKind.DWord);
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                            "GPU Priority", 8, RegistryValueKind.DWord);
+                        await Dispatcher.InvokeAsync(() => LogMessage("GPU optimized"));
+                    }
+                    catch { }
+        
+                    // CPU Optimizations
+                    await Dispatcher.InvokeAsync(() => LogMessage("Applying CPU optimizations..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
+                            "Win32PrioritySeparation", 38, RegistryValueKind.DWord);
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                            "SystemResponsiveness", 0, RegistryValueKind.DWord);
+                        await Dispatcher.InvokeAsync(() => LogMessage("CPU optimized"));
+                    }
+                    catch { }
+        
+                    // Memory Optimizations
+                    await Dispatcher.InvokeAsync(() => LogMessage("Applying memory optimizations..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                            "DisablePagingExecutive", 1, RegistryValueKind.DWord);
+                        await Dispatcher.InvokeAsync(() => LogMessage("Memory optimized"));
+                    }
+                    catch { }
+        
+                    // Network Optimizations
+                    await Dispatcher.InvokeAsync(() => LogMessage("Applying network optimizations..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
+                            "TcpNoDelay", 1, RegistryValueKind.DWord);
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                            "NetworkThrottlingIndex", 0xFFFFFFFF, RegistryValueKind.DWord);
+                        await Dispatcher.InvokeAsync(() => LogMessage("Network optimized"));
+                    }
+                    catch { }
+        
+                    // Disable Game DVR
+                    await Dispatcher.InvokeAsync(() => LogMessage("Disabling Game DVR..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
+                            "GameDVR_Enabled", 0, RegistryValueKind.DWord);
+                        Registry.SetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR",
+                            "AppCaptureEnabled", 0, RegistryValueKind.DWord);
+                        await Dispatcher.InvokeAsync(() => LogMessage("Game DVR disabled"));
+                    }
+                    catch { }
+        
+                    // Mouse Settings
+                    await Dispatcher.InvokeAsync(() => LogMessage("Optimizing mouse settings..."));
+                    try
+                    {
+                        Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
+                            "MouseSpeed", "0", RegistryValueKind.String);
+                        Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
+                            "MouseThreshold1", "0", RegistryValueKind.String);
+                        Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
+                            "MouseThreshold2", "0", RegistryValueKind.String);
+                        await Dispatcher.InvokeAsync(() => LogMessage("Mouse optimized"));
+                    }
+                    catch { }
+        
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        LogMessage("Optimization complete!");
+                        StatusText.Text = "Complete - System optimized";
+                        MessageBox.Show("Optimization complete!\nRestart recommended.", "KOALA V3", MessageBoxButton.OK, MessageBoxImage.Information);
+                    });
+                }
+        
+                private void RestoreButton_Click(object sender, RoutedEventArgs e)
+                {
+                    MessageBox.Show("Restore functionality", "KOALA V3");
+                }
+        
+                private void ApplyCrosshair_Click(object sender, RoutedEventArgs e)
+                {
+                    LogMessage("Crosshair overlay applied");
+                }
+        
+                private void ApplyFov_Click(object sender, RoutedEventArgs e)
+                {
+                    LogMessage($"FOV set to {FovSlider.Value}");
+                }
+        
+                protected override void OnClosed(EventArgs e)
+                {
+                    base.OnClosed(e);
+                    timeEndPeriod(1);
+                }
+            }
+        }
+        '@ | Out-File -FilePath MainWindow.xaml.cs -Encoding UTF8
+        
+        # Create App.xaml
+        @'
+        <Application x:Class="KOALAOptimizer.App"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     StartupUri="MainWindow.xaml">
+            <Application.Resources>
+            </Application.Resources>
+        </Application>
+        '@ | Out-File -FilePath App.xaml -Encoding UTF8
+        
+        # Create App.xaml.cs
+        @'
+        using System.Windows;
+        
+        namespace KOALAOptimizer
+        {
+            public partial class App : Application
+            {
+            }
+        }
+        '@ | Out-File -FilePath App.xaml.cs -Encoding UTF8
+        
+        # Create project file
+        @'
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <OutputType>WinExe</OutputType>
+            <TargetFramework>net8.0-windows</TargetFramework>
+            <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+            <UseWPF>true</UseWPF>
+            <AssemblyName>KOALAOptimizer</AssemblyName>
+            <RootNamespace>KOALAOptimizer</RootNamespace>
+            <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+            <PublishSingleFile>true</PublishSingleFile>
+            <SelfContained>true</SelfContained>
+          </PropertyGroup>
+          <ItemGroup>
+            <PackageReference Include="System.Management" Version="8.0.0" />
+            <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+          </ItemGroup>
+        </Project>
+        '@ | Out-File -FilePath KOALAOptimizer.Testing.csproj -Encoding UTF8
+        
+        # Create AssemblyInfo
+        New-Item -ItemType Directory -Path Properties -Force | Out-Null
+        @'
+        using System.Reflection;
+        [assembly: AssemblyTitle("KOALA Optimizer V3 Ultimate")]
+        [assembly: AssemblyCompany("KOALAaufPILLEN")]
+        [assembly: AssemblyProduct("KOALA Gaming Optimizer")]
+        [assembly: AssemblyVersion("3.0.0.0")]
+        '@ | Out-File -FilePath Properties\AssemblyInfo.cs -Encoding UTF8
+        
+        Write-Host "=== FILES CREATED ==="
+        Get-ChildItem
+        
+        Write-Host "`n=== RESTORE ==="
         dotnet restore
         
-        echo.
-        echo "=== BUILD ==="
+        Write-Host "`n=== BUILD ==="
         dotnet build -c Release
         
-        echo.
-        echo "=== PUBLISH ==="
+        Write-Host "`n=== PUBLISH ==="
         dotnet publish -c Release -o ..\output
         
         cd ..
         
-        echo.
-        echo "=== ✅ COMPLETE BUILD SUCCESS! ==="
-        dir output
-      shell: cmd
+        Write-Host "`n=== SUCCESS! OUTPUT FILES: ==="
+        Get-ChildItem output
+      shell: pwsh
     
     - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-V3-ULTIMATE
+        name: KOALA-V3-WORKING
         path: output/
-    
-    - name: Create Release
-      run: |
-        cd output
-        powershell Compress-Archive -Path * -DestinationPath ..\KOALA-V3-ULTIMATE.zip
-        cd ..
-        
-        gh release delete v3.0-ultimate -y 2>nul
-        gh release create v3.0-ultimate KOALA-V3-ULTIMATE.zip --title "🐨 KOALA V3 ULTIMATE" --notes "Complete Gaming Optimizer with all features!" --latest
-      env:
-        GH_TOKEN: ${{ github.token }}
-      continue-on-error: true
