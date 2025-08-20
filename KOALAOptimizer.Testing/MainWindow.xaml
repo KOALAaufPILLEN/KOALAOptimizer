@@ -1,11 +1,10 @@
 <Window x:Class="KOALAOptimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        Title="KOALA Gaming Optimizer V3 - By KOALAaufPILLEN" Height="600" Width="900"
-        Background="{DynamicResource BackgroundBrush}">
+        Title="KOALA Gaming Optimizer V3" Height="400" Width="600"
+        WindowStartupLocation="CenterScreen">
     
-    <Grid>
+    <Grid Background="#1e1e1e">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -13,99 +12,61 @@
         </Grid.RowDefinitions>
         
         <!-- Header -->
-        <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" Padding="20">
-            <StackPanel>
-                <TextBlock Text="🐨 KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
-                           Foreground="{DynamicResource AccentBrush}"/>
-                <TextBlock Text="Created by KOALAaufPILLEN - 2025" FontSize="12" 
-                           Foreground="{DynamicResource ForegroundBrush}" Opacity="0.7"/>
-            </StackPanel>
+        <Border Grid.Row="0" Background="#2d2d30" Padding="20">
+            <TextBlock Text="🐨 KOALA Gaming Optimizer V3" 
+                       FontSize="24" FontWeight="Bold" 
+                       Foreground="#00ff00"/>
         </Border>
         
         <!-- Main Content -->
-        <TabControl Grid.Row="1" Background="Transparent">
-            <TabItem Header="🎮 Optimization">
-                <Grid Margin="20">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Mode Selection -->
-                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                        <RadioButton x:Name="SafeModeRadio" Content="Safe Mode (Recommended)" 
-                                     IsChecked="True" Checked="SafeModeRadio_Checked"/>
-                        <RadioButton x:Name="PerformanceModeRadio" Content="Performance Mode" 
-                                     Margin="0,10,0,0" Checked="PerformanceModeRadio_Checked"/>
-                    </StackPanel>
-                    
-                    <!-- Buttons -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
-                        <Button x:Name="OptimizeButton" Content="Optimize" Width="150" Height="35" 
-                                Margin="5" Click="OptimizeButton_Click"/>
-                        <Button x:Name="RestoreButton" Content="Restore" Width="150" Height="35" 
-                                Margin="5" Click="RestoreButton_Click"/>
-                    </StackPanel>
-                    
-                    <!-- Status -->
-                    <TextBlock Grid.Row="2" Text="Ready" FontSize="14" 
-                               Foreground="{DynamicResource ForegroundBrush}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Grid>
-            </TabItem>
+        <StackPanel Grid.Row="1" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
             
-            <TabItem Header="Crosshair">
-                <Grid Margin="20">
-                    <StackPanel>
-                        <CheckBox x:Name="CrosshairToggle" Content="Enable Crosshair" 
-                                  Checked="CrosshairToggle_Checked" Unchecked="CrosshairToggle_Unchecked"/>
-                        <ComboBox x:Name="CrosshairThemeComboBox" Margin="0,10,0,0"
-                                  SelectionChanged="CrosshairThemeComboBox_SelectionChanged"/>
-                        <Slider x:Name="CrosshairSizeSlider" Margin="0,10,0,0"
-                                ValueChanged="CrosshairSizeSlider_ValueChanged"/>
-                        <Slider x:Name="CrosshairOpacitySlider" Margin="0,10,0,0"
-                                ValueChanged="CrosshairOpacitySlider_ValueChanged"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
+            <TextBlock Text="Select Optimization Mode:" 
+                       Foreground="White" 
+                       Margin="0,0,0,10"/>
             
-            <TabItem Header="FOV">
-                <Grid Margin="20">
-                    <StackPanel>
-                        <CheckBox x:Name="FovToggle" Content="Enable FOV Indicator"
-                                  Checked="FovToggle_Checked" Unchecked="FovToggle_Unchecked"/>
-                        <ComboBox x:Name="FovStyleComboBox" Margin="0,10,0,0"
-                                  SelectionChanged="FovStyleComboBox_SelectionChanged"/>
-                        <Slider x:Name="FovRadiusSlider" Margin="0,10,0,0"
-                                ValueChanged="FovRadiusSlider_ValueChanged"/>
-                        <Slider x:Name="FovOpacitySlider" Margin="0,10,0,0"
-                                ValueChanged="FovOpacitySlider_ValueChanged"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
+            <RadioButton x:Name="SafeModeRadio" 
+                         Content="Safe Mode (Recommended)" 
+                         Foreground="White"
+                         IsChecked="True" 
+                         Margin="0,5"/>
             
-            <TabItem Header="Settings">
-                <Grid Margin="20">
-                    <StackPanel>
-                        <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Dark Theme" Tag="Dark" IsSelected="True"/>
-                            <ComboBoxItem Content="Light Theme" Tag="Light"/>
-                            <ComboBoxItem Content="Matrix Theme" Tag="Matrix"/>
-                        </ComboBox>
-                        <Button x:Name="ResetToDefaultsButton" Content="Reset to Defaults" 
-                                Width="150" Height="35" Margin="0,20,0,0"
-                                Click="ResetToDefaultsButton_Click"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-        </TabControl>
+            <RadioButton x:Name="PerformanceModeRadio" 
+                         Content="Performance Mode" 
+                         Foreground="White"
+                         Margin="0,5"/>
+            
+            <Button x:Name="OptimizeButton" 
+                    Content="OPTIMIZE NOW" 
+                    Width="200" Height="40" 
+                    Margin="0,20,0,10"
+                    Background="#00ff00"
+                    Foreground="Black"
+                    FontWeight="Bold"
+                    Click="OptimizeButton_Click"/>
+            
+            <Button x:Name="RestoreButton" 
+                    Content="RESTORE DEFAULTS" 
+                    Width="200" Height="40"
+                    Background="#ff4444"
+                    Foreground="White"
+                    FontWeight="Bold"
+                    Click="RestoreButton_Click"/>
+            
+            <TextBlock x:Name="StatusText" 
+                       Text="Ready" 
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       Margin="0,20,0,0"/>
+        </StackPanel>
         
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="2" Background="{DynamicResource SecondaryBackgroundBrush}">
-            <StatusBarItem>
-                <TextBlock Text="Version 3.0.0" Foreground="{DynamicResource ForegroundBrush}"/>
-            </StatusBarItem>
-        </StatusBar>
+        <!-- Footer -->
+        <TextBlock Grid.Row="2" 
+                   Text="Created by KOALAaufPILLEN - 2025" 
+                   Foreground="Gray"
+                   HorizontalAlignment="Center"
+                   Margin="10"/>
     </Grid>
 </Window>

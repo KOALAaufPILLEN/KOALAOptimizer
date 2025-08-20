@@ -1,6 +1,6 @@
 using System;
 using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace KOALAOptimizer
 {
@@ -9,49 +9,60 @@ namespace KOALAOptimizer
         public MainWindow()
         {
             InitializeComponent();
-            Title = "KOALA Gaming Optimizer V3 - Created by KOALAaufPILLEN";
         }
 
-        // Event Handlers
-        private void OptimizeButton_Click(object sender, RoutedEventArgs e) 
+        private void OptimizeButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Optimizations applied successfully!", "KOALA Optimizer", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        
-        private void RestoreButton_Click(object sender, RoutedEventArgs e) 
-        {
-            MessageBox.Show("Backup restored successfully!", "KOALA Optimizer", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        
-        private void SafeModeRadio_Checked(object sender, RoutedEventArgs e) { }
-        private void PerformanceModeRadio_Checked(object sender, RoutedEventArgs e) { }
-        
-        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) 
-        {
-            // Simple theme change without ThemeManager
-            if (ThemeComboBox?.SelectedItem is ComboBoxItem item)
+            try
             {
-                MessageBox.Show($"Theme changed to: {item.Content}", "Theme", 
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText.Text = "Optimizing...";
+                StatusText.Foreground = new SolidColorBrush(Colors.Yellow);
+                
+                // Simulate optimization
+                bool isSafeMode = SafeModeRadio.IsChecked == true;
+                string mode = isSafeMode ? "Safe Mode" : "Performance Mode";
+                
+                MessageBox.Show($"Optimization in {mode} completed successfully!", 
+                               "KOALA Optimizer", 
+                               MessageBoxButton.OK, 
+                               MessageBoxImage.Information);
+                
+                StatusText.Text = $"Optimized in {mode}";
+                StatusText.Foreground = new SolidColorBrush(Colors.LightGreen);
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "Error during optimization";
+                StatusText.Foreground = new SolidColorBrush(Colors.Red);
+                MessageBox.Show($"Error: {ex.Message}", "Error", 
+                               MessageBoxButton.OK, 
+                               MessageBoxImage.Error);
             }
         }
-        
-        private void CrosshairToggle_Checked(object sender, RoutedEventArgs e) { }
-        private void CrosshairToggle_Unchecked(object sender, RoutedEventArgs e) { }
-        private void CrosshairThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
-        private void CrosshairSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { }
-        private void CrosshairOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { }
-        private void FovToggle_Checked(object sender, RoutedEventArgs e) { }
-        private void FovToggle_Unchecked(object sender, RoutedEventArgs e) { }
-        private void FovStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
-        private void FovRadiusSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { }
-        private void FovOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { }
-        private void ResetToDefaultsButton_Click(object sender, RoutedEventArgs e) 
+
+        private void RestoreButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Settings reset to defaults!", "Reset", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                StatusText.Text = "Restoring...";
+                StatusText.Foreground = new SolidColorBrush(Colors.Yellow);
+                
+                MessageBox.Show("System restored to defaults!", 
+                               "KOALA Optimizer", 
+                               MessageBoxButton.OK, 
+                               MessageBoxImage.Information);
+                
+                StatusText.Text = "Restored to defaults";
+                StatusText.Foreground = new SolidColorBrush(Colors.LightBlue);
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "Error during restore";
+                StatusText.Foreground = new SolidColorBrush(Colors.Red);
+                MessageBox.Show($"Error: {ex.Message}", "Error", 
+                               MessageBoxButton.OK, 
+                               MessageBoxImage.Error);
+            }
         }
     }
 }

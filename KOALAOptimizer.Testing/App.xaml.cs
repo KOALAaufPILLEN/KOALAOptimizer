@@ -7,7 +7,6 @@ namespace KOALAOptimizer
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            // Simple startup - no complex initialization
         }
     }
 }
