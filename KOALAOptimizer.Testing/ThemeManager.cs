@@ -8,6 +8,13 @@ namespace KOALAOptimizer
     {
         Dark,
         Light,
+        Blue,
+        Red,
+        Purple,
+        Green,
+        Orange,
+        Pink,
+        Cyan,
         Matrix
     }
 
@@ -26,21 +33,24 @@ namespace KOALAOptimizer
 
             string prefix = theme.ToString();
             
-            // Check if resources exist before applying
-            if (app.Resources.Contains($"{prefix}BackgroundBrush"))
-                app.Resources["BackgroundBrush"] = app.Resources[$"{prefix}BackgroundBrush"];
-            
-            if (app.Resources.Contains($"{prefix}ForegroundBrush"))
-                app.Resources["ForegroundBrush"] = app.Resources[$"{prefix}ForegroundBrush"];
-            
-            if (app.Resources.Contains($"{prefix}AccentBrush"))
-                app.Resources["AccentBrush"] = app.Resources[$"{prefix}AccentBrush"];
-            
-            if (app.Resources.Contains($"{prefix}SecondaryBackgroundBrush"))
-                app.Resources["SecondaryBackgroundBrush"] = app.Resources[$"{prefix}SecondaryBackgroundBrush"];
-            
-            if (app.Resources.Contains($"{prefix}DangerBrush"))
-                app.Resources["DangerBrush"] = app.Resources[$"{prefix}DangerBrush"];
+            try
+            {
+                // Apply theme resources if they exist
+                UpdateResource(app, "BackgroundBrush", $"{prefix}BackgroundBrush");
+                UpdateResource(app, "ForegroundBrush", $"{prefix}ForegroundBrush");
+                UpdateResource(app, "AccentBrush", $"{prefix}AccentBrush");
+                UpdateResource(app, "SecondaryBackgroundBrush", $"{prefix}SecondaryBackgroundBrush");
+                UpdateResource(app, "DangerBrush", $"{prefix}DangerBrush");
+            }
+            catch { }
+        }
+
+        private static void UpdateResource(Application app, string targetKey, string sourceKey)
+        {
+            if (app.Resources.Contains(sourceKey))
+            {
+                app.Resources[targetKey] = app.Resources[sourceKey];
+            }
         }
 
         public static void SaveThemePreference(ThemeType theme)
@@ -51,8 +61,8 @@ namespace KOALAOptimizer
                 if (!string.IsNullOrEmpty(directory))
                 {
                     Directory.CreateDirectory(directory);
+                    File.WriteAllText(ThemePreferencePath, theme.ToString());
                 }
-                File.WriteAllText(ThemePreferencePath, theme.ToString());
             }
             catch { }
         }
