@@ -18,12 +18,26 @@ jobs:
       with:
         dotnet-version: '8.x'
     
+    - name: List project files
+      run: |
+        echo "Root directory:"
+        dir
+        echo.
+        echo "KOALAOptimizer.Testing directory:"
+        dir KOALAOptimizer.Testing
+        echo.
+        echo "Looking for .csproj files:"
+        dir KOALAOptimizer.Testing\*.csproj
+      shell: cmd
+    
     - name: Build Single EXE
       run: |
-        cd KOALAOptimizer.Testing
-        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ../output
-        cd ..
+        echo Building KOALAOptimizer.Testing.csproj...
+        dotnet publish KOALAOptimizer.Testing\KOALAOptimizer.Testing.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o output
+        echo.
+        echo Output directory:
         dir output
+      shell: cmd
     
     - name: Prepare Release Package
       run: |
@@ -31,26 +45,28 @@ jobs:
         copy output\KOALAOptimizer.Testing.exe release\KOALA-Optimizer.exe
         echo KOALA Gaming Optimizer V3 > release\README.txt
         echo By KOALAaufPILLEN >> release\README.txt
+        echo Build Date: 2025-08-20 18:55:36 >> release\README.txt
         dir release
       shell: cmd
     
     - name: Upload Artifact V4
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-Optimizer-EXE
-        path: release/
+        name: KOALA-Optimizer-Build-${{ github.run_number }}
+        path: |
+          release/KOALA-Optimizer.exe
+          release/README.txt
         retention-days: 90
+        compression-level: 9
     
-    - name: Create ZIP and Release
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    - name: Create ZIP for Release
       run: |
         powershell Compress-Archive -Path release\* -DestinationPath KOALA-V3.zip
-        
-        gh release create v3.0.${{ github.run_number }} KOALA-V3.zip `
-          --title "KOALA V3 Build ${{ github.run_number }}" `
-          --notes "KOALA Gaming Optimizer V3 - Download KOALA-V3.zip" `
-          --latest
-      env:
-        GH_TOKEN: ${{ github.token }}
-      shell: powershell
-      continue-on-error: true
+        dir *.zip
+    
+    - name: Upload ZIP as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-V3-ZIP
+        path: KOALA-V3.zip
+        retention-days: 90
