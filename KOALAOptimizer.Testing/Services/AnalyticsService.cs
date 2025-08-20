@@ -532,20 +532,7 @@ namespace KOALAOptimizer.Testing.Services
         public string SessionId { get; set; }
     }
     
-    /// <summary>
-    /// Performance trend tracking
-    /// </summary>
-    public class PerformanceTrend
-    {
-        public DateTime Timestamp { get; set; }
-        public double CpuUsage { get; set; }
-        public long MemoryUsage { get; set; }
-        public long MemoryAvailable { get; set; }
-        public int ActiveProcesses { get; set; }
-        public double GpuUsage { get; set; }
-        public double BenchmarkScore { get; set; }
-        public string SessionId { get; set; }
-    }
+
     
     /// <summary>
     /// Analytics summary
