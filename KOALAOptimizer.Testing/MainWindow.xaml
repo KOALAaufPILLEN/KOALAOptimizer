@@ -1,143 +1,384 @@
 <Window x:Class="KOALAOptimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="🐨 KOALA Gaming Optimizer V3 Ultimate" Height="900" Width="1400"
-        Background="#0a0a0a" WindowStartupLocation="CenterScreen">
+        Title="🐨 KOALA Gaming Optimizer V3" Height="700" Width="1100"
+        Background="#1a1a1a" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Background="#2a2a2a" BorderBrush="#444" BorderThickness="1,1,1,0" 
+                                CornerRadius="4,4,0,0" Margin="2,0" Padding="10,5">
+                            <ContentPresenter ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#00ff00"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="#00ff00"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="80"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                    <GradientStop Color="#00ff00" Offset="0"/>
-                    <GradientStop Color="#00aa00" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="🐨" FontSize="40" Margin="10,0"/>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="KOALA GAMING OPTIMIZER V3 ULTIMATE" FontSize="24" FontWeight="Bold" Foreground="Black"/>
-                    <TextBlock Text="by KOALAaufPILLEN | Maximum FPS Edition" FontSize="12" Foreground="#333"/>
-                </StackPanel>
-            </StackPanel>
+        <Border Grid.Row="0" Background="#00ff00" Height="60">
+            <TextBlock Text="🐨 KOALA GAMING OPTIMIZER V3" 
+                       FontSize="24" FontWeight="Bold" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center" 
+                       Foreground="Black"/>
         </Border>
 
-        <!-- Main Content -->
-        <TabControl Grid.Row="1" Background="#0a0a0a" BorderThickness="0">
-            <!-- System Optimization Tab -->
-            <TabItem Header="🚀 OPTIMIZER">
+        <!-- Main TabControl -->
+        <TabControl Grid.Row="1" Background="#1a1a1a" BorderThickness="0">
+            
+            <!-- Main Tab -->
+            <TabItem Header="🎮 Main">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Panel -->
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <!-- System Info -->
+                        <GroupBox Header="System Information" Foreground="White" BorderBrush="#444">
+                            <TextBlock Name="SystemInfoText" Foreground="#00ff00" TextWrapping="Wrap" Margin="5"/>
+                        </GroupBox>
+
+                        <!-- Admin Status -->
+                        <TextBlock Name="AdminStatusText" Foreground="Yellow" FontWeight="Bold" Margin="5,10"/>
+
+                        <!-- Mode Selection -->
+                        <GroupBox Header="Optimization Mode" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
+                            <StackPanel>
+                                <RadioButton Name="SafeMode" Content="Safe Mode" IsChecked="True" Foreground="White" Margin="5"/>
+                                <RadioButton Name="PerformanceMode" Content="Performance Mode" Foreground="#ff9900" Margin="5"/>
+                                <RadioButton Name="UltraMode" Content="Ultra Mode" Foreground="#ff0000" Margin="5"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Game Profile -->
+                        <GroupBox Header="Game Profile" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
+                            <ComboBox Name="GameProfileCombo" Margin="5">
+                                <ComboBoxItem>Counter-Strike 2</ComboBoxItem>
+                                <ComboBoxItem>Valorant</ComboBoxItem>
+                                <ComboBoxItem>Fortnite</ComboBoxItem>
+                                <ComboBoxItem>Apex Legends</ComboBoxItem>
+                                <ComboBoxItem>Call of Duty: Warzone</ComboBoxItem>
+                                <ComboBoxItem>Rainbow Six Siege</ComboBoxItem>
+                                <ComboBoxItem>Overwatch 2</ComboBoxItem>
+                                <ComboBoxItem>PUBG</ComboBoxItem>
+                            </ComboBox>
+                        </GroupBox>
+
+                        <!-- Action Buttons -->
+                        <Button Name="OptimizeButton" Content="⚡ OPTIMIZE" 
+                                Background="#00ff00" Foreground="Black" 
+                                FontWeight="Bold" Height="40" Margin="0,20,0,5"
+                                Click="OptimizeButton_Click"/>
+                        <Button Name="RestoreButton" Content="🔄 RESTORE" 
+                                Background="#ff3333" Foreground="White" 
+                                Height="35" Margin="0,5"
+                                Click="RestoreButton_Click"/>
+                    </StackPanel>
+
+                    <!-- Right Panel - Log -->
+                    <GroupBox Grid.Column="1" Header="Optimization Log" Foreground="White" BorderBrush="#444">
+                        <ScrollViewer>
+                            <TextBox Name="LogBox" Background="#0a0a0a" Foreground="#00ff00" 
+                                     IsReadOnly="True" FontFamily="Consolas" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- Tweaks Tab -->
+            <TabItem Header="⚙️ Tweaks">
                 <ScrollViewer>
-                    <Grid Margin="20">
+                    <Grid Margin="10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Left Column -->
                         <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                            <!-- System Info -->
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                            <GroupBox Header="System Tweaks" Foreground="White" BorderBrush="#444">
                                 <StackPanel>
-                                    <TextBlock Text="SYSTEM INFORMATION" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <TextBlock Name="SystemInfoText" Foreground="White" TextWrapping="Wrap"/>
-                                    <TextBlock Name="AdminStatusText" Foreground="Yellow" Margin="0,5,0,0"/>
+                                    <CheckBox Name="DisableGameDVR" Content="Disable Game DVR" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="DisableFullscreenOpt" Content="Disable Fullscreen Optimizations" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="DisableMouseAccel" Content="Disable Mouse Acceleration" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="DisableNagle" Content="Disable Nagle's Algorithm" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="DisableHibernation" Content="Disable Hibernation" Foreground="White" Margin="5"/>
                                 </StackPanel>
-                            </Border>
+                            </GroupBox>
 
-                            <!-- Optimization Mode -->
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                            <GroupBox Header="GPU Tweaks" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="OPTIMIZATION MODE" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <RadioButton Name="SafeModeRadio" IsChecked="True" Foreground="White" Margin="0,5">
-                                        <StackPanel>
-                                            <TextBlock Text="✅ SAFE MODE" FontWeight="Bold"/>
-                                            <TextBlock Text="Anti-cheat compatible, no kernel modifications" FontSize="10" Foreground="#aaa"/>
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <RadioButton Name="PerformanceRadio" Foreground="White" Margin="0,5">
-                                        <StackPanel>
-                                            <TextBlock Text="⚡ PERFORMANCE MODE" FontWeight="Bold" Foreground="#ff9900"/>
-                                            <TextBlock Text="Maximum FPS, may trigger anti-cheats" FontSize="10" Foreground="#ff6666"/>
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <RadioButton Name="KernelModeRadio" Foreground="White" Margin="0,5">
-                                        <StackPanel>
-                                            <TextBlock Text="🔥 KERNEL MODE" FontWeight="Bold" Foreground="#ff0000"/>
-                                            <TextBlock Text="Extreme tweaks, USE AT OWN RISK!" FontSize="10" Foreground="#ff0000"/>
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <Button Name="OptimizeButton" Content="⚡ OPTIMIZE NOW" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="40" Margin="0,10,0,5" Click="OptimizeButton_Click"/>
-                                    <Button Name="RestoreButton" Content="🔄 RESTORE BACKUP" Background="#ff3333" Foreground="White" FontWeight="Bold" Height="40" Click="RestoreButton_Click"/>
+                                    <CheckBox Name="GPUScheduling" Content="Hardware GPU Scheduling" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="GPUPriority" Content="GPU Priority" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="DisableTDR" Content="Disable TDR" Foreground="White" Margin="5"/>
                                 </StackPanel>
-                            </Border>
-
-                            <!-- Safe Options -->
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                                <StackPanel>
-                                    <TextBlock Text="SAFE OPTIMIZATIONS" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <CheckBox Name="GpuCheckBox" Content="GPU Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="CpuCheckBox" Content="CPU Priority" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="RamCheckBox" Content="RAM Cleanup" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="NetworkCheckBox" Content="Network Tuning" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="VisualCheckBox" Content="Visual Effects" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="GameDvrCheckBox" Content="Disable Game DVR" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="MouseCheckBox" Content="Mouse Settings" Foreground="White" IsChecked="True"/>
-                                </StackPanel>
-                            </Border>
+                            </GroupBox>
                         </StackPanel>
 
                         <!-- Right Column -->
                         <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                            <!-- Risky Options -->
-                            <Border Background="#1a1a1a" BorderBrush="#ff6600" BorderThickness="2" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                            <GroupBox Header="Network Tweaks" Foreground="White" BorderBrush="#444">
                                 <StackPanel>
-                                    <TextBlock Text="⚠ RISKY OPTIMIZATIONS" FontSize="14" FontWeight="Bold" Foreground="#ff9900" Margin="0,0,0,10"/>
-                                    <CheckBox Name="ServicesCheckBox" Content="Disable Services" Foreground="#ffaa00"/>
-                                    <CheckBox Name="TimerCheckBox" Content="Timer Resolution" Foreground="#ffaa00"/>
-                                    <CheckBox Name="CoreParkingCheckBox" Content="Disable Core Parking" Foreground="#ffaa00"/>
-                                    <CheckBox Name="CStatesCheckBox" Content="Disable C-States" Foreground="#ffaa00"/>
-                                    <CheckBox Name="MitigationsCheckBox" Content="Disable CPU Mitigations" Foreground="#ff6666"/>
-                                    <CheckBox Name="MSICheckBox" Content="Force MSI Mode" Foreground="#ffaa00"/>
-                                    <CheckBox Name="InterruptCheckBox" Content="Interrupt Affinity" Foreground="#ffaa00"/>
+                                    <CheckBox Name="NetworkThrottling" Content="Disable Network Throttling" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="ReceiveScaling" Content="Enable RSS" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="AutoTuning" Content="TCP Auto-Tuning" Foreground="White" IsChecked="True" Margin="5"/>
                                 </StackPanel>
-                            </Border>
+                            </GroupBox>
 
-                            <!-- Kernel Options -->
-                            <Border Background="#1a1a1a" BorderBrush="#ff0000" BorderThickness="2" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                            <GroupBox Header="Memory Tweaks" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="☠ KERNEL MODIFICATIONS" FontSize="14" FontWeight="Bold" Foreground="#ff0000" Margin="0,0,0,10"/>
-                                    <TextBlock Text="WILL TRIGGER ANTI-CHEATS!" Foreground="#ff0000" FontWeight="Bold" Margin="0,0,0,5"/>
-                                    <CheckBox Name="BCDEditCheckBox" Content="BCDEdit Tweaks" Foreground="#ff6666" IsEnabled="False"/>
-                                    <CheckBox Name="KernelDebugCheckBox" Content="Disable Kernel Security" Foreground="#ff6666" IsEnabled="False"/>
-                                    <CheckBox Name="DriverSignCheckBox" Content="Disable Driver Signing" Foreground="#ff6666" IsEnabled="False"/>
-                                    <CheckBox Name="TestModeCheckBox" Content="Enable Test Mode" Foreground="#ff6666" IsEnabled="False"/>
-                                    <CheckBox Name="DEPCheckBox" Content="Disable DEP" Foreground="#ff6666" IsEnabled="False"/>
+                                    <CheckBox Name="DisablePaging" Content="Disable Paging Executive" Foreground="White" IsChecked="True" Margin="5"/>
+                                    <CheckBox Name="LargeSystemCache" Content="Large System Cache" Foreground="White" Margin="5"/>
+                                    <CheckBox Name="ClearStandbyMemory" Content="Clear Standby Memory" Foreground="White" Margin="5"/>
                                 </StackPanel>
-                            </Border>
-
-                            <!-- Log -->
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                                <StackPanel>
-                                    <TextBlock Text="OPTIMIZATION LOG" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <ScrollViewer Height="250">
-                                        <TextBox Name="LogText" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True" FontFamily="Consolas" TextWrapping="Wrap"/>
-                                    </ScrollViewer>
-                                </StackPanel>
-                            </Border>
+                            </GroupBox>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- Services Tab -->
+            <TabItem Header="🔧 Services">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button Name="DisableXboxServices" Content="Disable Xbox Services" Width="150" Margin="0,0,5,0" Click="DisableXboxServices_Click"/>
+                        <Button Name="DisableTelemetry" Content="Disable Telemetry" Width="150" Margin="5,0" Click="DisableTelemetry_Click"/>
+                        <Button Name="DisableBackgroundApps" Content="Disable Background Apps" Width="150" Margin="5,0" Click="DisableBackgroundApps_Click"/>
+                    </StackPanel>
+
+                    <DataGrid Grid.Row="1" Name="ServicesGrid" Background="#1a1a1a" Foreground="White" 
+                              AutoGenerateColumns="False" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Disable" Binding="{Binding Disable}" Width="60"/>
+                            <DataGridTextColumn Header="Service Name" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="300"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTextColumn Header="Startup Type" Binding="{Binding StartupType}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- Power Tab -->
+            <TabItem Header="⚡ Power">
+                <Grid Margin="10">
+                    <StackPanel>
+                        <GroupBox Header="Power Plan" Foreground="White" BorderBrush="#444">
+                            <StackPanel>
+                                <RadioButton Name="BalancedPower" Content="Balanced" Foreground="White" Margin="5"/>
+                                <RadioButton Name="HighPerformancePower" Content="High Performance" Foreground="White" IsChecked="True" Margin="5"/>
+                                <RadioButton Name="UltimatePerformancePower" Content="Ultimate Performance" Foreground="#00ff00" Margin="5"/>
+                                <Button Name="ApplyPowerPlan" Content="Apply Power Plan" Background="#00ff00" Foreground="Black" 
+                                        Height="35" Margin="5,10,5,5" Click="ApplyPowerPlan_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="CPU Settings" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Minimum Processor State:" Foreground="White" Margin="5"/>
+                                    <Slider Name="MinProcessorSlider" Minimum="5" Maximum="100" Value="100" Margin="5"/>
+                                    <TextBlock Text="{Binding ElementName=MinProcessorSlider, Path=Value, StringFormat='{}{0}%'}" 
+                                               Foreground="#00ff00" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Maximum Processor State:" Foreground="White" Margin="5"/>
+                                    <Slider Name="MaxProcessorSlider" Minimum="5" Maximum="100" Value="100" Margin="5"/>
+                                    <TextBlock Text="{Binding ElementName=MaxProcessorSlider, Path=Value, StringFormat='{}{0}%'}" 
+                                               Foreground="#00ff00" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Crosshair Tab (NEW) -->
+            <TabItem Header="🎯 Crosshair">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Settings Panel -->
+                    <GroupBox Grid.Column="0" Header="Crosshair Settings" Foreground="White" BorderBrush="#444">
+                        <StackPanel>
+                            <CheckBox Name="EnableCrosshair" Content="Enable Crosshair Overlay" Foreground="White" Margin="5,10"/>
+                            
+                            <TextBlock Text="Style:" Foreground="White" Margin="5,10,5,2"/>
+                            <ComboBox Name="CrosshairStyle" Margin="5">
+                                <ComboBoxItem>Classic Cross</ComboBoxItem>
+                                <ComboBoxItem>Dot</ComboBoxItem>
+                                <ComboBoxItem>Circle</ComboBoxItem>
+                                <ComboBoxItem>T-Shape</ComboBoxItem>
+                                <ComboBoxItem>Square</ComboBoxItem>
+                            </ComboBox>
+
+                            <TextBlock Text="Size:" Foreground="White" Margin="5,10,5,2"/>
+                            <Slider Name="CrosshairSize" Minimum="1" Maximum="50" Value="10" Margin="5"/>
+                            <TextBlock Text="{Binding ElementName=CrosshairSize, Path=Value, StringFormat='Size: {0}'}" 
+                                       Foreground="#00ff00" HorizontalAlignment="Center"/>
+
+                            <TextBlock Text="Thickness:" Foreground="White" Margin="5,10,5,2"/>
+                            <Slider Name="CrosshairThickness" Minimum="1" Maximum="10" Value="2" Margin="5"/>
+                            
+                            <TextBlock Text="Gap:" Foreground="White" Margin="5,10,5,2"/>
+                            <Slider Name="CrosshairGap" Minimum="0" Maximum="20" Value="5" Margin="5"/>
+
+                            <TextBlock Text="Color:" Foreground="White" Margin="5,10,5,2"/>
+                            <ComboBox Name="CrosshairColor" Margin="5">
+                                <ComboBoxItem>Green</ComboBoxItem>
+                                <ComboBoxItem>Red</ComboBoxItem>
+                                <ComboBoxItem>Blue</ComboBoxItem>
+                                <ComboBoxItem>Yellow</ComboBoxItem>
+                                <ComboBoxItem>Cyan</ComboBoxItem>
+                                <ComboBoxItem>Magenta</ComboBoxItem>
+                                <ComboBoxItem>White</ComboBoxItem>
+                            </ComboBox>
+
+                            <TextBlock Text="Opacity:" Foreground="White" Margin="5,10,5,2"/>
+                            <Slider Name="CrosshairOpacity" Minimum="0" Maximum="100" Value="100" Margin="5"/>
+
+                            <Button Name="ApplyCrosshair" Content="Apply Crosshair" 
+                                    Background="#00ff00" Foreground="Black" 
+                                    Height="35" Margin="5,20,5,5" Click="ApplyCrosshair_Click"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Preview -->
+                    <GroupBox Grid.Column="1" Header="Preview" Foreground="White" BorderBrush="#444">
+                        <Canvas Name="CrosshairPreview" Background="#0a0a0a"/>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- FOV Tab (NEW) -->
+            <TabItem Header="👁️ FOV">
+                <Grid Margin="10">
+                    <StackPanel>
+                        <GroupBox Header="Field of View Settings" Foreground="White" BorderBrush="#444">
+                            <StackPanel>
+                                <TextBlock Text="FOV Value:" Foreground="White" Margin="5,10,5,2"/>
+                                <Slider Name="FovSlider" Minimum="60" Maximum="120" Value="90" Margin="5"/>
+                                <TextBlock Text="{Binding ElementName=FovSlider, Path=Value, StringFormat='FOV: {0}°'}" 
+                                           Foreground="#00ff00" HorizontalAlignment="Center" FontSize="20"/>
+
+                                <TextBlock Text="Aspect Ratio:" Foreground="White" Margin="5,20,5,2"/>
+                                <ComboBox Name="AspectRatio" Margin="5">
+                                    <ComboBoxItem>4:3</ComboBoxItem>
+                                    <ComboBoxItem>16:9</ComboBoxItem>
+                                    <ComboBoxItem>16:10</ComboBoxItem>
+                                    <ComboBoxItem>21:9</ComboBoxItem>
+                                </ComboBox>
+
+                                <CheckBox Name="StretchRes" Content="Stretched Resolution" Foreground="White" Margin="5,20,5,5"/>
+                                <CheckBox Name="BlackBars" Content="Black Bars" Foreground="White" Margin="5"/>
+
+                                <Button Name="ApplyFov" Content="Apply FOV Settings" 
+                                        Background="#00ff00" Foreground="Black" 
+                                        Height="35" Margin="5,20,5,5" Click="ApplyFov_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Display Settings" Foreground="White" BorderBrush="#444" Margin="0,10,0,0">
+                            <StackPanel>
+                                <CheckBox Name="DisableVSync" Content="Disable V-Sync" Foreground="White" IsChecked="True" Margin="5"/>
+                                <CheckBox Name="DisableTripleBuffer" Content="Disable Triple Buffering" Foreground="White" Margin="5"/>
+                                <CheckBox Name="ReduceLatency" Content="Reduce Input Latency" Foreground="White" IsChecked="True" Margin="5"/>
+                                <CheckBox Name="ExclusiveFullscreen" Content="Exclusive Fullscreen" Foreground="White" IsChecked="True" Margin="5"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Process Tab -->
+            <TabItem Header="📊 Process">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Select Game Process:" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Name="ProcessList" Width="200" Margin="0,0,10,0"/>
+                        <Button Name="RefreshProcesses" Content="Refresh" Width="80" Click="RefreshProcesses_Click"/>
+                    </StackPanel>
+
+                    <DataGrid Grid.Row="1" Name="ProcessGrid" Background="#1a1a1a" Foreground="White" 
+                              AutoGenerateColumns="False" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Process Name" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="PID" Binding="{Binding Id}" Width="80"/>
+                            <DataGridTextColumn Header="CPU %" Binding="{Binding CPU}" Width="80"/>
+                            <DataGridTextColumn Header="Memory (MB)" Binding="{Binding Memory}" Width="100"/>
+                            <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Name="SetHighPriority" Content="Set High Priority" Width="120" Margin="0,0,5,0" Click="SetHighPriority_Click"/>
+                        <Button Name="SetAffinity" Content="Set CPU Affinity" Width="120" Margin="5,0" Click="SetAffinity_Click"/>
+                        <Button Name="EndProcess" Content="End Process" Width="120" Margin="5,0" Background="#ff3333" Click="EndProcess_Click"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- About Tab -->
+            <TabItem Header="ℹ️ About">
+                <Grid Margin="20">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="🐨" FontSize="100" HorizontalAlignment="Center"/>
+                        <TextBlock Text="KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
+                                   Foreground="#00ff00" HorizontalAlignment="Center" Margin="0,10"/>
+                        <TextBlock Text="by KOALAaufPILLEN" FontSize="16" 
+                                   Foreground="White" HorizontalAlignment="Center" Margin="0,5"/>
+                        <TextBlock Text="Ultimate Gaming Performance Tool" FontSize="14" 
+                                   Foreground="Gray" HorizontalAlignment="Center" Margin="0,5"/>
+                        <TextBlock Text="Version 3.0.0" FontSize="12" 
+                                   Foreground="Gray" HorizontalAlignment="Center" Margin="0,20"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#00ff00">
-            <TextBlock Name="StatusText" Text="Ready - KOALA V3 by KOALAaufPILLEN" Foreground="Black" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"/>
-        </Border>
+        <StatusBar Grid.Row="2" Background="#00ff00">
+            <StatusBarItem>
+                <TextBlock Name="StatusText" Text="Ready" Foreground="Black" FontWeight="Bold"/>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>
