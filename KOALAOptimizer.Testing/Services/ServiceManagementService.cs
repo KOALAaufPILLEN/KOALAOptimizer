@@ -73,7 +73,6 @@ namespace KOALAOptimizer.Testing.Services
                     // Audio services (conditional)
                     { "AudioSrv", "Windows Audio" },
                     { "AudioEndpointBuilder", "Windows Audio Endpoint Builder" },
-                    { "Audiosrv", "Windows Audio Service" },
                     
                     // Additional services
                     { "lfsvc", "Geolocation Service" },
