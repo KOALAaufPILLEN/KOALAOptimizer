@@ -11,9 +11,9 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="Linear GradientBrush StartPoint='0,0' EndPoint='1,0'">
+        <Border Grid.Row="0">
             <Border.Background>
-                <LinearGradientBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                     <GradientStop Color="#00ff00" Offset="0"/>
                     <GradientStop Color="#00aa00" Offset="1"/>
                 </LinearGradientBrush>
@@ -29,28 +29,8 @@
 
         <!-- Main Content -->
         <TabControl Grid.Row="1" Background="#0a0a0a" BorderThickness="0">
-            <TabControl.Resources>
-                <Style TargetType="TabItem">
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="TabItem">
-                                <Border Name="Border" Background="#1a1a1a" BorderBrush="#333" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Margin="2,0">
-                                    <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,5"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#00ff00"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                    <Setter Property="Foreground" Value="White"/>
-                </Style>
-            </TabControl.Resources>
-
             <!-- System Optimization Tab -->
-            <TabItem Header="🚀 SYSTEM OPTIMIZER">
+            <TabItem Header="🚀 OPTIMIZER">
                 <ScrollViewer>
                     <Grid Margin="20">
                         <Grid.ColumnDefinitions>
@@ -69,57 +49,82 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Quick Actions -->
+                            <!-- Optimization Mode -->
                             <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
                                 <StackPanel>
-                                    <TextBlock Text="QUICK OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition/>
-                                            <ColumnDefinition/>
-                                        </Grid.ColumnDefinitions>
-                                        <RadioButton Name="SafeModeRadio" Content="Safe Mode" IsChecked="True" Foreground="White" Grid.Column="0"/>
-                                        <RadioButton Name="PerformanceRadio" Content="Performance Mode" Foreground="White" Grid.Column="1"/>
-                                    </Grid>
+                                    <TextBlock Text="OPTIMIZATION MODE" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                                    <RadioButton Name="SafeModeRadio" IsChecked="True" Foreground="White" Margin="0,5">
+                                        <StackPanel>
+                                            <TextBlock Text="✅ SAFE MODE" FontWeight="Bold"/>
+                                            <TextBlock Text="Anti-cheat compatible, no kernel modifications" FontSize="10" Foreground="#aaa"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton Name="PerformanceRadio" Foreground="White" Margin="0,5">
+                                        <StackPanel>
+                                            <TextBlock Text="⚡ PERFORMANCE MODE" FontWeight="Bold" Foreground="#ff9900"/>
+                                            <TextBlock Text="Maximum FPS, may trigger anti-cheats" FontSize="10" Foreground="#ff6666"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton Name="KernelModeRadio" Foreground="White" Margin="0,5">
+                                        <StackPanel>
+                                            <TextBlock Text="🔥 KERNEL MODE" FontWeight="Bold" Foreground="#ff0000"/>
+                                            <TextBlock Text="Extreme tweaks, USE AT OWN RISK!" FontSize="10" Foreground="#ff0000"/>
+                                        </StackPanel>
+                                    </RadioButton>
                                     <Button Name="OptimizeButton" Content="⚡ OPTIMIZE NOW" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="40" Margin="0,10,0,5" Click="OptimizeButton_Click"/>
                                     <Button Name="RestoreButton" Content="🔄 RESTORE BACKUP" Background="#ff3333" Foreground="White" FontWeight="Bold" Height="40" Click="RestoreButton_Click"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Advanced Options -->
+                            <!-- Safe Options -->
                             <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
                                 <StackPanel>
-                                    <TextBlock Text="ADVANCED OPTIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                                    <TextBlock Text="SAFE OPTIMIZATIONS" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
                                     <CheckBox Name="GpuCheckBox" Content="GPU Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="CpuCheckBox" Content="CPU Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="RamCheckBox" Content="RAM Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="NetworkCheckBox" Content="Network Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="ServicesCheckBox" Content="Disable Unnecessary Services" Foreground="White"/>
-                                    <CheckBox Name="VisualCheckBox" Content="Optimize Visual Effects" Foreground="White" IsChecked="True"/>
+                                    <CheckBox Name="CpuCheckBox" Content="CPU Priority" Foreground="White" IsChecked="True"/>
+                                    <CheckBox Name="RamCheckBox" Content="RAM Cleanup" Foreground="White" IsChecked="True"/>
+                                    <CheckBox Name="NetworkCheckBox" Content="Network Tuning" Foreground="White" IsChecked="True"/>
+                                    <CheckBox Name="VisualCheckBox" Content="Visual Effects" Foreground="White" IsChecked="True"/>
                                     <CheckBox Name="GameDvrCheckBox" Content="Disable Game DVR" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="MouseCheckBox" Content="Mouse Optimization" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="AudioCheckBox" Content="Audio Latency Fix" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="TimerCheckBox" Content="High Precision Timer" Foreground="White" IsChecked="True"/>
+                                    <CheckBox Name="MouseCheckBox" Content="Mouse Settings" Foreground="White" IsChecked="True"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
 
                         <!-- Right Column -->
                         <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                            <!-- Game Profiles -->
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                            <!-- Risky Options -->
+                            <Border Background="#1a1a1a" BorderBrush="#ff6600" BorderThickness="2" CornerRadius="5" Padding="15" Margin="0,0,0,10">
                                 <StackPanel>
-                                    <TextBlock Text="GAME PROFILES" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <ComboBox Name="GameProfileCombo" Height="30" Background="#2a2a2a" Foreground="White"/>
-                                    <Button Name="ApplyProfileButton" Content="Apply Game Profile" Background="#00aa00" Foreground="White" Height="30" Margin="0,5,0,0" Click="ApplyGameProfile_Click"/>
+                                    <TextBlock Text="⚠ RISKY OPTIMIZATIONS" FontSize="14" FontWeight="Bold" Foreground="#ff9900" Margin="0,0,0,10"/>
+                                    <CheckBox Name="ServicesCheckBox" Content="Disable Services" Foreground="#ffaa00"/>
+                                    <CheckBox Name="TimerCheckBox" Content="Timer Resolution" Foreground="#ffaa00"/>
+                                    <CheckBox Name="CoreParkingCheckBox" Content="Disable Core Parking" Foreground="#ffaa00"/>
+                                    <CheckBox Name="CStatesCheckBox" Content="Disable C-States" Foreground="#ffaa00"/>
+                                    <CheckBox Name="MitigationsCheckBox" Content="Disable CPU Mitigations" Foreground="#ff6666"/>
+                                    <CheckBox Name="MSICheckBox" Content="Force MSI Mode" Foreground="#ffaa00"/>
+                                    <CheckBox Name="InterruptCheckBox" Content="Interrupt Affinity" Foreground="#ffaa00"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Kernel Options -->
+                            <Border Background="#1a1a1a" BorderBrush="#ff0000" BorderThickness="2" CornerRadius="5" Padding="15" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="☠ KERNEL MODIFICATIONS" FontSize="14" FontWeight="Bold" Foreground="#ff0000" Margin="0,0,0,10"/>
+                                    <TextBlock Text="WILL TRIGGER ANTI-CHEATS!" Foreground="#ff0000" FontWeight="Bold" Margin="0,0,0,5"/>
+                                    <CheckBox Name="BCDEditCheckBox" Content="BCDEdit Tweaks" Foreground="#ff6666" IsEnabled="False"/>
+                                    <CheckBox Name="KernelDebugCheckBox" Content="Disable Kernel Security" Foreground="#ff6666" IsEnabled="False"/>
+                                    <CheckBox Name="DriverSignCheckBox" Content="Disable Driver Signing" Foreground="#ff6666" IsEnabled="False"/>
+                                    <CheckBox Name="TestModeCheckBox" Content="Enable Test Mode" Foreground="#ff6666" IsEnabled="False"/>
+                                    <CheckBox Name="DEPCheckBox" Content="Disable DEP" Foreground="#ff6666" IsEnabled="False"/>
                                 </StackPanel>
                             </Border>
 
                             <!-- Log -->
                             <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
                                 <StackPanel>
-                                    <TextBlock Text="OPTIMIZATION LOG" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <ScrollViewer Height="400">
+                                    <TextBlock Text="OPTIMIZATION LOG" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                                    <ScrollViewer Height="250">
                                         <TextBox Name="LogText" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True" FontFamily="Consolas" TextWrapping="Wrap"/>
                                     </ScrollViewer>
                                 </StackPanel>
@@ -128,320 +133,11 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
-
-            <!-- Crosshair Tab -->
-            <TabItem Header="🎯 CROSSHAIR OVERLAY">
-                <Grid Margin="20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="400"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Crosshair Settings -->
-                    <StackPanel Grid.Column="0">
-                        <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                            <StackPanel>
-                                <TextBlock Text="CROSSHAIR SETTINGS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,15"/>
-                                
-                                <!-- Enable/Disable -->
-                                <CheckBox Name="CrosshairEnabled" Content="Enable Crosshair Overlay" Foreground="White" FontSize="14" Margin="0,0,0,10"/>
-                                
-                                <!-- Crosshair Type -->
-                                <TextBlock Text="Crosshair Style:" Foreground="White" Margin="0,5,0,2"/>
-                                <ComboBox Name="CrosshairType" Height="30" Background="#2a2a2a" Foreground="White">
-                                    <ComboBoxItem>Classic Cross</ComboBoxItem>
-                                    <ComboBoxItem>Dot</ComboBoxItem>
-                                    <ComboBoxItem>Circle</ComboBoxItem>
-                                    <ComboBoxItem>T-Shape</ComboBoxItem>
-                                    <ComboBoxItem>Square</ComboBoxItem>
-                                    <ComboBoxItem>Dynamic</ComboBoxItem>
-                                    <ComboBoxItem>CS:GO Style</ComboBoxItem>
-                                    <ComboBoxItem>Valorant Style</ComboBoxItem>
-                                </ComboBox>
-                                
-                                <!-- Size -->
-                                <TextBlock Text="Size:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="CrosshairSize" Minimum="1" Maximum="50" Value="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding ElementName=CrosshairSize, Path=Value}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- Thickness -->
-                                <TextBlock Text="Thickness:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="CrosshairThickness" Minimum="1" Maximum="10" Value="2" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding ElementName=CrosshairThickness, Path=Value}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- Gap -->
-                                <TextBlock Text="Center Gap:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="CrosshairGap" Minimum="0" Maximum="20" Value="5" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding ElementName=CrosshairGap, Path=Value}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- Color -->
-                                <TextBlock Text="Color:" Foreground="White" Margin="0,10,0,2"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="R:" Foreground="Red" Width="20"/>
-                                    <Slider Name="ColorR" Width="80" Minimum="0" Maximum="255" Value="0"/>
-                                    <TextBlock Text="G:" Foreground="Green" Width="20" Margin="10,0,0,0"/>
-                                    <Slider Name="ColorG" Width="80" Minimum="0" Maximum="255" Value="255"/>
-                                    <TextBlock Text="B:" Foreground="Blue" Width="20" Margin="10,0,0,0"/>
-                                    <Slider Name="ColorB" Width="80" Minimum="0" Maximum="255" Value="0"/>
-                                </StackPanel>
-                                
-                                <!-- Opacity -->
-                                <TextBlock Text="Opacity:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="CrosshairOpacity" Minimum="0" Maximum="100" Value="100" TickFrequency="5" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding ElementName=CrosshairOpacity, Path=Value, StringFormat='{}{0}%'}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- Outline -->
-                                <CheckBox Name="CrosshairOutline" Content="Enable Outline" Foreground="White" Margin="0,10,0,0"/>
-                                
-                                <!-- Apply Button -->
-                                <Button Name="ApplyCrosshair" Content="APPLY CROSSHAIR" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="40" Margin="0,20,0,0" Click="ApplyCrosshair_Click"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Preview -->
-                    <Border Grid.Column="1" Background="#0a0a0a" CornerRadius="5" Margin="20,0,0,0">
-                        <Grid>
-                            <TextBlock Text="PREVIEW" Foreground="#333" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Canvas Name="CrosshairPreview" Width="400" Height="400"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </TabItem>
-
-            <!-- FOV Tab -->
-            <TabItem Header="👁️ FOV & DISPLAY">
-                <Grid Margin="20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="400"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                            <StackPanel>
-                                <TextBlock Text="FOV SETTINGS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,15"/>
-                                
-                                <!-- FOV Slider -->
-                                <TextBlock Text="Field of View:" Foreground="White" Margin="0,5,0,2"/>
-                                <Slider Name="FovSlider" Minimum="60" Maximum="120" Value="90" TickFrequency="5" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding ElementName=FovSlider, Path=Value, StringFormat='FOV: {0}°'}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- FOV Mode -->
-                                <TextBlock Text="FOV Mode:" Foreground="White" Margin="0,10,0,2"/>
-                                <ComboBox Name="FovMode" Height="30" Background="#2a2a2a" Foreground="White">
-                                    <ComboBoxItem>Horizontal</ComboBoxItem>
-                                    <ComboBoxItem>Vertical</ComboBoxItem>
-                                    <ComboBoxItem>Diagonal</ComboBoxItem>
-                                    <ComboBoxItem>4:3 Stretched</ComboBoxItem>
-                                    <ComboBoxItem>16:9 Native</ComboBoxItem>
-                                    <ComboBoxItem>21:9 Ultrawide</ComboBoxItem>
-                                </ComboBox>
-                                
-                                <!-- Aspect Ratio -->
-                                <TextBlock Text="Aspect Ratio:" Foreground="White" Margin="0,10,0,2"/>
-                                <ComboBox Name="AspectRatio" Height="30" Background="#2a2a2a" Foreground="White">
-                                    <ComboBoxItem>4:3</ComboBoxItem>
-                                    <ComboBoxItem>16:9</ComboBoxItem>
-                                    <ComboBoxItem>16:10</ComboBoxItem>
-                                    <ComboBoxItem>21:9</ComboBoxItem>
-                                    <ComboBoxItem>32:9</ComboBoxItem>
-                                </ComboBox>
-                                
-                                <!-- Brightness/Gamma -->
-                                <TextBlock Text="Brightness:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="BrightnessSlider" Minimum="50" Maximum="150" Value="100"/>
-                                <TextBlock Text="{Binding ElementName=BrightnessSlider, Path=Value, StringFormat='{}{0}%'}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <TextBlock Text="Gamma:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="GammaSlider" Minimum="0.5" Maximum="2.5" Value="1.0"/>
-                                <TextBlock Text="{Binding ElementName=GammaSlider, Path=Value, StringFormat='{}{0:F1}'}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <!-- Digital Vibrance -->
-                                <TextBlock Text="Digital Vibrance:" Foreground="White" Margin="0,10,0,2"/>
-                                <Slider Name="VibranceSlider" Minimum="0" Maximum="100" Value="75"/>
-                                <TextBlock Text="{Binding ElementName=VibranceSlider, Path=Value, StringFormat='{}{0}%'}" Foreground="#00ff00" HorizontalAlignment="Center"/>
-                                
-                                <Button Name="ApplyFov" Content="APPLY FOV SETTINGS" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="40" Margin="0,20,0,0" Click="ApplyFov_Click"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Margin="20,0,0,0">
-                        <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                            <StackPanel>
-                                <TextBlock Text="DISPLAY OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,15"/>
-                                <CheckBox Name="FullscreenOpt" Content="Fullscreen Optimizations" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="VSync" Content="Disable V-Sync" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="TripleBuffer" Content="Disable Triple Buffering" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="PreRendered" Content="Reduce Pre-Rendered Frames" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="LowLatency" Content="Ultra Low Latency Mode" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="GpuScheduling" Content="Hardware GPU Scheduling" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="GameMode" Content="Windows Game Mode" Foreground="White" IsChecked="True"/>
-                                <CheckBox Name="Hags" Content="HAGS (Hardware Accelerated GPU Scheduling)" Foreground="White" IsChecked="True"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,10,0,0">
-                            <StackPanel>
-                                <TextBlock Text="MONITOR SETTINGS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,15"/>
-                                <TextBlock Text="Refresh Rate:" Foreground="White"/>
-                                <ComboBox Name="RefreshRate" Height="30" Background="#2a2a2a" Foreground="White">
-                                    <ComboBoxItem>60 Hz</ComboBoxItem>
-                                    <ComboBoxItem>75 Hz</ComboBoxItem>
-                                    <ComboBoxItem>120 Hz</ComboBoxItem>
-                                    <ComboBoxItem>144 Hz</ComboBoxItem>
-                                    <ComboBoxItem>165 Hz</ComboBoxItem>
-                                    <ComboBoxItem>240 Hz</ComboBoxItem>
-                                    <ComboBoxItem>360 Hz</ComboBoxItem>
-                                    <ComboBoxItem>500 Hz</ComboBoxItem>
-                                </ComboBox>
-                                
-                                <TextBlock Text="Resolution:" Foreground="White" Margin="0,10,0,0"/>
-                                <ComboBox Name="Resolution" Height="30" Background="#2a2a2a" Foreground="White">
-                                    <ComboBoxItem>1024x768</ComboBoxItem>
-                                    <ComboBoxItem>1280x960</ComboBoxItem>
-                                    <ComboBoxItem>1280x1024</ComboBoxItem>
-                                    <ComboBoxItem>1920x1080</ComboBoxItem>
-                                    <ComboBoxItem>2560x1440</ComboBoxItem>
-                                    <ComboBoxItem>3840x2160</ComboBoxItem>
-                                </ComboBox>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-
-            <!-- Advanced FPS Tab -->
-            <TabItem Header="⚡ ADVANCED FPS">
-                <ScrollViewer>
-                    <Grid Margin="20">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
-                                <StackPanel>
-                                    <TextBlock Text="CPU OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <CheckBox Name="CoreParking" Content="Disable Core Parking" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="TurboBoost" Content="Force Turbo Boost" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="CStates" Content="Disable C-States" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="SpeedStep" Content="Disable SpeedStep" Foreground="White"/>
-                                    <CheckBox Name="Hyperthreading" Content="Optimize Hyperthreading" Foreground="White" IsChecked="True"/>
-                                    <TextBlock Text="CPU Priority:" Foreground="White" Margin="0,10,0,2"/>
-                                    <ComboBox Name="CpuPriority" Height="30" Background="#2a2a2a" Foreground="White">
-                                        <ComboBoxItem>Realtime</ComboBoxItem>
-                                        <ComboBoxItem>High</ComboBoxItem>
-                                        <ComboBoxItem>Above Normal</ComboBoxItem>
-                                        <ComboBoxItem>Normal</ComboBoxItem>
-                                    </ComboBox>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                                <StackPanel>
-                                    <TextBlock Text="MEMORY OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <CheckBox Name="StandbyList" Content="Clear Standby Memory" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="WorkingSet" Content="Trim Working Sets" Foreground="White"/>
-                                    <CheckBox Name="PageFile" Content="Optimize Page File" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="Prefetch" Content="Disable Prefetch" Foreground="White"/>
-                                    <CheckBox Name="Superfetch" Content="Disable Superfetch" Foreground="White"/>
-                                    <CheckBox Name="MemoryCompression" Content="Disable Memory Compression" Foreground="White"/>
-                                    <Button Name="ClearRamButton" Content="CLEAR RAM NOW" Background="#ff9900" Foreground="White" FontWeight="Bold" Height="35" Margin="0,10,0,0" Click="ClearRam_Click"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
-                                <StackPanel>
-                                    <TextBlock Text="GPU OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <CheckBox Name="ShaderCache" Content="Optimize Shader Cache" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="TextureFiltering" Content="Performance Texture Filtering" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="Antialiasing" Content="Disable Antialiasing" Foreground="White"/>
-                                    <CheckBox Name="AnisotropicFiltering" Content="Disable Anisotropic Filtering" Foreground="White"/>
-                                    <CheckBox Name="TesselationMode" Content="Disable Tesselation" Foreground="White"/>
-                                    <CheckBox Name="AmbientOcclusion" Content="Disable Ambient Occlusion" Foreground="White"/>
-                                    <TextBlock Text="Power Mode:" Foreground="White" Margin="0,10,0,2"/>
-                                    <ComboBox Name="GpuPowerMode" Height="30" Background="#2a2a2a" Foreground="White">
-                                        <ComboBoxItem>Maximum Performance</ComboBoxItem>
-                                        <ComboBoxItem>Prefer Maximum Performance</ComboBoxItem>
-                                        <ComboBoxItem>Balanced</ComboBoxItem>
-                                    </ComboBox>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="#1a1a1a" CornerRadius="5" Padding="15">
-                                <StackPanel>
-                                    <TextBlock Text="NETWORK OPTIMIZATIONS" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                                    <CheckBox Name="NagleAlgorithm" Content="Disable Nagle's Algorithm" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="NetworkThrottling" Content="Disable Network Throttling" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="TcpAutotuning" Content="Optimize TCP Autotuning" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="TcpChimney" Content="TCP Chimney Offload" Foreground="White"/>
-                                    <CheckBox Name="ReceiveSideScaling" Content="Receive Side Scaling" Foreground="White" IsChecked="True"/>
-                                    <CheckBox Name="LargeSendOffload" Content="Large Send Offload" Foreground="White"/>
-                                    <Button Name="FlushDnsButton" Content="FLUSH DNS CACHE" Background="#ff9900" Foreground="White" FontWeight="Bold" Height="35" Margin="0,10,0,0" Click="FlushDns_Click"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </Grid>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Process Manager Tab -->
-            <TabItem Header="🎮 PROCESS MANAGER">
-                <Grid Margin="20">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <Border Grid.Row="0" Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="GAME PROCESS OPTIMIZATION" FontSize="16" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Select Game Process:" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox Name="ProcessList" Width="300" Height="30" Background="#2a2a2a" Foreground="White"/>
-                                <Button Name="RefreshProcesses" Content="Refresh" Background="#00aa00" Foreground="White" Width="80" Margin="10,0,0,0" Click="RefreshProcesses_Click"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <DataGrid Grid.Row="1" Name="ProcessGrid" Background="#1a1a1a" Foreground="White" AutoGenerateColumns="False">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Process Name" Binding="{Binding Name}" Width="200"/>
-                            <DataGridTextColumn Header="PID" Binding="{Binding Id}" Width="80"/>
-                            <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="100"/>
-                            <DataGridTextColumn Header="CPU %" Binding="{Binding CPU}" Width="80"/>
-                            <DataGridTextColumn Header="Memory (MB)" Binding="{Binding Memory}" Width="100"/>
-                            <DataGridTextColumn Header="Threads" Binding="{Binding Threads}" Width="80"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <Border Grid.Row="2" Background="#1a1a1a" CornerRadius="5" Padding="15" Margin="0,10,0,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Content="Set High Priority" Background="#00ff00" Foreground="Black" FontWeight="Bold" Height="35" Margin="0,0,5,0" Click="SetHighPriority_Click"/>
-                            <Button Grid.Column="1" Content="Set CPU Affinity" Background="#00aa00" Foreground="White" FontWeight="Bold" Height="35" Margin="5,0" Click="SetAffinity_Click"/>
-                            <Button Grid.Column="2" Content="Kill Background Apps" Background="#ff9900" Foreground="White" FontWeight="Bold" Height="35" Margin="5,0" Click="KillBackground_Click"/>
-                            <Button Grid.Column="3" Content="End Task" Background="#ff3333" Foreground="White" FontWeight="Bold" Height="35" Margin="5,0,0,0" Click="EndTask_Click"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->
         <Border Grid.Row="2" Background="#00ff00">
-            <TextBlock Name="StatusText" Text="Ready - KOALA Gaming Optimizer V3 by KOALAaufPILLEN" Foreground="Black" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"/>
+            <TextBlock Name="StatusText" Text="Ready - KOALA V3 by KOALAaufPILLEN" Foreground="Black" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"/>
         </Border>
     </Grid>
 </Window>
