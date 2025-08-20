@@ -7,8 +7,7 @@ namespace KOALAOptimizer
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            // Remove ThemeManager call since it's causing issues
-            // Theme will be applied from MainWindow
+            // Simple startup - no complex initialization
         }
     }
 }

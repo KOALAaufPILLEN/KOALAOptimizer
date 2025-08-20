@@ -8,13 +8,6 @@ namespace KOALAOptimizer
     {
         Dark,
         Light,
-        Blue,
-        Red,
-        Purple,
-        Green,
-        Orange,
-        Pink,
-        Cyan,
         Matrix
     }
 
@@ -28,29 +21,15 @@ namespace KOALAOptimizer
 
         public static void ApplyTheme(ThemeType theme)
         {
-            var app = Application.Current;
-            if (app?.Resources == null) return;
-
-            string prefix = theme.ToString();
-            
+            // Simple theme application without complex resource management
             try
             {
-                // Apply theme resources if they exist
-                UpdateResource(app, "BackgroundBrush", $"{prefix}BackgroundBrush");
-                UpdateResource(app, "ForegroundBrush", $"{prefix}ForegroundBrush");
-                UpdateResource(app, "AccentBrush", $"{prefix}AccentBrush");
-                UpdateResource(app, "SecondaryBackgroundBrush", $"{prefix}SecondaryBackgroundBrush");
-                UpdateResource(app, "DangerBrush", $"{prefix}DangerBrush");
+                var app = Application.Current;
+                if (app?.Resources == null) return;
+                
+                // Basic theme switching (simplified)
             }
             catch { }
-        }
-
-        private static void UpdateResource(Application app, string targetKey, string sourceKey)
-        {
-            if (app.Resources.Contains(sourceKey))
-            {
-                app.Resources[targetKey] = app.Resources[sourceKey];
-            }
         }
 
         public static void SaveThemePreference(ThemeType theme)

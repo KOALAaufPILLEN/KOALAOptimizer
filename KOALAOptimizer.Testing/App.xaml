@@ -4,77 +4,7 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- Dark Theme (Default) -->
-            <SolidColorBrush x:Key="DarkBackgroundBrush" Color="#1e1e1e"/>
-            <SolidColorBrush x:Key="DarkForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="DarkAccentBrush" Color="#00ff00"/>
-            <SolidColorBrush x:Key="DarkSecondaryBackgroundBrush" Color="#2d2d30"/>
-            <SolidColorBrush x:Key="DarkDangerBrush" Color="#ff4444"/>
-            
-            <!-- Light Theme -->
-            <SolidColorBrush x:Key="LightBackgroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="LightForegroundBrush" Color="#000000"/>
-            <SolidColorBrush x:Key="LightAccentBrush" Color="#007acc"/>
-            <SolidColorBrush x:Key="LightSecondaryBackgroundBrush" Color="#f0f0f0"/>
-            <SolidColorBrush x:Key="LightDangerBrush" Color="#d32f2f"/>
-            
-            <!-- Blue Theme -->
-            <SolidColorBrush x:Key="BlueBackgroundBrush" Color="#001529"/>
-            <SolidColorBrush x:Key="BlueForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="BlueAccentBrush" Color="#1890ff"/>
-            <SolidColorBrush x:Key="BlueSecondaryBackgroundBrush" Color="#002140"/>
-            <SolidColorBrush x:Key="BlueDangerBrush" Color="#ff4d4f"/>
-            
-            <!-- Red Theme -->
-            <SolidColorBrush x:Key="RedBackgroundBrush" Color="#2a0e0e"/>
-            <SolidColorBrush x:Key="RedForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="RedAccentBrush" Color="#ff3333"/>
-            <SolidColorBrush x:Key="RedSecondaryBackgroundBrush" Color="#3d1515"/>
-            <SolidColorBrush x:Key="RedDangerBrush" Color="#ff9999"/>
-            
-            <!-- Purple Theme -->
-            <SolidColorBrush x:Key="PurpleBackgroundBrush" Color="#1a0e2a"/>
-            <SolidColorBrush x:Key="PurpleForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="PurpleAccentBrush" Color="#9c27b0"/>
-            <SolidColorBrush x:Key="PurpleSecondaryBackgroundBrush" Color="#2d1b3d"/>
-            <SolidColorBrush x:Key="PurpleDangerBrush" Color="#ff4081"/>
-            
-            <!-- Green Theme -->
-            <SolidColorBrush x:Key="GreenBackgroundBrush" Color="#0e2a0e"/>
-            <SolidColorBrush x:Key="GreenForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="GreenAccentBrush" Color="#4caf50"/>
-            <SolidColorBrush x:Key="GreenSecondaryBackgroundBrush" Color="#1b3d1b"/>
-            <SolidColorBrush x:Key="GreenDangerBrush" Color="#ff5252"/>
-            
-            <!-- Orange Theme -->
-            <SolidColorBrush x:Key="OrangeBackgroundBrush" Color="#2a1a0e"/>
-            <SolidColorBrush x:Key="OrangeForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="OrangeAccentBrush" Color="#ff9800"/>
-            <SolidColorBrush x:Key="OrangeSecondaryBackgroundBrush" Color="#3d2a1b"/>
-            <SolidColorBrush x:Key="OrangeDangerBrush" Color="#ff5252"/>
-            
-            <!-- Pink Theme -->
-            <SolidColorBrush x:Key="PinkBackgroundBrush" Color="#2a0e1a"/>
-            <SolidColorBrush x:Key="PinkForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="PinkAccentBrush" Color="#e91e63"/>
-            <SolidColorBrush x:Key="PinkSecondaryBackgroundBrush" Color="#3d1b2d"/>
-            <SolidColorBrush x:Key="PinkDangerBrush" Color="#ff80ab"/>
-            
-            <!-- Cyan Theme -->
-            <SolidColorBrush x:Key="CyanBackgroundBrush" Color="#0e1a2a"/>
-            <SolidColorBrush x:Key="CyanForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="CyanAccentBrush" Color="#00bcd4"/>
-            <SolidColorBrush x:Key="CyanSecondaryBackgroundBrush" Color="#1b2d3d"/>
-            <SolidColorBrush x:Key="CyanDangerBrush" Color="#ff5252"/>
-            
-            <!-- Matrix Theme -->
-            <SolidColorBrush x:Key="MatrixBackgroundBrush" Color="#000000"/>
-            <SolidColorBrush x:Key="MatrixForegroundBrush" Color="#00ff00"/>
-            <SolidColorBrush x:Key="MatrixAccentBrush" Color="#00ff00"/>
-            <SolidColorBrush x:Key="MatrixSecondaryBackgroundBrush" Color="#0a0a0a"/>
-            <SolidColorBrush x:Key="MatrixDangerBrush" Color="#ff0000"/>
-            
-            <!-- Default Dynamic Resources (Dark Theme) -->
+            <!-- Simple color definitions -->
             <SolidColorBrush x:Key="BackgroundBrush" Color="#1e1e1e"/>
             <SolidColorBrush x:Key="ForegroundBrush" Color="#ffffff"/>
             <SolidColorBrush x:Key="AccentBrush" Color="#00ff00"/>
