@@ -1,0 +1,110 @@
+name: Clean Build Final
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    
+    - name: Complete Clean and Build
+      run: |
+        cd KOALAOptimizer.Testing
+        
+        echo "=== STEP 1: REMOVE ALL BUILD ARTIFACTS ==="
+        if exist bin rmdir /s /q bin
+        if exist obj rmdir /s /q obj
+        if exist .vs rmdir /s /q .vs
+        
+        echo.
+        echo "=== STEP 2: DELETE OLD PROJECT FILES ==="
+        del *.csproj 2>nul
+        del *.sln 2>nul
+        del *.user 2>nul
+        
+        echo.
+        echo "=== STEP 3: CREATE FRESH PROJECT FILE ==="
+        (
+          echo ^<?xml version="1.0" encoding="utf-8"?^>
+          echo ^<Project Sdk="Microsoft.NET.Sdk"^>
+          echo   ^<PropertyGroup^>
+          echo     ^<OutputType^>WinExe^</OutputType^>
+          echo     ^<TargetFramework^>net8.0-windows^</TargetFramework^>
+          echo     ^<UseWPF^>true^</UseWPF^>
+          echo     ^<AssemblyName^>KOALAOptimizer^</AssemblyName^>
+          echo     ^<RootNamespace^>KOALAOptimizer^</RootNamespace^>
+          echo     ^<ApplicationIcon^>koala.ico^</ApplicationIcon^>
+          echo     ^<Nullable^>enable^</Nullable^>
+          echo     ^<GenerateAssemblyInfo^>false^</GenerateAssemblyInfo^>
+          echo   ^</PropertyGroup^>
+          echo   ^<ItemGroup^>
+          echo     ^<PackageReference Include="System.Management" Version="8.0.0" /^>
+          echo   ^</ItemGroup^>
+          echo ^</Project^>
+        ) > KOALAOptimizer.Testing.csproj
+        
+        echo.
+        echo "=== STEP 4: CREATE ASSEMBLY INFO ==="
+        mkdir Properties 2>nul
+        (
+          echo using System.Reflection;
+          echo using System.Runtime.InteropServices;
+          echo using System.Windows;
+          echo.
+          echo [assembly: AssemblyTitle^("KOALA Optimizer"^)]
+          echo [assembly: AssemblyDescription^("Gaming Optimization Tool"^)]
+          echo [assembly: AssemblyConfiguration^(""^)]
+          echo [assembly: AssemblyCompany^("KOALAaufPILLEN"^)]
+          echo [assembly: AssemblyProduct^("KOALA Optimizer V3"^)]
+          echo [assembly: AssemblyCopyright^("Copyright 2025"^)]
+          echo [assembly: AssemblyTrademark^(""^)]
+          echo [assembly: AssemblyVersion^("3.0.0.0"^)]
+          echo [assembly: AssemblyFileVersion^("3.0.0.0"^)]
+          echo [assembly: ComVisible^(false^)]
+          echo [assembly: ThemeInfo^(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly^)]
+        ) > Properties\AssemblyInfo.cs
+        
+        echo.
+        echo "=== STEP 5: BUILD PROJECT ==="
+        dotnet clean 2>nul
+        dotnet restore
+        dotnet build -c Release --no-restore
+        
+        echo.
+        echo "=== STEP 6: PUBLISH ==="
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true --no-build -o ..\output
+        
+        cd ..
+        
+        echo.
+        echo "=== BUILD COMPLETE ==="
+        dir output
+      shell: cmd
+    
+    - name: Upload Artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-V3-WORKING
+        path: output/
+    
+    - name: Create Release
+      if: success()
+      run: |
+        powershell Compress-Archive -Path output\* -DestinationPath KOALA-V3-FINAL.zip
+        
+        gh release delete v3-working -y 2>nul
+        gh release create v3-working KOALA-V3-FINAL.zip --title "KOALA V3 WORKING BUILD" --notes "🐨 Finally working build!" --latest
+      env:
+        GH_TOKEN: ${{ github.token }}
+      continue-on-error: true
