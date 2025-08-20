@@ -78,7 +78,7 @@ namespace KOALAOptimizer.Testing.Services
                 
                 // Subscribe to game detection events
                 _gameDetection.GameDetected += OnGameDetected;
-                _gameDetection.GameClosed += OnGameClosed;
+                _gameDetection.GameStopped += OnGameClosed;
                 
                 // Start monitoring timer
                 _monitoringTimer.Change(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -105,7 +105,7 @@ namespace KOALAOptimizer.Testing.Services
                 
                 // Unsubscribe from game detection events
                 _gameDetection.GameDetected -= OnGameDetected;
-                _gameDetection.GameClosed -= OnGameClosed;
+                _gameDetection.GameStopped -= OnGameClosed;
                 
                 // Stop monitoring timer
                 _monitoringTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -123,11 +123,11 @@ namespace KOALAOptimizer.Testing.Services
         /// <summary>
         /// Handle game detection
         /// </summary>
-        private void OnGameDetected(object sender, GameDetectedEventArgs e)
+        private void OnGameDetected(object sender, GameProfile gameProfile)
         {
             try
             {
-                _currentGame = e.GameProfile.DisplayName;
+                _currentGame = gameProfile.DisplayName;
                 _logger.LogInfo($"Game detected for FPS monitoring: {_currentGame}");
                 
                 // Clear previous FPS history when switching games
@@ -145,7 +145,7 @@ namespace KOALAOptimizer.Testing.Services
         /// <summary>
         /// Handle game closure
         /// </summary>
-        private void OnGameClosed(object sender, GameClosedEventArgs e)
+        private void OnGameClosed(object sender, GameProfile gameProfile)
         {
             try
             {
@@ -348,7 +348,7 @@ namespace KOALAOptimizer.Testing.Services
                     if (_fpsHistory.Count < 10) // Need enough data for analysis
                         return;
                         
-                    var recentReadings = _fpsHistory.TakeLast(10).ToList();
+                    var recentReadings = _fpsHistory.Skip(Math.Max(0, _fpsHistory.Count - 10)).ToList();
                     var averageFps = recentReadings.Average(r => r.Fps);
                     var minFps = recentReadings.Min(r => r.Fps);
                     
@@ -534,7 +534,7 @@ namespace KOALAOptimizer.Testing.Services
         {
             lock (_fpsHistory)
             {
-                return _fpsHistory.TakeLast(count).ToList();
+                return _fpsHistory.Skip(Math.Max(0, _fpsHistory.Count - count)).ToList();
             }
         }
         

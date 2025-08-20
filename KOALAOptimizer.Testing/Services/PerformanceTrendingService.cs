@@ -376,7 +376,7 @@ namespace KOALAOptimizer.Testing.Services
                     if (_performanceHistory.Count < 5)
                         return bottlenecks;
                         
-                    var recent = _performanceHistory.TakeLast(5).ToList();
+                    var recent = _performanceHistory.Skip(Math.Max(0, _performanceHistory.Count - 5)).ToList();
                     var avgCpu = recent.Average(r => r.CpuUsage);
                     var avgMemory = recent.Average(r => (double)r.MemoryUsage / 1024 / 1024);
                     var avgGpu = recent.Average(r => r.GpuUsage);

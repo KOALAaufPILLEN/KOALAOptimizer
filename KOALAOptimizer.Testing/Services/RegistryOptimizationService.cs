@@ -662,6 +662,95 @@ namespace KOALAOptimizer.Testing.Services
         {
             return File.Exists(_backupFilePath);
         }
+
+        /// <summary>
+        /// Apply specific optimizations by name
+        /// </summary>
+        public bool ApplyOptimizations(List<string> optimizationNames)
+        {
+            if (!_adminService.IsRunningAsAdmin())
+            {
+                _logger.LogWarning("Administrator privileges required for registry optimizations");
+                return false;
+            }
+
+            try
+            {
+                bool success = true;
+                foreach (var optimizationName in optimizationNames)
+                {
+                    if (!ApplySpecificOptimization(optimizationName))
+                    {
+                        success = false;
+                        _logger.LogWarning($"Failed to apply optimization: {optimizationName}");
+                    }
+                }
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error applying optimizations: {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Apply a specific optimization by name
+        /// </summary>
+        private bool ApplySpecificOptimization(string optimizationName)
+        {
+            try
+            {
+                switch (optimizationName)
+                {
+                    case "DisableFullscreenOptimizations":
+                        return SetRegistryValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\GameDVR", "GameDVR_Enabled", 0);
+                    
+                    case "OptimizeGameMode":
+                        return SetRegistryValue(@"HKEY_CURRENT_USER\Software\Microsoft\GameBar", "AutoGameModeEnabled", 1);
+                    
+                    case "OptimizeGpuScheduling":
+                        return SetRegistryValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2);
+                    
+                    case "OptimizeTimerResolution":
+                        return SetRegistryValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", "GlobalTimerResolutionRequests", 1);
+                    
+                    default:
+                        _logger.LogWarning($"Unknown optimization: {optimizationName}");
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error applying specific optimization {optimizationName}: {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Set a registry value safely
+        /// </summary>
+        private bool SetRegistryValue(string keyPath, string valueName, object value)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(keyPath.Replace(@"HKEY_CURRENT_USER\", ""), true) ??
+                                Registry.LocalMachine.OpenSubKey(keyPath.Replace(@"HKEY_LOCAL_MACHINE\", ""), true))
+                {
+                    if (key != null)
+                    {
+                        key.SetValue(valueName, value);
+                        _logger.LogDebug($"Set registry value: {keyPath}\\{valueName} = {value}");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to set registry value {keyPath}\\{valueName}: {ex.Message}", ex);
+            }
+            return false;
+        }
         
         /// <summary>
         /// Disable CPU core parking for gaming performance

@@ -311,7 +311,7 @@ namespace KOALAOptimizer.Testing.Services
                 }
                 
                 // 2. Enable TRIM support for the SSD cache
-                if (_adminService.IsRunningAsAdmin() && EnableTrimSupport(disk.DriveLetter))
+                if (_adminService.IsRunningAsAdmin() && await EnableTrim(disk.DriveLetter))
                 {
                     result.OptimizationsApplied.Add("Enabled TRIM support for SSD cache");
                 }
