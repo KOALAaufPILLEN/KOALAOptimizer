@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ServiceProcess;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 using KOALAOptimizer.Testing.Models;
 
@@ -74,16 +75,6 @@ namespace KOALAOptimizer.Testing.Services
                     { "AudioSrv", "Windows Audio" },
                     { "AudioEndpointBuilder", "Windows Audio Endpoint Builder" },
                     { "Audiosrv", "Windows Audio Service" }
-                };
-                    { "WSearch", "Windows Search" },
-                    { "TabletInputService", "Tablet PC Input Service" },
-                    { "Themes", "Themes Service" },
-                    { "Fax", "Fax Service" },
-                    { "MapsBroker", "Downloaded Maps Manager" },
-                    { "lfsvc", "Geolocation Service" },
-                    { "SharedAccess", "Internet Connection Sharing (ICS)" },
-                    { "TrkWks", "Distributed Link Tracking Client" },
-                    { "WbioSrvc", "Windows Biometric Service" }
                 };
                 
                 int disabledCount = 0;
