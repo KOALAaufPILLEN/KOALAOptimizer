@@ -1,0 +1,34 @@
+name: Create Release Only
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Latest Artifact
+      run: |
+        echo Downloading the latest successful build...
+        gh run download 17109492972 -n KOALA-V3-WORKING-BUILD
+        
+        echo Files downloaded:
+        dir
+      env:
+        GH_TOKEN: ${{ github.token }}
+    
+    - name: Create ZIP and Release
+      run: |
+        echo Creating ZIP package...
+        powershell Compress-Archive -Path KOALAOptimizer.exe -DestinationPath KOALA-V3-FINAL.zip
+        
+        echo Creating GitHub Release...
+        gh release delete v3.0.0-final -y 2>nul
+        gh release create v3.0.0-final KOALA-V3-FINAL.zip --title "🐨 KOALA V3.0.0 FINAL" --notes "KOALA Gaming Optimizer V3 by KOALAaufPILLEN - WORKING BUILD!" --latest
+      env:
+        GH_TOKEN: ${{ github.token }}
