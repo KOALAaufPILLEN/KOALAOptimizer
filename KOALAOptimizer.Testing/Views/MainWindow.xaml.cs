@@ -943,24 +943,40 @@ namespace KOALAOptimizer.Testing.Views
         }
         
         /// <summary>
-        /// Apply optimizations
+        /// Apply comprehensive optimizations using new PowerShell parity methods
         /// </summary>
         private void ApplyOptimizations(List<OptimizationItem> optimizations)
         {
             try
             {
+                _logger.LogInfo("Applying comprehensive optimizations with PowerShell parity...");
+                
                 var registryOptimizations = optimizations.Where(o => o.Type == OptimizationType.Registry).ToList();
                 var networkOptimizations = optimizations.Where(o => o.Type == OptimizationType.Network).ToList();
                 var powerOptimizations = optimizations.Where(o => o.Type == OptimizationType.Power).ToList();
                 var serviceOptimizations = optimizations.Where(o => o.Type == OptimizationType.Service).ToList();
                 
-                // Apply registry optimizations
+                // Apply comprehensive registry optimizations (70+ from PowerShell)
+                if (registryOptimizations.Any() || _adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogInfo("Applying comprehensive registry optimizations (70+ from PowerShell)...");
+                    _registryService.ApplyComprehensiveOptimizations();
+                }
+                
+                // Apply specific registry optimizations
                 if (registryOptimizations.Any())
                 {
                     _registryService.ApplyGamingOptimizations(registryOptimizations);
                 }
                 
-                // Apply network optimizations
+                // Apply comprehensive network optimizations (per-NIC + netsh)
+                if (networkOptimizations.Any() || _adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogInfo("Applying comprehensive network optimizations with per-NIC settings...");
+                    _networkService.ApplyComprehensiveNetworkOptimizations();
+                }
+                
+                // Apply specific network optimizations
                 foreach (var opt in networkOptimizations)
                 {
                     switch (opt.Name)
@@ -973,6 +989,9 @@ namespace KOALAOptimizer.Testing.Views
                             break;
                         case "DisableBackgroundNetworkThrottling":
                             _networkService.DisableBackgroundNetworkThrottling();
+                            break;
+                        case "OptimizeNetworkLatency":
+                            _networkService.OptimizeNetworkLatency();
                             break;
                     }
                 }
@@ -989,6 +1008,13 @@ namespace KOALAOptimizer.Testing.Views
                             _powerService.OptimizeCpuCStates();
                             break;
                     }
+                }
+                
+                // Apply comprehensive service optimizations (25+ services from PowerShell)
+                if (serviceOptimizations.Any() || _adminService.IsRunningAsAdmin())
+                {
+                    _logger.LogInfo("Applying comprehensive service optimizations (25+ services from PowerShell)...");
+                    _serviceManagementService.DisableUnnecessaryServices();
                 }
                 
                 // Apply service optimizations

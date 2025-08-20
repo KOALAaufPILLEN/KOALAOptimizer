@@ -53,58 +53,191 @@ namespace KOALAOptimizer.Testing.Services
         }
         
         /// <summary>
-        /// Request elevation to administrator privileges
+        /// Request elevation to administrator privileges with PowerShell-like functionality
         /// </summary>
-        public bool RequestElevation(bool showDialog = true)
+        public bool RequestElevation(bool showDialog = true, bool forceElevation = false)
         {
             if (IsRunningAsAdmin())
             {
                 return true;
             }
             
-            if (showDialog)
+            if (forceElevation)
             {
-                var result = MessageBox.Show(
-                    "Administrator privileges are required for full optimization functionality.\n\n" +
-                    "Would you like to restart the application as administrator?",
-                    "Administrator Privileges Required",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-                
-                if (result != MessageBoxResult.Yes)
+                // Attempt to restart with elevation automatically
+                try
                 {
+                    _logger.LogWarning("Attempting to restart with administrator privileges...");
+                    
+                    var processInfo = new ProcessStartInfo
+                    {
+                        FileName = Process.GetCurrentProcess().MainModule.FileName,
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        WorkingDirectory = Environment.CurrentDirectory
+                    };
+                    
+                    Process.Start(processInfo);
+                    Application.Current.Shutdown();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to elevate privileges automatically: {ex.Message}", ex);
                     return false;
                 }
             }
             
-            try
+            if (showDialog)
             {
-                var processInfo = new ProcessStartInfo
-                {
-                    FileName = Process.GetCurrentProcess().MainModule.FileName,
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    WorkingDirectory = Environment.CurrentDirectory
-                };
+                var result = MessageBox.Show(
+                    "Administrator privileges are required for system-level optimizations.\n\n" +
+                    "Would you like to:\n" +
+                    "• Yes: Restart with admin privileges\n" +
+                    "• No: Continue with limited functionality\n" +
+                    "• Cancel: Exit application",
+                    "KOALA Gaming Optimizer v2.3 - Admin Privileges Required",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question);
                 
-                Process.Start(processInfo);
-                Application.Current.Shutdown();
+                switch (result)
+                {
+                    case MessageBoxResult.Yes:
+                        return RequestElevation(false, true); // Force elevation
+                    case MessageBoxResult.No:
+                        _logger.LogWarning("Running in limited mode - some optimizations will be unavailable");
+                        return false;
+                    case MessageBoxResult.Cancel:
+                        _logger.LogInfo("User cancelled admin elevation");
+                        Application.Current.Shutdown();
+                        return false;
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Require admin privileges with fallback options (PowerShell Require-Admin equivalent)
+        /// </summary>
+        public bool RequireAdmin(bool showFallbackOptions = false)
+        {
+            if (IsRunningAsAdmin())
+            {
                 return true;
             }
-            catch (Exception ex)
+            
+            if (showFallbackOptions)
             {
-                _logger.LogError($"Failed to restart with elevation: {ex.Message}", ex);
+                return RequestElevation(true, false);
+            }
+            else
+            {
+                var result = MessageBox.Show(
+                    "Administrator privileges are required for this operation.\n\n" +
+                    "Would you like to restart with administrator privileges?",
+                    "Administrator Privileges Required",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
                 
-                if (showDialog)
+                if (result == MessageBoxResult.Yes)
                 {
-                    MessageBox.Show(
-                        $"Failed to restart with administrator privileges:\n{ex.Message}",
-                        "Elevation Failed",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    return RequestElevation(false, true);
                 }
+                else
+                {
+                    throw new UnauthorizedAccessException("Admin privileges required for this operation");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Get admin required operations categorization (from PowerShell)
+        /// </summary>
+        public Dictionary<string, AdminOperationCategory> GetAdminRequiredOperations()
+        {
+            return new Dictionary<string, AdminOperationCategory>
+            {
+                ["Registry_HKLM"] = new AdminOperationCategory
+                {
+                    Required = true,
+                    Description = "System registry modifications (HKEY_LOCAL_MACHINE)",
+                    Operations = new List<string> { "CPU Scheduling", "Memory Management", "GPU Driver Settings", "Network Optimizations" }
+                },
+                ["Services"] = new AdminOperationCategory
+                {
+                    Required = true,
+                    Description = "Windows service configuration",
+                    Operations = new List<string> { "Disable Background Services", "Xbox Services", "Telemetry Services" }
+                },
+                ["PowerManagement"] = new AdminOperationCategory
+                {
+                    Required = true,
+                    Description = "Power plan and hibernation settings",
+                    Operations = new List<string> { "Ultimate Performance Power Plan", "Disable Hibernation" }
+                },
+                ["ProcessPriority"] = new AdminOperationCategory
+                {
+                    Required = false,
+                    Description = "Game process priority adjustment (limited without admin)",
+                    Operations = new List<string> { "Set Game Priority", "CPU Affinity" }
+                },
+                ["UserRegistry"] = new AdminOperationCategory
+                {
+                    Required = false,
+                    Description = "User-specific registry changes (HKEY_CURRENT_USER)",
+                    Operations = new List<string> { "Visual Effects", "Game DVR Settings", "Fullscreen Optimizations" }
+                },
+                ["NetworkInterfaces"] = new AdminOperationCategory
+                {
+                    Required = true,
+                    Description = "Network interface configuration",
+                    Operations = new List<string> { "Per-NIC Registry Settings", "TCP Parameters", "Network Throttling" }
+                },
+                ["SystemFiles"] = new AdminOperationCategory
+                {
+                    Required = true,
+                    Description = "System file and driver modifications",
+                    Operations = new List<string> { "Driver Settings", "System DLLs", "Kernel Parameters" }
+                }
+            };
+        }
+        
+        /// <summary>
+        /// Test if a specific operation requires admin privileges
+        /// </summary>
+        public bool TestOperationRequiresAdmin(string operationType)
+        {
+            var adminOps = GetAdminRequiredOperations();
+            if (adminOps.TryGetValue(operationType, out var category))
+            {
+                return category.Required;
+            }
+            return false;
+        }
+        
+        /// <summary>
+        /// Get admin status message (like PowerShell version)
+        /// </summary>
+        public string GetAdminStatusMessage()
+        {
+            var isAdmin = IsRunningAsAdmin();
+            var adminOps = GetAdminRequiredOperations();
+            
+            if (isAdmin)
+            {
+                return "✓ Running with Administrator privileges - All optimizations available";
+            }
+            else
+            {
+                var limitedOps = adminOps.Values
+                    .Where(op => !op.Required)
+                    .SelectMany(op => op.Operations);
+                var requiresAdmin = adminOps.Values
+                    .Where(op => op.Required)
+                    .SelectMany(op => op.Operations);
                 
-                return false;
+                return $"⚠ Limited mode - Available: {string.Join(", ", limitedOps)} | Requires Admin: {string.Join(", ", requiresAdmin)}";
             }
         }
         

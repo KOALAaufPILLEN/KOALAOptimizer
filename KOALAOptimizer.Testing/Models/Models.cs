@@ -74,6 +74,16 @@ namespace KOALAOptimizer.Testing.Models
     }
 
     /// <summary>
+    /// Admin operation category from PowerShell version
+    /// </summary>
+    public class AdminOperationCategory
+    {
+        public bool Required { get; set; }
+        public string Description { get; set; }
+        public List<string> Operations { get; set; } = new List<string>();
+    }
+
+    /// <summary>
     /// Registry backup entry
     /// </summary>
     public class RegistryBackupEntry
