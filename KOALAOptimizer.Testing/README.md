@@ -166,11 +166,83 @@ The C# version is **fully compatible** with PowerShell backups and configuration
 
 ## 🆘 **Troubleshooting**
 
+### **Build & Compilation Issues:**
+
+#### **CS0104: DriveType Ambiguity Error**
+- **Issue**: Build fails with ambiguous reference between custom and System.IO.DriveType  
+- **Solution**: All DriveType references have been explicitly qualified as `Models.DriveType`
+- **Status**: ✅ **FIXED** - All ambiguous references resolved
+
+#### **.NET Framework 4.8 Reference Assemblies Missing**
+- **Issue**: `MSB3644: The reference assemblies for .NETFramework,Version=v4.8 were not found`
+- **Solution**: Install .NET Framework 4.8 Developer Pack or use Visual Studio with .NET Framework support
+- **Alternative**: Build using Visual Studio 2019+ which includes the targeting pack
+
+#### **Theme Resource Errors**
+- **Issue**: Runtime errors with missing theme resources or styles
+- **Solution**: Enhanced theme validation with nuclear fallback system
+- **Status**: ✅ **FIXED** - All themes validated with required resources
+
+### **Runtime Issues:**
+
+#### **Multiple SSD Detection Problems**
+- **Issue**: System may not properly detect multiple SSD drives
+- **Solution**: Enhanced detection logic with physical-logical drive mapping
+- **Status**: ✅ **FIXED** - Improved heuristics for SSD/HDD/Hybrid detection
+
+#### **Service Initialization Failures**
+- **Issue**: Services fail to initialize causing application crashes
+- **Solution**: Robust error handling with fallback mechanisms implemented
+- **Fallback Chain**: Normal Mode → Minimal Mode → Emergency Mode → Nuclear Mode
+
+#### **Theme Loading Failures**
+- **Issue**: Application crashes when themes cannot be loaded
+- **Solution**: Multi-level fallback theme system
+- **Fallback Chain**: Primary Theme → SciFi Fallback → Nuclear Hardcoded Resources
+
+### **Emergency Recovery:**
+
+#### **Nuclear Approach - When All Else Fails**
+If the application fails to start normally:
+
+1. **Minimal Mode**: Launch with zero theme dependencies
+   ```bash
+   KOALAOptimizer.Testing.exe
+   ```
+   
+2. **Emergency Mode**: Manual launch via emergency window
+   ```bash
+   KOALAOptimizer.Testing.exe --emergency
+   ```
+
+3. **Nuclear Mode**: Hardcoded fallback resources activate automatically
+   - Essential brushes and styles created in-memory
+   - Basic functionality preserved
+   - Safe operation guaranteed
+
+#### **Log Analysis for Troubleshooting**
+- **Emergency Logs**: `%TEMP%/KOALAOptimizer_Emergency.log`
+- **Standard Logs**: `%APPDATA%/KOALAOptimizer/logs/`
+- **Debug Mode**: Launch with `--debug` for detailed diagnostics
+
 ### **Common Issues:**
 - **"Requires Administrator"** → Right-click → "Run as administrator"
-- **Theme not loading** → Check Themes/ folder permissions
+- **Theme not loading** → Check Themes/ folder permissions  
 - **Performance monitoring not working** → Ensure WMI service is running
 - **Game not detected** → Verify process names match supported list
+- **SSD not detected** → Check if drive supports WMI queries or use manual override
+
+### **Build Environment Setup:**
+```bash
+# Verify .NET Framework 4.8 targeting pack
+where msbuild
+dotnet --list-sdks
+
+# Clean and rebuild if issues persist
+dotnet clean
+dotnet restore --force
+dotnet build --configuration Release --no-restore
+```
 
 ### **Debug Mode:**
 - Launch with `--debug` flag for verbose logging

@@ -140,13 +140,18 @@ namespace KOALAOptimizer.Testing.Services
                 _logger.LogInfo($"Starting optimization for disk {disk.DriveLetter} ({disk.DriveType})");
                 
                 // Apply optimizations based on disk type
-                if (disk.DriveType == DriveType.SSD)
+                if (disk.DriveType == Models.DriveType.SSD)
                 {
                     result = await OptimizeSSD(disk);
                 }
-                else if (disk.DriveType == DriveType.HDD)
+                else if (disk.DriveType == Models.DriveType.HDD)
                 {
                     result = await OptimizeHDD(disk);
+                }
+                else if (disk.DriveType == Models.DriveType.Hybrid)
+                {
+                    // For hybrid drives, apply both SSD and HDD optimizations selectively
+                    result = await OptimizeHybrid(disk);
                 }
                 else
                 {
@@ -174,7 +179,7 @@ namespace KOALAOptimizer.Testing.Services
             var result = new DiskOptimizationResult
             {
                 DiskLetter = disk.DriveLetter,
-                DiskType = DriveType.SSD,
+                DiskType = Models.DriveType.SSD,
                 OptimizationsApplied = new List<string>()
             };
             
@@ -232,7 +237,7 @@ namespace KOALAOptimizer.Testing.Services
             var result = new DiskOptimizationResult
             {
                 DiskLetter = disk.DriveLetter,
-                DiskType = DriveType.HDD,
+                DiskType = Models.DriveType.HDD,
                 OptimizationsApplied = new List<string>()
             };
             
@@ -280,6 +285,116 @@ namespace KOALAOptimizer.Testing.Services
                 _logger.LogError($"HDD optimization failed: {ex.Message}", ex);
                 return result;
             }
+        }
+        
+        /// <summary>
+        /// Optimize hybrid drive (SSHD) with selective SSD and HDD optimizations
+        /// </summary>
+        private async Task<DiskOptimizationResult> OptimizeHybrid(DiskInfo disk)
+        {
+            var result = new DiskOptimizationResult
+            {
+                DiskLetter = disk.DriveLetter,
+                DiskType = Models.DriveType.Hybrid,
+                OptimizationsApplied = new List<string>()
+            };
+            
+            try
+            {
+                _logger.LogInfo($"Applying hybrid drive optimization for {disk.DriveLetter}");
+                
+                // Apply SSD-like optimizations for the cache portion
+                // 1. Disable automatic defragmentation (cache portion is SSD)
+                if (await DisableDefragmentation(disk.DriveLetter))
+                {
+                    result.OptimizationsApplied.Add("Disabled automatic defragmentation for SSD cache");
+                }
+                
+                // 2. Enable TRIM support for the SSD cache
+                if (_adminService.IsRunningAsAdmin() && EnableTrimSupport(disk.DriveLetter))
+                {
+                    result.OptimizationsApplied.Add("Enabled TRIM support for SSD cache");
+                }
+                
+                // Apply HDD-like optimizations for the magnetic portion
+                // 3. Enable moderate prefetch (hybrid drives can benefit from some prefetch)
+                if (_adminService.IsRunningAsAdmin() && OptimizePrefetchForHybrid())
+                {
+                    result.OptimizationsApplied.Add("Optimized prefetch settings for hybrid drive");
+                }
+                
+                // 4. Optimize power settings (less aggressive than pure HDD)
+                if (_adminService.IsRunningAsAdmin() && OptimizeHybridPowerSettings())
+                {
+                    result.OptimizationsApplied.Add("Optimized power management for hybrid drive");
+                }
+                
+                result.Success = true;
+                result.Message = $"Hybrid drive optimization completed with {result.OptimizationsApplied.Count} optimizations applied";
+                
+                _logger.LogInfo(result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.Message = ex.Message;
+                _logger.LogError($"Hybrid drive optimization failed: {ex.Message}", ex);
+                return result;
+            }
+        }
+        
+        /// <summary>
+        /// Optimize prefetch settings for hybrid drives
+        /// </summary>
+        private bool OptimizePrefetchForHybrid()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", true))
+                {
+                    if (key != null)
+                    {
+                        // Enable moderate prefetch for hybrid drives (value 2 = application prefetch only)
+                        key.SetValue("EnablePrefetcher", 2, RegistryValueKind.DWord);
+                        key.SetValue("EnableSuperfetch", 1, RegistryValueKind.DWord); // Moderate superfetch
+                        
+                        _logger.LogDebug("Prefetch optimized for hybrid drive");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to optimize prefetch for hybrid drive: {ex.Message}");
+            }
+            return false;
+        }
+        
+        /// <summary>
+        /// Optimize power settings for hybrid drives
+        /// </summary>
+        private bool OptimizeHybridPowerSettings()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power", true))
+                {
+                    if (key != null)
+                    {
+                        // Moderate power optimization for hybrid drives
+                        key.SetValue("HibernateEnabled", 1, RegistryValueKind.DWord); // Allow hibernate
+                        key.SetValue("DiskTimeoutValue", 900, RegistryValueKind.DWord); // 15 minutes
+                        
+                        _logger.LogDebug("Power settings optimized for hybrid drive");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to optimize power settings for hybrid drive: {ex.Message}");
+            }
+            return false;
         }
         
         /// <summary>
@@ -559,6 +674,14 @@ namespace KOALAOptimizer.Testing.Services
                 
                 // Detect if it's SSD or HDD using WMI
                 diskInfo.DriveType = DetectDriveType(drive.Name);
+                
+                // If detection returns Unknown, default to HDD for safety
+                if (diskInfo.DriveType == Models.DriveType.Unknown)
+                {
+                    diskInfo.DriveType = Models.DriveType.HDD;
+                    _logger.LogWarning($"Drive type detection for {drive.Name} returned Unknown, defaulting to HDD");
+                }
+                
                 diskInfo.Health = GetDiskHealth(drive.Name);
                 
                 return diskInfo;
@@ -571,27 +694,35 @@ namespace KOALAOptimizer.Testing.Services
         }
         
         /// <summary>
-        /// Detect drive type (SSD vs HDD)
+        /// Detect drive type (SSD vs HDD) with enhanced multiple drive support
         /// </summary>
-        private DriveType DetectDriveType(string driveLetter)
+        private Models.DriveType DetectDriveType(string driveLetter)
         {
             try
             {
-                using (var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_DiskDrive"))
+                // First, get the partition info to map logical drive to physical drive
+                var physicalDriveIndex = GetPhysicalDriveIndex(driveLetter);
+                if (physicalDriveIndex >= 0)
+                {
+                    // Query the specific physical drive
+                    using (var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_DiskDrive WHERE Index = {physicalDriveIndex}"))
+                    {
+                        foreach (ManagementObject disk in searcher.Get())
+                        {
+                            return DetectDriveTypeFromDiskObject(disk, driveLetter);
+                        }
+                    }
+                }
+                
+                // Fallback: search all drives and use heuristics
+                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_DiskDrive"))
                 {
                     foreach (ManagementObject disk in searcher.Get())
                     {
-                        var mediaType = disk["MediaType"]?.ToString() ?? "";
-                        var model = disk["Model"]?.ToString() ?? "";
-                        
-                        // Simple heuristic: if it mentions SSD or has no moving parts, it's likely an SSD
-                        if (mediaType.ToLower().Contains("ssd") || 
-                            model.ToLower().Contains("ssd") ||
-                            mediaType.ToLower().Contains("fixed hard disk"))
+                        var result = DetectDriveTypeFromDiskObject(disk, driveLetter);
+                        if (result != Models.DriveType.Unknown)
                         {
-                            // Check if it's really an SSD by looking for rotation rate
-                            // SSDs typically report 0 RPM or don't report RPM
-                            return DriveType.SSD; // This is a simplified detection
+                            return result;
                         }
                     }
                 }
@@ -601,7 +732,115 @@ namespace KOALAOptimizer.Testing.Services
                 _logger.LogDebug($"Failed to detect drive type for {driveLetter}: {ex.Message}");
             }
             
-            return DriveType.HDD; // Default assumption
+            return Models.DriveType.HDD; // Default assumption
+        }
+        
+        /// <summary>
+        /// Get the physical drive index for a logical drive
+        /// </summary>
+        private int GetPhysicalDriveIndex(string driveLetter)
+        {
+            try
+            {
+                var driveQuery = driveLetter.TrimEnd('\\').Replace(":", "");
+                using (var searcher = new ManagementObjectSearcher(
+                    $"ASSOCIATORS OF {{Win32_LogicalDisk.DeviceID='{driveQuery}:'}} WHERE AssocClass = Win32_LogicalDiskToPartition"))
+                {
+                    foreach (ManagementObject partition in searcher.Get())
+                    {
+                        using (var diskSearcher = new ManagementObjectSearcher(
+                            $"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partition["DeviceID"]}'}} WHERE AssocClass = Win32_DiskDriveToDiskPartition"))
+                        {
+                            foreach (ManagementObject disk in diskSearcher.Get())
+                            {
+                                var indexProperty = disk["Index"];
+                                if (indexProperty != null && int.TryParse(indexProperty.ToString(), out int index))
+                                {
+                                    return index;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($"Failed to get physical drive index for {driveLetter}: {ex.Message}");
+            }
+            return -1;
+        }
+        
+        /// <summary>
+        /// Detect drive type from a disk management object
+        /// </summary>
+        private Models.DriveType DetectDriveTypeFromDiskObject(ManagementObject disk, string driveLetter)
+        {
+            try
+            {
+                var mediaType = disk["MediaType"]?.ToString() ?? "";
+                var model = disk["Model"]?.ToString() ?? "";
+                var interfaceType = disk["InterfaceType"]?.ToString() ?? "";
+                
+                // Enhanced SSD detection heuristics
+                // 1. Check for explicit SSD indicators in model name
+                if (model.ToLower().Contains("ssd") || 
+                    model.ToLower().Contains("solid state") ||
+                    model.ToLower().Contains("nvme"))
+                {
+                    _logger.LogDebug($"Drive {driveLetter} detected as SSD by model: {model}");
+                    return Models.DriveType.SSD;
+                }
+                
+                // 2. Check media type
+                if (mediaType.ToLower().Contains("ssd"))
+                {
+                    _logger.LogDebug($"Drive {driveLetter} detected as SSD by media type: {mediaType}");
+                    return Models.DriveType.SSD;
+                }
+                
+                // 3. Check interface type for modern SSD interfaces
+                if (interfaceType.ToLower().Contains("nvme") || 
+                    interfaceType.ToLower().Contains("sata") && model.ToLower().Contains("ssd"))
+                {
+                    _logger.LogDebug($"Drive {driveLetter} detected as SSD by interface: {interfaceType}");
+                    return Models.DriveType.SSD;
+                }
+                
+                // 4. Check for rotation rate (SSDs typically report 0 or null)
+                var rotationRate = disk["RotationRate"];
+                if (rotationRate != null)
+                {
+                    if (uint.TryParse(rotationRate.ToString(), out uint rpm))
+                    {
+                        if (rpm == 0 || rpm == 1) // 1 is sometimes used for SSDs
+                        {
+                            _logger.LogDebug($"Drive {driveLetter} detected as SSD by rotation rate: {rpm}");
+                            return Models.DriveType.SSD;
+                        }
+                        else if (rpm > 3000) // Typical HDD speeds
+                        {
+                            _logger.LogDebug($"Drive {driveLetter} detected as HDD by rotation rate: {rpm}");
+                            return Models.DriveType.HDD;
+                        }
+                    }
+                }
+                
+                // 5. Check for hybrid drives
+                if (model.ToLower().Contains("hybrid") || 
+                    model.ToLower().Contains("sshd"))
+                {
+                    _logger.LogDebug($"Drive {driveLetter} detected as Hybrid: {model}");
+                    return Models.DriveType.Hybrid;
+                }
+                
+                // If we can't determine, return Unknown to let caller decide
+                return Models.DriveType.Unknown;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($"Error detecting drive type from disk object for {driveLetter}: {ex.Message}");
+                return Models.DriveType.Unknown;
+            }
         }
         
         /// <summary>
@@ -680,8 +919,9 @@ namespace KOALAOptimizer.Testing.Services
             {
                 IsMonitoring = _isMonitoring,
                 TotalDisks = _diskCache.Count,
-                SSDCount = _diskCache.Values.Count(d => d.DriveType == DriveType.SSD),
-                HDDCount = _diskCache.Values.Count(d => d.DriveType == DriveType.HDD),
+                SSDCount = _diskCache.Values.Count(d => d.DriveType == Models.DriveType.SSD),
+                HDDCount = _diskCache.Values.Count(d => d.DriveType == Models.DriveType.HDD),
+                HybridCount = _diskCache.Values.Count(d => d.DriveType == Models.DriveType.Hybrid),
                 LastScan = DateTime.Now
             };
         }
