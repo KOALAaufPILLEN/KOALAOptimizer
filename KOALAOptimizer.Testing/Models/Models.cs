@@ -455,6 +455,7 @@ namespace KOALAOptimizer.Testing.Models
         public int TotalDisks { get; set; }
         public int SSDCount { get; set; }
         public int HDDCount { get; set; }
+        public int HybridCount { get; set; }
         public DateTime LastScan { get; set; }
     }
     
