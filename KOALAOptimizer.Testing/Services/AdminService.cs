@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
@@ -262,21 +263,6 @@ namespace KOALAOptimizer.Testing.Services
                 
                 default:
                     return false;
-            }
-        }
-        
-        /// <summary>
-        /// Get admin status message for UI display
-        /// </summary>
-        public string GetAdminStatusMessage()
-        {
-            if (IsRunningAsAdmin())
-            {
-                return "✓ Running with Administrator privileges - All optimizations available";
-            }
-            else
-            {
-                return "⚠ Limited privileges - Some optimizations require Administrator access";
             }
         }
         
