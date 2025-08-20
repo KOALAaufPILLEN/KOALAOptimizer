@@ -1,13 +1,36 @@
-<Application x:Class="KOALAOptimizer.Testing.App"
+﻿<Application x:Class="KOALAOptimizer.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             ShutdownMode="OnExplicitShutdown">
-    
+             StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- NUCLEAR APPROACH: Minimal but valid ResourceDictionary structure -->
-            <!-- This ensures proper XAML compilation while maintaining zero dependencies -->
+            <!-- Dark Theme (Default) -->
+            <SolidColorBrush x:Key="DarkBackgroundBrush" Color="#1e1e1e"/>
+            <SolidColorBrush x:Key="DarkForegroundBrush" Color="#ffffff"/>
+            <SolidColorBrush x:Key="DarkAccentBrush" Color="#00ff00"/>
+            <SolidColorBrush x:Key="DarkSecondaryBackgroundBrush" Color="#2d2d30"/>
+            <SolidColorBrush x:Key="DarkDangerBrush" Color="#ff4444"/>
+            
+            <!-- Light Theme -->
+            <SolidColorBrush x:Key="LightBackgroundBrush" Color="#ffffff"/>
+            <SolidColorBrush x:Key="LightForegroundBrush" Color="#000000"/>
+            <SolidColorBrush x:Key="LightAccentBrush" Color="#007acc"/>
+            <SolidColorBrush x:Key="LightSecondaryBackgroundBrush" Color="#f0f0f0"/>
+            <SolidColorBrush x:Key="LightDangerBrush" Color="#d32f2f"/>
+            
+            <!-- Matrix Theme -->
+            <SolidColorBrush x:Key="MatrixBackgroundBrush" Color="#000000"/>
+            <SolidColorBrush x:Key="MatrixForegroundBrush" Color="#00ff00"/>
+            <SolidColorBrush x:Key="MatrixAccentBrush" Color="#00ff00"/>
+            <SolidColorBrush x:Key="MatrixSecondaryBackgroundBrush" Color="#0a0a0a"/>
+            <SolidColorBrush x:Key="MatrixDangerBrush" Color="#ff0000"/>
+            
+            <!-- Default Dynamic Resources (Dark Theme) -->
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#1e1e1e"/>
+            <SolidColorBrush x:Key="ForegroundBrush" Color="#ffffff"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#00ff00"/>
+            <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="#2d2d30"/>
+            <SolidColorBrush x:Key="DangerBrush" Color="#ff4444"/>
         </ResourceDictionary>
     </Application.Resources>
-    
 </Application>

@@ -1,0 +1,39 @@
+﻿<Window x:Class="KOALAOptimizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="KOALA Gaming Optimizer V3 - Safe Mode" Height="800" Width="1200"
+        Background="{DynamicResource BackgroundBrush}" 
+        Foreground="{DynamicResource ForegroundBrush}">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" Padding="20">
+            <TextBlock Text="KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
+                       Foreground="{DynamicResource AccentBrush}"/>
+        </Border>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="20">
+            <TextBlock Text="Welcome to KOALA Optimizer V3!" FontSize="20" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource ForegroundBrush}"/>
+        </Grid>
+        
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2" Background="{DynamicResource SecondaryBackgroundBrush}">
+            <StatusBarItem>
+                <TextBlock Text="Ready" Foreground="{DynamicResource ForegroundBrush}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
