@@ -1,7 +1,8 @@
 <Window x:Class="KOALAOptimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KOALA Gaming Optimizer V3" Height="600" Width="900"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        Title="KOALA Gaming Optimizer V3 - By KOALAaufPILLEN" Height="600" Width="900"
         Background="{DynamicResource BackgroundBrush}">
     
     <Grid>
@@ -14,16 +15,16 @@
         <!-- Header -->
         <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" Padding="20">
             <StackPanel>
-                <TextBlock Text="KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
+                <TextBlock Text="🐨 KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
                            Foreground="{DynamicResource AccentBrush}"/>
-                <TextBlock Text="Created by KOALAaufPILLEN" FontSize="12" 
+                <TextBlock Text="Created by KOALAaufPILLEN - 2025" FontSize="12" 
                            Foreground="{DynamicResource ForegroundBrush}" Opacity="0.7"/>
             </StackPanel>
         </Border>
         
         <!-- Main Content -->
         <TabControl Grid.Row="1" Background="Transparent">
-            <TabItem Header="Optimization">
+            <TabItem Header="🎮 Optimization">
                 <Grid Margin="20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
