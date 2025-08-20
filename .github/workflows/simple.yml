@@ -1,0 +1,27 @@
+name: Simple Build Final
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build
+      run: |
+        cd KOALAOptimizer.Testing
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+        cd bin\Release\net8.0-windows\win-x64\publish
+        dir
+        copy *.exe ..\..\..\..\..\..\..\KOALA-Final.exe
+        cd ..\..\..\..\..\..\..\
+        dir KOALA-Final.exe
+      shell: cmd
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-Final
+        path: KOALA-Final.exe
