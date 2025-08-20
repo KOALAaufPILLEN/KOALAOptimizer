@@ -186,6 +186,8 @@ namespace KOALAOptimizer.Testing.Models
         public string Name { get; set; }
         public string DriverVersion { get; set; }
         public bool HardwareSchedulingSupported { get; set; }
+        public string Status { get; set; }
+        public bool Present { get; set; }
     }
 
     /// <summary>

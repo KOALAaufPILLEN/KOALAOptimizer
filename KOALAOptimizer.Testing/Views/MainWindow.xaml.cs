@@ -1017,6 +1017,17 @@ namespace KOALAOptimizer.Testing.Views
                     _serviceManagementService.DisableUnnecessaryServices();
                 }
                 
+                // Apply GPU vendor-specific optimizations (from PowerShell)
+                try
+                {
+                    _logger.LogInfo("Applying GPU vendor-specific optimizations...");
+                    _gpuService.ApplyVendorSpecificOptimizations();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"GPU vendor optimizations failed: {ex.Message}");
+                }
+                
                 // Apply service optimizations
                 foreach (var opt in serviceOptimizations)
                 {
