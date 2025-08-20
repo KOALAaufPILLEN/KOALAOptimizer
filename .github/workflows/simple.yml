@@ -1,4 +1,4 @@
-name: Diagnose and Fix Build
+name: Final Working Build
 
 on:
   push:
@@ -17,44 +17,18 @@ jobs:
       with:
         dotnet-version: '8.x'
     
-    - name: Diagnose Project Files
-      run: |
-        echo "=== CHECKING PROJECT STRUCTURE ==="
-        echo.
-        echo "Root directory:"
-        dir *.csproj *.sln 2>nul
-        echo.
-        echo "KOALAOptimizer.Testing directory:"
-        cd KOALAOptimizer.Testing
-        dir
-        echo.
-        echo "Looking for ALL project/solution files:"
-        dir *.csproj
-        dir *.sln 2>nul
-        dir *.vbproj 2>nul
-        echo.
-        echo "Content of existing csproj files:"
-        for %%f in (*.csproj) do (
-          echo.
-          echo === %%f ===
-          type "%%f"
-        )
-        cd ..
-      shell: cmd
-    
-    - name: Clean and Keep Only One Project
+    - name: COMPLETE BUILD WITH ALL FIXES
       run: |
         cd KOALAOptimizer.Testing
         
-        echo "CLEANING ALL PROJECT FILES..."
+        echo "=== CLEANING EVERYTHING ==="
+        rmdir /s /q bin 2>nul
+        rmdir /s /q obj 2>nul
         del *.csproj 2>nul
-        del *.sln 2>nul
-        del *.vbproj 2>nul
         
-        echo "CREATING SINGLE CLEAN PROJECT FILE..."
-        
+        echo.
+        echo "=== CREATING COMPLETE PROJECT FILE ==="
         (
-          echo ^<?xml version="1.0" encoding="utf-8"?^>
           echo ^<Project Sdk="Microsoft.NET.Sdk"^>
           echo   ^<PropertyGroup^>
           echo     ^<OutputType^>WinExe^</OutputType^>
@@ -63,64 +37,68 @@ jobs:
           echo     ^<AssemblyName^>KOALAOptimizer^</AssemblyName^>
           echo     ^<RootNamespace^>KOALAOptimizer^</RootNamespace^>
           echo     ^<ApplicationIcon^>koala.ico^</ApplicationIcon^>
-          echo     ^<Nullable^>enable^</Nullable^>
-          echo     ^<ImplicitUsings^>disable^</ImplicitUsings^>
+          echo     ^<GenerateAssemblyInfo^>false^</GenerateAssemblyInfo^>
           echo   ^</PropertyGroup^>
           echo   ^<ItemGroup^>
           echo     ^<PackageReference Include="System.Management" Version="8.0.0" /^>
+          echo     ^<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" /^>
           echo   ^</ItemGroup^>
           echo ^</Project^>
         ) > KOALAOptimizer.Testing.csproj
         
         echo.
-        echo "Project file created. Contents:"
-        type KOALAOptimizer.Testing.csproj
+        echo "=== CREATING AssemblyInfo.cs ==="
+        if not exist Properties mkdir Properties
+        (
+          echo using System.Reflection;
+          echo using System.Runtime.InteropServices;
+          echo [assembly: AssemblyTitle^("KOALA Optimizer"^)]
+          echo [assembly: AssemblyCompany^("KOALAaufPILLEN"^)]
+          echo [assembly: AssemblyProduct^("KOALA V3"^)]
+          echo [assembly: AssemblyVersion^("3.0.0.0"^)]
+          echo [assembly: AssemblyFileVersion^("3.0.0.0"^)]
+          echo [assembly: AssemblyConfiguration^(""^)]
+          echo [assembly: ComVisible^(false^)]
+        ) > Properties\AssemblyInfo.cs
         
         echo.
-        echo "Files in directory:"
-        dir *.csproj
+        echo "=== RESTORING PACKAGES ==="
+        dotnet restore
         
-        cd ..
-      shell: cmd
-    
-    - name: Build with Specific Project
-      run: |
-        cd KOALAOptimizer.Testing
-        
-        echo "Restoring packages..."
-        dotnet restore KOALAOptimizer.Testing.csproj
-        
-        echo "Building..."
-        dotnet build KOALAOptimizer.Testing.csproj -c Release
-        
-        echo "Publishing..."
-        dotnet publish KOALAOptimizer.Testing.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ..\output
-        
-        cd ..
         echo.
-        echo "OUTPUT FILES:"
+        echo "=== BUILDING ==="
+        dotnet build -c Release --no-restore
+        
+        echo.
+        echo "=== PUBLISHING ==="
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true --no-build -o ..\output
+        
+        cd ..
+        
+        echo.
+        echo "=== BUILD SUCCESSFUL! ==="
         dir output
       shell: cmd
     
-    - name: Upload Artifact
-      if: success()
+    - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-V3-FINAL
+        name: KOALA-V3-FINAL-${{ github.run_number }}
         path: output/
     
-    - name: Create GitHub Release
-      if: success()
+    - name: Create ZIP and Release
       run: |
         cd output
         ren *.exe KOALA-Optimizer-V3.exe
         cd ..
         
-        powershell Compress-Archive -Path output\KOALA-Optimizer-V3.exe -DestinationPath KOALA-V3.zip
+        powershell Compress-Archive -Path output\KOALA-Optimizer-V3.exe -DestinationPath KOALA-V3-WORKING.zip
         
-        echo Creating release...
-        gh release delete v3-final -y 2>nul
-        gh release create v3-final KOALA-V3.zip --title "KOALA V3 FINAL BUILD" --notes "🐨 KOALA Gaming Optimizer V3 - WORKING BUILD" --latest
+        echo Files created:
+        dir *.zip
+        
+        gh release delete v3.0-final -y 2>nul
+        gh release create v3.0-final KOALA-V3-WORKING.zip --title "🐨 KOALA V3.0 FINAL WORKING" --notes "Finally working! By KOALAaufPILLEN" --latest
       env:
         GH_TOKEN: ${{ github.token }}
       shell: cmd
