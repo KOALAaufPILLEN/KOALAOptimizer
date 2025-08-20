@@ -1,4 +1,4 @@
-﻿<Window x:Class="KOALAOptimizer.MainWindow"
+<Window x:Class="KOALAOptimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -18,22 +18,258 @@
         
         <!-- Header -->
         <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" Padding="20">
-            <TextBlock Text="KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
-                       Foreground="{DynamicResource AccentBrush}"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="KOALA Gaming Optimizer V3" FontSize="24" FontWeight="Bold" 
+                                   Foreground="{DynamicResource AccentBrush}"/>
+                        <Border x:Name="ModeBadge" Background="Green" CornerRadius="5" Margin="10,0,0,0" Padding="10,5">
+                            <TextBlock x:Name="ModeTextBlock" Text="SAFE MODE" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock x:Name="AdminStatusTextBlock" FontSize="12" Margin="0,5,0,0"/>
+                    <TextBlock x:Name="BackupStatusTextBlock" FontSize="12" Margin="0,2,0,0" 
+                               Foreground="{DynamicResource ForegroundBrush}" Opacity="0.7"/>
+                </StackPanel>
+                
+                <!-- Theme Selector -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Label Content="Theme:" Foreground="{DynamicResource ForegroundBrush}" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="ThemeComboBox" Width="120" Height="30" 
+                              SelectionChanged="ThemeComboBox_SelectionChanged"
+                              Background="{DynamicResource SecondaryBackgroundBrush}"
+                              Foreground="{DynamicResource ForegroundBrush}">
+                        <ComboBoxItem Content="Dark" Tag="Dark"/>
+                        <ComboBoxItem Content="Light" Tag="Light"/>
+                        <ComboBoxItem Content="Matrix" Tag="Matrix"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
         </Border>
         
         <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="20">
-            <TextBlock Text="Welcome to KOALA Optimizer V3!" FontSize="20" 
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource ForegroundBrush}"/>
-        </Grid>
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <!-- Optimization Tab -->
+            <TabItem Header="Optimization">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Optimization Mode Selection -->
+                    <GroupBox Grid.Row="0" Header="Optimization Mode" Margin="0,0,0,10">
+                        <Grid Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <RadioButton x:Name="SafeModeRadio" Grid.Column="0" IsChecked="True" 
+                                         GroupName="OptimizationMode" Checked="SafeModeRadio_Checked">
+                                <StackPanel>
+                                    <TextBlock Text="🛡️ Safe Mode (Anti-Cheat Compatible)" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="Recommended for competitive gaming" FontSize="11" Opacity="0.7" Margin="18,2,0,0"/>
+                                </StackPanel>
+                            </RadioButton>
+                            
+                            <RadioButton x:Name="PerformanceModeRadio" Grid.Column="1" 
+                                         GroupName="OptimizationMode" Checked="PerformanceModeRadio_Checked">
+                                <StackPanel>
+                                    <TextBlock Text="⚡ Performance Mode (Maximum FPS)" FontWeight="Bold" FontSize="14" Foreground="Orange"/>
+                                    <TextBlock Text="Single-player games only!" FontSize="11" Foreground="Red" Margin="18,2,0,0"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </Grid>
+                    </GroupBox>
+                    
+                    <!-- Game Profile Selection -->
+                    <GroupBox Grid.Row="1" Header="Game Profile" Margin="0,0,0,10">
+                        <StackPanel Margin="10">
+                            <ComboBox x:Name="GameProfileComboBox" Height="30"/>
+                        </StackPanel>
+                    </GroupBox>
+                    
+                    <!-- Control Buttons -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
+                        <Button x:Name="OptimizeButton" Content="Apply Safe Optimizations" Width="200" Height="40" 
+                                Margin="5" Click="OptimizeButton_Click"/>
+                        <Button x:Name="RestoreButton" Content="Restore Backup" Width="200" Height="40" 
+                                Margin="5" Click="RestoreButton_Click" IsEnabled="False"
+                                Background="{DynamicResource DangerBrush}" Foreground="White"/>
+                    </StackPanel>
+                    
+                    <!-- Log Output -->
+                    <GroupBox Grid.Row="3" Header="Activity Log" Margin="0,10,0,0">
+                        <ScrollViewer>
+                            <TextBox x:Name="LogTextBox" 
+                                     IsReadOnly="True" TextWrapping="Wrap" FontFamily="Consolas"
+                                     Background="{DynamicResource BackgroundBrush}"
+                                     Foreground="{DynamicResource AccentBrush}"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+            
+            <!-- Performance Monitor Tab -->
+            <TabItem Header="Performance">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <GroupBox Grid.Row="0" Header="System Performance" Margin="0,0,0,10">
+                        <Grid Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <Label Content="CPU Usage:" Foreground="{DynamicResource ForegroundBrush}"/>
+                                <ProgressBar x:Name="CpuProgressBar" Height="20" Foreground="{DynamicResource AccentBrush}"/>
+                                <TextBlock x:Name="CpuTextBlock" HorizontalAlignment="Center" 
+                                           Foreground="{DynamicResource ForegroundBrush}"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Margin="10,0">
+                                <Label Content="RAM Usage:" Foreground="{DynamicResource ForegroundBrush}"/>
+                                <ProgressBar x:Name="RamProgressBar" Height="20" Foreground="{DynamicResource AccentBrush}"/>
+                                <TextBlock x:Name="RamTextBlock" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource ForegroundBrush}"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="2">
+                                <Label Content="GPU Usage:" Foreground="{DynamicResource ForegroundBrush}"/>
+                                <ProgressBar x:Name="GpuProgressBar" Height="20" Foreground="{DynamicResource AccentBrush}"/>
+                                <TextBlock x:Name="GpuTextBlock" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource ForegroundBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+            
+            <!-- Crosshair Tab -->
+            <TabItem Header="Crosshair">
+                <Grid Margin="20">
+                    <StackPanel>
+                        <GroupBox Header="Crosshair Settings">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="CrosshairToggle" Content="Enable Crosshair" 
+                                          Checked="CrosshairToggle_Checked" Unchecked="CrosshairToggle_Unchecked"/>
+                                
+                                <Label Content="Theme:" Margin="0,10,0,0"/>
+                                <ComboBox x:Name="CrosshairThemeComboBox" 
+                                          SelectionChanged="CrosshairThemeComboBox_SelectionChanged"/>
+                                
+                                <Label Content="Size:" Margin="0,10,0,0"/>
+                                <Slider x:Name="CrosshairSizeSlider" Minimum="10" Maximum="50" Value="20"
+                                        ValueChanged="CrosshairSizeSlider_ValueChanged"/>
+                                
+                                <Label Content="Opacity:" Margin="0,10,0,0"/>
+                                <Slider x:Name="CrosshairOpacitySlider" Minimum="0.1" Maximum="1" Value="0.8"
+                                        ValueChanged="CrosshairOpacitySlider_ValueChanged"/>
+                                
+                                <Label Content="Color:" Margin="0,10,0,0"/>
+                                <xctk:ColorPicker x:Name="CrosshairColorPicker" SelectedColor="Lime"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            
+            <!-- FOV Tab -->
+            <TabItem Header="FOV Indicator">
+                <Grid Margin="20">
+                    <StackPanel>
+                        <GroupBox Header="FOV Settings">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="FovToggle" Content="Enable FOV Indicator"
+                                          Checked="FovToggle_Checked" Unchecked="FovToggle_Unchecked"/>
+                                
+                                <Label Content="Style:" Margin="0,10,0,0"/>
+                                <ComboBox x:Name="FovStyleComboBox"
+                                          SelectionChanged="FovStyleComboBox_SelectionChanged"/>
+                                
+                                <Label Content="Radius:" Margin="0,10,0,0"/>
+                                <Slider x:Name="FovRadiusSlider" Minimum="50" Maximum="300" Value="100"
+                                        ValueChanged="FovRadiusSlider_ValueChanged"/>
+                                
+                                <Label Content="Opacity:" Margin="0,10,0,0"/>
+                                <Slider x:Name="FovOpacitySlider" Minimum="0.1" Maximum="1" Value="0.3"
+                                        ValueChanged="FovOpacitySlider_ValueChanged"/>
+                                
+                                <Label Content="Color:" Margin="0,10,0,0"/>
+                                <xctk:ColorPicker x:Name="FovColorPicker" SelectedColor="Yellow"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            
+            <!-- Settings Tab -->
+            <TabItem Header="Settings">
+                <Grid Margin="20">
+                    <ScrollViewer>
+                        <StackPanel>
+                            <GroupBox Header="General Settings">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows"/>
+                                    <CheckBox x:Name="MinimizeToTrayCheckBox" Content="Minimize to system tray" Margin="0,5"/>
+                                    <CheckBox x:Name="AutoApplyOptimizationsCheckBox" Content="Auto-apply optimizations on game launch" Margin="0,5"/>
+                                    <CheckBox x:Name="ShowNotificationsCheckBox" Content="Show notifications" Margin="0,5" IsChecked="True"/>
+                                </StackPanel>
+                            </GroupBox>
+                            
+                            <GroupBox Header="Advanced Settings" Margin="0,10">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="AggressiveOptimizationCheckBox" Content="Aggressive optimization mode" IsEnabled="False"/>
+                                    <CheckBox x:Name="DisableWindowsUpdatesCheckBox" Content="Disable Windows Updates during gaming" Margin="0,5"/>
+                                    <CheckBox x:Name="DisableDefenderCheckBox" Content="Disable Windows Defender during gaming" Margin="0,5"/>
+                                    <Label Content="Backup retention (days):" Margin="0,10,0,0"/>
+                                    <ComboBox x:Name="BackupRetentionComboBox">
+                                        <ComboBoxItem Content="7 days"/>
+                                        <ComboBoxItem Content="14 days" IsSelected="True"/>
+                                        <ComboBoxItem Content="30 days"/>
+                                        <ComboBoxItem Content="Never delete"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </GroupBox>
+                            
+                            <Button Content="Reset to Defaults" Width="150" HorizontalAlignment="Left" Margin="10"
+                                    Click="ResetToDefaultsButton_Click"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+        </TabControl>
         
         <!-- Status Bar -->
         <StatusBar Grid.Row="2" Background="{DynamicResource SecondaryBackgroundBrush}">
             <StatusBarItem>
-                <TextBlock Text="Ready" Foreground="{DynamicResource ForegroundBrush}"/>
+                <TextBlock x:Name="StatusTextBlock" Text="Ready - Safe Mode Active" Foreground="{DynamicResource ForegroundBrush}"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="VersionTextBlock" Text="v3.0.0" Foreground="{DynamicResource ForegroundBrush}"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="TimeTextBlock" Foreground="{DynamicResource ForegroundBrush}"/>
             </StatusBarItem>
         </StatusBar>
+        
+        <!-- Progress Bar -->
+        <ProgressBar x:Name="ProgressBar" Grid.Row="2" Height="5" Visibility="Collapsed" 
+                     Foreground="{DynamicResource AccentBrush}"/>
     </Grid>
 </Window>
