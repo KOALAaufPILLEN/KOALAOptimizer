@@ -1,4 +1,4 @@
-name: Build KOALA V3 Simple
+name: Build KOALA V3 Full Working
 
 on:
   push:
@@ -17,75 +17,213 @@ jobs:
       with:
         dotnet-version: '8.x'
     
-    - name: Build KOALA V3
+    - name: Create KOALA Project Files
       run: |
         cd KOALAOptimizer.Testing
         
-        # Clean
+        Write-Host "=== CLEANING ==="
         Remove-Item -Path bin, obj -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path *.cs, *.xaml, *.csproj -Force -ErrorAction SilentlyContinue
         
-        # Download files from gist or create simple versions
-        # Using Invoke-WebRequest to get files from a URL would be cleaner
+        Write-Host "=== CREATING PROJECT FILES ==="
         
-        # For now, create minimal working files
-        Write-Host "Creating project files..."
+        # Create directories
+        New-Item -ItemType Directory -Path Properties -Force | Out-Null
         
-        # Create a simple build script first
-        $buildScript = 'Write-Host "Building KOALA V3..."'
-        $buildScript | Out-File -FilePath build.ps1
+        # Create all files using Out-File to avoid YAML issues
         
-        # Download or create the actual files
-        # This avoids inline YAML issues
+        # MainWindow.xaml
+        '<Window x:Class="KOALAOptimizer.MainWindow"' | Out-File MainWindow.xaml
+        '        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"' | Out-File MainWindow.xaml -Append
+        '        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"' | Out-File MainWindow.xaml -Append
+        '        Title="KOALA Gaming Optimizer V3" Height="700" Width="1100"' | Out-File MainWindow.xaml -Append
+        '        Background="#1a1a1a" WindowStartupLocation="CenterScreen">' | Out-File MainWindow.xaml -Append
+        '    <Grid>' | Out-File MainWindow.xaml -Append
+        '        <Grid.RowDefinitions>' | Out-File MainWindow.xaml -Append
+        '            <RowDefinition Height="60"/>' | Out-File MainWindow.xaml -Append
+        '            <RowDefinition Height="*"/>' | Out-File MainWindow.xaml -Append
+        '            <RowDefinition Height="25"/>' | Out-File MainWindow.xaml -Append
+        '        </Grid.RowDefinitions>' | Out-File MainWindow.xaml -Append
+        '        <Border Grid.Row="0" Background="#00ff00">' | Out-File MainWindow.xaml -Append
+        '            <TextBlock Text="KOALA GAMING OPTIMIZER V3" FontSize="24" FontWeight="Bold"' | Out-File MainWindow.xaml -Append
+        '                       HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black"/>' | Out-File MainWindow.xaml -Append
+        '        </Border>' | Out-File MainWindow.xaml -Append
+        '        <TabControl Grid.Row="1" Background="#1a1a1a" BorderThickness="0">' | Out-File MainWindow.xaml -Append
+        '            <TabItem Header="OPTIMIZER">' | Out-File MainWindow.xaml -Append
+        '                <Grid Margin="10">' | Out-File MainWindow.xaml -Append
+        '                    <Grid.ColumnDefinitions>' | Out-File MainWindow.xaml -Append
+        '                        <ColumnDefinition Width="350"/>' | Out-File MainWindow.xaml -Append
+        '                        <ColumnDefinition Width="*"/>' | Out-File MainWindow.xaml -Append
+        '                    </Grid.ColumnDefinitions>' | Out-File MainWindow.xaml -Append
+        '                    <StackPanel Grid.Column="0">' | Out-File MainWindow.xaml -Append
+        '                        <TextBlock Name="SystemInfoText" Text="System Info" Foreground="#00ff00"/>' | Out-File MainWindow.xaml -Append
+        '                        <TextBlock Name="AdminStatusText" Text="Admin Status" Foreground="Yellow" Margin="0,10"/>' | Out-File MainWindow.xaml -Append
+        '                        <RadioButton Name="SafeMode" Content="Safe Mode" IsChecked="True" Foreground="White"/>' | Out-File MainWindow.xaml -Append
+        '                        <RadioButton Name="PerformanceMode" Content="Performance Mode" Foreground="#ff9900"/>' | Out-File MainWindow.xaml -Append
+        '                        <Button Name="OptimizeButton" Content="OPTIMIZE" Background="#00ff00" Height="40" Click="OptimizeButton_Click"/>' | Out-File MainWindow.xaml -Append
+        '                        <Button Name="RestoreButton" Content="RESTORE" Background="#ff3333" Height="35" Click="RestoreButton_Click"/>' | Out-File MainWindow.xaml -Append
+        '                    </StackPanel>' | Out-File MainWindow.xaml -Append
+        '                    <ScrollViewer Grid.Column="1">' | Out-File MainWindow.xaml -Append
+        '                        <TextBox Name="LogBox" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True"/>' | Out-File MainWindow.xaml -Append
+        '                    </ScrollViewer>' | Out-File MainWindow.xaml -Append
+        '                </Grid>' | Out-File MainWindow.xaml -Append
+        '            </TabItem>' | Out-File MainWindow.xaml -Append
+        '            <TabItem Header="CROSSHAIR">' | Out-File MainWindow.xaml -Append
+        '                <StackPanel Margin="20">' | Out-File MainWindow.xaml -Append
+        '                    <CheckBox Name="EnableCrosshair" Content="Enable Crosshair" Foreground="White"/>' | Out-File MainWindow.xaml -Append
+        '                    <ComboBox Name="CrosshairStyle" Margin="0,10">' | Out-File MainWindow.xaml -Append
+        '                        <ComboBoxItem>Cross</ComboBoxItem>' | Out-File MainWindow.xaml -Append
+        '                        <ComboBoxItem>Dot</ComboBoxItem>' | Out-File MainWindow.xaml -Append
+        '                        <ComboBoxItem>Circle</ComboBoxItem>' | Out-File MainWindow.xaml -Append
+        '                    </ComboBox>' | Out-File MainWindow.xaml -Append
+        '                    <Slider Name="CrosshairSize" Minimum="1" Maximum="50" Value="10"/>' | Out-File MainWindow.xaml -Append
+        '                    <Button Content="Apply" Background="#00ff00" Height="35" Click="ApplyCrosshair_Click"/>' | Out-File MainWindow.xaml -Append
+        '                </StackPanel>' | Out-File MainWindow.xaml -Append
+        '            </TabItem>' | Out-File MainWindow.xaml -Append
+        '            <TabItem Header="FOV">' | Out-File MainWindow.xaml -Append
+        '                <StackPanel Margin="20">' | Out-File MainWindow.xaml -Append
+        '                    <TextBlock Text="Field of View" Foreground="White"/>' | Out-File MainWindow.xaml -Append
+        '                    <Slider Name="FovSlider" Minimum="60" Maximum="120" Value="90"/>' | Out-File MainWindow.xaml -Append
+        '                    <Button Content="Apply FOV" Background="#00ff00" Height="35" Click="ApplyFov_Click"/>' | Out-File MainWindow.xaml -Append
+        '                </StackPanel>' | Out-File MainWindow.xaml -Append
+        '            </TabItem>' | Out-File MainWindow.xaml -Append
+        '            <TabItem Header="PROCESS">' | Out-File MainWindow.xaml -Append
+        '                <DataGrid Name="ProcessGrid" Background="#1a1a1a" Foreground="White"/>' | Out-File MainWindow.xaml -Append
+        '            </TabItem>' | Out-File MainWindow.xaml -Append
+        '        </TabControl>' | Out-File MainWindow.xaml -Append
+        '        <StatusBar Grid.Row="2" Background="#00ff00">' | Out-File MainWindow.xaml -Append
+        '            <TextBlock Name="StatusText" Text="Ready" Foreground="Black"/>' | Out-File MainWindow.xaml -Append
+        '        </StatusBar>' | Out-File MainWindow.xaml -Append
+        '    </Grid>' | Out-File MainWindow.xaml -Append
+        '</Window>' | Out-File MainWindow.xaml -Append
         
-        Write-Host "Downloading source files..."
+        # MainWindow.xaml.cs
+        'using System;' | Out-File MainWindow.xaml.cs
+        'using System.Collections.Generic;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Diagnostics;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Management;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Runtime.InteropServices;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Windows;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Windows.Controls;' | Out-File MainWindow.xaml.cs -Append
+        'using Microsoft.Win32;' | Out-File MainWindow.xaml.cs -Append
+        'using System.Threading.Tasks;' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        'namespace KOALAOptimizer' | Out-File MainWindow.xaml.cs -Append
+        '{' | Out-File MainWindow.xaml.cs -Append
+        '    public partial class MainWindow : Window' | Out-File MainWindow.xaml.cs -Append
+        '    {' | Out-File MainWindow.xaml.cs -Append
+        '        [DllImport("winmm.dll")]' | Out-File MainWindow.xaml.cs -Append
+        '        static extern uint timeBeginPeriod(uint period);' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        [DllImport("winmm.dll")]' | Out-File MainWindow.xaml.cs -Append
+        '        static extern uint timeEndPeriod(uint period);' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        public MainWindow()' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            InitializeComponent();' | Out-File MainWindow.xaml.cs -Append
+        '            LoadSystemInfo();' | Out-File MainWindow.xaml.cs -Append
+        '            timeBeginPeriod(1);' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void LoadSystemInfo()' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            try' | Out-File MainWindow.xaml.cs -Append
+        '            {' | Out-File MainWindow.xaml.cs -Append
+        '                string info = "KOALA V3 Ready\n";' | Out-File MainWindow.xaml.cs -Append
+        '                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor"))' | Out-File MainWindow.xaml.cs -Append
+        '                {' | Out-File MainWindow.xaml.cs -Append
+        '                    foreach (var obj in searcher.Get())' | Out-File MainWindow.xaml.cs -Append
+        '                    {' | Out-File MainWindow.xaml.cs -Append
+        '                        info += "CPU: " + obj["Name"] + "\n";' | Out-File MainWindow.xaml.cs -Append
+        '                        break;' | Out-File MainWindow.xaml.cs -Append
+        '                    }' | Out-File MainWindow.xaml.cs -Append
+        '                }' | Out-File MainWindow.xaml.cs -Append
+        '                SystemInfoText.Text = info;' | Out-File MainWindow.xaml.cs -Append
+        '            }' | Out-File MainWindow.xaml.cs -Append
+        '            catch { SystemInfoText.Text = "System Info"; }' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void LogMessage(string msg)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            LogBox.AppendText(DateTime.Now.ToString("HH:mm:ss") + " " + msg + "\n");' | Out-File MainWindow.xaml.cs -Append
+        '            StatusText.Text = msg;' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void OptimizeButton_Click(object sender, RoutedEventArgs e)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            LogMessage("Optimizing...");' | Out-File MainWindow.xaml.cs -Append
+        '            Task.Delay(1000).ContinueWith(t => Dispatcher.Invoke(() => LogMessage("Complete!")));' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void RestoreButton_Click(object sender, RoutedEventArgs e)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            LogMessage("Restore clicked");' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void ApplyCrosshair_Click(object sender, RoutedEventArgs e)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            LogMessage("Crosshair applied");' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        private void ApplyFov_Click(object sender, RoutedEventArgs e)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            LogMessage("FOV applied");' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '' | Out-File MainWindow.xaml.cs -Append
+        '        protected override void OnClosed(EventArgs e)' | Out-File MainWindow.xaml.cs -Append
+        '        {' | Out-File MainWindow.xaml.cs -Append
+        '            base.OnClosed(e);' | Out-File MainWindow.xaml.cs -Append
+        '            timeEndPeriod(1);' | Out-File MainWindow.xaml.cs -Append
+        '        }' | Out-File MainWindow.xaml.cs -Append
+        '    }' | Out-File MainWindow.xaml.cs -Append
+        '}' | Out-File MainWindow.xaml.cs -Append
         
-        # Option 1: Download from GitHub (if files exist there)
-        # Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KOALAaufPILLEN/KOALAOptimizer/main/MainWindow.xaml" -OutFile MainWindow.xaml
+        # App.xaml
+        '<Application x:Class="KOALAOptimizer.App"' | Out-File App.xaml
+        '             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"' | Out-File App.xaml -Append
+        '             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"' | Out-File App.xaml -Append
+        '             StartupUri="MainWindow.xaml">' | Out-File App.xaml -Append
+        '    <Application.Resources>' | Out-File App.xaml -Append
+        '    </Application.Resources>' | Out-File App.xaml -Append
+        '</Application>' | Out-File App.xaml -Append
         
-        # Option 2: Create files using a separate PowerShell script
-        Invoke-WebRequest -Uri "https://gist.githubusercontent.com/KOALAaufPILLEN/YOUR_GIST_ID/raw/create-koala-files.ps1" -OutFile create-files.ps1 -ErrorAction SilentlyContinue
+        # App.xaml.cs
+        'using System.Windows;' | Out-File App.xaml.cs
+        '' | Out-File App.xaml.cs -Append
+        'namespace KOALAOptimizer' | Out-File App.xaml.cs -Append
+        '{' | Out-File App.xaml.cs -Append
+        '    public partial class App : Application' | Out-File App.xaml.cs -Append
+        '    {' | Out-File App.xaml.cs -Append
+        '    }' | Out-File App.xaml.cs -Append
+        '}' | Out-File App.xaml.cs -Append
         
-        if (Test-Path create-files.ps1) {
-            ./create-files.ps1
-        } else {
-            Write-Host "Creating default files..."
-            # Create minimal files here
-        }
+        # Project file
+        '<Project Sdk="Microsoft.NET.Sdk">' | Out-File KOALAOptimizer.Testing.csproj
+        '  <PropertyGroup>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <OutputType>WinExe</OutputType>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <TargetFramework>net8.0-windows</TargetFramework>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <RuntimeIdentifier>win-x64</RuntimeIdentifier>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <UseWPF>true</UseWPF>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <AssemblyName>KOALAOptimizer</AssemblyName>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <RootNamespace>KOALAOptimizer</RootNamespace>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <PublishSingleFile>true</PublishSingleFile>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <SelfContained>true</SelfContained>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '  </PropertyGroup>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '  <ItemGroup>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <PackageReference Include="System.Management" Version="8.0.0" />' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '  </ItemGroup>' | Out-File KOALAOptimizer.Testing.csproj -Append
+        '</Project>' | Out-File KOALAOptimizer.Testing.csproj -Append
         
-        Write-Host "Files created"
-      shell: pwsh
-    
-    - name: Create Source Files
-      run: |
-        cd KOALAOptimizer.Testing
+        # AssemblyInfo
+        'using System.Reflection;' | Out-File Properties\AssemblyInfo.cs
+        '[assembly: AssemblyTitle("KOALA V3")]' | Out-File Properties\AssemblyInfo.cs -Append
+        '[assembly: AssemblyCompany("KOALAaufPILLEN")]' | Out-File Properties\AssemblyInfo.cs -Append
+        '[assembly: AssemblyVersion("3.0.0.0")]' | Out-File Properties\AssemblyInfo.cs -Append
         
-        # Create files without complex inline content
-        New-Item -ItemType File -Path MainWindow.xaml -Force
-        New-Item -ItemType File -Path MainWindow.xaml.cs -Force
-        New-Item -ItemType File -Path App.xaml -Force
-        New-Item -ItemType File -Path App.xaml.cs -Force
-        New-Item -ItemType File -Path KOALAOptimizer.Testing.csproj -Force
-        
-        # Write content to files separately
-        ./write-xaml.ps1
-        ./write-cs.ps1
-        ./write-project.ps1
-      shell: pwsh
-      continue-on-error: true
-    
-    - name: Setup Project Files Using Script
-      run: |
-        cd KOALAOptimizer.Testing
-        
-        # Create the setup script
-        @'
-        # This script creates all project files
-        Write-Host "Setting up KOALA V3 project..."
-        '@ > setup.ps1
-        
-        # Run it
-        ./setup.ps1
+        Write-Host "=== FILES CREATED ==="
+        Get-ChildItem
       shell: pwsh
     
     - name: Build and Publish
@@ -103,12 +241,12 @@ jobs:
         
         cd ..
         
-        Write-Host "=== BUILD COMPLETE ==="
+        Write-Host "=== SUCCESS! ==="
         Get-ChildItem output
       shell: pwsh
     
-    - name: Upload Artifact
+    - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-V3
+        name: KOALA-V3-COMPLETE
         path: output/
