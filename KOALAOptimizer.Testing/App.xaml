@@ -3,13 +3,5 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <ResourceDictionary>
-            <!-- Simple color definitions -->
-            <SolidColorBrush x:Key="BackgroundBrush" Color="#1e1e1e"/>
-            <SolidColorBrush x:Key="ForegroundBrush" Color="#ffffff"/>
-            <SolidColorBrush x:Key="AccentBrush" Color="#00ff00"/>
-            <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="#2d2d30"/>
-            <SolidColorBrush x:Key="DangerBrush" Color="#ff4444"/>
-        </ResourceDictionary>
     </Application.Resources>
 </Application>
