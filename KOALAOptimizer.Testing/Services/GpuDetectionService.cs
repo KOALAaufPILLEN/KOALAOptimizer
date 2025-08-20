@@ -348,44 +348,6 @@ namespace KOALAOptimizer.Testing.Services
                 return false;
             }
         }
-                            {
-                                Name = name,
-                                Vendor = vendor,
-                                DriverVersion = driverVersion ?? "Unknown",
-                                HardwareSchedulingSupported = CheckHardwareSchedulingSupport(vendor)
-                            };
-                            
-                            _logger.LogInfo($"GPU detected: {vendor} - {name}");
-                            return _detectedGpu;
-                        }
-                    }
-                }
-                
-                // Fallback GPU info if none detected
-                _detectedGpu = new GpuInfo
-                {
-                    Name = "Unknown GPU",
-                    Vendor = "Unknown",
-                    DriverVersion = "Unknown",
-                    HardwareSchedulingSupported = false
-                };
-                
-                _logger.LogWarning("No dedicated GPU detected, using fallback info");
-                return _detectedGpu;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Failed to detect GPU: {ex.Message}", ex);
-                
-                return new GpuInfo
-                {
-                    Name = "Detection Failed",
-                    Vendor = "Unknown",
-                    DriverVersion = "Unknown",
-                    HardwareSchedulingSupported = false
-                };
-            }
-        }
         
         /// <summary>
         /// Detect GPU vendor from device name

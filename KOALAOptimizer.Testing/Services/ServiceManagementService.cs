@@ -73,13 +73,9 @@ namespace KOALAOptimizer.Testing.Services
                     // Audio services (conditional)
                     { "AudioSrv", "Windows Audio" },
                     { "AudioEndpointBuilder", "Windows Audio Endpoint Builder" },
-                    { "Audiosrv", "Windows Audio Service" }
-                };
-                    { "WSearch", "Windows Search" },
-                    { "TabletInputService", "Tablet PC Input Service" },
-                    { "Themes", "Themes Service" },
-                    { "Fax", "Fax Service" },
-                    { "MapsBroker", "Downloaded Maps Manager" },
+                    { "Audiosrv", "Windows Audio Service" },
+                    
+                    // Additional services
                     { "lfsvc", "Geolocation Service" },
                     { "SharedAccess", "Internet Connection Sharing (ICS)" },
                     { "TrkWks", "Distributed Link Tracking Client" },
