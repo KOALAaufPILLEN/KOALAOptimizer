@@ -1,4 +1,4 @@
-name: Force Clean Build
+name: Final Working Build
 
 on:
   push:
@@ -17,23 +17,17 @@ jobs:
       with:
         dotnet-version: '8.x'
     
-    - name: NUCLEAR CLEAN AND BUILD
+    - name: COMPLETE BUILD WITH ALL FIXES
       run: |
         cd KOALAOptimizer.Testing
         
-        echo "=== FORCE DELETING ALL CACHE ==="
+        echo "=== CLEANING EVERYTHING ==="
         rmdir /s /q bin 2>nul
         rmdir /s /q obj 2>nul
-        rmdir /s /q .vs 2>nul
-        del *.user 2>nul
-        
-        echo.
-        echo "=== REMOVING ALL PROJECT FILES ==="
         del *.csproj 2>nul
-        del *.sln 2>nul
         
         echo.
-        echo "=== CREATING NEW PROJECT WITH GenerateAssemblyInfo=false ==="
+        echo "=== CREATING COMPLETE PROJECT FILE ==="
         (
           echo ^<Project Sdk="Microsoft.NET.Sdk"^>
           echo   ^<PropertyGroup^>
@@ -45,6 +39,10 @@ jobs:
           echo     ^<ApplicationIcon^>koala.ico^</ApplicationIcon^>
           echo     ^<GenerateAssemblyInfo^>false^</GenerateAssemblyInfo^>
           echo   ^</PropertyGroup^>
+          echo   ^<ItemGroup^>
+          echo     ^<PackageReference Include="System.Management" Version="8.0.0" /^>
+          echo     ^<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" /^>
+          echo   ^</ItemGroup^>
           echo ^</Project^>
         ) > KOALAOptimizer.Testing.csproj
         
@@ -64,33 +62,44 @@ jobs:
         ) > Properties\AssemblyInfo.cs
         
         echo.
-        echo "=== CLEAN BUILD ==="
-        dotnet build -c Release
+        echo "=== RESTORING PACKAGES ==="
+        dotnet restore
         
         echo.
-        echo "=== PUBLISH ==="
-        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ..\output
+        echo "=== BUILDING ==="
+        dotnet build -c Release --no-restore
+        
+        echo.
+        echo "=== PUBLISHING ==="
+        dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true --no-build -o ..\output
         
         cd ..
         
         echo.
-        echo "=== SUCCESS! FILES: ==="
+        echo "=== BUILD SUCCESSFUL! ==="
         dir output
       shell: cmd
     
-    - name: Upload Success
-      if: success()
+    - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-SUCCESS-${{ github.run_number }}
+        name: KOALA-V3-FINAL-${{ github.run_number }}
         path: output/
     
-    - name: Create Release
-      if: success()
+    - name: Create ZIP and Release
       run: |
-        powershell Compress-Archive -Path output\KOALAOptimizer.exe -DestinationPath KOALA-FINAL.zip
-        gh release delete final -y 2>nul
-        gh release create final KOALA-FINAL.zip --title "🐨 KOALA V3 FINAL" --notes "Working build!" --latest
+        cd output
+        ren *.exe KOALA-Optimizer-V3.exe
+        cd ..
+        
+        powershell Compress-Archive -Path output\KOALA-Optimizer-V3.exe -DestinationPath KOALA-V3-WORKING.zip
+        
+        echo Files created:
+        dir *.zip
+        
+        gh release delete v3.0-final -y 2>nul
+        gh release create v3.0-final KOALA-V3-WORKING.zip --title "🐨 KOALA V3.0 FINAL WORKING" --notes "Finally working! By KOALAaufPILLEN" --latest
       env:
         GH_TOKEN: ${{ github.token }}
+      shell: cmd
       continue-on-error: true
