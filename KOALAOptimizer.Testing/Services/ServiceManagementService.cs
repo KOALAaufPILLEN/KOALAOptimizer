@@ -75,16 +75,6 @@ namespace KOALAOptimizer.Testing.Services
                     { "AudioEndpointBuilder", "Windows Audio Endpoint Builder" },
                     { "Audiosrv", "Windows Audio Service" }
                 };
-                    { "WSearch", "Windows Search" },
-                    { "TabletInputService", "Tablet PC Input Service" },
-                    { "Themes", "Themes Service" },
-                    { "Fax", "Fax Service" },
-                    { "MapsBroker", "Downloaded Maps Manager" },
-                    { "lfsvc", "Geolocation Service" },
-                    { "SharedAccess", "Internet Connection Sharing (ICS)" },
-                    { "TrkWks", "Distributed Link Tracking Client" },
-                    { "WbioSrvc", "Windows Biometric Service" }
-                };
                 
                 int disabledCount = 0;
                 foreach (var service in servicesToDisable)
