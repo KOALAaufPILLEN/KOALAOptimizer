@@ -262,19 +262,38 @@ namespace KOALAOptimizer.Testing.Services
             try
             {
                 // Check for essential brushes that should be present in every theme
-                string[] essentialResources = { 
+                string[] essentialBrushes = { 
                     "BackgroundBrush", "TextBrush", "PrimaryBrush", 
-                    "AccentBrush", "BorderBrush", "MainWindowStyle" 
+                    "AccentBrush", "BorderBrush"
                 };
                 
-                foreach (var resourceKey in essentialResources)
+                // Check for essential styles that should be present in every theme
+                string[] essentialStyles = {
+                    "MainWindowStyle", "GroupBoxStyle", "OptimizationButtonStyle", "ModernSliderStyle",
+                    "HeaderTextStyle", "SubHeaderTextStyle"
+                };
+                
+                // Validate brushes
+                foreach (var resourceKey in essentialBrushes)
                 {
                     if (!themeDict.Contains(resourceKey))
                     {
-                        _logger.LogWarning($"Theme missing essential resource: {resourceKey}");
+                        _logger.LogWarning($"Theme missing essential brush: {resourceKey}");
                         return false;
                     }
                 }
+                
+                // Validate styles
+                foreach (var styleKey in essentialStyles)
+                {
+                    if (!themeDict.Contains(styleKey))
+                    {
+                        _logger.LogWarning($"Theme missing essential style: {styleKey}");
+                        return false;
+                    }
+                }
+                
+                _logger.LogDebug("Theme validation passed - all essential resources present");
                 return true;
             }
             catch (Exception ex)
@@ -317,13 +336,92 @@ namespace KOALAOptimizer.Testing.Services
                 }
                 else
                 {
-                    _logger.LogError("No fallback theme available or already using fallback");
-                    return false;
+                    _logger.LogWarning("SciFi fallback failed, attempting nuclear fallback");
+                    return ApplyNuclearFallbackTheme();
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Failed to apply fallback theme: {ex.Message}");
+                return ApplyNuclearFallbackTheme();
+            }
+        }
+        
+        /// <summary>
+        /// Apply nuclear fallback theme with hardcoded essential resources
+        /// This is the last resort when all theme files fail
+        /// </summary>
+        private bool ApplyNuclearFallbackTheme()
+        {
+            try
+            {
+                _logger.LogWarning("Applying nuclear fallback theme with hardcoded resources");
+                
+                var nuclearDict = new ResourceDictionary();
+                
+                // Essential brushes with safe defaults
+                nuclearDict["BackgroundBrush"] = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+                nuclearDict["TextBrush"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                nuclearDict["PrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+                nuclearDict["AccentBrush"] = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+                nuclearDict["BorderBrush"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+                
+                // Essential window style
+                var windowStyle = new Style(typeof(Window));
+                windowStyle.Setters.Add(new Setter(Window.BackgroundProperty, nuclearDict["BackgroundBrush"]));
+                windowStyle.Setters.Add(new Setter(Window.ForegroundProperty, nuclearDict["TextBrush"]));
+                nuclearDict["MainWindowStyle"] = windowStyle;
+                
+                // Essential GroupBox style
+                var groupBoxStyle = new Style(typeof(GroupBox));
+                groupBoxStyle.Setters.Add(new Setter(GroupBox.BackgroundProperty, nuclearDict["BackgroundBrush"]));
+                groupBoxStyle.Setters.Add(new Setter(GroupBox.ForegroundProperty, nuclearDict["TextBrush"]));
+                nuclearDict["GroupBoxStyle"] = groupBoxStyle;
+                
+                // Essential Button style
+                var buttonStyle = new Style(typeof(Button));
+                buttonStyle.Setters.Add(new Setter(Button.BackgroundProperty, nuclearDict["PrimaryBrush"]));
+                buttonStyle.Setters.Add(new Setter(Button.ForegroundProperty, new SolidColorBrush(Colors.White)));
+                nuclearDict["OptimizationButtonStyle"] = buttonStyle;
+                
+                // Essential Slider style
+                var sliderStyle = new Style(typeof(Slider));
+                sliderStyle.Setters.Add(new Setter(Slider.BackgroundProperty, nuclearDict["BackgroundBrush"]));
+                sliderStyle.Setters.Add(new Setter(Slider.ForegroundProperty, nuclearDict["PrimaryBrush"]));
+                nuclearDict["ModernSliderStyle"] = sliderStyle;
+                
+                // Essential Text styles
+                var headerTextStyle = new Style(typeof(TextBlock));
+                headerTextStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, 18.0));
+                headerTextStyle.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeights.Bold));
+                headerTextStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, nuclearDict["TextBrush"]));
+                nuclearDict["HeaderTextStyle"] = headerTextStyle;
+                
+                var subHeaderTextStyle = new Style(typeof(TextBlock));
+                subHeaderTextStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, 12.0));
+                subHeaderTextStyle.Setters.Add(new Setter(TextBlock.FontStyleProperty, FontStyles.Italic));
+                subHeaderTextStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, nuclearDict["TextBrush"]));
+                nuclearDict["SubHeaderTextStyle"] = subHeaderTextStyle;
+                
+                // Clear existing themes and apply nuclear fallback
+                var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
+                var existingThemes = mergedDictionaries
+                    .Where(d => d.Source != null && d.Source.ToString().Contains("Themes/"))
+                    .ToList();
+                
+                foreach (var existingTheme in existingThemes)
+                {
+                    mergedDictionaries.Remove(existingTheme);
+                }
+                
+                mergedDictionaries.Insert(0, nuclearDict);
+                _currentTheme = null; // No specific theme loaded
+                _logger.LogInfo("Nuclear fallback theme applied successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Even nuclear fallback theme failed: {ex.Message}");
                 return false;
             }
         }
