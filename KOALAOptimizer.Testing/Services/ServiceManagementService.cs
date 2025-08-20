@@ -41,13 +41,40 @@ namespace KOALAOptimizer.Testing.Services
                 
                 var servicesToDisable = new Dictionary<string, string>
                 {
+                    // Xbox services (from PowerShell)
                     { "XboxNetApiSvc", "Xbox Live Networking Service" },
                     { "XboxGipSvc", "Xbox Accessory Management Service" },
                     { "XblAuthManager", "Xbox Live Auth Manager" },
                     { "XblGameSave", "Xbox Live Game Save Service" },
+                    
+                    // System services (from PowerShell)
                     { "Spooler", "Print Spooler" },
                     { "SysMain", "SysMain (Superfetch)" },
                     { "DiagTrack", "Connected User Experiences and Telemetry" },
+                    { "WSearch", "Windows Search" },
+                    { "Fax", "Fax Service" },
+                    { "RemoteRegistry", "Remote Registry" },
+                    { "MapsBroker", "Downloaded Maps Manager" },
+                    { "WMPNetworkSvc", "Windows Media Player Network Sharing Service" },
+                    { "WpnUserService", "Windows Push Notifications User Service" },
+                    { "bthserv", "Bluetooth Support Service" },
+                    { "TabletInputService", "Tablet PC Input Service" },
+                    { "TouchKeyboard", "Touch Keyboard and Handwriting Panel Service" },
+                    { "WerSvc", "Windows Error Reporting Service" },
+                    { "PcaSvc", "Program Compatibility Assistant Service" },
+                    { "Themes", "Themes Service" },
+                    { "BITS", "Background Intelligent Transfer Service" },
+                    { "CryptSvc", "Cryptographic Services" },
+                    
+                    // GPU vendor services (from PowerShell)
+                    { "NvTelemetryContainer", "NVIDIA Telemetry Container" },
+                    { "AMD External Events", "AMD External Events Utility" },
+                    
+                    // Audio services (conditional)
+                    { "AudioSrv", "Windows Audio" },
+                    { "AudioEndpointBuilder", "Windows Audio Endpoint Builder" },
+                    { "Audiosrv", "Windows Audio Service" }
+                };
                     { "WSearch", "Windows Search" },
                     { "TabletInputService", "Tablet PC Input Service" },
                     { "Themes", "Themes Service" },

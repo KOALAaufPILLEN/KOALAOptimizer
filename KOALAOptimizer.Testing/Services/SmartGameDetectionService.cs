@@ -20,6 +20,7 @@ namespace KOALAOptimizer.Testing.Services
         private readonly LoggingService _logger;
         private readonly ProcessManagementService _processManager;
         private readonly RegistryOptimizationService _registryService;
+        private readonly GameSpecificTweakService _gameSpecificTweakService;
         private readonly Timer _detectionTimer;
         private readonly object _lockObject = new object();
         private bool _isMonitoring = false;
@@ -38,6 +39,7 @@ namespace KOALAOptimizer.Testing.Services
             _logger = LoggingService.Instance;
             _processManager = ProcessManagementService.Instance;
             _registryService = RegistryOptimizationService.Instance;
+            _gameSpecificTweakService = GameSpecificTweakService.Instance;
             _gameProfiles = new Dictionary<string, GameProfile>();
             _suspendedProcesses = new List<string>();
             
@@ -322,14 +324,16 @@ namespace KOALAOptimizer.Testing.Services
         {
             try
             {
-                _logger.LogInfo($"Applying optimizations for {profile.DisplayName}");
+                _logger.LogInfo($"Applying comprehensive optimizations for {profile.DisplayName}");
                 
                 if (_autoProfileSwitching)
                 {
-                    // Apply game-specific tweaks
+                    // Apply game-specific tweaks using the dedicated service
+                    _gameSpecificTweakService.ApplyGameSpecificTweaks(profile);
+                    
+                    // Apply legacy specific optimizations
                     foreach (var tweak in profile.SpecificTweaks)
                     {
-                        // Apply specific optimization based on tweak name
                         ApplySpecificOptimization(tweak);
                     }
                 }
@@ -339,7 +343,7 @@ namespace KOALAOptimizer.Testing.Services
                     SuspendBackgroundProcesses();
                 }
                 
-                _logger.LogInfo($"Optimizations applied for {profile.DisplayName}");
+                _logger.LogInfo($"Comprehensive optimizations applied for {profile.DisplayName}");
             }
             catch (Exception ex)
             {
@@ -475,25 +479,39 @@ namespace KOALAOptimizer.Testing.Services
         }
         
         /// <summary>
-        /// Initialize game profiles from PowerShell version
+        /// Initialize game profiles from PowerShell version - COMPLETE 15 GAME SET
         /// </summary>
         private void InitializeGameProfiles()
         {
             _gameProfiles.Clear();
             
-            // Popular competitive games from PowerShell version
+            // Complete game profiles from PowerShell version (ALL 15 GAMES)
             var profiles = new[]
             {
-                new GameProfile { GameKey = "CS2", DisplayName = "Counter-Strike 2", ProcessNames = new List<string> { "cs2" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority", "AffinityOptimization" } },
-                new GameProfile { GameKey = "Valorant", DisplayName = "Valorant", ProcessNames = new List<string> { "valorant", "valorant-win64-shipping" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority", "MemoryOptimization" } },
-                new GameProfile { GameKey = "Fortnite", DisplayName = "Fortnite", ProcessNames = new List<string> { "fortniteclient-win64-shipping" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "ApexLegends", DisplayName = "Apex Legends", ProcessNames = new List<string> { "r5apex" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "CODWarzone", DisplayName = "Call of Duty: Warzone", ProcessNames = new List<string> { "cod", "modernwarfare", "blackops", "warzone" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "PUBG", DisplayName = "PUBG", ProcessNames = new List<string> { "tslgame" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "Overwatch2", DisplayName = "Overwatch 2", ProcessNames = new List<string> { "overwatch" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "RocketLeague", DisplayName = "Rocket League", ProcessNames = new List<string> { "rocketleague" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "RainbowSix", DisplayName = "Rainbow Six Siege", ProcessNames = new List<string> { "rainbowsix", "r6game" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority" } },
-                new GameProfile { GameKey = "Cyberpunk2077", DisplayName = "Cyberpunk 2077", ProcessNames = new List<string> { "cyberpunk2077" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "HighPriority", "MemoryOptimization" } }
+                // Counter-Strike games
+                new GameProfile { GameKey = "CS2", DisplayName = "Counter-Strike 2", ProcessNames = new List<string> { "cs2" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "HighPrecisionTimer", "NetworkOptimization" } },
+                new GameProfile { GameKey = "CSGO", DisplayName = "Counter-Strike: Global Offensive", ProcessNames = new List<string> { "csgo" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "HighPrecisionTimer" } },
+                
+                // Popular competitive FPS
+                new GameProfile { GameKey = "Valorant", DisplayName = "Valorant", ProcessNames = new List<string> { "valorant", "valorant-win64-shipping" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "AntiCheatOptimization" } },
+                new GameProfile { GameKey = "ApexLegends", DisplayName = "Apex Legends", ProcessNames = new List<string> { "r5apex" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "SourceEngineOptimization" } },
+                new GameProfile { GameKey = "RainbowSix", DisplayName = "Rainbow Six Siege", ProcessNames = new List<string> { "rainbowsix", "rainbowsix_vulkan" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "AntiCheatOptimization", "NetworkOptimization" } },
+                new GameProfile { GameKey = "Overwatch2", DisplayName = "Overwatch 2", ProcessNames = new List<string> { "overwatch" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "NetworkOptimization", "MemoryOptimization" } },
+                
+                // Battle Royale games
+                new GameProfile { GameKey = "Fortnite", DisplayName = "Fortnite", ProcessNames = new List<string> { "fortniteclient-win64-shipping" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "GPUScheduling", "MemoryOptimization" } },
+                new GameProfile { GameKey = "PUBG", DisplayName = "PUBG: Battlegrounds", ProcessNames = new List<string> { "tslgame" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization", "AntiCheatOptimization" } },
+                
+                // Call of Duty series
+                new GameProfile { GameKey = "CODWarzone", DisplayName = "Call of Duty: Warzone", ProcessNames = new List<string> { "modernwarfare", "warzone" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization" } },
+                new GameProfile { GameKey = "CODMW2", DisplayName = "Call of Duty: Modern Warfare II", ProcessNames = new List<string> { "cod", "cod22-cod", "modernwarfare2" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization", "AntiCheatOptimization" } },
+                new GameProfile { GameKey = "CODMW3", DisplayName = "Call of Duty: Modern Warfare III", ProcessNames = new List<string> { "cod23-cod", "modernwarfare3", "mw3" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization", "AntiCheatOptimization" } },
+                
+                // Other popular games
+                new GameProfile { GameKey = "BF6", DisplayName = "Battlefield 6", ProcessNames = new List<string> { "bf6event", "bf6" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "BF6Optimization", "MemoryOptimization", "NetworkOptimization", "GPUScheduling" } },
+                new GameProfile { GameKey = "LeagueOfLegends", DisplayName = "League of Legends", ProcessNames = new List<string> { "league of legends", "leagueoflegends" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "NetworkOptimization" } },
+                new GameProfile { GameKey = "RocketLeague", DisplayName = "Rocket League", ProcessNames = new List<string> { "rocketleague" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "DisableNagle", "NetworkOptimization", "GPUScheduling" } },
+                new GameProfile { GameKey = "Destiny2", DisplayName = "Destiny 2", ProcessNames = new List<string> { "destiny2" }, Priority = ProcessPriority.High, SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization", "AntiCheatOptimization" } }
             };
             
             foreach (var profile in profiles)
