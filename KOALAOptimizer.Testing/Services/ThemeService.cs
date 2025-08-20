@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using KOALAOptimizer.Testing.Models;
 
 namespace KOALAOptimizer.Testing.Services
