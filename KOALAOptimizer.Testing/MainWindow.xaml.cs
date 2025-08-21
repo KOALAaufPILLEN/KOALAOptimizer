@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -51,6 +52,7 @@ namespace KOALAOptimizer
         private System.Windows.Threading.DispatcherTimer gameDetectionTimer;
         private string currentDetectedGame = null;
         private bool isAdmin = false;
+        private bool kernelWarningShown = false;
         #endregion
 
         #region Game Profile Class
@@ -79,6 +81,9 @@ namespace KOALAOptimizer
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             backupPath = System.IO.Path.Combine(appPath, "KoalaBackup.json");
             
+            // Store original settings before any changes
+            StoreOriginalSettings();
+            
             // Initialize game profiles
             InitializeGameProfiles();
             
@@ -106,6 +111,49 @@ namespace KOALAOptimizer
             
             // Detect GPU vendor
             DetectGPUVendor();
+        }
+
+        private void StoreOriginalSettings()
+        {
+            try
+            {
+                // Store important registry values before modification
+                originalSettings["SystemResponsiveness"] = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                    "SystemResponsiveness", 20);
+                    
+                originalSettings["GameDVR_Enabled"] = Registry.GetValue(
+                    @"HKEY_CURRENT_USER\System\GameConfigStore",
+                    "GameDVR_Enabled", 1);
+                    
+                originalSettings["Win32PrioritySeparation"] = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
+                    "Win32PrioritySeparation", 2);
+                    
+                originalSettings["NetworkThrottlingIndex"] = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                    "NetworkThrottlingIndex", 10);
+                    
+                // Store service states
+                var services = new[] { "XblGameSave", "XblAuthManager", "DiagTrack", "SysMain", "WSearch" };
+                foreach (var service in services)
+                {
+                    try
+                    {
+                        using (var sc = new ServiceController(service))
+                        {
+                            originalSettings[$"Service_{service}"] = sc.StartType.ToString();
+                        }
+                    }
+                    catch { }
+                }
+                
+                LogMessage("📁 Original settings stored for backup");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to store original settings: {ex.Message}", "Warning");
+            }
         }
 
         private void InitializeGameProfiles()
@@ -259,16 +307,21 @@ namespace KOALAOptimizer
                         if (name.Contains("NVIDIA") || name.Contains("GeForce") || name.Contains("RTX") || name.Contains("GTX"))
                         {
                             NVIDIADisableTelemetry.Visibility = Visibility.Visible;
+                            NVIDIAMaxPerformance.Visibility = Visibility.Visible;
+                            NVIDIAThreadedOptimization.Visibility = Visibility.Visible;
                             LogMessage("🎮 NVIDIA GPU detected - vendor optimizations available");
                         }
                         else if (name.Contains("AMD") || name.Contains("Radeon") || name.Contains("RX"))
                         {
                             AMDDisableExternalEvents.Visibility = Visibility.Visible;
+                            AMDAntiLag.Visibility = Visibility.Visible;
+                            AMDRadeonBoost.Visibility = Visibility.Visible;
                             LogMessage("🎮 AMD GPU detected - vendor optimizations available");
                         }
                         else if (name.Contains("Intel"))
                         {
                             IntelGraphicsOptimizations.Visibility = Visibility.Visible;
+                            IntelPowerSaving.Visibility = Visibility.Visible;
                             LogMessage("🎮 Intel GPU detected - vendor optimizations available");
                         }
                     }
@@ -329,6 +382,7 @@ namespace KOALAOptimizer
                 currentDetectedGame = null;
             }
         }
+                // PART 2 - Continuation from line ~400
 
         private void ApplyGameProfile(GameProfile profile)
         {
@@ -404,6 +458,181 @@ namespace KOALAOptimizer
                 LogMessage($"❌ Failed to apply {valueName}: {ex.Message}", "Error");
             }
         }
+
+        #region UI Event Handlers
+        private void ToggleSection_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as ToggleButton;
+            if (button == null) return;
+            
+            string sectionName = button.Name.Replace("Header", "Content");
+            var content = FindName(sectionName) as Border;
+            
+            if (content != null)
+            {
+                content.Visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void OptimizeSection_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button == null) return;
+            
+            // Stop event propagation to prevent toggle
+            e.Handled = true;
+            
+            // Get section name from parent ToggleButton name
+            var parent = button.Parent as Grid;
+            if (parent?.TemplatedParent is ToggleButton toggleButton)
+            {
+                string sectionName = toggleButton.Name.Replace("Header", "");
+                ApplySectionOptimizations(sectionName);
+            }
+        }
+
+        private void ApplySectionOptimizations(string section)
+        {
+            LogMessage($"🚀 Applying {section} optimizations...");
+            CreateBackup();
+            
+            Task.Run(async () =>
+            {
+                switch (section)
+                {
+                    case "Networking":
+                        ApplyNetworkOptimizations();
+                        break;
+                    case "Gaming":
+                        ApplyGamingOptimizations();
+                        break;
+                    case "CPU":
+                        ApplyCPUOptimizations();
+                        break;
+                    case "FPS":
+                        ApplyFPSBoostingTweaks();
+                        break;
+                    case "Kernel":
+                        if (ShowKernelWarning())
+                            ApplyKernelOptimizations();
+                        break;
+                    case "Detection":
+                        EnableSmartDetection();
+                        break;
+                    case "System":
+                        ApplySystemPerformance();
+                        break;
+                    case "GPU":
+                        ApplyGPUVendorOptimizations();
+                        break;
+                    case "Services":
+                        await DisableServices();
+                        break;
+                    case "Unneeded":
+                        await DisableUnneededServices();
+                        break;
+                }
+                
+                await Dispatcher.InvokeAsync(() => 
+                    LogMessage($"✅ {section} optimizations applied!"));
+            });
+        }
+
+        private bool ShowKernelWarning()
+        {
+            if (!kernelWarningShown)
+            {
+                var result = MessageBox.Show(
+                    "⚠️ KERNEL OPTIMIZATIONS WARNING ⚠️\n\n" +
+                    "These modifications will:\n" +
+                    "• Modify Windows kernel parameters\n" +
+                    "• May trigger anti-cheat systems (EAC, BattlEye, Vanguard)\n" +
+                    "• Could cause system instability if misconfigured\n" +
+                    "• Require system restart to take full effect\n\n" +
+                    "Games that may be affected:\n" +
+                    "• Valorant (Vanguard)\n" +
+                    "• Fortnite (EAC/BattlEye)\n" +
+                    "• Apex Legends (EAC)\n" +
+                    "• Call of Duty (Ricochet)\n" +
+                    "• Rainbow Six Siege (BattlEye)\n" +
+                    "• PUBG (BattlEye)\n\n" +
+                    "Do you accept these risks and want to continue?",
+                    "KOALA V3 - Kernel Optimization Warning",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                    
+                kernelWarningShown = true;
+                return result == MessageBoxResult.Yes;
+            }
+            return true;
+        }
+
+        private void PerformanceMode_Checked(object sender, RoutedEventArgs e)
+        {
+            LogMessage("⚡ Performance Mode selected - Kernel optimizations available", "Warning");
+            EnableKernelOptimizations(true);
+        }
+
+        private void UltraMode_Checked(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                "🚀 ULTRA MODE WARNING 🚀\n\n" +
+                "Ultra Mode will:\n" +
+                "• Apply ALL optimizations including risky ones\n" +
+                "• Disable security mitigations\n" +
+                "• Maximum performance at cost of stability\n" +
+                "• NOT recommended for daily use\n\n" +
+                "Continue?",
+                "KOALA V3 - Ultra Mode",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+                
+            if (result == MessageBoxResult.No)
+            {
+                SafeMode.IsChecked = true;
+            }
+            else
+            {
+                LogMessage("🚀 ULTRA MODE ACTIVATED - Maximum performance, use with caution!", "Warning");
+                EnableKernelOptimizations(true);
+            }
+        }
+
+        private void EnableKernelOptimizations(bool enable)
+        {
+            KernelTimerResolution.IsEnabled = enable && isAdmin;
+            DisablePagingExecutive.IsEnabled = enable && isAdmin;
+            Win32PrioritySeparation.IsEnabled = enable && isAdmin;
+            DisableSpeculativeMitigations.IsEnabled = enable && isAdmin;
+            DisableTSXAutoBan.IsEnabled = enable && isAdmin;
+            ThreadDPCEnable.IsEnabled = enable && isAdmin;
+            DPCQueueDepth.IsEnabled = enable && isAdmin;
+            DisableKernelMitigations.IsEnabled = enable && isAdmin && UltraMode.IsChecked == true;
+            DisableHyperThreading.IsEnabled = enable && isAdmin;
+            DisableSMT.IsEnabled = enable && isAdmin;
+            SetMSRRegisters.IsEnabled = enable && isAdmin && UltraMode.IsChecked == true;
+            DisableVBS.IsEnabled = enable && isAdmin;
+        }
+
+        private void EnableSmartDetection()
+        {
+            AutomaticGameDetection.IsChecked = true;
+            AutoProfileSwitching.IsChecked = true;
+            GameSpecificProfiles.IsChecked = true;
+            BackgroundAppSuppression.IsChecked = true;
+            LogMessage("🎯 Smart detection enabled");
+        }
+
+        private void ApplySystemPerformance()
+        {
+            if (OptimizeMemoryManagement.IsChecked == true)
+                ApplyMemoryOptimizations();
+            if (UltimatePerformancePowerPlan.IsChecked == true)
+                ApplyPowerManagement();
+            if (OptimizeCPUScheduling2.IsChecked == true)
+                ApplyCPUOptimizations();
+        }
+        #endregion
 
         #region Crosshair Implementation
         private void ApplyCrosshair_Click(object sender, RoutedEventArgs e)
@@ -526,13 +755,14 @@ namespace KOALAOptimizer
             // Store FOV value for game configs
             try
             {
-string configPath = 
-System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "KOALA_FOV.cfg");
+                string configPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "KOALA_FOV.cfg");
+                File.WriteAllText(configPath, $"fov={fov}");
+                LogMessage($"FOV config saved to {configPath}");
             }
             catch { }
         }
         #endregion
-        
+
         #region Main Optimization Methods
         private void Recommended_Click(object sender, RoutedEventArgs e)
         {
@@ -585,7 +815,7 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             }
 
             // 4. Memory Optimizations
-            if (AdvancedMemoryOpt.IsChecked == true)
+            if (AdvancedMemoryOptimization.IsChecked == true)
             {
                 await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing memory management..."));
                 ApplyMemoryOptimizations();
@@ -599,7 +829,7 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             }
 
             // 6. Visual Effects
-            if (SelectiveVisualEffects.IsChecked == true)
+            if (SelectiveVisualEffectsOptimization.IsChecked == true)
             {
                 await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying selective visual effects..."));
                 ApplyVisualEffectOptimizations();
@@ -664,6 +894,7 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
 
             await Task.Delay(500);
         }
+                // PART 3 - Continuation from line ~850
 
         private void ApplyNetworkOptimizations()
         {
@@ -688,16 +919,17 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "EnablePMTUBHDetect", 0, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", 
                 "EnablePMTUDiscovery", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", 
-                "MaxConnectionsPerServer", 16, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", 
-                "MaxConnectionsPer1_0Server", 16, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", 
-                "TcpTimedWaitDelay", 30, RegistryValueKind.DWord);
 
             // Network throttling
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", 
                 "NetworkThrottlingIndex", 0xFFFFFFFF, RegistryValueKind.DWord);
+
+            // DNS Optimization (if enabled)
+            if (OptimizeDNS?.IsChecked == true && isAdmin)
+            {
+                ExecuteCommand("netsh interface ip set dns \"Ethernet\" static 1.1.1.1");
+                ExecuteCommand("netsh interface ip add dns \"Ethernet\" 1.0.0.1 index=2");
+            }
 
             // Apply netsh commands if admin
             if (isAdmin)
@@ -734,18 +966,10 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "GameDVR_Enabled", 0, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\System\GameConfigStore", 
                 "GameDVR_FSEBehaviorMode", 2, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\System\GameConfigStore", 
-                "GameDVR_FSEBehavior", 2, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR", 
                 "AppCaptureEnabled", 0, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", 
                 "AllowGameDVR", 0, RegistryValueKind.DWord);
-
-            // Fullscreen optimizations
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\System\GameConfigStore", 
-                "GameDVR_DSEBehavior", 2, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\System\GameConfigStore", 
-                "GameDVR_DXGIHonorFSEWindowsCompatible", 1, RegistryValueKind.DWord);
 
             // Game Mode
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\GameBar", 
@@ -762,22 +986,10 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "Scheduling Category", "High", RegistryValueKind.String);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", 
                 "SFIO Priority", "High", RegistryValueKind.String);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", 
-                "BackgroundPriority", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", 
-                "Clock Rate", 10000, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", 
-                "Affinity", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", 
-                "Background Only", "False", RegistryValueKind.String);
 
             // System responsiveness
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", 
                 "SystemResponsiveness", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", 
-                "LazyModeTimeout", 10000, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", 
-                "LazyModeThreshold", 50, RegistryValueKind.DWord);
         }
 
         private void ApplyGPUOptimizations()
@@ -786,19 +998,15 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
                 "HwSchMode", 2, RegistryValueKind.DWord);
 
-            // TDR (Timeout Detection and Recovery) settings
+            // TDR settings
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
                 "TdrLevel", 0, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
                 "TdrDelay", 10, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
-                "TdrDdiDelay", 10, RegistryValueKind.DWord);
 
             // DirectX optimizations
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX", 
                 "D3D12_ENABLE_UNSAFE_COMMAND_BUFFER_REUSE", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX", 
-                "D3D12_ENABLE_RUNTIME_DRIVER_OPTIMIZATIONS", 1, RegistryValueKind.DWord);
 
             // GPU preemption
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler", 
@@ -813,25 +1021,9 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
                 "LargeSystemCache", 0, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "SystemPages", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
                 "DisablePagingExecutive", 1, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
                 "DisablePageCombining", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "LargePageDrivers", new string[] { "dxgkrnl.sys" }, RegistryValueKind.MultiString);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "LargePageMinimum", 0xFFFFFFFF, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "NonPagedPoolSize", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "PagedPoolSize", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "SessionPoolSize", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "SessionViewSize", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "PoolUsageMaximum", 60, RegistryValueKind.DWord);
 
             // Prefetcher and Superfetch
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", 
@@ -839,12 +1031,8 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", 
                 "EnableSuperfetch", 0, RegistryValueKind.DWord);
 
-            // Clear page file at shutdown (disabled for performance)
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
-                "ClearPageFileAtShutdown", 0, RegistryValueKind.DWord);
-
             // Spectre/Meltdown mitigations (disable for performance - USE WITH CAUTION)
-            if (DisableSpeculativeMitigations.IsChecked == true && UltraMode.IsChecked == true)
+            if (DisableSpeculativeMitigations?.IsChecked == true && UltraMode.IsChecked == true)
             {
                 ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
                     "FeatureSettings", 1, RegistryValueKind.DWord);
@@ -863,20 +1051,20 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "Win32PrioritySeparation", 38, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl", 
                 "IRQ8Priority", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl", 
-                "IRQ16Priority", 2, RegistryValueKind.DWord);
-
-            // Processor scheduling
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Processor", 
-                "Capabilities", 0x00010000, RegistryValueKind.DWord);
 
             // Core parking
-            if (CPUCoreParkingDisable.IsChecked == true && isAdmin)
+            if (CPUCoreParkingDisable?.IsChecked == true && isAdmin)
             {
                 ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583", 
                     "ValueMax", 0, RegistryValueKind.DWord);
                 ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583", 
                     "ValueMin", 0, RegistryValueKind.DWord);
+            }
+
+            // Disable C-States if checked
+            if (DisableCStates?.IsChecked == true && isAdmin)
+            {
+                ExecuteCommand("powercfg -setacvalueindex scheme_current sub_processor 5d76a2ca-e8c0-402f-a133-2158492d58ad 1");
             }
         }
 
@@ -891,18 +1079,32 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "GlobalTimerResolutionRequests", 1, RegistryValueKind.DWord);
 
             // DPC settings
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
-                "ThreadDpcEnable", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
-                "DpcQueueDepth", 1, RegistryValueKind.DWord);
+            if (ThreadDPCEnable?.IsChecked == true)
+            {
+                ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
+                    "ThreadDpcEnable", 1, RegistryValueKind.DWord);
+            }
+
+            if (DPCQueueDepth?.IsChecked == true)
+            {
+                ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
+                    "DpcQueueDepth", 1, RegistryValueKind.DWord);
+            }
 
             // TSX
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
-                "DisableTsxAutoBan", 1, RegistryValueKind.DWord);
+            if (DisableTSXAutoBan?.IsChecked == true)
+            {
+                ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
+                    "DisableTsxAutoBan", 1, RegistryValueKind.DWord);
+            }
 
-            // I/O system
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\I/O System", 
-                "IoEnableStackSwapping", 0, RegistryValueKind.DWord);
+            // Disable VBS/HVCI if checked
+            if (DisableVBS?.IsChecked == true)
+            {
+                ExecuteCommand("bcdedit /set hypervisorlaunchtype off");
+                ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", 
+                    "EnableVirtualizationBasedSecurity", 0, RegistryValueKind.DWord);
+            }
 
             // Set kernel timer resolution to 1ms
             try
@@ -925,24 +1127,14 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "MinAnimate", "0", RegistryValueKind.String);
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Desktop", 
                 "MenuShowDelay", "0", RegistryValueKind.String);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics", 
-                "MinAnimate", "0", RegistryValueKind.String);
 
             // Keep font smoothing
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Desktop", 
                 "FontSmoothing", "2", RegistryValueKind.String);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Desktop", 
-                "FontSmoothingType", 2, RegistryValueKind.DWord);
 
             // Disable DWM animations
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM", 
                 "EnableAeroPeek", 0, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM", 
-                "AlwaysHibernateThumbnails", 1, RegistryValueKind.DWord);
-
-            // Keep window dragging
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Desktop", 
-                "DragFullWindows", "1", RegistryValueKind.String);
         }
 
         private void ApplyInputOptimizations()
@@ -960,14 +1152,6 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             // Keyboard optimizations
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters", 
                 "KeyboardDataQueueSize", 100, RegistryValueKind.DWord);
-
-            // Remove mouse acceleration curves
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Mouse", 
-                "SmoothMouseXCurve", new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0x15, 0x6E, 0, 0, 0, 0, 0, 0, 0, 0x40, 0x01, 0, 0, 0, 0, 0, 0x29, 0xDC, 0x03, 0, 0, 0, 0, 0, 0, 0, 0x28, 0, 0, 0, 0, 0 }, 
-                RegistryValueKind.Binary);
-            ApplyRegistryTweak(@"HKEY_CURRENT_USER\Control Panel\Mouse", 
-                "SmoothMouseYCurve", new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0xFD, 0x11, 0x01, 0, 0, 0, 0, 0, 0, 0x24, 0x04, 0, 0, 0, 0, 0, 0, 0xFC, 0x12, 0, 0, 0, 0, 0, 0, 0xC0, 0xBB, 0x01, 0, 0, 0, 0 }, 
-                RegistryValueKind.Binary);
         }
 
         private void ApplyAudioOptimizations()
@@ -975,16 +1159,10 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             // Disable audio enhancements
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio", 
                 "DisableProtectedAudioDG", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio", 
-                "DisableProtectedAudio", 1, RegistryValueKind.DWord);
 
             // Disable audio ducking
             ApplyRegistryTweak(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Multimedia\Audio", 
                 "UserDuckingPreference", 3, RegistryValueKind.DWord);
-
-            // MSMQ TCP optimization
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSMQ\Parameters", 
-                "TCPNoDelay", 1, RegistryValueKind.DWord);
         }
 
         private void ApplyDiskOptimizations()
@@ -996,18 +1174,12 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                 "NtfsDisableLastAccessUpdate", 1, RegistryValueKind.DWord);
             ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem", 
                 "NtfsDisable8dot3NameCreation", 1, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem", 
-                "Win95TruncatedExtensions", 0, RegistryValueKind.DWord);
-
-            // NVMe optimizations
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device", 
-                "ForcedPhysicalDiskIo", "True", RegistryValueKind.String);
         }
 
         private void ApplyGPUVendorOptimizations()
         {
             // NVIDIA optimizations
-            if (NVIDIADisableTelemetry.IsChecked == true && isAdmin)
+            if (NVIDIADisableTelemetry?.IsChecked == true && isAdmin)
             {
                 try
                 {
@@ -1023,7 +1195,7 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             }
 
             // AMD optimizations
-            if (AMDDisableExternalEvents.IsChecked == true && isAdmin)
+            if (AMDDisableExternalEvents?.IsChecked == true && isAdmin)
             {
                 try
                 {
@@ -1039,7 +1211,7 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             }
 
             // Intel optimizations
-            if (IntelGraphicsOptimizations.IsChecked == true)
+            if (IntelGraphicsOptimizations?.IsChecked == true)
             {
                 ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
                     "DisableOverlays", 1, RegistryValueKind.DWord);
@@ -1062,12 +1234,6 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             // TSC sync policy
             ExecuteCommand("bcdedit /set tscsyncpolicy enhanced");
             
-            // Disable boot animation
-            ExecuteCommand("bcdedit /set bootux disabled");
-            
-            // Disable boot menu timeout
-            ExecuteCommand("bcdedit /timeout 0");
-            
             LogMessage("Advanced FPS boosting tweaks applied");
         }
 
@@ -1080,20 +1246,10 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             ExecuteCommand("powercfg /setactive e9a42b02-d5df-448d-aa00-03f14749eb61");
             
             // Disable hibernation
-            if (DisableHibernation.IsChecked == true)
+            if (DisableHibernation?.IsChecked == true)
             {
                 ExecuteCommand("powercfg -h off");
-                ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", 
-                    "HibernateEnabled", 0, RegistryValueKind.DWord);
             }
-            
-            // Unhide power options
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1", 
-                "Attributes", 2, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\68dd2f27-a4ce-4e11-8487-3794e4135dfa", 
-                "Attributes", 2, RegistryValueKind.DWord);
-            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\44f3beca-a7c0-460e-9df2-bb8b99e0cba6\3619c3f2-afb2-4afc-b0e9-e7fef372de36", 
-                "Attributes", 2, RegistryValueKind.DWord);
             
             LogMessage("Ultimate Performance power plan activated");
         }
@@ -1105,27 +1261,18 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             var servicesToDisable = new List<string>();
 
             // Xbox services
-            if (DisableXboxServices.IsChecked == true)
+            if (DisableXboxServices?.IsChecked == true)
             {
                 servicesToDisable.AddRange(new[] { "XblGameSave", "XblAuthManager", "XboxGipSvc", "XboxNetApiSvc" });
             }
 
             // Other services
-            if (DisablePrintSpooler.IsChecked == true) servicesToDisable.Add("Spooler");
-            if (DisableSysMain.IsChecked == true) servicesToDisable.Add("SysMain");
-            if (DisableTelemetryDiagTrack.IsChecked == true) servicesToDisable.Add("DiagTrack");
-            if (DisableWindowsSearch.IsChecked == true) servicesToDisable.Add("WSearch");
-            if (DisableTabletServices.IsChecked == true) servicesToDisable.Add("TabletInputService");
-            if (DisableThemesService.IsChecked == true) servicesToDisable.Add("Themes");
-            
-            // Unneeded services
-            if (DisableFax.IsChecked == true)
-            {
-                servicesToDisable.AddRange(new[] { 
-                    "Fax", "RemoteRegistry", "MapsBroker", 
-                    "WMPNetworkSvc", "WpnUserService", "bthserv" 
-                });
-            }
+            if (DisablePrintSpooler?.IsChecked == true) servicesToDisable.Add("Spooler");
+            if (DisableSysMain?.IsChecked == true) servicesToDisable.Add("SysMain");
+            if (DisableTelemetryDiagTrack?.IsChecked == true) servicesToDisable.Add("DiagTrack");
+            if (DisableWindowsSearch?.IsChecked == true) servicesToDisable.Add("WSearch");
+            if (DisableTabletServices?.IsChecked == true) servicesToDisable.Add("TabletInputService");
+            if (DisableThemesService?.IsChecked == true) servicesToDisable.Add("Themes");
 
             foreach (var service in servicesToDisable)
             {
@@ -1139,6 +1286,51 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             }
             
             LogMessage($"Disabled {servicesToDisable.Count} services");
+        }
+
+        private async Task DisableUnneededServices()
+        {
+            if (!isAdmin) return;
+            
+            var servicesToDisable = new List<string>();
+            
+            if (DisableFax?.IsChecked == true)
+            {
+                servicesToDisable.AddRange(new[] { 
+                    "Fax", "RemoteRegistry", "MapsBroker", 
+                    "WMPNetworkSvc", "WpnUserService", "bthserv" 
+                });
+            }
+            
+            if (DisableBiometric?.IsChecked == true)
+                servicesToDisable.Add("WbioSrvc");
+                
+            if (DisableSmartCard?.IsChecked == true)
+            {
+                servicesToDisable.AddRange(new[] { "SCardSvr", "ScDeviceEnum", "SCPolicySvc" });
+            }
+            
+            if (DisableParentalControls?.IsChecked == true)
+                servicesToDisable.Add("WpcMonSvc");
+                
+            if (DisableHomeGroup?.IsChecked == true)
+            {
+                servicesToDisable.AddRange(new[] { "HomeGroupListener", "HomeGroupProvider" });
+            }
+            
+            foreach (var service in servicesToDisable)
+            {
+                try
+                {
+                    ExecuteCommand($"sc stop {service}");
+                    ExecuteCommand($"sc config {service} start= disabled");
+                    await Task.Delay(50);
+                }
+                catch { }
+            }
+            
+            await Dispatcher.InvokeAsync(() => 
+                LogMessage($"Disabled {servicesToDisable.Count} unneeded services"));
         }
 
         private void ApplyProcessPriorities()
@@ -1225,8 +1417,28 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
                     string json = File.ReadAllText(backupPath);
                     var backup = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                     
-                    // Restore settings from backup
-                    LogMessage("Restoring from backup...");
+                    if (backup != null && backup.ContainsKey("Settings"))
+                    {
+                        var settings = backup["Settings"] as JsonElement?;
+                        if (settings.HasValue)
+                        {
+                            // Restore registry values
+                            foreach (var setting in settings.Value.EnumerateObject())
+                            {
+                                if (setting.Name.StartsWith("Service_"))
+                                {
+                                    // Restore service
+                                    string serviceName = setting.Name.Replace("Service_", "");
+                                    ExecuteCommand($"sc config {serviceName} start= auto");
+                                }
+                                else
+                                {
+                                    // Restore registry value
+                                    RestoreRegistryValue(setting.Name, setting.Value);
+                                }
+                            }
+                        }
+                    }
                     
                     // Re-enable services
                     if (isAdmin)
@@ -1262,6 +1474,33 @@ System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDoc
             
             MessageBox.Show("All optimizations have been reverted.\n\nRestart recommended.", 
                 "KOALA V3", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void RestoreRegistryValue(string name, JsonElement value)
+        {
+            try
+            {
+                switch (name)
+                {
+                    case "SystemResponsiveness":
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                            "SystemResponsiveness", value.GetInt32(), RegistryValueKind.DWord);
+                        break;
+                    case "GameDVR_Enabled":
+                        Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
+                            "GameDVR_Enabled", value.GetInt32(), RegistryValueKind.DWord);
+                        break;
+                    case "Win32PrioritySeparation":
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
+                            "Win32PrioritySeparation", value.GetInt32(), RegistryValueKind.DWord);
+                        break;
+                    case "NetworkThrottlingIndex":
+                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                            "NetworkThrottlingIndex", value.GetInt32(), RegistryValueKind.DWord);
+                        break;
+                }
+            }
+            catch { }
         }
         #endregion
 
