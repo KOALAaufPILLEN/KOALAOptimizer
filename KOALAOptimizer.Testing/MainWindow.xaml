@@ -155,7 +155,7 @@
                 <!-- Kernel & Critical Optimizations (Performance Mode) -->
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="KernelHeader" Style="{StaticResource CollapsibleHeader}" 
-                                 Content="Kernel & Critical Optimizations (Performance Mode Only)" Tag="⚠️" 
+                                 Content="Kernel &amp; Critical Optimizations (Performance Mode Only)" Tag="⚠️" 
                                  Click="ToggleSection_Click" Foreground="Orange"/>
                     <Border Name="KernelContent" Background="#0a0a0a" BorderBrush="Orange" 
                            BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
@@ -183,7 +183,7 @@
                 <!-- Smart Gaming Detection -->
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="DetectionHeader" Style="{StaticResource CollapsibleHeader}" 
-                                 Content="Smart Gaming Detection & Auto-Optimization" Tag="🎯" Click="ToggleSection_Click"/>
+                                 Content="Smart Gaming Detection &amp; Auto-Optimization" Tag="🎯" Click="ToggleSection_Click"/>
                     <Border Name="DetectionContent" Background="#0a0a0a" BorderBrush="#00ff00" 
                            BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
                         <WrapPanel>
