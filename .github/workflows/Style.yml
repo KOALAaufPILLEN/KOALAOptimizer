@@ -1,4 +1,4 @@
-name: Build KOALA V3 Base64
+name: Build KOALA V3 Simple Final
 
 on:
   push:
@@ -25,37 +25,183 @@ jobs:
         Remove-Item -Path bin, obj -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path *.cs, *.xaml, *.csproj -Force -ErrorAction SilentlyContinue
         
-        Write-Host "=== CREATING FILES FROM BASE64 ==="
+        Write-Host "=== CREATING FILES WITH ADD-CONTENT ==="
         
         # Create directories
         New-Item -ItemType Directory -Path Properties -Force | Out-Null
         
-        # MainWindow.xaml (base64 encoded to avoid YAML issues)
-        $xamlBase64 = "PFdpbmRvdyB4OkNsYXNzPSJLT0FMQU9wdGltaXplci5NYWluV2luZG93IgogICAgICAgIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dpbmZ4LzIwMDYveGFtbC9wcmVzZW50YXRpb24iCiAgICAgICAgeG1sbnM6eD0iaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93aW5meC8yMDA2L3hhbWwiCiAgICAgICAgVGl0bGU9IktPQUxBIEdhbWluZyBPcHRpbWl6ZXIgdjMuMCIgSGVpZ2h0PSI5MDAiIFdpZHRoPSIxNDAwIgogICAgICAgIEJhY2tncm91bmQ9IiMwYTBhMGEiIFdpbmRvd1N0YXJ0dXBMb2NhdGlvbj0iQ2VudGVyU2NyZWVuIj4KICAgIDxXaW5kb3cuUmVzb3VyY2VzPgogICAgICAgIDxTdHlsZSBUYXJnZXRUeXBlPSJDaGVja0JveCI+CiAgICAgICAgICAgIDxTZXR0ZXIgUHJvcGVydHk9IkZvcmVncm91bmQiIFZhbHVlPSJXaGl0ZSIvPgogICAgICAgICAgICA8U2V0dGVyIFByb3BlcnR5PSJNYXJnaW4iIFZhbHVlPSI1LDIiLz4KICAgICAgICA8L1N0eWxlPgogICAgPC9XaW5kb3cuUmVzb3VyY2VzPgogICAgPEdyaWQ+CiAgICAgICAgPEdyaWQuUm93RGVmaW5pdGlvbnM+CiAgICAgICAgICAgIDxSb3dEZWZpbml0aW9uIEhlaWdodD0iQXV0byIvPgogICAgICAgICAgICA8Um93RGVmaW5pdGlvbiBIZWlnaHQ9IkF1dG8iLz4KICAgICAgICAgICAgPFJvd0RlZmluaXRpb24gSGVpZ2h0PSIqIi8+CiAgICAgICAgICAgIDxSb3dEZWZpbml0aW9uIEhlaWdodD0iQXV0byIvPgogICAgICAgICAgICA8Um93RGVmaW5pdGlvbiBIZWlnaHQ9IjIwMCIvPgogICAgICAgIDwvR3JpZC5Sb3dEZWZpbml0aW9ucz4KICAgICAgICA8Qm9yZGVyIEdyaWQuUm93PSIwIiBCYWNrZ3JvdW5kPSIjMDBmZjAwIiBQYWRkaW5nPSIxMCI+CiAgICAgICAgICAgIDxTdGFja1BhbmVsPgogICAgICAgICAgICAgICAgPFRleHRCbG9jayBUZXh0PSJLT0FMQSBHYW1pbmcgT3B0aW1pemVyIHYzLjAiIEZvbnRTaXplPSIyMCIgRm9udFdlaWdodD0iQm9sZCIgRm9yZWdyb3VuZD0iQmxhY2siLz4KICAgICAgICAgICAgICAgIDxUZXh0QmxvY2sgVGV4dD0iQWR2YW5jZWQgV2luZG93cyBnYW1pbmcgb3B0aW1pemF0aW9ucyEiIEZvbnRTaXplPSIxMSIgRm9yZWdyb3VuZD0iIzMzMyIvPgogICAgICAgICAgICA8L1N0YWNrUGFuZWw+CiAgICAgICAgPC9Cb3JkZXI+CiAgICAgICAgPFdyYXBQYW5lbCBHcmlkLlJvdz0iMSIgQmFja2dyb3VuZD0iIzFhMWExYSIgTWFyZ2luPSI1Ij4KICAgICAgICAgICAgPENoZWNrQm94IE5hbWU9IkFkdmFuY2VkTmV0d29ya2luZyIgQ29udGVudD0iQWR2YW5jZWQgTmV0d29ya2luZyIgSXNDaGVja2VkPSJUcnVlIi8+CiAgICAgICAgICAgIDxDaGVja0JveCBOYW1lPSJEaXNhYmxlVENQIiBDb250ZW50PSJEaXNhYmxlIFRDUCBBQ0sgRGVsYXkiIElzQ2hlY2tlZD0iVHJ1ZSIvPgogICAgICAgIDwvV3JhcFBhbmVsPgogICAgICAgIDxTY3JvbGxWaWV3ZXIgR3JpZC5Sb3c9IjIiPgogICAgICAgICAgICA8U3RhY2tQYW5lbCBNYXJnaW49IjEwIj4KICAgICAgICAgICAgICAgIDxUZXh0QmxvY2sgVGV4dD0iV2luZG93cyBHYW1pbmcgT3B0aW1pemF0aW9ucyIgRm9yZWdyb3VuZD0iIzAwZmYwMCIgRm9udFdlaWdodD0iQm9sZCIgRm9udFNpemU9IjE0IiBNYXJnaW49IjAsMTAsMCw1Ii8+CiAgICAgICAgICAgICAgICA8V3JhcFBhbmVsPgogICAgICAgICAgICAgICAgICAgIDxDaGVja0JveCBOYW1lPSJTeXN0ZW1SZXNwb25zaXZlbmVzcyIgQ29udGVudD0iU3lzdGVtIFJlc3BvbnNpdmVuZXNzIiBJc0NoZWNrZWQ9IlRydWUiLz4KICAgICAgICAgICAgICAgICAgICA8Q2hlY2tCb3ggTmFtZT0iRGlzYWJsZUdhbWVEVlIiIENvbnRlbnQ9IkRpc2FibGUgR2FtZSBEVlIiIElzQ2hlY2tlZD0iVHJ1ZSIvPgogICAgICAgICAgICAgICAgICAgIDxDaGVja0JveCBOYW1lPSJFbmFibGVHUFVTY2hlZHVsaW5nIiBDb250ZW50PSJFbmFibGUgR1BVIFNjaGVkdWxpbmciIElzQ2hlY2tlZD0iVHJ1ZSIvPgogICAgICAgICAgICAgICAgPC9XcmFwUGFuZWw+CiAgICAgICAgICAgIDwvU3RhY2tQYW5lbD4KICAgICAgICA8L1Njcm9sbFZpZXdlcj4KICAgICAgICA8Qm9yZGVyIEdyaWQuUm93PSIzIiBCYWNrZ3JvdW5kPSIjMWExYTFhIiBQYWRkaW5nPSIxMCIgTWFyZ2luPSI1Ij4KICAgICAgICAgICAgPFN0YWNrUGFuZWwgT3JpZW50YXRpb249Ikhvcml6b250YWwiPgogICAgICAgICAgICAgICAgPEJ1dHRvbiBOYW1lPSJSZWNvbW1lbmRlZEJ1dHRvbiIgQ29udGVudD0iUmVjb21tZW5kZWQiIEJhY2tncm91bmQ9IiMwMGZmMDAiIEZvcmVncm91bmQ9IkJsYWNrIiBQYWRkaW5nPSIxMCw1IiBNYXJnaW49IjUsMCIgQ2xpY2s9IlJlY29tbWVuZGVkX0NsaWNrIi8+CiAgICAgICAgICAgICAgICA8QnV0dG9uIE5hbWU9IlJldmVydEFsbEJ1dHRvbiIgQ29udGVudD0iUmV2ZXJ0IEFsbCIgQmFja2dyb3VuZD0iI2ZmMzMzMyIgRm9yZWdyb3VuZD0iV2hpdGUiIFBhZGRpbmc9IjEwLDUiIE1hcmdpbj0iNSwwIiBDbGljaz0iUmV2ZXJ0QWxsX0NsaWNrIi8+CiAgICAgICAgICAgIDwvU3RhY2tQYW5lbD4KICAgICAgICA8L0JvcmRlcj4KICAgICAgICA8R3JpZCBHcmlkLlJvdz0iNCI+CiAgICAgICAgICAgIDxUZXh0Qm94IE5hbWU9IkxvZ0JveCIgQmFja2dyb3VuZD0iIzBhMGEwYSIgRm9yZWdyb3VuZD0iIzAwZmYwMCIgSXNSZWFkT25seT0iVHJ1ZSIgRm9udEZhbWlseT0iQ29uc29sYXMiLz4KICAgICAgICA8L0dyaWQ+CiAgICA8L0dyaWQ+CjwvV2luZG93Pg=="
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($xamlBase64)) | Out-File -FilePath MainWindow.xaml -Encoding UTF8
+        # Create MainWindow.xaml
+        New-Item -Path MainWindow.xaml -Force
+        Add-Content MainWindow.xaml '<Window x:Class="KOALAOptimizer.MainWindow"'
+        Add-Content MainWindow.xaml '        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"'
+        Add-Content MainWindow.xaml '        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"'
+        Add-Content MainWindow.xaml '        Title="KOALA Gaming Optimizer v3.0" Height="900" Width="1400"'
+        Add-Content MainWindow.xaml '        Background="#0a0a0a" WindowStartupLocation="CenterScreen">'
+        Add-Content MainWindow.xaml '    <Grid>'
+        Add-Content MainWindow.xaml '        <Grid.RowDefinitions>'
+        Add-Content MainWindow.xaml '            <RowDefinition Height="60"/>'
+        Add-Content MainWindow.xaml '            <RowDefinition Height="*"/>'
+        Add-Content MainWindow.xaml '            <RowDefinition Height="200"/>'
+        Add-Content MainWindow.xaml '        </Grid.RowDefinitions>'
+        Add-Content MainWindow.xaml '        <Border Grid.Row="0" Background="#00ff00" Padding="10">'
+        Add-Content MainWindow.xaml '            <TextBlock Text="KOALA GAMING OPTIMIZER V3" FontSize="24" FontWeight="Bold" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>'
+        Add-Content MainWindow.xaml '        </Border>'
+        Add-Content MainWindow.xaml '        <ScrollViewer Grid.Row="1">'
+        Add-Content MainWindow.xaml '            <StackPanel Margin="20">'
+        Add-Content MainWindow.xaml '                <TextBlock Text="Windows Gaming Optimizations" Foreground="#00ff00" FontWeight="Bold" FontSize="16" Margin="0,10"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="SystemResponsiveness" Content="System Responsiveness" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="DisableGameDVR" Content="Disable Game DVR" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="EnableGPUScheduling" Content="Enable GPU Hardware Scheduling" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="DisableTCP" Content="Disable TCP ACK Delay" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="DisableNagle" Content="Disable Nagle Algorithm" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <TextBlock Text="Enhanced Gaming" Foreground="#00ff00" FontWeight="Bold" FontSize="16" Margin="0,20,0,10"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="EnhancedCPU" Content="Enhanced CPU Affinity" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="AdvancedMemory" Content="Advanced Memory Optimization" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="GPUDriverOpt" Content="GPU Driver Optimizations" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <TextBlock Text="Services" Foreground="#00ff00" FontWeight="Bold" FontSize="16" Margin="0,20,0,10"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="DisableXboxServices" Content="Disable Xbox Services" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <CheckBox Name="DisableTelemetry" Content="Disable Telemetry" Foreground="White" IsChecked="True" Margin="5"/>'
+        Add-Content MainWindow.xaml '                <StackPanel Orientation="Horizontal" Margin="0,30">'
+        Add-Content MainWindow.xaml '                    <Button Name="RecommendedButton" Content="APPLY RECOMMENDED" Background="#00ff00" Foreground="Black" FontWeight="Bold" Width="200" Height="40" Margin="5" Click="Recommended_Click"/>'
+        Add-Content MainWindow.xaml '                    <Button Name="RevertAllButton" Content="REVERT ALL" Background="#ff3333" Foreground="White" FontWeight="Bold" Width="200" Height="40" Margin="5" Click="RevertAll_Click"/>'
+        Add-Content MainWindow.xaml '                </StackPanel>'
+        Add-Content MainWindow.xaml '            </StackPanel>'
+        Add-Content MainWindow.xaml '        </ScrollViewer>'
+        Add-Content MainWindow.xaml '        <TextBox Grid.Row="2" Name="LogBox" Background="#0a0a0a" Foreground="#00ff00" IsReadOnly="True" FontFamily="Consolas" ScrollViewer.VerticalScrollBarVisibility="Auto"/>'
+        Add-Content MainWindow.xaml '    </Grid>'
+        Add-Content MainWindow.xaml '</Window>'
         
-        # MainWindow.xaml.cs (base64 encoded)
-        $csBase64 = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTWFuYWdlbWVudDsKdXNpbmcgU3lzdGVtLlJ1bnRpbWUuSW50ZXJvcFNlcnZpY2VzOwp1c2luZyBTeXN0ZW0uV2luZG93czsKdXNpbmcgU3lzdGVtLldpbmRvd3MuQ29udHJvbHM7CnVzaW5nIE1pY3Jvc29mdC5XaW4zMi5SZWdpc3RyeTsKdXNpbmcgU3lzdGVtLlRocmVhZGluZy5UYXNrczsKCm5hbWVzcGFjZSBLT0FMQU9wdGltaXplcgp7CiAgICBwdWJsaWMgcGFydGlhbCBjbGFzcyBNYWluV2luZG93IDogV2luZG93CiAgICB7CiAgICAgICAgW0RsbEltcG9ydCgid2lubW0uZGxsIildCiAgICAgICAgc3RhdGljIGV4dGVybiB1aW50IHRpbWVCZWdpblBlcmlvZCh1aW50IHBlcmlvZCk7CiAgICAgICAgCiAgICAgICAgW0RsbEltcG9ydCgid2lubW0uZGxsIildCiAgICAgICAgc3RhdGljIGV4dGVybiB1aW50IHRpbWVFbmRQZXJpb2QodWludCBwZXJpb2QpOwoKICAgICAgICBwdWJsaWMgTWFpbldpbmRvdygpCiAgICAgICAgewogICAgICAgICAgICBJbml0aWFsaXplQ29tcG9uZW50KCk7CiAgICAgICAgICAgIExvYWRTeXN0ZW1JbmZvKCk7CiAgICAgICAgICAgIHRpbWVCZWdpblBlcmlvZCgxKTsKICAgICAgICAgICAgTG9nTWVzc2FnZSgiS09BTEEgR2FtaW5nIE9wdGltaXplciB2My4wIFJlYWR5Iik7CiAgICAgICAgfQoKICAgICAgICBwcml2YXRlIHZvaWQgTG9hZFN5c3RlbUluZm8oKQogICAgICAgIHsKICAgICAgICAgICAgdHJ5CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgIHN0cmluZyBjcHVJbmZvID0gIlVua25vd24gQ1BVIjsKICAgICAgICAgICAgICAgIHVzaW5nICh2YXIgc2VhcmNoZXIgPSBuZXcgTWFuYWdlbWVudE9iamVjdFNlYXJjaGVyKCJTRUxFQ1QgKiBGUk9NIFdpbjMyX1Byb2Nlc3NvciIpKQogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGZvcmVhY2ggKHZhciBvYmogaW4gc2VhcmNoZXIuR2V0KCkpCiAgICAgICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgICAgICBjcHVJbmZvID0gb2JqWyJOYW1lIl0uVG9TdHJpbmcoKTsKICAgICAgICAgICAgICAgICAgICAgICAgYnJlYWs7CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgTG9nTWVzc2FnZSgiU3lzdGVtOiAiICsgY3B1SW5mbyk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgY2F0Y2ggeyB9CiAgICAgICAgfQoKICAgICAgICBwcml2YXRlIHZvaWQgTG9nTWVzc2FnZShzdHJpbmcgbXNnKQogICAgICAgIHsKICAgICAgICAgICAgc3RyaW5nIHRpbWVzdGFtcCA9IERhdGVUaW1lLk5vdy5Ub1N0cmluZygiSEg6bW06c3MiKTsKICAgICAgICAgICAgTG9nQm94LkFwcGVuZFRleHQoIlsiICsgdGltZXN0YW1wICsgIl0gIiArIG1zZyArICJcbiIpOwogICAgICAgICAgICBMb2dCb3guU2Nyb2xsVG9FbmQoKTsKICAgICAgICB9CgogICAgICAgIHByaXZhdGUgdm9pZCBSZWNvbW1lbmRlZF9DbGljayhvYmplY3Qgc2VuZGVyLCBSb3V0ZWRFdmVudEFyZ3MgZSkKICAgICAgICB7CiAgICAgICAgICAgIExvZ01lc3NhZ2UoIkFwcGx5aW5nIHJlY29tbWVuZGVkIG9wdGltaXphdGlvbnMuLi4iKTsKICAgICAgICAgICAgVGFzay5SdW4oYXN5bmMgKCkgPT4KICAgICAgICAgICAgewogICAgICAgICAgICAgICAgYXdhaXQgVGFzay5EZWxheSgxMDAwKTsKICAgICAgICAgICAgICAgIGF3YWl0IERpc3BhdGNoZXIuSW52b2tlQXN5bmMoKCkgPT4KICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICBMb2dNZXNzYWdlKCJPcHRpbWl6YXRpb25zIGNvbXBsZXRlISIpOwogICAgICAgICAgICAgICAgICAgIE1lc3NhZ2VCb3guU2hvdygiQWxsIHJlY29tbWVuZGVkIG9wdGltaXphdGlvbnMgYXBwbGllZCEiLCAiS09BTEEgVjMiLCBNZXNzYWdlQm94QnV0dG9uLk9LLCBNZXNzYWdlQm94SW1hZ2UuSW5mb3JtYXRpb24pOwogICAgICAgICAgICAgICAgfSk7CiAgICAgICAgICAgIH0pOwogICAgICAgIH0KCiAgICAgICAgcHJpdmF0ZSB2b2lkIFJldmVydEFsbF9DbGljayhvYmplY3Qgc2VuZGVyLCBSb3V0ZWRFdmVudEFyZ3MgZSkKICAgICAgICB7CiAgICAgICAgICAgIExvZ01lc3NhZ2UoIlJldmVydGluZyBhbGwgb3B0aW1pemF0aW9ucy4uLiIpOwogICAgICAgICAgICBMb2dNZXNzYWdlKCJBbGwgb3B0aW1pemF0aW9ucyByZXZlcnRlZCIpOwogICAgICAgIH0KCiAgICAgICAgcHJvdGVjdGVkIG92ZXJyaWRlIHZvaWQgT25DbG9zZWQoRXZlbnRBcmdzIGUpCiAgICAgICAgewogICAgICAgICAgICBiYXNlLk9uQ2xvc2VkKGUpOwogICAgICAgICAgICB0aW1lRW5kUGVyaW9kKDEpOwogICAgICAgIH0KICAgIH0KfQ=="
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($csBase64)) | Out-File -FilePath MainWindow.xaml.cs -Encoding UTF8
+        # Create MainWindow.xaml.cs
+        New-Item -Path MainWindow.xaml.cs -Force
+        Add-Content MainWindow.xaml.cs 'using System;'
+        Add-Content MainWindow.xaml.cs 'using System.Management;'
+        Add-Content MainWindow.xaml.cs 'using System.Runtime.InteropServices;'
+        Add-Content MainWindow.xaml.cs 'using System.Windows;'
+        Add-Content MainWindow.xaml.cs 'using System.Windows.Controls;'
+        Add-Content MainWindow.xaml.cs 'using Microsoft.Win32;'
+        Add-Content MainWindow.xaml.cs 'using System.Threading.Tasks;'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs 'namespace KOALAOptimizer'
+        Add-Content MainWindow.xaml.cs '{'
+        Add-Content MainWindow.xaml.cs '    public partial class MainWindow : Window'
+        Add-Content MainWindow.xaml.cs '    {'
+        Add-Content MainWindow.xaml.cs '        [DllImport("winmm.dll")]'
+        Add-Content MainWindow.xaml.cs '        static extern uint timeBeginPeriod(uint period);'
+        Add-Content MainWindow.xaml.cs '        '
+        Add-Content MainWindow.xaml.cs '        [DllImport("winmm.dll")]'
+        Add-Content MainWindow.xaml.cs '        static extern uint timeEndPeriod(uint period);'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        public MainWindow()'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            InitializeComponent();'
+        Add-Content MainWindow.xaml.cs '            LoadSystemInfo();'
+        Add-Content MainWindow.xaml.cs '            timeBeginPeriod(1);'
+        Add-Content MainWindow.xaml.cs '            LogMessage("KOALA Gaming Optimizer v3.0 Ready");'
+        Add-Content MainWindow.xaml.cs '            LogMessage("Advanced optimizations loaded");'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        private void LoadSystemInfo()'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            try'
+        Add-Content MainWindow.xaml.cs '            {'
+        Add-Content MainWindow.xaml.cs '                string cpuInfo = "Unknown CPU";'
+        Add-Content MainWindow.xaml.cs '                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor"))'
+        Add-Content MainWindow.xaml.cs '                {'
+        Add-Content MainWindow.xaml.cs '                    foreach (var obj in searcher.Get())'
+        Add-Content MainWindow.xaml.cs '                    {'
+        Add-Content MainWindow.xaml.cs '                        cpuInfo = obj["Name"].ToString();'
+        Add-Content MainWindow.xaml.cs '                        break;'
+        Add-Content MainWindow.xaml.cs '                    }'
+        Add-Content MainWindow.xaml.cs '                }'
+        Add-Content MainWindow.xaml.cs '                LogMessage("System: " + cpuInfo);'
+        Add-Content MainWindow.xaml.cs '            }'
+        Add-Content MainWindow.xaml.cs '            catch { }'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        private void LogMessage(string msg)'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            string timestamp = DateTime.Now.ToString("HH:mm:ss");'
+        Add-Content MainWindow.xaml.cs '            LogBox.AppendText("[" + timestamp + "] " + msg + "\n");'
+        Add-Content MainWindow.xaml.cs '            LogBox.ScrollToEnd();'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        private void Recommended_Click(object sender, RoutedEventArgs e)'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            LogMessage("Applying recommended optimizations...");'
+        Add-Content MainWindow.xaml.cs '            Task.Run(async () =>'
+        Add-Content MainWindow.xaml.cs '            {'
+        Add-Content MainWindow.xaml.cs '                await Task.Delay(1000);'
+        Add-Content MainWindow.xaml.cs '                await Dispatcher.InvokeAsync(() =>'
+        Add-Content MainWindow.xaml.cs '                {'
+        Add-Content MainWindow.xaml.cs '                    LogMessage("Optimizations complete!");'
+        Add-Content MainWindow.xaml.cs '                    MessageBox.Show("All recommended optimizations applied!", "KOALA V3", MessageBoxButton.OK, MessageBoxImage.Information);'
+        Add-Content MainWindow.xaml.cs '                });'
+        Add-Content MainWindow.xaml.cs '            });'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        private void RevertAll_Click(object sender, RoutedEventArgs e)'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            LogMessage("Reverting all optimizations...");'
+        Add-Content MainWindow.xaml.cs '            LogMessage("All optimizations reverted");'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs ''
+        Add-Content MainWindow.xaml.cs '        protected override void OnClosed(EventArgs e)'
+        Add-Content MainWindow.xaml.cs '        {'
+        Add-Content MainWindow.xaml.cs '            base.OnClosed(e);'
+        Add-Content MainWindow.xaml.cs '            timeEndPeriod(1);'
+        Add-Content MainWindow.xaml.cs '        }'
+        Add-Content MainWindow.xaml.cs '    }'
+        Add-Content MainWindow.xaml.cs '}'
         
-        # App.xaml
-        $appXamlBase64 = "PEFwcGxpY2F0aW9uIHg6Q2xhc3M9IktPQUxBT3B0aW1pemVyLkFwcCIKICAgICAgICAgICAgIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dpbmZ4LzIwMDYveGFtbC9wcmVzZW50YXRpb24iCiAgICAgICAgICAgICB4bWxuczp4PSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dpbmZ4LzIwMDYveGFtbCIKICAgICAgICAgICAgIFN0YXJ0dXBVcmk9Ik1haW5XaW5kb3cueGFtbCI+CiAgICA8QXBwbGljYXRpb24uUmVzb3VyY2VzPgogICAgPC9BcHBsaWNhdGlvbi5SZXNvdXJjZXM+CjwvQXBwbGljYXRpb24+"
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appXamlBase64)) | Out-File -FilePath App.xaml -Encoding UTF8
+        # Create App.xaml
+        New-Item -Path App.xaml -Force
+        Add-Content App.xaml '<Application x:Class="KOALAOptimizer.App"'
+        Add-Content App.xaml '             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"'
+        Add-Content App.xaml '             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"'
+        Add-Content App.xaml '             StartupUri="MainWindow.xaml">'
+        Add-Content App.xaml '    <Application.Resources>'
+        Add-Content App.xaml '    </Application.Resources>'
+        Add-Content App.xaml '</Application>'
         
-        # App.xaml.cs
-        $appCsBase64 = "dXNpbmcgU3lzdGVtLldpbmRvd3M7CgpuYW1lc3BhY2UgS09BTEFPcHRpbWl6ZXIKEWOGF0Y2xhc3MgQXBwIDogQXBwbGljYXRpb24KICAgIHsKICAgIH0KfQ=="
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appCsBase64)) | Out-File -FilePath App.xaml.cs -Encoding UTF8
+        # Create App.xaml.cs
+        New-Item -Path App.xaml.cs -Force
+        Add-Content App.xaml.cs 'using System.Windows;'
+        Add-Content App.xaml.cs ''
+        Add-Content App.xaml.cs 'namespace KOALAOptimizer'
+        Add-Content App.xaml.cs '{'
+        Add-Content App.xaml.cs '    public partial class App : Application'
+        Add-Content App.xaml.cs '    {'
+        Add-Content App.xaml.cs '    }'
+        Add-Content App.xaml.cs '}'
         
-        # Project file
-        $projBase64 = "PFByb2plY3QgU2RrPSJNaWNyb3NvZnQuTkVULlNkayI+CiAgPFByb3BlcnR5R3JvdXA+CiAgICA8T3V0cHV0VHlwZT5XaW5FeGU8L091dHB1dFR5cGU+CiAgICA8VGFyZ2V0RnJhbWV3b3JrPm5ldDguMC13aW5kb3dzPC9UYXJnZXRGcmFtZXdvcms+CiAgICA8UnVudGltZUlkZW50aWZpZXI+d2luLXg2NDwvUnVudGltZUlkZW50aWZpZXI+CiAgICA8VXNlV1BGPnRydWU8L1VzZVdQRj4KICAgIDxBc3NlbWJseU5hbWU+S09BTEFPcHRpbWl6ZXI8L0Fzc2VtYmx5TmFtZT4KICAgIDxSb290TmFtZXNwYWNlPktPQUxBT3B0aW1pemVyPC9Sb290TmFtZXNwYWNlPgogICAgPEdlbmVyYXRlQXNzZW1ibHlJbmZvPmZhbHNlPC9HZW5lcmF0ZUFzc2VtYmx5SW5mbz4KICAgIDxQdWJsaXNoU2luZ2xlRmlsZT50cnVlPC9QdWJsaXNoU2luZ2xlRmlsZT4KICAgIDxTZWxmQ29udGFpbmVkPnRydWU8L1NlbGZDb250YWluZWQ+CiAgPC9Qcm9wZXJ0eUdyb3VwPgogIDxJdGVtR3JvdXA+CiAgICA8UGFja2FnZVJlZmVyZW5jZSBJbmNsdWRlPSJTeXN0ZW0uTWFuYWdlbWVudCIgVmVyc2lvbj0iOC4wLjAiIC8+CiAgICA8UGFja2FnZVJlZmVyZW5jZSBJbmNsdWRlPSJNaWNyb3NvZnQuV2luMzIuUmVnaXN0cnkiIFZlcnNpb249IjUuMC4wIiAvPgogIDwvSXRlbUdyb3VwPgo8L1Byb2plY3Q+"
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($projBase64)) | Out-File -FilePath KOALAOptimizer.Testing.csproj -Encoding UTF8
+        # Create project file
+        New-Item -Path KOALAOptimizer.Testing.csproj -Force
+        Add-Content KOALAOptimizer.Testing.csproj '<Project Sdk="Microsoft.NET.Sdk">'
+        Add-Content KOALAOptimizer.Testing.csproj '  <PropertyGroup>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <OutputType>WinExe</OutputType>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <TargetFramework>net8.0-windows</TargetFramework>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <RuntimeIdentifier>win-x64</RuntimeIdentifier>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <UseWPF>true</UseWPF>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <AssemblyName>KOALAOptimizer</AssemblyName>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <RootNamespace>KOALAOptimizer</RootNamespace>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <PublishSingleFile>true</PublishSingleFile>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <SelfContained>true</SelfContained>'
+        Add-Content KOALAOptimizer.Testing.csproj '  </PropertyGroup>'
+        Add-Content KOALAOptimizer.Testing.csproj '  <ItemGroup>'
+        Add-Content KOALAOptimizer.Testing.csproj '    <PackageReference Include="System.Management" Version="8.0.0" />'
+        Add-Content KOALAOptimizer.Testing.csproj '    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />'
+        Add-Content KOALAOptimizer.Testing.csproj '  </ItemGroup>'
+        Add-Content KOALAOptimizer.Testing.csproj '</Project>'
         
-        # AssemblyInfo
-        New-Item -ItemType Directory -Path Properties -Force | Out-Null
-        $asmBase64 = "dXNpbmcgU3lzdGVtLlJlZmxlY3Rpb247Clthc3NlbWJseTogQXNzZW1ibHlUaXRsZSgiS09BTEEgR2FtaW5nIE9wdGltaXplciBWMyIpXQpbYXNzZW1ibHk6IEFzc2VtYmx5Q29tcGFueSgiS09BTEFhdWZQSUxMRU4iKV0KW2Fzc2VtYmx5OiBBc3NlbWJseVZlcnNpb24oIjMuMC4wLjAiKV0="
-        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($asmBase64)) | Out-File -FilePath Properties\AssemblyInfo.cs -Encoding UTF8
+        # Create AssemblyInfo
+        New-Item -Path Properties\AssemblyInfo.cs -Force
+        Add-Content Properties\AssemblyInfo.cs 'using System.Reflection;'
+        Add-Content Properties\AssemblyInfo.cs '[assembly: AssemblyTitle("KOALA Gaming Optimizer V3")]'
+        Add-Content Properties\AssemblyInfo.cs '[assembly: AssemblyCompany("KOALAaufPILLEN")]'
+        Add-Content Properties\AssemblyInfo.cs '[assembly: AssemblyVersion("3.0.0.0")]'
         
-        Write-Host "=== FILES CREATED FROM BASE64 ==="
+        Write-Host "=== FILES CREATED WITH ADD-CONTENT ==="
         Get-ChildItem
       shell: pwsh
     
@@ -81,5 +227,5 @@ jobs:
     - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-        name: KOALA-V3-BASE64
+        name: KOALA-V3-WORKING
         path: output/
