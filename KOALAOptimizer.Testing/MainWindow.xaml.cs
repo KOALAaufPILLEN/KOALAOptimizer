@@ -1,700 +1,539 @@
 using System;
-using System.Collections.Generic;  // <-- THIS WAS MISSING!
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using Microsoft.Win32;
 using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
+using System.ServiceProcess;
+using System.Security.Principal;
 
 namespace KOALAOptimizer
 {
     public partial class MainWindow : Window
     {
-        private Dictionary<string, object> backupData = new Dictionary<string, object>();
-        private readonly string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "KOALA-Backup.json");
-        
+        #region Win32 API Imports
         [DllImport("winmm.dll")]
         static extern uint timeBeginPeriod(uint period);
         
         [DllImport("winmm.dll")]
         static extern uint timeEndPeriod(uint period);
-        
-        [DllImport("ntdll.dll")]
+
+        [DllImport("ntdll.dll", SetLastError = true)]
         static extern int NtSetTimerResolution(int DesiredResolution, bool SetResolution, out int CurrentResolution);
-        
+
         [DllImport("kernel32.dll")]
-        static extern bool SetProcessWorkingSetSize(IntPtr proc, int min, int max);
+        static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll")]
+        static extern bool SetProcessWorkingSetSize(IntPtr hProcess, int dwMinimumWorkingSetSize, int dwMaximumWorkingSetSize);
+
+        [DllImport("kernel32.dll")]
+        static extern bool SetProcessAffinityMask(IntPtr hProcess, IntPtr dwProcessAffinityMask);
+
+        [DllImport("kernel32.dll")]
+        static extern bool GetProcessAffinityMask(IntPtr hProcess, out IntPtr lpProcessAffinityMask, out IntPtr lpSystemAffinityMask);
+        #endregion
+
+        #region Fields
+        private string backupPath;
+        private Dictionary<string, object> originalSettings = new Dictionary<string, object>();
+        private Window crosshairOverlay;
+        private Dictionary<string, GameProfile> gameProfiles;
+        private System.Windows.Threading.DispatcherTimer gameDetectionTimer;
+        private string currentDetectedGame = null;
+        private bool isAdmin = false;
+        #endregion
+
+        #region Game Profile Class
+        public class GameProfile
+        {
+            public string DisplayName { get; set; }
+            public List<string> ProcessNames { get; set; }
+            public string Priority { get; set; }
+            public string Affinity { get; set; }
+            public List<string> SpecificTweaks { get; set; }
+        }
+        #endregion
 
         public MainWindow()
         {
             InitializeComponent();
+            InitializeOptimizer();
+        }
+
+        private void InitializeOptimizer()
+        {
+            // Check admin privileges
+            isAdmin = IsRunAsAdmin();
+            
+            // Set backup path
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            backupPath = System.IO.Path.Combine(appPath, "KoalaBackup.json");
+            
+            // Initialize game profiles
+            InitializeGameProfiles();
+            
+            // Load system info
             LoadSystemInfo();
-            CheckAdminStatus();
-            SetupModeListeners();
-        }
-
-        private void SetupModeListeners()
-        {
-            SafeModeRadio.Checked += (s, e) => UpdateOptionsBasedOnMode();
-            PerformanceRadio.Checked += (s, e) => UpdateOptionsBasedOnMode();
-            KernelModeRadio.Checked += (s, e) => ShowKernelWarning();
-        }
-
-        private void UpdateOptionsBasedOnMode()
-        {
-            if (SafeModeRadio.IsChecked == true)
+            
+            // Set 1ms timer resolution
+            timeBeginPeriod(1);
+            
+            // Log initialization
+            LogMessage("🚀 KOALA Gaming Optimizer v3.0 initialized");
+            LogMessage($"Admin Mode: {(isAdmin ? "✅ ACTIVE" : "⚠️ LIMITED")}");
+            
+            if (!isAdmin)
             {
-                // Safe mode - disable risky options
-                ServicesCheckBox.IsEnabled = false;
-                ServicesCheckBox.IsChecked = false;
-                TimerCheckBox.IsEnabled = false;
-                TimerCheckBox.IsChecked = false;
-                CoreParkingCheckBox.IsEnabled = false;
-                CoreParkingCheckBox.IsChecked = false;
-                CStatesCheckBox.IsEnabled = false;
-                CStatesCheckBox.IsChecked = false;
-                MitigationsCheckBox.IsEnabled = false;
-                MitigationsCheckBox.IsChecked = false;
-                MSICheckBox.IsEnabled = false;
-                MSICheckBox.IsChecked = false;
-                InterruptCheckBox.IsEnabled = false;
-                InterruptCheckBox.IsChecked = false;
-                
-                LogMessage("✅ Safe Mode - Anti-cheat compatible optimizations only");
+                LogMessage("⚠️ Run as Administrator for full optimization features!", "Warning");
+                DisableAdminFeatures();
             }
-            else if (PerformanceRadio.IsChecked == true)
-            {
-                // Performance mode - enable most options
-                ServicesCheckBox.IsEnabled = true;
-                TimerCheckBox.IsEnabled = true;
-                CoreParkingCheckBox.IsEnabled = true;
-                CStatesCheckBox.IsEnabled = true;
-                MitigationsCheckBox.IsEnabled = true;
-                MSICheckBox.IsEnabled = true;
-                InterruptCheckBox.IsEnabled = true;
-                
-                LogMessage("⚡ Performance Mode - Some features may trigger anti-cheats");
-            }
+            
+            // Initialize FOV slider event
+            FovSlider.ValueChanged += (s, e) => FovValue.Text = ((int)FovSlider.Value).ToString();
+            
+            // Start game detection timer
+            StartGameDetection();
+            
+            // Detect GPU vendor
+            DetectGPUVendor();
         }
 
-        private void ShowKernelWarning()
+        private void InitializeGameProfiles()
         {
-            if (KernelModeRadio.IsChecked == true)
+            gameProfiles = new Dictionary<string, GameProfile>
             {
-                var result = MessageBox.Show(
-                    "⚠️ KERNEL MODE WARNING ⚠️\n\n" +
-                    "This mode includes:\n" +
-                    "• BCDEdit modifications\n" +
-                    "• Kernel security changes\n" +
-                    "• Driver signing bypass\n" +
-                    "• Test mode activation\n\n" +
-                    "These changes WILL:\n" +
-                    "❌ Trigger ALL anti-cheat systems (EAC, BattlEye, Vanguard)\n" +
-                    "❌ Potentially cause system instability\n" +
-                    "❌ Require system restore to undo\n\n" +
-                    "Are you ABSOLUTELY SURE?",
-                    "KERNEL MODE - EXTREME WARNING",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                    
-                if (result == MessageBoxResult.Yes)
+                ["cs2"] = new GameProfile
                 {
-                    // Enable kernel options
-                    BCDEditCheckBox.IsEnabled = true;
-                    KernelDebugCheckBox.IsEnabled = true;
-                    DriverSignCheckBox.IsEnabled = true;
-                    TestModeCheckBox.IsEnabled = true;
-                    DEPCheckBox.IsEnabled = true;
-                    
-                    // Enable all other options
-                    UpdateOptionsBasedOnMode();
-                    
-                    LogMessage("🔥 KERNEL MODE ACTIVATED - USE AT YOUR OWN RISK!");
-                }
-                else
+                    DisplayName = "Counter-Strike 2",
+                    ProcessNames = new List<string> { "cs2", "cs2.exe" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "DisableNagle", "HighPrecisionTimer", "NetworkOptimization" }
+                },
+                ["valorant"] = new GameProfile
                 {
-                    SafeModeRadio.IsChecked = true;
+                    DisplayName = "Valorant",
+                    ProcessNames = new List<string> { "valorant", "valorant-win64-shipping" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "DisableNagle", "AntiCheatOptimization" }
+                },
+                ["fortnite"] = new GameProfile
+                {
+                    DisplayName = "Fortnite",
+                    ProcessNames = new List<string> { "fortniteclient-win64-shipping" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "GPUScheduling", "MemoryOptimization" }
+                },
+                ["apex"] = new GameProfile
+                {
+                    DisplayName = "Apex Legends",
+                    ProcessNames = new List<string> { "r5apex", "r5apex.exe" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "DisableNagle", "SourceEngineOptimization" }
+                },
+                ["warzone"] = new GameProfile
+                {
+                    DisplayName = "Call of Duty: Warzone",
+                    ProcessNames = new List<string> { "modernwarfare", "warzone", "cod" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "MemoryOptimization", "NetworkOptimization" }
+                },
+                ["bf6"] = new GameProfile
+                {
+                    DisplayName = "Battlefield 6",
+                    ProcessNames = new List<string> { "bf6event", "bf6", "battlefield" },
+                    Priority = "High",
+                    Affinity = "Auto",
+                    SpecificTweaks = new List<string> { "BF6Optimization", "MemoryOptimization", "NetworkOptimization", "GPUScheduling" }
                 }
-            }
+            };
+        }
+
+        private bool IsRunAsAdmin()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        private void DisableAdminFeatures()
+        {
+            // Disable kernel optimizations
+            KernelTimerResolution.IsEnabled = false;
+            DisablePagingExecutive.IsEnabled = false;
+            Win32PrioritySeparation.IsEnabled = false;
+            DisableSpeculativeMitigations.IsEnabled = false;
+            DisableTSXAutoBan.IsEnabled = false;
+            ThreadDPCEnable.IsEnabled = false;
+            DPCQueueDepth.IsEnabled = false;
+            
+            // Disable service controls
+            DisableXboxServices.IsEnabled = false;
+            DisablePrintSpooler.IsEnabled = false;
+            DisableSysMain.IsEnabled = false;
+            DisableTelemetryDiagTrack.IsEnabled = false;
+            DisableWindowsSearch.IsEnabled = false;
+            DisableTabletServices.IsEnabled = false;
+            DisableThemesService.IsEnabled = false;
+            DisableFax.IsEnabled = false;
+            
+            // Disable power management
+            UltimatePerformancePowerPlan.IsEnabled = false;
+            DisableHibernation.IsEnabled = false;
         }
 
         private void LoadSystemInfo()
         {
             try
             {
-                string info = "";
+                string cpuInfo = "Unknown CPU";
+                string gpuInfo = "Unknown GPU";
+                string ramInfo = "0 GB";
                 
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem"))
-                {
-                    foreach (var obj in searcher.Get())
-                    {
-                        info += $"OS: {obj["Caption"]} ({obj["Version"]})\n";
-                    }
-                }
-                
+                // Get CPU info
                 using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor"))
                 {
                     foreach (var obj in searcher.Get())
                     {
-                        info += $"CPU: {obj["Name"]}\n";
-                        info += $"Cores: {obj["NumberOfLogicalProcessors"]}\n";
+                        cpuInfo = obj["Name"].ToString();
+                        break;
                     }
                 }
                 
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_ComputerSystem"))
-                {
-                    foreach (var obj in searcher.Get())
-                    {
-                        var ram = Convert.ToDouble(obj["TotalPhysicalMemory"]) / (1024 * 1024 * 1024);
-                        info += $"RAM: {ram:F1} GB\n";
-                    }
-                }
-                
+                // Get GPU info
                 using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController"))
                 {
                     foreach (var obj in searcher.Get())
                     {
-                        var name = obj["Name"]?.ToString();
-                        if (!string.IsNullOrEmpty(name) && !name.Contains("Microsoft"))
+                        if (obj["Name"] != null && !obj["Name"].ToString().Contains("Microsoft"))
                         {
-                            info += $"GPU: {name}\n";
+                            gpuInfo = obj["Name"].ToString();
                             break;
                         }
                     }
                 }
                 
-                SystemInfoText.Text = info;
-                SystemInfoText.Foreground = new SolidColorBrush(Colors.LightGreen);
+                // Get RAM info
+                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_ComputerSystem"))
+                {
+                    foreach (var obj in searcher.Get())
+                    {
+                        double ram = Convert.ToDouble(obj["TotalPhysicalMemory"]) / (1024 * 1024 * 1024);
+                        ramInfo = $"{Math.Round(ram, 1)} GB";
+                        break;
+                    }
+                }
+                
+                LogMessage($"📊 System: CPU: {cpuInfo} | GPU: {gpuInfo} | RAM: {ramInfo}");
             }
             catch (Exception ex)
             {
-                SystemInfoText.Text = $"Error: {ex.Message}";
+                LogMessage($"Failed to load system info: {ex.Message}", "Error");
             }
         }
 
-        private void CheckAdminStatus()
+        private void DetectGPUVendor()
         {
-            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var principal = new System.Security.Principal.WindowsPrincipal(identity);
-            bool isAdmin = principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-            
-            if (isAdmin)
+            try
             {
-                AdminStatusText.Text = "✓ Administrator Mode";
-                AdminStatusText.Foreground = new SolidColorBrush(Colors.LightGreen);
+                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController"))
+                {
+                    foreach (var obj in searcher.Get())
+                    {
+                        string name = obj["Name"]?.ToString() ?? "";
+                        
+                        if (name.Contains("NVIDIA") || name.Contains("GeForce") || name.Contains("RTX") || name.Contains("GTX"))
+                        {
+                            NVIDIADisableTelemetry.Visibility = Visibility.Visible;
+                            LogMessage("🎮 NVIDIA GPU detected - vendor optimizations available");
+                        }
+                        else if (name.Contains("AMD") || name.Contains("Radeon") || name.Contains("RX"))
+                        {
+                            AMDDisableExternalEvents.Visibility = Visibility.Visible;
+                            LogMessage("🎮 AMD GPU detected - vendor optimizations available");
+                        }
+                        else if (name.Contains("Intel"))
+                        {
+                            IntelGraphicsOptimizations.Visibility = Visibility.Visible;
+                            LogMessage("🎮 Intel GPU detected - vendor optimizations available");
+                        }
+                    }
+                }
             }
-            else
+            catch { }
+        }
+
+        private void StartGameDetection()
+        {
+            gameDetectionTimer = new System.Windows.Threading.DispatcherTimer();
+            gameDetectionTimer.Interval = TimeSpan.FromSeconds(5);
+            gameDetectionTimer.Tick += DetectRunningGames;
+            gameDetectionTimer.Start();
+        }
+
+        private void DetectRunningGames(object sender, EventArgs e)
+        {
+            if (AutomaticGameDetection.IsChecked != true) return;
+            
+            var processes = Process.GetProcesses();
+            foreach (var profile in gameProfiles.Values)
             {
-                AdminStatusText.Text = "⚠ Run as Admin for full features";
-                AdminStatusText.Foreground = new SolidColorBrush(Colors.Yellow);
+                foreach (var processName in profile.ProcessNames)
+                {
+                    if (processes.Any(p => p.ProcessName.ToLower().Contains(processName.ToLower().Replace(".exe", ""))))
+                    {
+                        if (currentDetectedGame != profile.DisplayName)
+                        {
+                            currentDetectedGame = profile.DisplayName;
+                            LogMessage($"🎮 Game detected: {profile.DisplayName}");
+                            
+                            // Auto-select in combo
+                            for (int i = 0; i < GameProfileCombo.Items.Count; i++)
+                            {
+                                var item = GameProfileCombo.Items[i] as ComboBoxItem;
+                                if (item?.Content.ToString() == profile.DisplayName)
+                                {
+                                    GameProfileCombo.SelectedIndex = i;
+                                    break;
+                                }
+                            }
+                            
+                            // Apply game-specific tweaks if auto-profile switching is enabled
+                            if (AutoProfileSwitching.IsChecked == true)
+                            {
+                                ApplyGameProfile(profile);
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+            
+            if (currentDetectedGame != null)
+            {
+                LogMessage("🎮 No game detected");
+                currentDetectedGame = null;
             }
         }
 
-        private void LogMessage(string message)
+        private void ApplyGameProfile(GameProfile profile)
+        {
+            LogMessage($"Applying profile for {profile.DisplayName}...");
+            
+            foreach (var tweak in profile.SpecificTweaks)
+            {
+                switch (tweak)
+                {
+                    case "DisableNagle":
+                        ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", 
+                            "TcpNoDelay", 1, RegistryValueKind.DWord);
+                        break;
+                    case "HighPrecisionTimer":
+                        ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", 
+                            "GlobalTimerResolutionRequests", 1, RegistryValueKind.DWord);
+                        break;
+                    case "NetworkOptimization":
+                        ApplyNetworkOptimizations();
+                        break;
+                    case "MemoryOptimization":
+                        ApplyMemoryOptimizations();
+                        break;
+                    case "GPUScheduling":
+                        ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", 
+                            "HwSchMode", 2, RegistryValueKind.DWord);
+                        break;
+                    case "BF6Optimization":
+                        ApplyBF6Optimizations();
+                        break;
+                }
+            }
+        }
+
+        private void ApplyBF6Optimizations()
+        {
+            LogMessage("Applying Battlefield 6 specific optimizations...");
+            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", 
+                "DisablePagingExecutive", 1, RegistryValueKind.DWord);
+            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl", 
+                "Win32PrioritySeparation", 38, RegistryValueKind.DWord);
+            ApplyRegistryTweak(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", 
+                "SystemResponsiveness", 0, RegistryValueKind.DWord);
+        }
+
+        private void LogMessage(string message, string level = "Info")
         {
             string timestamp = DateTime.Now.ToString("HH:mm:ss");
-            LogText.AppendText($"[{timestamp}] {message}\n");
-            LogText.ScrollToEnd();
+            string logEntry = $"[{timestamp}] [{level}] {message}\n";
+            
+            LogBox.AppendText(logEntry);
+            LogBox.ScrollToEnd();
+            
+            // Update status
+            StatusText.Text = message.Length > 50 ? message.Substring(0, 50) + "..." : message;
         }
 
-        private void OptimizeButton_Click(object sender, RoutedEventArgs e)
+        private void ApplyRegistryTweak(string keyPath, string valueName, object value, RegistryValueKind valueKind)
         {
-            Task.Run(() => RunOptimizations());
-        }
-
-        private async void RunOptimizations()
-        {
-            await Dispatcher.InvokeAsync(() =>
+            if (!isAdmin && keyPath.StartsWith(@"HKEY_LOCAL_MACHINE"))
             {
-                LogText.Clear();
-                LogMessage("🐨 KOALA Optimizer V3 Starting...");
-                StatusText.Text = "Optimizing...";
-            });
-
-            CreateBackup();
-            
-            bool isSafeMode = await Dispatcher.InvokeAsync(() => SafeModeRadio.IsChecked == true);
-            bool isPerformanceMode = await Dispatcher.InvokeAsync(() => PerformanceRadio.IsChecked == true);
-            bool isKernelMode = await Dispatcher.InvokeAsync(() => KernelModeRadio.IsChecked == true);
-            
-            // SAFE OPTIMIZATIONS (work with all anti-cheats)
-            if (await Dispatcher.InvokeAsync(() => GpuCheckBox.IsChecked == true))
-            {
-                await ApplySafeGPUOptimizations();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => CpuCheckBox.IsChecked == true))
-            {
-                await ApplySafeCPUOptimizations();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => RamCheckBox.IsChecked == true))
-            {
-                await ApplySafeMemoryOptimizations();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => NetworkCheckBox.IsChecked == true))
-            {
-                await ApplySafeNetworkOptimizations();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => VisualCheckBox.IsChecked == true))
-            {
-                await OptimizeVisualEffects();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => GameDvrCheckBox.IsChecked == true))
-            {
-                await DisableGameDVR();
-            }
-            
-            if (await Dispatcher.InvokeAsync(() => MouseCheckBox.IsChecked == true))
-            {
-                await OptimizeMouseSettings();
-            }
-            
-            // PERFORMANCE MODE OPTIMIZATIONS (may trigger some anti-cheats)
-            if (isPerformanceMode || isKernelMode)
-            {
-                if (await Dispatcher.InvokeAsync(() => ServicesCheckBox.IsChecked == true))
-                {
-                    await DisableServices();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => TimerCheckBox.IsChecked == true))
-                {
-                    await SetTimerResolution();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => CoreParkingCheckBox.IsChecked == true))
-                {
-                    await DisableCoreParking();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => CStatesCheckBox.IsChecked == true))
-                {
-                    await DisableCStates();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => MitigationsCheckBox.IsChecked == true))
-                {
-                    await DisableMitigations();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => MSICheckBox.IsChecked == true))
-                {
-                    await EnableMSIMode();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => InterruptCheckBox.IsChecked == true))
-                {
-                    await OptimizeInterrupts();
-                }
-            }
-            
-            // KERNEL MODE ONLY (WILL trigger anti-cheats)
-            if (isKernelMode)
-            {
-                if (await Dispatcher.InvokeAsync(() => BCDEditCheckBox.IsChecked == true))
-                {
-                    await ApplyBCDEditTweaks();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => KernelDebugCheckBox.IsChecked == true))
-                {
-                    await DisableKernelSecurity();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => DriverSignCheckBox.IsChecked == true))
-                {
-                    await DisableDriverSigning();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => TestModeCheckBox.IsChecked == true))
-                {
-                    await EnableTestMode();
-                }
-                
-                if (await Dispatcher.InvokeAsync(() => DEPCheckBox.IsChecked == true))
-                {
-                    await DisableDEP();
-                }
-            }
-
-            await Dispatcher.InvokeAsync(() =>
-            {
-                LogMessage("✅ Optimization complete!");
-                StatusText.Text = "Complete - System optimized";
-                
-                string modeText = isSafeMode ? "Safe Mode" : 
-                                 isPerformanceMode ? "Performance Mode" : 
-                                 "Kernel Mode";
-                                 
-                MessageBox.Show($"Optimization complete in {modeText}!\n\n" +
-                               (isSafeMode ? "✅ Anti-cheat compatible\n" : 
-                                isPerformanceMode ? "⚠️ Some anti-cheats may detect changes\n" :
-                                "❌ Anti-cheats WILL detect modifications\n") +
-                               "Restart recommended for best results.", 
-                               "KOALA Optimizer V3", 
-                               MessageBoxButton.OK, 
-                               MessageBoxImage.Information);
-            });
-        }
-
-        private void CreateBackup()
-        {
-            try
-            {
-                backupData.Clear();
-                backupData["timestamp"] = DateTime.Now.ToString();
-                backupData["mode"] = SafeModeRadio.IsChecked == true ? "Safe" :
-                                     PerformanceRadio.IsChecked == true ? "Performance" : "Kernel";
-                File.WriteAllText(backupPath, JsonSerializer.Serialize(backupData));
-                Dispatcher.Invoke(() => LogMessage("✓ Backup created"));
-            }
-            catch (Exception ex)
-            {
-                Dispatcher.Invoke(() => LogMessage($"⚠ Backup error: {ex.Message}"));
-            }
-        }
-
-        // SAFE OPTIMIZATIONS (Anti-cheat compatible)
-        private async Task ApplySafeGPUOptimizations()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Applying safe GPU optimizations..."));
-            
-            try
-            {
-                // Only apply user-level GPU settings
-                Registry.SetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\DirectX\UserGpuPreferences",
-                    "DirectXUserGlobalSettings", "SwapEffectUpgradeEnable=1;", RegistryValueKind.String);
-                    
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Safe GPU optimizations applied"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ GPU error: {ex.Message}"));
-            }
-        }
-
-        private async Task ApplySafeCPUOptimizations()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Applying safe CPU optimizations..."));
-            
-            try
-            {
-                // Only set process priority, no system-wide changes
-                Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-                
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Safe CPU optimizations applied"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ CPU error: {ex.Message}"));
-            }
-        }
-
-        private async Task ApplySafeMemoryOptimizations()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Clearing memory..."));
-            
-            try
-            {
-                // Only clear working set, no registry changes
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-                SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1);
-                
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Memory cleared"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Memory error: {ex.Message}"));
-            }
-        }
-
-        private async Task ApplySafeNetworkOptimizations()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Applying safe network optimizations..."));
-            
-            try
-            {
-                // Only flush DNS, no registry changes
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "ipconfig",
-                    Arguments = "/flushdns",
-                    WindowStyle = ProcessWindowStyle.Hidden
-                })?.WaitForExit();
-                
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Network optimized"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Network error: {ex.Message}"));
-            }
-        }
-
-        private async Task OptimizeVisualEffects()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Optimizing visual effects..."));
-            
-            try
-            {
-                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects",
-                    "VisualFXSetting", 2, RegistryValueKind.DWord);
-                    
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Visual effects optimized"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Visual error: {ex.Message}"));
-            }
-        }
-
-        private async Task DisableGameDVR()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Disabling Game DVR..."));
-            
-            try
-            {
-                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
-                    "GameDVR_Enabled", 0, RegistryValueKind.DWord);
-                    
-                Registry.SetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR",
-                    "AppCaptureEnabled", 0, RegistryValueKind.DWord);
-                    
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Game DVR disabled"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Game DVR error: {ex.Message}"));
-            }
-        }
-
-        private async Task OptimizeMouseSettings()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("Optimizing mouse..."));
-            
-            try
-            {
-                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-                    "MouseSpeed", "0", RegistryValueKind.String);
-                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-                    "MouseThreshold1", "0", RegistryValueKind.String);
-                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse",
-                    "MouseThreshold2", "0", RegistryValueKind.String);
-                    
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Mouse optimized"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Mouse error: {ex.Message}"));
-            }
-        }
-
-        // PERFORMANCE MODE (May trigger anti-cheats)
-        private async Task DisableServices()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Disabling services (may trigger AC)..."));
-            
-            var services = new[] { "XblGameSave", "XblAuthManager", "DiagTrack", "WSearch" };
-            foreach (var service in services)
-            {
-                try
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "sc",
-                        Arguments = $"config {service} start=disabled",
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        Verb = "runas"
-                    })?.WaitForExit();
-                }
-                catch { }
-            }
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Services disabled"));
-        }
-
-        private async Task SetTimerResolution()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Setting timer resolution..."));
-            
-            try
-            {
-                timeBeginPeriod(1);
-                int currentResolution;
-                NtSetTimerResolution(5000, true, out currentResolution);
-                
-                await Dispatcher.InvokeAsync(() => LogMessage("✓ Timer resolution set"));
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() => LogMessage($"⚠ Timer error: {ex.Message}"));
-            }
-        }
-
-        private async Task DisableCoreParking()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Disabling core parking..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "powercfg",
-                Arguments = "-setacvalueindex scheme_current sub_processor bc5038f7-23e0-4960-96da-33abaf5935ec 100",
-                WindowStyle = ProcessWindowStyle.Hidden
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Core parking disabled"));
-        }
-
-        private async Task DisableCStates()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Disabling C-States..."));
-            
-            Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Processor",
-                "Capabilities", 0x0007e066, RegistryValueKind.DWord);
-                
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ C-States disabled"));
-        }
-
-        private async Task DisableMitigations()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Disabling CPU mitigations (security risk)..."));
-            
-            Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
-                "FeatureSettingsOverride", 3, RegistryValueKind.DWord);
-            Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
-                "FeatureSettingsOverrideMask", 3, RegistryValueKind.DWord);
-                
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Mitigations disabled"));
-        }
-
-        private async Task EnableMSIMode()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Enabling MSI mode..."));
-            // MSI mode implementation
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ MSI mode enabled"));
-        }
-
-        private async Task OptimizeInterrupts()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("⚠ Optimizing interrupts..."));
-            
-            Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
-                "IRQ8Priority", 1, RegistryValueKind.DWord);
-                
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Interrupts optimized"));
-        }
-
-        // KERNEL MODE (WILL trigger anti-cheats)
-        private async Task ApplyBCDEditTweaks()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("🔥 APPLYING KERNEL TWEAKS (WILL TRIGGER AC)..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set disabledynamictick yes",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set useplatformclock yes",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ BCDEdit tweaks applied"));
-        }
-
-        private async Task DisableKernelSecurity()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("🔥 DISABLING KERNEL SECURITY..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set nointegritychecks on",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Kernel security disabled"));
-        }
-
-        private async Task DisableDriverSigning()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("🔥 DISABLING DRIVER SIGNING..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set loadoptions DISABLE_INTEGRITY_CHECKS",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Driver signing disabled"));
-        }
-
-        private async Task EnableTestMode()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("🔥 ENABLING TEST MODE..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set testsigning on",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ Test mode enabled"));
-        }
-
-        private async Task DisableDEP()
-        {
-            await Dispatcher.InvokeAsync(() => LogMessage("🔥 DISABLING DEP..."));
-            
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "bcdedit",
-                Arguments = "/set nx AlwaysOff",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas"
-            })?.WaitForExit();
-            
-            await Dispatcher.InvokeAsync(() => LogMessage("✓ DEP disabled"));
-        }
-
-        private void RestoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(backupPath))
-            {
-                MessageBox.Show("No backup found!", "KOALA Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                LogMessage($"Skipping {valueName} - requires admin", "Warning");
                 return;
             }
             
-            LogMessage("Restoring from backup...");
-            // Restore implementation
-            LogMessage("✓ Restore complete");
+            try
+            {
+                Registry.SetValue(keyPath, valueName, value, valueKind);
+                LogMessage($"✅ Applied: {valueName}");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ Failed to apply {valueName}: {ex.Message}", "Error");
+            }
         }
 
-        protected override void OnClosed(EventArgs e)
+        // Continue in Part 3...
+
+        #region Crosshair Implementation
+        private void ApplyCrosshair_Click(object sender, RoutedEventArgs e)
         {
-            base.OnClosed(e);
-            timeEndPeriod(1);
+            if (EnableCrosshair.IsChecked == true)
+            {
+                ShowCrosshairOverlay();
+            }
+            else
+            {
+                HideCrosshairOverlay();
+            }
         }
+
+        private void ShowCrosshairOverlay()
+        {
+            if (crosshairOverlay != null)
+            {
+                crosshairOverlay.Close();
+            }
+
+            crosshairOverlay = new Window
+            {
+                Width = 100,
+                Height = 100,
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Background = Brushes.Transparent,
+                Topmost = true,
+                ShowInTaskbar = false,
+                IsHitTestVisible = false,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            var canvas = new Canvas();
+            
+            // Get crosshair settings
+            string style = (CrosshairStyle.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Cross";
+            double size = CrosshairSize.Value;
+            string colorStr = (CrosshairColor.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Green";
+            
+            Brush color = colorStr switch
+            {
+                "Red" => Brushes.Red,
+                "Cyan" => Brushes.Cyan,
+                _ => Brushes.Lime
+            };
+
+            switch (style)
+            {
+                case "Cross":
+                    var hLine = new Line
+                    {
+                        X1 = 50 - size,
+                        Y1 = 50,
+                        X2 = 50 + size,
+                        Y2 = 50,
+                        Stroke = color,
+                        StrokeThickness = 2
+                    };
+                    var vLine = new Line
+                    {
+                        X1 = 50,
+                        Y1 = 50 - size,
+                        X2 = 50,
+                        Y2 = 50 + size,
+                        Stroke = color,
+                        StrokeThickness = 2
+                    };
+                    canvas.Children.Add(hLine);
+                    canvas.Children.Add(vLine);
+                    break;
+                    
+                case "Dot":
+                    var dot = new Ellipse
+                    {
+                        Width = size,
+                        Height = size,
+                        Fill = color
+                    };
+                    Canvas.SetLeft(dot, 50 - size / 2);
+                    Canvas.SetTop(dot, 50 - size / 2);
+                    canvas.Children.Add(dot);
+                    break;
+                    
+                case "Circle":
+                    var circle = new Ellipse
+                    {
+                        Width = size * 2,
+                        Height = size * 2,
+                        Stroke = color,
+                        StrokeThickness = 2
+                    };
+                    Canvas.SetLeft(circle, 50 - size);
+                    Canvas.SetTop(circle, 50 - size);
+                    canvas.Children.Add(circle);
+                    break;
+            }
+
+            crosshairOverlay.Content = canvas;
+            crosshairOverlay.Show();
+            
+            LogMessage($"✅ Crosshair enabled: {style}, Size: {size}, Color: {colorStr}");
+        }
+
+        private void HideCrosshairOverlay()
+        {
+            crosshairOverlay?.Close();
+            crosshairOverlay = null;
+            LogMessage("Crosshair disabled");
+        }
+        #endregion
+
+        #region FOV Implementation
+        private void ApplyFov_Click(object sender, RoutedEventArgs e)
+        {
+            int fov = (int)FovSlider.Value;
+            LogMessage($"FOV set to {fov} (Note: Game must support FOV changes)");
+            
+            // Store FOV value for game configs
+            try
+            {
+                string configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "KOALA_FOV.cfg");
+                File.WriteAllText(configPath, $"fov={fov}");
+                LogMessage($"FOV config saved to {configPath}");
+            }
+            catch { }
+        }
+        #endregion
     }
 }
