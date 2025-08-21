@@ -1,0 +1,68 @@
+name: Build KOALA V3 Complete
+
+on:
+  push:
+    paths:
+      - 'KOALAOptimizer.Testing/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    
+    - name: Build KOALA V3
+      run: |
+        cd KOALAOptimizer.Testing
+        
+        Write-Host "=== RESTORE ==="
+        dotnet restore
+        
+        Write-Host "=== BUILD ==="
+        dotnet build -c Release
+        
+        Write-Host "=== PUBLISH SINGLE FILE EXE ==="
+        dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ../output
+        
+        cd ..
+        
+        Write-Host "=== BUILD COMPLETE! ==="
+        Get-ChildItem output
+      shell: pwsh
+    
+    - name: Upload Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: KOALA-V3-OPTIMIZER
+        path: output/KOALAOptimizer.exe
+        
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v3.0.${{ github.run_number }}
+        name: KOALA V3.0 Build ${{ github.run_number }}
+        body: |
+          🚀 **KOALA Gaming Optimizer V3.0**
+          
+          ✅ All optimizations from PS1 script
+          ✅ Crosshair overlay system  
+          ✅ FOV configuration
+          ✅ Smart game detection
+          ✅ 100+ registry tweaks
+          ✅ Kernel optimizations (Performance Mode)
+          
+          **⚠️ Run as Administrator required!**
+        files: output/KOALAOptimizer.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
