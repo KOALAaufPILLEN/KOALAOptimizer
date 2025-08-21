@@ -2,25 +2,39 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="🚀 KOALA Gaming Optimizer v3.0" Height="950" Width="1500"
-        Background="#0c0c0c" WindowStartupLocation="CenterScreen">
+        Background="#0d1117" WindowStartupLocation="CenterScreen">
     <Window.Resources>
+        <!-- GitHub Dark + Purple Theme -->
+        <SolidColorBrush x:Key="BackgroundDark" Color="#0d1117"/>
+        <SolidColorBrush x:Key="BackgroundMedium" Color="#161b22"/>
+        <SolidColorBrush x:Key="BackgroundLight" Color="#21262d"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#30363d"/>
+        <SolidColorBrush x:Key="AccentPurple" Color="#8b5cf6"/>
+        <SolidColorBrush x:Key="AccentPurpleLight" Color="#a78bfa"/>
+        <SolidColorBrush x:Key="AccentPurpleDark" Color="#6d28d9"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#c9d1d9"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#8b949e"/>
+        <SolidColorBrush x:Key="SuccessGreen" Color="#3fb950"/>
+        <SolidColorBrush x:Key="WarningOrange" Color="#d29922"/>
+        <SolidColorBrush x:Key="DangerRed" Color="#da3633"/>
+        
         <Style x:Key="CollapsibleHeader" TargetType="ToggleButton">
-            <Setter Property="Background" Value="#1a1a1a"/>
-            <Setter Property="Foreground" Value="#00ff00"/>
-            <Setter Property="BorderBrush" Value="#00ff00"/>
+            <Setter Property="Background" Value="{StaticResource BackgroundMedium}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
-                        <Border Background="{TemplateBinding Background}" 
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="5">
+                                CornerRadius="6">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="30"/>
@@ -31,10 +45,57 @@
                                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                 <ContentPresenter Grid.Column="1" Margin="5,0" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Content="🚀" Width="40" Height="25" Margin="5,0"
-                                        Background="#00ff00" Foreground="Black" FontSize="16"
-                                        Click="OptimizeSection_Click" Tag="{TemplateBinding Tag}"/>
+                                        Background="{StaticResource AccentPurple}" Foreground="White" FontSize="16"
+                                        BorderThickness="0" Cursor="Hand"
+                                        Click="OptimizeSection_Click" Tag="{TemplateBinding Tag}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
                             </Grid>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BackgroundLight}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentPurpleDark}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentPurple}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentPurple}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentPurpleLight}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -43,17 +104,23 @@
     
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="60"/>
+            <RowDefinition Height="70"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="200"/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#00ff00" Padding="10">
+        <!-- Header with gradient -->
+        <Border Grid.Row="0" Padding="15">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#6d28d9" Offset="0"/>
+                    <GradientStop Color="#8b5cf6" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <StackPanel>
-                <TextBlock Text="🐨 KOALA Gaming Optimizer v3.0" FontSize="24" FontWeight="Bold" Foreground="Black"/>
-                <TextBlock Text="Advanced Windows gaming optimization with comprehensive FPS-boosting features and smart game detection!" FontSize="12" Foreground="Black"/>
+                <TextBlock Text="🐨 KOALA Gaming Optimizer v3.0" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="Advanced Windows gaming optimization with comprehensive FPS-boosting features" FontSize="12" Foreground="#e9d5ff"/>
             </StackPanel>
         </Border>
 
@@ -64,20 +131,20 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="NetworkingHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Advanced Networking" Tag="🌐" Click="ToggleSection_Click"/>
-                    <Border Name="NetworkingContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="NetworkingContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="DisableTCPDelay" Content="Disable TCP ACK Delay" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="SetTurboACK" Content="Set TurboACK/Nagle=0" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="TCPAutotuning" Content="TCP Autotuning Normal" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableTCPTimestamps" Content="Disable TCP Timestamps" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableECN" Content="Disable ECN" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="EnableRSS" Content="Enable RSS" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisablePSC" Content="Disable PSC" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableNetworkThrottling" Content="Disable Network Throttling" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableNagleAlgorithm" Content="Disable Nagle Algorithm" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="OptimizeDNS" Content="Optimize DNS (1.1.1.1)" Foreground="White" Margin="5"/>
-                            <CheckBox Name="DisableNetworkPowerManagement" Content="Disable Network Power Management" Foreground="White" Margin="5"/>
+                            <CheckBox Name="DisableTCPDelay" Content="Disable TCP ACK Delay" IsChecked="True"/>
+                            <CheckBox Name="SetTurboACK" Content="Set TurboACK/Nagle=0" IsChecked="True"/>
+                            <CheckBox Name="TCPAutotuning" Content="TCP Autotuning Normal" IsChecked="True"/>
+                            <CheckBox Name="DisableTCPTimestamps" Content="Disable TCP Timestamps" IsChecked="True"/>
+                            <CheckBox Name="DisableECN" Content="Disable ECN" IsChecked="True"/>
+                            <CheckBox Name="EnableRSS" Content="Enable RSS" IsChecked="True"/>
+                            <CheckBox Name="DisablePSC" Content="Disable PSC" IsChecked="True"/>
+                            <CheckBox Name="DisableNetworkThrottling" Content="Disable Network Throttling" IsChecked="True"/>
+                            <CheckBox Name="DisableNagleAlgorithm" Content="Disable Nagle Algorithm" IsChecked="True"/>
+                            <CheckBox Name="OptimizeDNS" Content="Optimize DNS (1.1.1.1)"/>
+                            <CheckBox Name="DisableNetworkPowerManagement" Content="Disable Network Power Management"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -86,19 +153,19 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="GamingHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Windows Gaming Optimizations" Tag="🎮" Click="ToggleSection_Click"/>
-                    <Border Name="GamingContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="GamingContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="SystemResponsiveness" Content="System Responsiveness (0)" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GamesTaskHighPriority" Content="Games Task High Priority" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableGameDVR" Content="Disable Game DVR" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableFullscreenOptimizations" Content="Disable Fullscreen Optimizations" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="EnableGPUHwScheduling" Content="Enable GPU Hardware Scheduling" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="HighPrecisionTimer" Content="High Precision Timer" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="SelectiveVisualEffectsOptimization" Content="Selective Visual Effects Optimization" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableHibernation" Content="Disable Hibernation" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableGameBarTips" Content="Disable Game Bar Tips" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableXboxGameMonitoring" Content="Disable Xbox Game Monitoring" Foreground="White" Margin="5" IsChecked="True"/>
+                            <CheckBox Name="SystemResponsiveness" Content="System Responsiveness (0)" IsChecked="True"/>
+                            <CheckBox Name="GamesTaskHighPriority" Content="Games Task High Priority" IsChecked="True"/>
+                            <CheckBox Name="DisableGameDVR" Content="Disable Game DVR" IsChecked="True"/>
+                            <CheckBox Name="DisableFullscreenOptimizations" Content="Disable Fullscreen Optimizations" IsChecked="True"/>
+                            <CheckBox Name="EnableGPUHwScheduling" Content="Enable GPU Hardware Scheduling" IsChecked="True"/>
+                            <CheckBox Name="HighPrecisionTimer" Content="High Precision Timer" IsChecked="True"/>
+                            <CheckBox Name="SelectiveVisualEffectsOptimization" Content="Selective Visual Effects Optimization" IsChecked="True"/>
+                            <CheckBox Name="DisableHibernation" Content="Disable Hibernation" IsChecked="True"/>
+                            <CheckBox Name="DisableGameBarTips" Content="Disable Game Bar Tips" IsChecked="True"/>
+                            <CheckBox Name="DisableXboxGameMonitoring" Content="Disable Xbox Game Monitoring" IsChecked="True"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -107,21 +174,21 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="CPUHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Enhanced CPU Optimizations" Tag="⚡" Click="ToggleSection_Click"/>
-                    <Border Name="CPUContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="CPUContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="EnhancedCPUAffinityManagement" Content="Enhanced CPU Affinity Management" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="AdvancedMemoryOptimization" Content="Advanced Memory Optimization" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GPUDriverOptimizations" Content="GPU Driver Optimizations" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="NetworkLatencyImprovements" Content="Network Latency Improvements" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="WindowsGameModeEnhancements" Content="Windows Game Mode Enhancements" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GamingPowerPlanOptimization" Content="Gaming Power Plan Optimization" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="RealTimePerformanceMonitoring" Content="Real-Time Performance Monitoring" Foreground="White" Margin="5"/>
-                            <CheckBox Name="ProcessOptimizationEnhancements" Content="Process Optimization Enhancements" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="OptimizeCPUScheduling" Content="Optimize CPU Scheduling" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableCoreParkingAllCores" Content="Disable Core Parking (All Cores)" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="SetProcessorPerformanceCore" Content="Set Processor Performance Core" Foreground="White" Margin="5"/>
-                            <CheckBox Name="DisableCStates" Content="Disable C-States" Foreground="White" Margin="5"/>
+                            <CheckBox Name="EnhancedCPUAffinityManagement" Content="Enhanced CPU Affinity Management" IsChecked="True"/>
+                            <CheckBox Name="AdvancedMemoryOptimization" Content="Advanced Memory Optimization" IsChecked="True"/>
+                            <CheckBox Name="GPUDriverOptimizations" Content="GPU Driver Optimizations" IsChecked="True"/>
+                            <CheckBox Name="NetworkLatencyImprovements" Content="Network Latency Improvements" IsChecked="True"/>
+                            <CheckBox Name="WindowsGameModeEnhancements" Content="Windows Game Mode Enhancements" IsChecked="True"/>
+                            <CheckBox Name="GamingPowerPlanOptimization" Content="Gaming Power Plan Optimization" IsChecked="True"/>
+                            <CheckBox Name="RealTimePerformanceMonitoring" Content="Real-Time Performance Monitoring"/>
+                            <CheckBox Name="ProcessOptimizationEnhancements" Content="Process Optimization Enhancements" IsChecked="True"/>
+                            <CheckBox Name="OptimizeCPUScheduling" Content="Optimize CPU Scheduling" IsChecked="True"/>
+                            <CheckBox Name="DisableCoreParkingAllCores" Content="Disable Core Parking (All Cores)" IsChecked="True"/>
+                            <CheckBox Name="SetProcessorPerformanceCore" Content="Set Processor Performance Core"/>
+                            <CheckBox Name="DisableCStates" Content="Disable C-States"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -130,24 +197,24 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="FPSHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Advanced FPS Boosting Optimizations" Tag="🚀" Click="ToggleSection_Click"/>
-                    <Border Name="FPSContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="FPSContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="CPUCoreParkingDisable" Content="CPU Core Parking Disable" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="CPUCStatesDisable" Content="CPU C-States Disable" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="InterruptModeration" Content="Interrupt Moderation" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="MSIXGamingPriority" Content="MSI/MSI-X Gaming Priority" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="LargePageSupport" Content="Large Page Support" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="MemoryCompressionDisable" Content="Memory Compression Disable" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="StandbyMemoryManagement" Content="Standby Memory Management" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="HardwareGPUScheduling" Content="Hardware GPU Scheduling" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GPUPowerStateDisable" Content="GPU Power States Disable" Foreground="White" Margin="5"/>
-                            <CheckBox Name="ShaderCacheManagement" Content="Shader Cache Management" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GameFileIOPriority" Content="Game File I/O Priority" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DiskPerformanceTweaks" Content="Disk Performance Tweaks" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GamingNetworkStack" Content="Gaming Network Stack" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GamingAudioOptimization" Content="Gaming Audio Optimization" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GamingInputOptimization" Content="Gaming Input Optimization" Foreground="White" Margin="5" IsChecked="True"/>
+                            <CheckBox Name="CPUCoreParkingDisable" Content="CPU Core Parking Disable" IsChecked="True"/>
+                            <CheckBox Name="CPUCStatesDisable" Content="CPU C-States Disable" IsChecked="True"/>
+                            <CheckBox Name="InterruptModeration" Content="Interrupt Moderation" IsChecked="True"/>
+                            <CheckBox Name="MSIXGamingPriority" Content="MSI/MSI-X Gaming Priority" IsChecked="True"/>
+                            <CheckBox Name="LargePageSupport" Content="Large Page Support" IsChecked="True"/>
+                            <CheckBox Name="MemoryCompressionDisable" Content="Memory Compression Disable" IsChecked="True"/>
+                            <CheckBox Name="StandbyMemoryManagement" Content="Standby Memory Management" IsChecked="True"/>
+                            <CheckBox Name="HardwareGPUScheduling" Content="Hardware GPU Scheduling" IsChecked="True"/>
+                            <CheckBox Name="GPUPowerStateDisable" Content="GPU Power States Disable"/>
+                            <CheckBox Name="ShaderCacheManagement" Content="Shader Cache Management" IsChecked="True"/>
+                            <CheckBox Name="GameFileIOPriority" Content="Game File I/O Priority" IsChecked="True"/>
+                            <CheckBox Name="DiskPerformanceTweaks" Content="Disk Performance Tweaks" IsChecked="True"/>
+                            <CheckBox Name="GamingNetworkStack" Content="Gaming Network Stack" IsChecked="True"/>
+                            <CheckBox Name="GamingAudioOptimization" Content="Gaming Audio Optimization" IsChecked="True"/>
+                            <CheckBox Name="GamingInputOptimization" Content="Gaming Input Optimization" IsChecked="True"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -156,25 +223,25 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="KernelHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Kernel &amp; Critical Optimizations (Performance Mode Only)" Tag="⚠️" 
-                                 Click="ToggleSection_Click" Foreground="Orange"/>
-                    <Border Name="KernelContent" Background="#0a0a0a" BorderBrush="Orange" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                                 Click="ToggleSection_Click" Foreground="{StaticResource WarningOrange}"/>
+                    <Border Name="KernelContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource WarningOrange}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <StackPanel>
-                            <TextBlock Text="⚠️ WARNING: These modifications affect system kernel. Use at your own risk! May trigger anti-cheat systems!" 
-                                      Foreground="Orange" FontWeight="Bold" Margin="5" TextWrapping="Wrap"/>
+                            <TextBlock Text="⚠️ WARNING: These modifications affect system kernel. May trigger anti-cheat systems!" 
+                                      Foreground="{StaticResource WarningOrange}" FontWeight="Bold" Margin="5" TextWrapping="Wrap"/>
                             <WrapPanel>
-                                <CheckBox Name="KernelTimerResolution" Content="Kernel Timer Resolution (1ms)" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="DisablePagingExecutive" Content="Disable Paging Executive" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="Win32PrioritySeparation" Content="Win32 Priority Separation (0x26)" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="DisableSpeculativeMitigations" Content="Disable Speculative Mitigations" Foreground="Red" Margin="5"/>
-                                <CheckBox Name="DisableTSXAutoBan" Content="Disable TSX Auto Ban" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="ThreadDPCEnable" Content="Thread DPC Enable" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="DPCQueueDepth" Content="DPC Queue Depth Optimization" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="DisableKernelMitigations" Content="Disable Kernel Mitigations" Foreground="Red" Margin="5"/>
-                                <CheckBox Name="DisableHyperThreading" Content="Disable Hyper-Threading (Intel)" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="DisableSMT" Content="Disable SMT (AMD)" Foreground="Orange" Margin="5"/>
-                                <CheckBox Name="SetMSRRegisters" Content="Set MSR Registers" Foreground="Red" Margin="5"/>
-                                <CheckBox Name="DisableVBS" Content="Disable VBS/HVCI" Foreground="Orange" Margin="5"/>
+                                <CheckBox Name="KernelTimerResolution" Content="Kernel Timer Resolution (1ms)" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="DisablePagingExecutive" Content="Disable Paging Executive" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="Win32PrioritySeparation" Content="Win32 Priority Separation (0x26)" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="DisableSpeculativeMitigations" Content="Disable Speculative Mitigations" Foreground="{StaticResource DangerRed}"/>
+                                <CheckBox Name="DisableTSXAutoBan" Content="Disable TSX Auto Ban" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="ThreadDPCEnable" Content="Thread DPC Enable" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="DPCQueueDepth" Content="DPC Queue Depth Optimization" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="DisableKernelMitigations" Content="Disable Kernel Mitigations" Foreground="{StaticResource DangerRed}"/>
+                                <CheckBox Name="DisableHyperThreading" Content="Disable Hyper-Threading (Intel)" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="DisableSMT" Content="Disable SMT (AMD)" Foreground="{StaticResource WarningOrange}"/>
+                                <CheckBox Name="SetMSRRegisters" Content="Set MSR Registers" Foreground="{StaticResource DangerRed}"/>
+                                <CheckBox Name="DisableVBS" Content="Disable VBS/HVCI" Foreground="{StaticResource WarningOrange}"/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -184,15 +251,15 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="DetectionHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Smart Gaming Detection &amp; Auto-Optimization" Tag="🎯" Click="ToggleSection_Click"/>
-                    <Border Name="DetectionContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="DetectionContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="AutomaticGameDetection" Content="Automatic Game Detection" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="AutoProfileSwitching" Content="Auto Profile Switching" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="GameSpecificProfiles" Content="Game-Specific Profiles" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="PerformanceMetricsDisplay" Content="Performance Metrics Display" Foreground="White" Margin="5"/>
-                            <CheckBox Name="AutoRevertOnGameExit" Content="Auto-Revert on Game Exit" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="BackgroundAppSuppression" Content="Background App Suppression" Foreground="White" Margin="5" IsChecked="True"/>
+                            <CheckBox Name="AutomaticGameDetection" Content="Automatic Game Detection" IsChecked="True"/>
+                            <CheckBox Name="AutoProfileSwitching" Content="Auto Profile Switching" IsChecked="True"/>
+                            <CheckBox Name="GameSpecificProfiles" Content="Game-Specific Profiles" IsChecked="True"/>
+                            <CheckBox Name="PerformanceMetricsDisplay" Content="Performance Metrics Display"/>
+                            <CheckBox Name="AutoRevertOnGameExit" Content="Auto-Revert on Game Exit" IsChecked="True"/>
+                            <CheckBox Name="BackgroundAppSuppression" Content="Background App Suppression" IsChecked="True"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -201,13 +268,13 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="SystemHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="System Performance" Tag="💻" Click="ToggleSection_Click"/>
-                    <Border Name="SystemContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="SystemContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="OptimizeMemoryManagement" Content="Optimize Memory Management" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="UltimatePerformancePowerPlan" Content="Ultimate Performance Power Plan" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="OptimizeCPUScheduling2" Content="Optimize CPU Scheduling" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="OptimizePageFile" Content="Optimize Page File" Foreground="White" Margin="5" IsChecked="True"/>
+                            <CheckBox Name="OptimizeMemoryManagement" Content="Optimize Memory Management" IsChecked="True"/>
+                            <CheckBox Name="UltimatePerformancePowerPlan" Content="Ultimate Performance Power Plan" IsChecked="True"/>
+                            <CheckBox Name="OptimizeCPUScheduling2" Content="Optimize CPU Scheduling" IsChecked="True"/>
+                            <CheckBox Name="OptimizePageFile" Content="Optimize Page File" IsChecked="True"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -216,17 +283,17 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="GPUHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="GPU Vendor Optimizations" Tag="🎨" Click="ToggleSection_Click"/>
-                    <Border Name="GPUContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="GPUContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="NVIDIADisableTelemetry" Content="NVIDIA: Disable Telemetry Service" Foreground="Lime" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="NVIDIAMaxPerformance" Content="NVIDIA: Max Performance Mode" Foreground="Lime" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="NVIDIAThreadedOptimization" Content="NVIDIA: Threaded Optimization" Foreground="Lime" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="AMDDisableExternalEvents" Content="AMD: Disable External Events" Foreground="Red" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="AMDAntiLag" Content="AMD: Enable Anti-Lag" Foreground="Red" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="AMDRadeonBoost" Content="AMD: Radeon Boost" Foreground="Red" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="IntelGraphicsOptimizations" Content="Intel: Graphics Optimizations" Foreground="Cyan" Margin="5" Visibility="Collapsed"/>
-                            <CheckBox Name="IntelPowerSaving" Content="Intel: Disable Power Saving" Foreground="Cyan" Margin="5" Visibility="Collapsed"/>
+                            <CheckBox Name="NVIDIADisableTelemetry" Content="NVIDIA: Disable Telemetry Service" Foreground="{StaticResource SuccessGreen}" Visibility="Collapsed"/>
+                            <CheckBox Name="NVIDIAMaxPerformance" Content="NVIDIA: Max Performance Mode" Foreground="{StaticResource SuccessGreen}" Visibility="Collapsed"/>
+                            <CheckBox Name="NVIDIAThreadedOptimization" Content="NVIDIA: Threaded Optimization" Foreground="{StaticResource SuccessGreen}" Visibility="Collapsed"/>
+                            <CheckBox Name="AMDDisableExternalEvents" Content="AMD: Disable External Events" Foreground="{StaticResource DangerRed}" Visibility="Collapsed"/>
+                            <CheckBox Name="AMDAntiLag" Content="AMD: Enable Anti-Lag" Foreground="{StaticResource DangerRed}" Visibility="Collapsed"/>
+                            <CheckBox Name="AMDRadeonBoost" Content="AMD: Radeon Boost" Foreground="{StaticResource DangerRed}" Visibility="Collapsed"/>
+                            <CheckBox Name="IntelGraphicsOptimizations" Content="Intel: Graphics Optimizations" Foreground="Cyan" Visibility="Collapsed"/>
+                            <CheckBox Name="IntelPowerSaving" Content="Intel: Disable Power Saving" Foreground="Cyan" Visibility="Collapsed"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -235,18 +302,18 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="ServicesHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Background Services" Tag="🔧" Click="ToggleSection_Click"/>
-                    <Border Name="ServicesContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="ServicesContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="DisableXboxServices" Content="Disable Xbox Services" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisablePrintSpooler" Content="Disable Print Spooler" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableSysMain" Content="Disable SysMain (Superfetch)" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableTelemetryDiagTrack" Content="Disable Telemetry (DiagTrack)" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableWindowsSearch" Content="Disable Windows Search" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableTabletServices" Content="Disable Tablet Services" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableThemesService" Content="Disable Themes Service" Foreground="White" Margin="5"/>
-                            <CheckBox Name="DisableWindowsUpdate" Content="Disable Windows Update" Foreground="Red" Margin="5"/>
-                            <CheckBox Name="DisableDefender" Content="Disable Windows Defender" Foreground="Red" Margin="5"/>
+                            <CheckBox Name="DisableXboxServices" Content="Disable Xbox Services" IsChecked="True"/>
+                            <CheckBox Name="DisablePrintSpooler" Content="Disable Print Spooler" IsChecked="True"/>
+                            <CheckBox Name="DisableSysMain" Content="Disable SysMain (Superfetch)" IsChecked="True"/>
+                            <CheckBox Name="DisableTelemetryDiagTrack" Content="Disable Telemetry (DiagTrack)" IsChecked="True"/>
+                            <CheckBox Name="DisableWindowsSearch" Content="Disable Windows Search" IsChecked="True"/>
+                            <CheckBox Name="DisableTabletServices" Content="Disable Tablet Services" IsChecked="True"/>
+                            <CheckBox Name="DisableThemesService" Content="Disable Themes Service"/>
+                            <CheckBox Name="DisableWindowsUpdate" Content="Disable Windows Update" Foreground="{StaticResource DangerRed}"/>
+                            <CheckBox Name="DisableDefender" Content="Disable Windows Defender" Foreground="{StaticResource DangerRed}"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
@@ -255,41 +322,41 @@
                 <StackPanel Margin="0,5">
                     <ToggleButton Name="UnneededHeader" Style="{StaticResource CollapsibleHeader}" 
                                  Content="Disable Unneeded Services" Tag="🗑️" Click="ToggleSection_Click"/>
-                    <Border Name="UnneededContent" Background="#0a0a0a" BorderBrush="#00ff00" 
-                           BorderThickness="0,0,1,1" Margin="0" Padding="10" Visibility="Collapsed">
+                    <Border Name="UnneededContent" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1,0,1,1" Margin="0" Padding="10" Visibility="Collapsed" CornerRadius="0,0,6,6">
                         <WrapPanel>
-                            <CheckBox Name="DisableFax" Content="Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / Bthserv" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableBiometric" Content="Disable Biometric Service" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableSmartCard" Content="Disable Smart Card Services" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableParentalControls" Content="Disable Parental Controls" Foreground="White" Margin="5" IsChecked="True"/>
-                            <CheckBox Name="DisableHomeGroup" Content="Disable HomeGroup Services" Foreground="White" Margin="5" IsChecked="True"/>
+                            <CheckBox Name="DisableFax" Content="Disable Fax / RemoteRegistry / MapsBroker / WMPNetworkSvc / WpnUserService / Bthserv" IsChecked="True"/>
+                            <CheckBox Name="DisableBiometric" Content="Disable Biometric Service" IsChecked="True"/>
+                            <CheckBox Name="DisableSmartCard" Content="Disable Smart Card Services" IsChecked="True"/>
+                            <CheckBox Name="DisableParentalControls" Content="Disable Parental Controls" IsChecked="True"/>
+                            <CheckBox Name="DisableHomeGroup" Content="Disable HomeGroup Services" IsChecked="True"/>
                         </WrapPanel>
                     </Border>
                 </StackPanel>
 
                 <!-- Mode Selection -->
-                <Border Background="#1a1a1a" BorderBrush="#00ff00" BorderThickness="1" Margin="0,10" Padding="10" CornerRadius="5">
+                <Border Background="{StaticResource BackgroundMedium}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,10" Padding="15" CornerRadius="6">
                     <StackPanel>
-                        <TextBlock Text="⚙️ Optimization Mode" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                        <TextBlock Text="⚙️ Optimization Mode" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentPurple}" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <RadioButton Name="SafeMode" Content="🛡️ Safe Mode" Foreground="Lime" Margin="10" GroupName="Mode" IsChecked="True"/>
-                            <RadioButton Name="PerformanceMode" Content="⚡ Performance Mode" Foreground="Orange" Margin="10" GroupName="Mode" Checked="PerformanceMode_Checked"/>
-                            <RadioButton Name="UltraMode" Content="🚀 Ultra Mode" Foreground="Red" Margin="10" GroupName="Mode" Checked="UltraMode_Checked"/>
+                            <RadioButton Name="SafeMode" Content="🛡️ Safe Mode" Foreground="{StaticResource SuccessGreen}" Margin="10" GroupName="Mode" IsChecked="True"/>
+                            <RadioButton Name="PerformanceMode" Content="⚡ Performance Mode" Foreground="{StaticResource WarningOrange}" Margin="10" GroupName="Mode" Checked="PerformanceMode_Checked"/>
+                            <RadioButton Name="UltraMode" Content="🚀 Ultra Mode" Foreground="{StaticResource DangerRed}" Margin="10" GroupName="Mode" Checked="UltraMode_Checked"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <!-- Crosshair Settings -->
-                <Border Background="#1a1a1a" BorderBrush="#00ff00" BorderThickness="1" Margin="0,5" Padding="10" CornerRadius="5">
+                <Border Background="{StaticResource BackgroundMedium}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,5" Padding="15" CornerRadius="6">
                     <StackPanel>
-                        <TextBlock Text="🎯 Crosshair Settings" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                        <TextBlock Text="🎯 Crosshair Settings" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentPurple}" Margin="0,0,0,10"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <CheckBox Name="EnableCrosshair" Content="Enable" Foreground="White" Margin="5" Grid.Column="0"/>
+                            <CheckBox Name="EnableCrosshair" Content="Enable" Grid.Column="0"/>
                             <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center">
                                 <ComboBox Name="CrosshairStyle" Width="100" Margin="5">
                                     <ComboBoxItem Content="Cross" IsSelected="True"/>
@@ -303,16 +370,15 @@
                                     <ComboBoxItem Content="Cyan"/>
                                 </ComboBox>
                             </StackPanel>
-                            <Button Name="ApplyCrosshair" Content="Apply" Width="60" Grid.Column="2" Click="ApplyCrosshair_Click" 
-                                   Background="#00ff00" Foreground="Black" FontWeight="Bold"/>
+                            <Button Name="ApplyCrosshair" Content="Apply" Width="60" Grid.Column="2" Click="ApplyCrosshair_Click"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- FOV Settings -->
-                <Border Background="#1a1a1a" BorderBrush="#00ff00" BorderThickness="1" Margin="0,5" Padding="10" CornerRadius="5">
+                <Border Background="{StaticResource BackgroundMedium}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,5" Padding="15" CornerRadius="6">
                     <StackPanel>
-                        <TextBlock Text="👁️ FOV Settings" FontSize="14" FontWeight="Bold" Foreground="#00ff00" Margin="0,0,0,10"/>
+                        <TextBlock Text="👁️ FOV Settings" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentPurple}" Margin="0,0,0,10"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -320,11 +386,10 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="FOV:" Foreground="White" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
+                            <TextBlock Text="FOV:" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
                             <Slider Name="FovSlider" Grid.Column="1" Minimum="60" Maximum="120" Value="90" Margin="5"/>
-                            <TextBlock Name="FovValue" Text="90" Foreground="White" Width="30" VerticalAlignment="Center" Margin="5" Grid.Column="2"/>
-                            <Button Name="ApplyFov" Content="Apply" Width="60" Grid.Column="3" Click="ApplyFov_Click" 
-                                   Background="#00ff00" Foreground="Black" FontWeight="Bold"/>
+                            <TextBlock Name="FovValue" Text="90" Foreground="{StaticResource TextPrimary}" Width="30" VerticalAlignment="Center" Margin="5" Grid.Column="2"/>
+                            <Button Name="ApplyFov" Content="Apply" Width="60" Grid.Column="3" Click="ApplyFov_Click"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -332,7 +397,7 @@
         </ScrollViewer>
 
         <!-- Game Detection and Priority -->
-        <Border Grid.Row="2" Background="#1a1a1a" BorderBrush="#00ff00" BorderThickness="1" Margin="10,5" Padding="10" CornerRadius="5">
+        <Border Grid.Row="2" Background="{StaticResource BackgroundMedium}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="10,5" Padding="15" CornerRadius="6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="300"/>
@@ -341,7 +406,7 @@
                 
                 <!-- Game Profile Selection -->
                 <StackPanel Grid.Column="0" Margin="5">
-                    <TextBlock Text="Game Profile:" Foreground="White" Margin="0,0,0,5"/>
+                    <TextBlock Text="Game Profile:" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
                     <ComboBox Name="GameProfileCombo" Width="250" HorizontalAlignment="Left">
                         <ComboBoxItem Content="Auto-Detect" IsSelected="True"/>
                         <ComboBoxItem Content="Counter-Strike 2"/>
@@ -351,26 +416,25 @@
                         <ComboBoxItem Content="Call of Duty: Warzone"/>
                         <ComboBoxItem Content="Battlefield 6"/>
                     </ComboBox>
-                    <Button Name="AutoDetect" Content="🔍 Auto Detect" Width="120" Margin="0,10,0,0" Click="AutoDetect_Click" 
-                           Background="#00ff00" Foreground="Black" FontWeight="Bold"/>
+                    <Button Name="AutoDetect" Content="🔍 Auto Detect" Width="120" Margin="0,10,0,0" Click="AutoDetect_Click"/>
                     
-                    <TextBlock Text="Priority:" Foreground="White" Margin="0,10,0,5"/>
+                    <TextBlock Text="Priority:" Foreground="{StaticResource TextPrimary}" Margin="0,10,0,5"/>
                     <ComboBox Name="PriorityCombo" Width="250" HorizontalAlignment="Left">
                         <ComboBoxItem Content="High" IsSelected="True"/>
                         <ComboBoxItem Content="Above Normal"/>
                         <ComboBoxItem Content="Normal"/>
                     </ComboBox>
                     
-                    <CheckBox Name="SystemInfo" Content="📊 System Info" Foreground="White" Margin="0,10,0,0" IsChecked="True"/>
-                    <CheckBox Name="QuickBenchmark" Content="⚡ Quick Benchmark" Foreground="White" Margin="0,5,0,0"/>
+                    <CheckBox Name="SystemInfo" Content="📊 System Info" IsChecked="True"/>
+                    <CheckBox Name="QuickBenchmark" Content="⚡ Quick Benchmark"/>
                 </StackPanel>
                 
                 <!-- Control Buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Name="ExportConfig" Content="📤 Export Config" Width="120" Height="35" Margin="5" Click="ExportConfig_Click" 
-                           Background="#333" Foreground="White" FontWeight="Bold"/>
+                           Background="{StaticResource BackgroundLight}"/>
                     <Button Name="ImportConfig" Content="📥 Import Config" Width="120" Height="35" Margin="5" Click="ImportConfig_Click" 
-                           Background="#333" Foreground="White" FontWeight="Bold"/>
+                           Background="{StaticResource BackgroundLight}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -383,23 +447,23 @@
             </Grid.ColumnDefinitions>
             
             <!-- Activity Log -->
-            <Border Grid.Column="0" Background="#0a0a0a" BorderBrush="#00ff00" BorderThickness="1" Margin="10,0,5,10" CornerRadius="5">
+            <Border Grid.Column="0" Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="10,0,5,10" CornerRadius="6">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <TextBox Name="LogBox" Background="Transparent" Foreground="#00ff00" BorderThickness="0" 
-                            IsReadOnly="True" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap" Padding="5"/>
+                    <TextBox Name="LogBox" Background="Transparent" Foreground="{StaticResource SuccessGreen}" BorderThickness="0" 
+                            IsReadOnly="True" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap" Padding="10"/>
                 </ScrollViewer>
             </Border>
             
             <!-- Control Panel -->
-            <Border Grid.Column="1" Background="#1a1a1a" BorderBrush="#00ff00" BorderThickness="1" Margin="5,0,10,10" CornerRadius="5" Padding="10">
+            <Border Grid.Column="1" Background="{StaticResource BackgroundMedium}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="5,0,10,10" CornerRadius="6" Padding="15">
                 <StackPanel>
-                    <TextBlock Text="Status:" Foreground="White" FontSize="11"/>
-                    <TextBlock Name="StatusText" Text="Ready" Foreground="#00ff00" FontSize="10" Margin="0,0,0,10"/>
+                    <TextBlock Text="Status:" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                    <TextBlock Name="StatusText" Text="Ready" Foreground="{StaticResource AccentPurple}" FontSize="10" Margin="0,0,0,10"/>
                     
                     <Button Name="Recommended" Content="✅ Recommended" Height="35" Margin="0,2" Click="Recommended_Click" 
-                           Background="#00ff00" Foreground="Black" FontWeight="Bold" FontSize="14"/>
+                           Background="{StaticResource SuccessGreen}" FontWeight="Bold" FontSize="14"/>
                     <Button Name="RevertAll" Content="🔄 Revert All" Height="35" Margin="0,2" Click="RevertAll_Click" 
-                           Background="#ff3333" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                           Background="{StaticResource DangerRed}" FontWeight="Bold" FontSize="14"/>
                 </StackPanel>
             </Border>
         </Grid>
