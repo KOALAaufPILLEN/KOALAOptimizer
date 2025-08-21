@@ -1,9 +1,7 @@
-name: Build KOALA V3 Complete
+name: Build KOALA V3 Final
 
 on:
   push:
-    paths:
-      - 'KOALAOptimizer.Testing/**'
   workflow_dispatch:
 
 jobs:
@@ -19,7 +17,33 @@ jobs:
       with:
         dotnet-version: '8.x'
     
-    - name: Build KOALA V3
+    - name: Create Icon and Fix Project
+      run: |
+        cd KOALAOptimizer.Testing
+        
+        Write-Host "=== CREATING ICON ==="
+        # Create a simple green K icon
+        Add-Type -AssemblyName System.Drawing
+        $bitmap = New-Object System.Drawing.Bitmap 32, 32
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.Clear([System.Drawing.Color]::Lime)
+        $font = New-Object System.Drawing.Font("Arial", 20, [System.Drawing.FontStyle]::Bold)
+        $graphics.DrawString("K", $font, [System.Drawing.Brushes]::Black, 5, 2)
+        $icon = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
+        $stream = [System.IO.File]::OpenWrite("koala.ico")
+        $icon.Save($stream)
+        $stream.Close()
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        
+        Write-Host "=== CHECKING FILES ==="
+        Get-ChildItem
+        
+        Write-Host "=== CLEANING ==="
+        Remove-Item -Path bin, obj -Recurse -Force -ErrorAction SilentlyContinue
+      shell: pwsh
+    
+    - name: Build Application
       run: |
         cd KOALAOptimizer.Testing
         
@@ -27,42 +51,37 @@ jobs:
         dotnet restore
         
         Write-Host "=== BUILD ==="
-        dotnet build -c Release
+        dotnet build -c Release --no-restore
         
-        Write-Host "=== PUBLISH SINGLE FILE EXE ==="
-        dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ../output
+        Write-Host "=== CHECKING BUILD OUTPUT ==="
+        Get-ChildItem -Path bin\Release -Recurse | Select-Object FullName
+      shell: pwsh
+    
+    - name: Publish Single File
+      run: |
+        cd KOALAOptimizer.Testing
+        
+        Write-Host "=== PUBLISH ==="
+        dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true -o ../output --no-build
         
         cd ..
         
-        Write-Host "=== BUILD COMPLETE! ==="
+        Write-Host "=== OUTPUT FILES ==="
         Get-ChildItem output
+        
+        if (Test-Path "output/KOALAOptimizer.exe") {
+            Write-Host "✅ BUILD SUCCESS! EXE created"
+            $size = (Get-Item "output/KOALAOptimizer.exe").Length / 1MB
+            Write-Host "File size: $([math]::Round($size, 2)) MB"
+        } else {
+            Write-Host "❌ BUILD FAILED! No EXE found"
+            exit 1
+        }
       shell: pwsh
     
-    - name: Upload Build
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: KOALA-V3-OPTIMIZER
         path: output/KOALAOptimizer.exe
-        
-    - name: Create Release
-      if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v3.0.${{ github.run_number }}
-        name: KOALA V3.0 Build ${{ github.run_number }}
-        body: |
-          🚀 **KOALA Gaming Optimizer V3.0**
-          
-          ✅ All optimizations from PS1 script
-          ✅ Crosshair overlay system  
-          ✅ FOV configuration
-          ✅ Smart game detection
-          ✅ 100+ registry tweaks
-          ✅ Kernel optimizations (Performance Mode)
-          
-          **⚠️ Run as Administrator required!**
-        files: output/KOALAOptimizer.exe
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if-no-files-found: error
