@@ -526,14 +526,12 @@ namespace KOALAOptimizer
             // Store FOV value for game configs
             try
             {
-                string configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "KOALA_FOV.cfg");
-                File.WriteAllText(configPath, $"fov={fov}");
-                LogMessage($"FOV config saved to {configPath}");
+string configPath = 
+System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "KOALA_FOV.cfg");
             }
             catch { }
         }
         #endregion
-        // PART 2/2 - CONTINUATION OF MainWindow.xaml.cs
         
         #region Main Optimization Methods
         private void Recommended_Click(object sender, RoutedEventArgs e)
