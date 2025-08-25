@@ -1,25 +1,25 @@
-# 🐨 KOALA Gaming Optimizer v2.3 - C# Edition
+# 🐨 KOALA Gaming Optimizer v2.3
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.3--C%23-brightgreen.svg?style=for-the-badge)]()
+[![Version](https://img.shields.io/badge/version-2.3-brightgreen.svg?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows-0078d4.svg?style=for-the-badge&logo=windows)]()
-[![.NET](https://img.shields.io/badge/.NET-Framework%204.8-512BD4.svg?style=for-the-badge&logo=dotnet)]()
+[![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg?style=for-the-badge&logo=windows)]()
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-012456.svg?style=for-the-badge&logo=powershell)]()
 [![Downloads](https://img.shields.io/github/downloads/KOALAaufPILLEN/KOALAOptimizer/total.svg?style=for-the-badge)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/releases)
 [![Stars](https://img.shields.io/github/stars/KOALAaufPILLEN/KOALAOptimizer.svg?style=for-the-badge)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/stargazers)
+[![Issues](https://img.shields.io/github/issues/KOALAaufPILLEN/KOALAOptimizer.svg?style=for-the-badge)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/issues)
 
 </div>
 
-**🚀 Revolutionary C# Gaming Optimizer with 10x+ Performance Improvements – Complete Rewrite of the PowerShell Classic!**
+**🚀 Advanced Windows Gaming Optimizations with Game-Specific Profiles – PowerShell 5.1 Compatible!**
 
-> ✅ **v2.3 C# Edition - August 2025**: Complete rewrite in C# WPF for maximum performance  
-> ✅ **10x Faster Performance**: Native compiled application vs. interpreted PowerShell  
-> ✅ **GitHub Actions CI/CD**: Automated builds and releases  
-> ✅ **Professional WPF Interface**: 4 stunning themes with real-time monitoring  
+> ✅ **v2.3 Update**: Fixed critical PowerShell syntax compatibility issue for Windows 10/11 default installations  
+> ✅ **Universal Compatibility**: Now works on ALL Windows systems with PowerShell 5.1 and 7.0+  
+> ✅ **Enhanced GPU Detection**: Improved multi-GPU system support with better error handling  
 
 <div align="center">
-<em>Ein revolutionäres C# WPF Gaming-Optimierungstool mit professioneller Benutzeroberfläche, Multi-Threading und 10x+ Leistungsverbesserung gegenüber der PowerShell-Version.</em>
+<em>Ein leistungsstarkes, einfach zu bedienendes PowerShell-basiertes Optimierungstool für Gamer, zur Reduktion von Latenz, Verbesserung der FPS und Optimierung von Windows-Einstellungen, speziell mit game-spezifischen Profilen und Ein-Klick-Tweaks.</em>
 </div>
 
 ---
@@ -28,77 +28,13 @@
 <img src="https://github.com/KOALAaufPILLEN/KoalaSleep/assets/92574026/401f5135-cf60-4708-8372-48a082dc8003.png" width="350">
 </div>
 
-## 🆕 **What's New in C# Edition**
-
-### 🚀 **Massive Performance Improvements**
-- **10x faster startup time** (native compiled vs interpreted)
-- **50x faster registry operations** (optimized API calls + caching)
-- **Real-time UI updates** (no blocking operations)
-- **Background monitoring** (non-blocking service architecture)
-- **Instant theme switching** (resource dictionary swapping)
-- **Efficient memory usage** (garbage collection optimization)
-
-### 🎨 **Professional WPF Interface with 4 Themes**
-- **🚀 Sci-Fi Theme** - Futuristic purple/green with glowing effects
-- **🎮 Gaming Theme** - Bold red/orange with RGB-style lighting
-- **💼 Classic Theme** - Professional blue/white business theme  
-- **🟢 Matrix Theme** - Green terminal-style with monospace fonts
-
-### 📊 **Real-Time Performance Dashboard**
-- **Live CPU, Memory, GPU monitoring**
-- **Process count tracking**
-- **System information display**
-- **Performance benchmarking tools**
-
----
-
-## ✨ Core Features
+## ✨ Highlights
 
 > 🎯 **One-Click Optimization** - Apply performance tweaks with a single button  
 > 🎮 **Game-Specific Profiles** - Tailored optimizations for popular games  
 > 🔧 **42+ Advanced Tweaks** - Comprehensive system optimization  
 > 📊 **Real-Time Monitoring** - Live performance metrics and system status  
 > 🛡️ **Safe & Reversible** - Complete backup and restore functionality
-
-## 🏗️ **C# Architecture**
-
-### **MVVM Pattern Implementation**
-```
-KOALAOptimizer.Testing/
-├── Models/          # Data structures and business objects
-├── Views/           # WPF UI components and windows
-├── Services/        # Business logic and system services
-├── Themes/          # XAML theme resource dictionaries
-└── Resources/       # Assets, icons, and embedded resources
-```
-
-### **Core Services**
-- **`LoggingService`** - Centralized logging with UI updates
-- **`AdminService`** - Privilege management and UAC handling  
-- **`ProcessManagementService`** - Game detection and optimization
-- **`RegistryOptimizationService`** - Safe registry operations
-- **`PerformanceMonitoringService`** - Real-time system metrics
-- **`TimerResolutionService`** - High-precision timer management
-- **`ThemeService`** - Dynamic theme switching
-- **`GpuDetectionService`** - Hardware detection and optimization
-
----
-
-## 🔧 **GitHub Actions CI/CD**
-
-### **Automated Build Pipeline**
-- ✅ **Automatic builds** on every push and pull request
-- ✅ **Windows-latest runners** for optimal compatibility
-- ✅ **Modern .NET CLI** with MSBuild fallback for .NET Framework 4.8
-- ✅ **Comprehensive debugging** and build output verification
-- ✅ **Robust package restoration** with multiple fallback methods
-- ✅ **Release artifacts** automatically generated with detailed logging
-- ✅ **Build time**: ~3-5 minutes typical
-
-### **Build Status**
-[![Build Status](https://img.shields.io/github/actions/workflow/status/KOALAaufPILLEN/KOALAOptimizer/build-koala-optimizer.yml?style=flat-square&logo=github)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/actions)
-
----
 
 ## 🚀 Features
 
@@ -153,52 +89,40 @@ KOALAOptimizer.Testing/
 
 </details>
 
+<details>
+<summary><b>🔧 Background Services Management</b></summary>
+<br>
+
+- 🎮 **Disable Xbox Services** - Remove gaming overlay overhead
+- 🖨️ **Disable Print Spooler** - Security and performance
+- 🔍 **Disable SysMain** (Superfetch) - Reduced disk activity
+- 📊 **Disable Telemetry** (DiagTrack) - Privacy and performance
+- 🔎 **Disable Windows Search** - Reduced indexing overhead
+- 📱 **Disable Tablet Services** - Desktop-focused optimization
+- 🎨 **Disable Themes Service** - Minimal visual processing
+
+</details>
+
+<details>
+<summary><b>🗑️ Unneeded Services Removal</b></summary>
+<br>
+
+- 📠 **Disable Fax Service** - Legacy service removal
+- 🌐 **RemoteRegistry** - Security hardening
+- 🗺️ **MapsBroker** - Location services
+- 🎵 **WMPNetworkSvc** - Media player network sharing
+- 📬 **WpnUserService** - Windows push notifications
+- 📶 **bthserv** - Bluetooth services (when not needed)
+
+</details>
+
 ---
 
-## 🎮 **Supported Games**
-
-- **Counter-Strike 2** (cs2)
-- **Counter-Strike: Global Offensive** (csgo)  
-- **Valorant** (valorant, valorant-win64-shipping)
-- **Fortnite** (fortniteclient-win64-shipping)
-- **Apex Legends** (r5apex)
-- **Call of Duty: Warzone** (modernwarfare, warzone)
-- **Call of Duty: Modern Warfare II/III** (cod, cod22-cod, cod23-cod)
-- **Battlefield 6** (bf6event, bf6)
-- **Rainbow Six Siege** (rainbowsix, rainbowsix_vulkan)
-
----
-
-## 🛠️ **Build & Development**
-
-### **Build Requirements**
-- **Visual Studio 2019+** or **.NET SDK/MSBuild Tools**
-- **.NET Framework 4.8** (pre-installed on Windows 10/11)
-- **Newtonsoft.Json** package (automatically restored)
-
-### **Build Commands:**
-```bash
-# Modern approach (recommended)
-dotnet restore KOALAOptimizer.Testing.csproj
-dotnet build KOALAOptimizer.Testing.csproj --configuration Release
-
-# Legacy approach (fallback)
-nuget restore KOALAOptimizer.Testing.csproj
-msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Release
-
-# Debug builds
-dotnet build KOALAOptimizer.Testing.csproj --configuration Debug
-# OR
-msbuild KOALAOptimizer.Testing.csproj /p:Configuration=Debug
-```
-
-### **GitHub Actions Workflow**
-The project uses automated CI/CD with GitHub Actions:
-- Builds on every push and pull request using modern .NET CLI
-- Runs on Windows runners for .NET Framework compatibility
-- Comprehensive build debugging and verification steps
-- Automatically creates release artifacts with detailed logging
-- Build logs available in the Actions tab
+## 🎯 Game Selection & Process Priority
+- 🎮 **Pre-defined Game Profiles** - Counter-Strike 2, Valorant, League of Legends, and more
+- 🔍 **Auto-Detection** - Automatically detect active gaming processes
+- ⚙️ **Custom Configuration** - Individual process names & game paths
+- 🚀 **Priority Management** - Process prioritization (Low to Realtime)
 
 ---
 
@@ -210,21 +134,44 @@ The project uses automated CI/CD with GitHub Actions:
 
 </div>
 
-1. 📥 **Download** the latest C# version from [Releases](https://github.com/KOALAaufPILLEN/KOALAOptimizer/releases)
+1. 📥 **Download** the latest version from [Releases](https://github.com/KOALAaufPILLEN/KOALAOptimizer/releases)
 2. 📁 **Extract** to any directory of your choice
 3. 🔐 **Run as Administrator** (Right-click → "Run as administrator")
-4. ✅ **Select your theme** and click → **🎯 Apply Recommended**
+4. ✅ **Select optimizations** and click → **🎯 Recommended** button
 
-### **Deployment Options:**
-- **Single Executable** - Self-contained, no external dependencies
-- **Portable** - Run from any directory
-- **Auto-backup** - Automatic registry backup creation
+> 💡 **Pro Tip**: Use the "Recommended" button for optimal settings that balance performance and stability!
 
 ---
 
 ## 🖥️ Screenshot
+![KOALA Gaming Optimizer v2.3 Screenshot](https://github.com/KOALAaufPILLEN/KOALAOptimizer/blob/main/screenshot.png)
 
-![KOALA Gaming Optimizer v2.3 C# Edition](https://github.com/KOALAaufPILLEN/KOALAOptimizer/blob/main/screenshot.png)
+---
+
+## 📋 Activity Log & System Info
+
+<table>
+<tr>
+<td>📝</td>
+<td><b>Real-time Logging</b></td>
+<td>Live log of applied optimizations and system changes</td>
+</tr>
+<tr>
+<td>💻</td>
+<td><b>System Information</b></td>
+<td>Comprehensive hardware and software details</td>
+</tr>
+<tr>
+<td>⚡</td>
+<td><b>Quick Benchmark</b></td>
+<td>Performance comparison tools for before/after analysis</td>
+</tr>
+<tr>
+<td>🛡️</td>
+<td><b>Safety Features</b></td>
+<td>Complete backup and restore functionality</td>
+</tr>
+</table>
 
 ---
 
@@ -236,63 +183,22 @@ The project uses automated CI/CD with GitHub Actions:
 > 🔄 **System Restart** - Some optimizations may require a reboot to take effect  
 > 🛡️ **Safe Reversibility** - "Revert All" restores Windows to original state  
 > 💾 **Automatic Backup** - All changes are backed up before modification  
-> 🔒 **Antivirus Exclusion** - May be needed for performance monitoring features
 
 </div>
 
 ---
-
-## 🔄 **Migration from PowerShell Version**
-
-The C# version is **fully compatible** with PowerShell backups and configurations:
-
-1. **Backup preservation** - Existing backups work with restore function
-2. **Settings migration** - Same optimization parameters and logic
-3. **Enhanced safety** - Additional validation and error handling
-4. **Performance boost** - Immediate 10x+ speed improvements
 
 ---
 
 ## 📋 Changelog
 
 <details>
-<summary><b>🔥 Version 2.3 C# Edition (August 2025) - REVOLUTIONARY REWRITE</b></summary>
+<summary><b>🔥 Version 2.1 (Current) - FIXED Edition</b></summary>
 <br>
 
-### 🚀 Complete C# Rewrite
-- **🏗️ New**: Complete rewrite in C# WPF from PowerShell
-- **⚡ Performance**: 10x+ faster execution and startup
-- **🎨 Interface**: Professional WPF interface with 4 themes
-- **📊 Monitoring**: Real-time performance dashboard
-- **🔧 Architecture**: MVVM pattern with service-oriented design
-
-### 🛠️ Development Infrastructure
-- **🤖 Added**: GitHub Actions CI/CD pipeline
-- **📦 Enhanced**: Automated build and release system
-- **🔍 Improved**: Code quality with automated testing
-- **📝 Documentation**: Comprehensive inline documentation
-
-### 🎮 Gaming Enhancements
-- **🎯 Enhanced**: Game detection with 16+ supported titles
-- **⚡ Improved**: Process priority management with real-time monitoring
-- **🖥️ Advanced**: GPU-specific optimizations for all vendors
-- **📈 Added**: Performance benchmarking tools
-
-### 🛡️ Safety & Reliability
-- **🔒 Enhanced**: Registry backup system with JSON format
-- **✅ Added**: Comprehensive error handling and validation
-- **🔄 Improved**: Restore functionality with detailed logging
-- **⚠️ Added**: Safety warnings and confirmation dialogs
-
-</details>
-
-<details>
-<summary><b>Version 2.1-2.2 - PowerShell Foundation</b></summary>
-<br>
-
-### ✅ Bug Fixes (PowerShell Era)
+### ✅ Bug Fixes
 - **🐛 Fixed**: ContainsKey bug that caused application crashes
-- **🔧 Fixed**: PowerShell 5.1 compatibility issues
+- **🔧 Fixed**: PowerShell 5.1 compatibility issues with null-coalescing operator
 - **🛠️ Fixed**: XAML compatibility issues across Windows versions
 - **⚡ Fixed**: Enhanced GPU detection for multi-GPU systems
 
@@ -300,14 +206,48 @@ The C# version is **fully compatible** with PowerShell backups and configuration
 - **📈 Enhanced**: Dual GPU detection and optimization
 - **🎯 Improved**: Process priority management
 - **🔧 Optimized**: Registry operations with better error handling
+- **💾 Enhanced**: Memory management algorithms
+
+### 🎮 Gaming Features
+- **🎪 Added**: 16 pre-defined game profiles
+- **🔍 Enhanced**: Auto-detection of running games
+- **⚙️ Improved**: Game-specific optimization profiles
+- **🚀 Added**: Real-time performance monitoring
 
 </details>
 
----
+<details>
+<summary><b>Version 2.0 - Enhanced Edition</b></summary>
+<br>
+
+### 🆕 New Features
+- **🎨 Added**: Modern WPF interface with dark theme
+- **🛡️ Added**: Comprehensive backup and restore system
+- **📊 Added**: Real-time system monitoring
+- **🔧 Added**: Advanced registry optimization tools
+
+### 🎮 Gaming Enhancements
+- **🎯 Added**: Game process detection and prioritization
+- **⚡ Enhanced**: GPU-specific optimizations (NVIDIA, AMD, Intel)
+- **🚀 Added**: High precision timer support
+- **🔧 Improved**: Network latency optimizations
+
+</details>
+
+<details>
+<summary><b>Version 1.x - Foundation</b></summary>
+<br>
+
+### 🏗️ Core Features
+- **⚡ Initial**: Basic Windows gaming optimizations
+- **🌐 Added**: Network stack optimizations
+- **🔧 Implemented**: Registry tweaking engine
+- **📦 Created**: PowerShell-based architecture
+
+</details>
 
 ## 🚀 Future Roadmap
-
-### 🎯 Planned Features (Q4 2025)
+### 🎯 Planned Features
 
 <table>
 <tr>
@@ -317,12 +257,17 @@ The C# version is **fully compatible** with PowerShell backups and configuration
 </tr>
 <tr>
 <td><b>🎮 Game Library</b></td>
-<td>Expanded game profiles, Steam integration</td>
+<td>Expanded game profiles, automatic game detection improvements</td>
 <td>🟡 In Progress</td>
 </tr>
 <tr>
 <td><b>☁️ Cloud Sync</b></td>
 <td>Configuration synchronization across devices</td>
+<td>🔵 Planned</td>
+</tr>
+<tr>
+<td><b>🎨 Themes</b></td>
+<td>Dark/Light theme options, customizable UI</td>
 <td>🔵 Planned</td>
 </tr>
 <tr>
@@ -337,20 +282,15 @@ The C# version is **fully compatible** with PowerShell backups and configuration
 </tr>
 </table>
 
----
+### 🎪 Community Requests
 
-## 🆘 **Troubleshooting**
+<div align="center">
 
-### **Common Issues:**
-- **"Requires Administrator"** → Right-click → "Run as administrator"
-- **Theme not loading** → Check Themes/ folder permissions
-- **Performance monitoring not working** → Ensure WMI service is running
-- **Game not detected** → Verify process names match supported list
+> 💡 **Have an idea?** [Open an issue](https://github.com/KOALAaufPILLEN/KOALAOptimizer/issues) or [start a discussion](https://github.com/KOALAaufPILLEN/KOALAOptimizer/discussions)  
+> 🤝 **Want to contribute?** Check out our [contributing guidelines](CONTRIBUTING.md)  
+> ⭐ **Love the project?** Give us a star and share with fellow gamers!
 
-### **Debug Mode:**
-- Launch with `--debug` flag for verbose logging
-- Logs stored in `%APPDATA%/KOALAOptimizer/`
-- Export logs via "Activity Log" tab for support
+</div>
 
 ---
 
@@ -377,26 +317,15 @@ Special thanks to all contributors, testers, and users who help make KOALA Optim
 ### 🌟 Support the Project
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink.svg?style=for-the-badge&logo=github)](https://github.com/sponsors/KOALAaufPILLEN)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/koalaaufpillen)
 
 ### 📱 Connect With Us
 
-[![GitHub Issues](https://img.shields.io/badge/Issues-Bug%20Reports-red.svg?style=for-the-badge&logo=github)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/issues)
-[![GitHub Discussions](https://img.shields.io/badge/Discussions-Community-blue.svg?style=for-the-badge&logo=github)](https://github.com/KOALAaufPILLEN/KOALAOptimizer/discussions)
+[![Discord](https://img.shields.io/badge/Discord-Community-blue.svg?style=for-the-badge&logo=discord)](https://discord.gg/gaming)
+[![Reddit](https://img.shields.io/badge/Reddit-Discussion-orange.svg?style=for-the-badge&logo=reddit)](https://reddit.com/r/pcgaming)
 
 ---
 
-<sub>Made with 🐨 by the KOALA Team | © 2025 KOALA Gaming Optimizer - C# Edition</sub>
+<sub>Made with 🐨 by the KOALA Team | © 2024 KOALA Gaming Optimizer</sub>
 
 </div>
-
----
-
-## 🚀 **Get Started**
-
-1. **Download** the C# release or build from source
-2. **Run as Administrator** for full functionality  
-3. **Choose your theme** for personalized experience
-4. **Click "Apply Recommended"** for instant optimization
-5. **Monitor performance** in real-time dashboard
-
-**Ready to experience 10x the performance with professional C# architecture! 🎮⚡**
