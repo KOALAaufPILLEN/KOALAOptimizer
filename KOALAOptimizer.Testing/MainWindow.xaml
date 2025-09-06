@@ -106,7 +106,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="70"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="200"/>
+            <RowDefinition Height="250"/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
@@ -460,10 +460,30 @@
                     <TextBlock Text="Status:" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
                     <TextBlock Name="StatusText" Text="Ready" Foreground="{StaticResource AccentPurple}" FontSize="10" Margin="0,0,0,10"/>
                     
+                    <!-- Theme Selector -->
+                    <TextBlock Text="Theme:" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,5,0,2"/>
+                    <ComboBox Name="ThemeSelector" Height="25" Margin="0,0,0,10" FontSize="10" SelectionChanged="ThemeSelector_SelectionChanged">
+                        <ComboBoxItem Content="🐨 KOALA Theme" Tag="KOALA" IsSelected="True"/>
+                        <ComboBoxItem Content="🌐 Matrix Theme" Tag="Matrix"/>
+                        <ComboBoxItem Content="🎮 Gaming Theme" Tag="Gaming"/>
+                        <ComboBoxItem Content="🚀 Sci-Fi Theme" Tag="SciFi"/>
+                        <ComboBoxItem Content="📊 Classic Theme" Tag="Classic"/>
+                    </ComboBox>
+                    
                     <Button Name="Recommended" Content="✅ Recommended" Height="35" Margin="0,2" Click="Recommended_Click" 
                            Background="{StaticResource SuccessGreen}" FontWeight="Bold" FontSize="14"/>
                     <Button Name="RevertAll" Content="🔄 Revert All" Height="35" Margin="0,2" Click="RevertAll_Click" 
                            Background="{StaticResource DangerRed}" FontWeight="Bold" FontSize="14"/>
+                           
+                    <!-- System Status Indicators -->
+                    <Border Background="{StaticResource BackgroundLight}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,10,0,0" Padding="8" CornerRadius="4">
+                        <StackPanel>
+                            <TextBlock Text="System Status:" Foreground="{StaticResource TextSecondary}" FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <TextBlock Name="AdminStatusText" Text="Admin: Checking..." Foreground="{StaticResource TextSecondary}" FontSize="9"/>
+                            <TextBlock Name="ValidationStatusText" Text="Validation: Running..." Foreground="{StaticResource TextSecondary}" FontSize="9"/>
+                            <TextBlock Name="OptimizationStatusText" Text="Optimizations: Ready" Foreground="{StaticResource TextSecondary}" FontSize="9"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
         </Grid>

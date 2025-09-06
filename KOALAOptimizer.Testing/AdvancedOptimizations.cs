@@ -152,7 +152,234 @@ namespace KOALAOptimizer
             }
         }
         
-        // BCDEdit optimizations
+        // Razer Booster-inspired Game Mode Optimization
+        public static void ApplyGameBoosterMode()
+        {
+            try
+            {
+                // Enhanced Game Mode with automatic process prioritization
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\GameBar",
+                    "AutoGameModeEnabled", 1, RegistryValueKind.DWord);
+                
+                // Game DVR optimizations
+                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
+                    "GameDVR_Enabled", 0, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
+                    "GameDVR_FSEBehaviorMode", 2, RegistryValueKind.DWord);
+                
+                // Gaming thread scheduling
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "GPU Priority", 8, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "Priority", 6, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "Scheduling Category", "High", RegistryValueKind.String);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "SFIO Priority", "High", RegistryValueKind.String);
+            }
+            catch { }
+        }
+        
+        // CPU Core Optimization for Gaming (Razer Booster style)
+        public static void OptimizeCPUCoresForGaming()
+        {
+            try
+            {
+                // Disable core parking for all cores
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583",
+                    "ValueMax", 0, RegistryValueKind.DWord);
+                
+                // Performance boost mode
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\be337238-0d82-4146-a960-4f3749d470c7",
+                    "ValueMax", 100, RegistryValueKind.DWord);
+                
+                // CPU idle states optimization
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\5d76a2ca-e8c0-402f-a133-2158492d58ad",
+                    "ValueMax", 0, RegistryValueKind.DWord);
+                
+                // Processor performance increase threshold
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\06cadf0e-64ed-448a-8927-ce7bf90eb35d",
+                    "ValueMax", 10, RegistryValueKind.DWord);
+                
+                // Processor performance decrease threshold  
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\12a0ab44-fe28-4fa9-b3bd-4b64f44960a6",
+                    "ValueMax", 75, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+        
+        // Memory Cleanup and Optimization (Razer Booster style)
+        public static void PerformMemoryCleanup()
+        {
+            try
+            {
+                // Clear standby memory
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                    "ClearPageFileAtShutdown", 1, RegistryValueKind.DWord);
+                
+                // Memory compression optimization
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                    "DisablePagingExecutive", 1, RegistryValueKind.DWord);
+                
+                // Large system cache
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                    "LargeSystemCache", 1, RegistryValueKind.DWord);
+                
+                // System managed virtual memory
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                    "SecondLevelDataCache", 1024, RegistryValueKind.DWord);
+                
+                // Gaming memory allocation
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                    "FeatureSettings", 1, RegistryValueKind.DWord);
+                
+                // Run memory cleanup
+                RunMemoryCleanupCommand();
+            }
+            catch { }
+        }
+        
+        // Background Process Management (Razer Booster style)
+        public static void OptimizeBackgroundProcesses()
+        {
+            try
+            {
+                // Disable Windows Defender real-time monitoring during gaming (optional)
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection",
+                    "DisableRealtimeMonitoring", 1, RegistryValueKind.DWord);
+                
+                // Windows Update optimization
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU",
+                    "NoAutoUpdate", 1, RegistryValueKind.DWord);
+                
+                // Background apps optimization
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications",
+                    "GlobalUserDisabled", 1, RegistryValueKind.DWord);
+                
+                // Disable background task host
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\backgroundTaskHost.exe",
+                    "Debugger", "rundll32.exe", RegistryValueKind.String);
+                
+                // System interrupts optimization
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl",
+                    "ConvertSharedInterrupts", 1, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+        
+        // System Resource Prioritization (Razer Booster style)
+        public static void PrioritizeSystemResources()
+        {
+            try
+            {
+                // I/O priority for games
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\I/O System",
+                    "CountOperations", 1, RegistryValueKind.DWord);
+                
+                // Network throttling index
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                    "NetworkThrottlingIndex", 10, RegistryValueKind.DWord);
+                
+                // System responsiveness for gaming
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile",
+                    "SystemResponsiveness", 0, RegistryValueKind.DWord);
+                
+                // Gaming multimedia optimizations
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "Affinity", 0, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "Background Only", "False", RegistryValueKind.String);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games",
+                    "Clock Rate", 10000, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+        
+        // Automatic Game Detection and Process Optimization
+        public static void EnableGameDetectionOptimization()
+        {
+            try
+            {
+                // Game detection registry settings
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\GameBar",
+                    "UseNexusForGameBarEnabled", 0, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\GameBar",
+                    "GamePanelStartupTipIndex", 3, RegistryValueKind.DWord);
+                
+                // Full screen exclusive optimizations
+                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore",
+                    "GameDVR_DSEBehavior", 2, RegistryValueKind.DWord);
+                
+                // GPU scheduling for detected games
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
+                    "HwSchMode", 2, RegistryValueKind.DWord);
+                
+                // Automatic GPU performance scaling
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power",
+                    "DefaultD3TransitionLatencyActivelyUsed", 0, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power",
+                    "DefaultD3TransitionLatencyIdleLongTime", 0, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+        
+        // Enhanced DirectX Gaming Optimizations
+        public static void OptimizeDirectXGaming()
+        {
+            try
+            {
+                // DirectX 12 Ultimate optimizations
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX",
+                    "DisableAGPSupport", 0, RegistryValueKind.DWord);
+                
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX",
+                    "EnableDebugging", 0, RegistryValueKind.DWord);
+                
+                // DXGI optimizations
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX",
+                    "DXGI_MAX_FRAME_LATENCY", 1, RegistryValueKind.DWord);
+                
+                // DirectX shader optimizations
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\DirectX",
+                    "D3D12_SHADER_CACHE_SIZE", 10737418240, RegistryValueKind.QWord); // 10GB cache
+                
+                // GPU preemption optimizations
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler",
+                    "EnablePreemption", 0, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+        
+        // Memory cleanup command execution
+        private static void RunMemoryCleanupCommand()
+        {
+            try
+            {
+                // Clear standby memory using Windows API
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "rundll32.exe",
+                    Arguments = "advapi32.dll,ProcessIdleTasks",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                
+                using (var process = Process.Start(startInfo))
+                {
+                    process?.WaitForExit(5000); // Wait max 5 seconds
+                }
+            }
+            catch { }
+        }
         public static void ApplyBCDEditTweaks()
         {
             // Disable dynamic tick

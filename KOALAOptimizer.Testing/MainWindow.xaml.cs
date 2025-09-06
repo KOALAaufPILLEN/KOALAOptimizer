@@ -97,6 +97,12 @@ namespace KOALAOptimizer
             LogMessage("🚀 KOALA Gaming Optimizer v3.0 initialized");
             LogMessage($"Admin Mode: {(isAdmin ? "✅ ACTIVE" : "⚠️ LIMITED")}");
             
+            // Update status indicators
+            UpdateStatusIndicators();
+            
+            // Perform comprehensive system validation
+            Task.Run(() => PerformSystemValidation());
+            
             if (!isAdmin)
             {
                 LogMessage("⚠️ Run as Administrator for full optimization features!", "Warning");
@@ -108,6 +114,48 @@ namespace KOALAOptimizer
             
             // Start game detection timer
             StartGameDetection();
+        }
+        
+        private async void PerformSystemValidation()
+        {
+            try
+            {
+                await Dispatcher.InvokeAsync(() => LogMessage("🔍 Starting system validation...", "Info"));
+                UpdateValidationStatus(false);
+                
+                // Run comprehensive system check
+                var issues = ErrorChecker.ValidateSystemReadiness(LogMessage);
+                
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (issues.Count == 0)
+                    {
+                        LogMessage("✅ System validation completed successfully - ready for optimization!", "Info");
+                        UpdateValidationStatus(true, 0);
+                    }
+                    else
+                    {
+                        LogMessage($"⚠️ System validation found {issues.Count} issues:", "Warning");
+                        foreach (var issue in issues)
+                        {
+                            LogMessage($"  {issue}", "Warning");
+                        }
+                        
+                        if (issues.Count > 3)
+                        {
+                            LogMessage("⚠️ Multiple issues detected - proceed with caution", "Warning");
+                        }
+                        
+                        UpdateValidationStatus(true, issues.Count);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.InvokeAsync(() => LogMessage($"❌ System validation error: {ex.Message}", "Error"));
+                UpdateValidationStatus(true, 999); // Indicate error
+            }
+        }
             
             // Detect GPU vendor
             DetectGPUVendor();
@@ -774,6 +822,7 @@ namespace KOALAOptimizer
             }
 
             LogMessage("🚀 Applying recommended optimizations...");
+            UpdateOptimizationStatus("🚀 Starting...", "Info");
             CreateBackup();
             
             Task.Run(async () =>
@@ -782,6 +831,7 @@ namespace KOALAOptimizer
                 await Dispatcher.InvokeAsync(() =>
                 {
                     LogMessage("✅ All recommended optimizations applied!");
+                    UpdateOptimizationStatus("✅ Complete!", "Success");
                     MessageBox.Show("Optimizations complete!\n\nRestart recommended for best performance.", 
                         "KOALA V3", MessageBoxButton.OK, MessageBoxImage.Information);
                 });
@@ -790,34 +840,198 @@ namespace KOALAOptimizer
 
         private async Task ApplyAllOptimizations()
         {
-            int totalSteps = 15;
-            int currentStep = 0;
-
-            // 1. Network Optimizations
-            if (DisableTCPDelay.IsChecked == true)
+            try
             {
-                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying network optimizations..."));
-                ApplyNetworkOptimizations();
+                // Pre-optimization validation
+                await Dispatcher.InvokeAsync(() => LogMessage("🔒 Validating optimization safety...", "Info"));
+                
+                var safetyChecks = new[]
+                {
+                    ("network", DisableTCPDelay.IsChecked == true),
+                    ("registry", true),
+                    ("services", DisableXboxServices.IsChecked == true),
+                    ("gpu", EnableGPUHwScheduling.IsChecked == true),
+                    ("kernel", PerformanceMode.IsChecked == true)
+                };
+                
+                foreach (var (type, enabled) in safetyChecks)
+                {
+                    if (enabled && !ErrorChecker.ValidateOptimizationSafety(type, LogMessage))
+                    {
+                        await Dispatcher.InvokeAsync(() => 
+                            LogMessage($"⚠️ Safety validation failed for {type} optimizations - proceeding with caution", "Warning"));
+                    }
+                }
+
+                int totalSteps = 15;
+                int currentStep = 0;
+
+                // 1. Network Optimizations
+                if (DisableTCPDelay.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying network optimizations..."));
+                    await SafeExecuteOptimization(() => ApplyNetworkOptimizations(), "Network");
+                }
+
+                // 2. Gaming Optimizations
+                if (DisableGameDVR.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Disabling Game DVR..."));
+                    await SafeExecuteOptimization(() => ApplyGamingOptimizations(), "Gaming");
+                }
+
+                // 3. GPU Optimizations
+                if (EnableGPUHwScheduling.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Enabling GPU hardware scheduling..."));
+                    await SafeExecuteOptimization(() => ApplyGPUOptimizations(), "GPU");
+                }
+
+                // 4. Memory Optimizations
+                if (AdvancedMemoryOptimization.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing memory management..."));
+                    await SafeExecuteOptimization(() => ApplyMemoryOptimizations(), "Memory");
+                }
+
+                // 5. CPU Optimizations
+                if (OptimizeCPUScheduling.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing CPU scheduling..."));
+                    await SafeExecuteOptimization(() => ApplyCPUOptimizations(), "CPU");
+                }
+
+                // 6. Visual Effects
+                if (SelectiveVisualEffectsOptimization.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying selective visual effects..."));
+                    await SafeExecuteOptimization(() => ApplyVisualEffectOptimizations(), "Visual Effects");
+                }
+
+                // 7. Power Management
+                if (UltimatePerformancePowerPlan.IsChecked == true && isAdmin)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Setting ultimate performance power plan..."));
+                    await SafeExecuteOptimization(() => ApplyPowerManagement(), "Power Management");
+                }
+
+                // 8. Services
+                if (DisableXboxServices.IsChecked == true && isAdmin)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Disabling unnecessary services..."));
+                    await SafeExecuteOptimization(async () => await DisableServices(), "Services");
+                }
+
+                // 9. Kernel Optimizations (Performance Mode Only)
+                if (PerformanceMode.IsChecked == true && isAdmin)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying kernel optimizations..."));
+                    await SafeExecuteOptimization(() => ApplyKernelOptimizations(), "Kernel");
+                }
+
+                // 10. Input Optimizations
+                if (GamingInputOptimization.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing input devices..."));
+                    await SafeExecuteOptimization(() => ApplyInputOptimizations(), "Input");
+                }
+
+                // 11. Audio Optimizations
+                if (GamingAudioOptimization.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing audio..."));
+                    await SafeExecuteOptimization(() => ApplyAudioOptimizations(), "Audio");
+                }
+
+                // 12. Disk Optimizations
+                if (DiskPerformanceTweaks.IsChecked == true)
+                {
+                    await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing disk performance..."));
+                    await SafeExecuteOptimization(() => ApplyDiskOptimizations(), "Disk");
+                }
+
+                // 13. GPU Vendor Specific
+                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying GPU vendor optimizations..."));
+                await SafeExecuteOptimization(() => ApplyGPUVendorOptimizations(), "GPU Vendor");
+
+                // 14. FPS Boosting
+                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying FPS boosting tweaks..."));
+                await SafeExecuteOptimization(() => ApplyFPSBoostingTweaks(), "FPS Boosting");
+
+                // 15. Advanced Razer Booster-style optimizations
+                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Applying advanced gaming optimizations..."));
+                await SafeExecuteOptimization(() => ApplyRazerBoosterOptimizations(), "Advanced Gaming");
+
+                // Post-optimization validation
+                await Dispatcher.InvokeAsync(() => LogMessage("🔍 Running post-optimization validation...", "Info"));
+                var postIssues = ErrorChecker.ValidatePostOptimization(LogMessage);
+                
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (postIssues.Count == 0)
+                    {
+                        LogMessage("✅ Post-optimization validation successful!", "Info");
+                    }
+                    else
+                    {
+                        LogMessage($"⚠️ Post-optimization validation found {postIssues.Count} issues:", "Warning");
+                        foreach (var issue in postIssues)
+                        {
+                            LogMessage($"  {issue}", "Warning");
+                        }
+                    }
+                });
             }
-
-            // 2. Gaming Optimizations
-            if (DisableGameDVR.IsChecked == true)
+            catch (Exception ex)
             {
-                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Disabling Game DVR..."));
-                ApplyGamingOptimizations();
+                await Dispatcher.InvokeAsync(() => LogMessage($"❌ Critical error during optimization: {ex.Message}", "Error"));
+                throw;
             }
-
-            // 3. GPU Optimizations
-            if (EnableGPUHwScheduling.IsChecked == true)
+        }
+        
+        private async Task SafeExecuteOptimization(Action optimization, string optimizationType)
+        {
+            try
             {
-                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Enabling GPU hardware scheduling..."));
-                ApplyGPUOptimizations();
+                await Task.Run(optimization);
+                await Dispatcher.InvokeAsync(() => LogMessage($"✅ {optimizationType} optimization completed successfully", "Info"));
             }
-
-            // 4. Memory Optimizations
-            if (AdvancedMemoryOptimization.IsChecked == true)
+            catch (Exception ex)
             {
-                await Dispatcher.InvokeAsync(() => LogMessage($"[{++currentStep}/{totalSteps}] Optimizing memory management..."));
+                await Dispatcher.InvokeAsync(() => LogMessage($"❌ {optimizationType} optimization failed: {ex.Message}", "Error"));
+            }
+        }
+        
+        private async Task SafeExecuteOptimization(Func<Task> optimization, string optimizationType)
+        {
+            try
+            {
+                await optimization();
+                await Dispatcher.InvokeAsync(() => LogMessage($"✅ {optimizationType} optimization completed successfully", "Info"));
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.InvokeAsync(() => LogMessage($"❌ {optimizationType} optimization failed: {ex.Message}", "Error"));
+            }
+        }
+        
+        private void ApplyRazerBoosterOptimizations()
+        {
+            try
+            {
+                AdvancedOptimizations.ApplyGameBoosterMode();
+                AdvancedOptimizations.OptimizeCPUCoresForGaming();
+                AdvancedOptimizations.PerformMemoryCleanup();
+                AdvancedOptimizations.OptimizeBackgroundProcesses();
+                AdvancedOptimizations.PrioritizeSystemResources();
+                AdvancedOptimizations.EnableGameDetectionOptimization();
+                AdvancedOptimizations.OptimizeDirectXGaming();
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ Razer Booster optimization error: {ex.Message}", "Error");
+            }
+        }
                 ApplyMemoryOptimizations();
             }
 
@@ -1548,6 +1762,105 @@ namespace KOALAOptimizer
             HideCrosshairOverlay();
             gameDetectionTimer?.Stop();
         }
+        
+        #region Theme and UI Management
+        private void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                var selectedItem = ThemeSelector.SelectedItem as ComboBoxItem;
+                if (selectedItem?.Tag != null)
+                {
+                    var themeTag = selectedItem.Tag.ToString();
+                    if (Enum.TryParse<ThemeType>(themeTag, out var themeType))
+                    {
+                        ThemeManager.ApplyTheme(themeType);
+                        ThemeManager.SaveThemePreference(themeType);
+                        LogMessage($"🎨 Theme changed to {themeTag}", "Info");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ Theme change error: {ex.Message}", "Error");
+            }
+        }
+        
+        private void UpdateStatusIndicators()
+        {
+            try
+            {
+                // Update admin status
+                AdminStatusText.Text = $"Admin: {(isAdmin ? "✅ Active" : "⚠️ Limited")}";
+                AdminStatusText.Foreground = isAdmin ? 
+                    (System.Windows.Media.Brush)FindResource("SuccessGreen") : 
+                    (System.Windows.Media.Brush)FindResource("WarningOrange");
+                
+                // Update validation status
+                ValidationStatusText.Text = "Validation: ⏳ Running...";
+                ValidationStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary");
+                
+                // Update optimization status  
+                OptimizationStatusText.Text = "Optimizations: 🔄 Ready";
+                OptimizationStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPurple");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ Status update error: {ex.Message}", "Error");
+            }
+        }
+        
+        private void UpdateValidationStatus(bool isCompleted, int issueCount = 0)
+        {
+            try
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    if (isCompleted)
+                    {
+                        if (issueCount == 0)
+                        {
+                            ValidationStatusText.Text = "Validation: ✅ Passed";
+                            ValidationStatusText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessGreen");
+                        }
+                        else
+                        {
+                            ValidationStatusText.Text = $"Validation: ⚠️ {issueCount} Issues";
+                            ValidationStatusText.Foreground = (System.Windows.Media.Brush)FindResource("WarningOrange");
+                        }
+                    }
+                    else
+                    {
+                        ValidationStatusText.Text = "Validation: ⏳ Running...";
+                        ValidationStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary");
+                    }
+                });
+            }
+            catch { }
+        }
+        
+        private void UpdateOptimizationStatus(string status, string level = "Info")
+        {
+            try
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    OptimizationStatusText.Text = $"Optimizations: {status}";
+                    
+                    var color = level switch
+                    {
+                        "Error" => (System.Windows.Media.Brush)FindResource("DangerRed"),
+                        "Warning" => (System.Windows.Media.Brush)FindResource("WarningOrange"),
+                        "Success" => (System.Windows.Media.Brush)FindResource("SuccessGreen"),
+                        _ => (System.Windows.Media.Brush)FindResource("AccentPurple")
+                    };
+                    
+                    OptimizationStatusText.Foreground = color;
+                });
+            }
+            catch { }
+        }
+        #endregion
         #endregion
     }
 }
