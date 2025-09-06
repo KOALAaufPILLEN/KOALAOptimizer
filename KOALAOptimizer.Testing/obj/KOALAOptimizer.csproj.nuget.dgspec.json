@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\maste\\Desktop\\KOALAOptimizer_V3\\KOALAOptimizer.csproj": {}
+    "/home/runner/work/KOALAOptimizer/KOALAOptimizer/KOALAOptimizer.Testing/KOALAOptimizer.csproj": {}
   },
   "projects": {
-    "C:\\Users\\maste\\Desktop\\KOALAOptimizer_V3\\KOALAOptimizer.csproj": {
-      "version": "3.0.0",
+    "/home/runner/work/KOALAOptimizer/KOALAOptimizer/KOALAOptimizer.Testing/KOALAOptimizer.csproj": {
+      "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\maste\\Desktop\\KOALAOptimizer_V3\\KOALAOptimizer.csproj",
+        "projectUniqueName": "/home/runner/work/KOALAOptimizer/KOALAOptimizer/KOALAOptimizer.Testing/KOALAOptimizer.csproj",
         "projectName": "KOALAOptimizer",
-        "projectPath": "C:\\Users\\maste\\Desktop\\KOALAOptimizer_V3\\KOALAOptimizer.csproj",
-        "packagesPath": "C:\\Users\\maste\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\maste\\Desktop\\KOALAOptimizer_V3\\obj\\",
+        "projectPath": "/home/runner/work/KOALAOptimizer/KOALAOptimizer/KOALAOptimizer.Testing/KOALAOptimizer.csproj",
+        "packagesPath": "/home/runner/.nuget/packages/",
+        "outputPath": "/home/runner/work/KOALAOptimizer/KOALAOptimizer/KOALAOptimizer.Testing/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\maste\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/runner/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
@@ -32,28 +32,21 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "true",
-          "auditLevel": "low",
-          "auditMode": "direct"
         }
       },
       "frameworks": {
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "dependencies": {
-            "Extended.Wpf.Toolkit": {
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
               "target": "Package",
-              "version": "[4.6.0, )"
+              "version": "[8.0.19, )",
+              "autoReferenced": true
             },
             "Microsoft.Win32.Registry": {
               "target": "Package",
               "version": "[5.0.0, )"
-            },
-            "System.Diagnostics.PerformanceCounter": {
-              "target": "Package",
-              "version": "[8.0.0, )"
             },
             "System.Management": {
               "target": "Package",
@@ -79,15 +72,31 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
-            },
-            "Microsoft.WindowsDesktop.App.WPF": {
-              "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.119/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }
