@@ -278,8 +278,8 @@ function Apply-ThemeOptimized {
                 $global:form.SuspendLayout()
             }
             
-            # Apply the theme
-            Switch-Theme $ThemeName
+            # Apply the KOALA theme
+            Apply-KoalaTheme
             
             # Update current theme tracker
             $global:CurrentTheme = $ThemeName
@@ -729,399 +729,70 @@ $global:KoalaTheme = @{
 }
 
 # ---------- SIMPLIFIED THEME APPLICATION FUNCTIONS ----------
-        Name = 'GitHub Dark'
-        Background = '#0D1117'
-        Primary = '#8B5CF6'
-        Hover = '#A78BFA'
-        Text = 'White'
-        Secondary = '#21262D'
-        Accent = '#00FF88'
-        TextSecondary = '#8B949E'
-        LogBg = '#0D1117'
-        SidebarBg = '#21262D'
-        HeaderBg = '#21262D'
-        # Navigation Farben
-        SelectedBackground = '#A78BFA'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = 'White'
-        HoverBackground = '#8B5CF6'
-    }
-    'Light' = @{
-        Name = 'Light Mode'
-        Background = '#F8F9FA'
-        Primary = '#0066CC'
-        Hover = '#0052A3'
-        Text = '#212529'
-        Secondary = '#E9ECEF'
-        Accent = '#198754'
-        TextSecondary = '#6C757D'
-        LogBg = '#FAFAFA'
-        SidebarBg = '#E9ECEF'
-        HeaderBg = '#F1F3F4'
-        # Navigation Farben
-        SelectedBackground = '#0066CC'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#212529'
-        HoverBackground = '#0052A3'
-    }
-    'YouTube' = @{
-        Name = 'YouTube'
-        Background = '#FFFFFF'
-        Primary = '#FF0000'
-        Hover = '#CC0000'
-        Text = '#0F0F0F'
-        Secondary = '#F9F9F9'
-        Accent = '#FF0000'
-        TextSecondary = '#606060'
-        LogBg = '#FAFAFA'
-        SidebarBg = '#F9F9F9'
-        HeaderBg = '#F1F1F1'
-        # Navigation Farben
-        SelectedBackground = '#FF0000'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#0F0F0F'
-        HoverBackground = '#CC0000'
-    }
-    'Facebook' = @{
-        Name = 'Facebook'
-        Background = '#F0F2F5'
-        Primary = '#1877F2'
-        Hover = '#166FE5'
-        Text = '#1C1E21'
-        Secondary = '#E4E6EA'
-        Accent = '#42B883'
-        TextSecondary = '#65676B'
-        LogBg = '#FFFFFF'
-        SidebarBg = '#E4E6EA'
-        HeaderBg = '#FFFFFF'
-        # Navigation Farben
-        SelectedBackground = '#1877F2'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#1C1E21'
-        HoverBackground = '#166FE5'
-    }
-    'Reddit' = @{
-        Name = 'Reddit'
-        Background = '#FFFFFF'
-        Primary = '#FF4500'
-        Hover = '#E13D00'
-        Text = '#1A1A1B'
-        Secondary = '#F6F7F8'
-        Accent = '#FF4500'
-        TextSecondary = '#7C7C83'
-        LogBg = '#FAFAFA'
-        SidebarBg = '#F6F7F8'
-        HeaderBg = '#F6F7F8'
-        # Navigation Farben
-        SelectedBackground = '#FF4500'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#1A1A1B'
-        HoverBackground = '#E13D00'
-    }
-    'Discord' = @{
-        Name = 'Discord'
-        Background = '#36393F'
-        Primary = '#5865F2'
-        Hover = '#4752C4'
-        Text = '#FFFFFF'
-        Secondary = '#2F3136'
-        Accent = '#00FF88'
-        TextSecondary = '#B9BBBE'
-        LogBg = '#2F3136'
-        SidebarBg = '#2F3136'
-        HeaderBg = '#40444B'
-        # Navigation Farben
-        SelectedBackground = '#5865F2'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#4752C4'
-    }
-    'Twitch' = @{
-        Name = 'Twitch'
-        Background = '#0E0E10'
-        Primary = '#9146FF'
-        Hover = '#7B2ECC'
-        Text = '#FFFFFF'
-        Secondary = '#18181B'
-        Accent = '#00FF88'
-        TextSecondary = '#ADADB8'
-        LogBg = '#18181B'
-        SidebarBg = '#18181B'
-        HeaderBg = '#1F1F23'
-        # Navigation Farben
-        SelectedBackground = '#9146FF'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#7B2ECC'
-    }
-    'Forest' = @{
-        Name = 'Forest'
-        Background = '#1B2838'
-        Primary = '#4CAF50'
-        Hover = '#45A049'
-        Text = '#E8F5E8'
-        Secondary = '#2A3F54'
-        Accent = '#4CAF50'
-        TextSecondary = '#A8D8A8'
-        LogBg = '#1B2838'
-        SidebarBg = '#2A3F54'
-        HeaderBg = '#2A3F54'
-        # Navigation Farben
-        SelectedBackground = '#4CAF50'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#E8F5E8'
-        HoverBackground = '#45A049'
-    }
-    'Ocean' = @{
-        Name = 'Ocean'
-        Background = '#0F1419'
-        Primary = '#00BCD4'
-        Hover = '#00ACC1'
-        Text = '#E0F7FA'
-        Secondary = '#1E2A3A'
-        Accent = '#00BCD4'
-        TextSecondary = '#80DEEA'
-        LogBg = '#0F1419'
-        SidebarBg = '#1E2A3A'
-        HeaderBg = '#1E2A3A'
-        # Navigation Farben
-        SelectedBackground = '#00BCD4'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#E0F7FA'
-        HoverBackground = '#00ACC1'
-    }
-    'PORNHUB' = @{
-        Name = 'PORNHUB'
-        Background = '#000000'
-        Primary = '#FF9000'
-        Hover = '#FFD700'
-        Text = '#FFFFFF'
-        Secondary = '#1A1A1A'
-        Accent = '#FF9000'
-        TextSecondary = '#CCCCCC'
-        LogBg = '#000000'
-        SidebarBg = '#1A1A1A'
-        HeaderBg = '#1A1A1A'
-        # Navigation Farben
-        SelectedBackground = '#FF9000'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#FFD700'
-    }
-    'CyberPunk' = @{
-        Name = 'CyberPunk 2077'
-        Background = '#0A0A0A'
-        Primary = '#00FFFF'
-        Hover = '#00CCCC'
-        Text = '#FFFFFF'
-        Secondary = '#1A1A2E'
-        Accent = '#FF00FF'
-        TextSecondary = '#E6E6E6'
-        LogBg = '#0A0A0A'
-        SidebarBg = '#1A1A2E'
-        HeaderBg = '#16213E'
-        # Navigation Farben
-        SelectedBackground = '#00FFFF'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'Black'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#00CCCC'
-    }
-    'NeonGlow' = @{
-        Name = 'Neon Glow'
-        Background = '#0D0D0D'
-        Primary = '#39FF14'
-        Hover = '#32E612'
-        Text = '#FFFFFF'
-        Secondary = '#1A1A1A'
-        Accent = '#FF1493'
-        TextSecondary = '#B3B3B3'
-        LogBg = '#0D0D0D'
-        SidebarBg = '#1A1A1A'
-        HeaderBg = '#262626'
-        # Navigation Farben
-        SelectedBackground = '#39FF14'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'Black'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#32E612'
-    }
-    'MatrixGreen' = @{
-        Name = 'Matrix Green'
-        Background = '#000000'
-        Primary = '#00FF41'
-        Hover = '#00CC33'
-        Text = '#00FF41'
-        Secondary = '#001100'
-        Accent = '#00FF41'
-        TextSecondary = '#008F11'
-        LogBg = '#000000'
-        SidebarBg = '#001100'
-        HeaderBg = '#002200'
-        # Navigation Farben
-        SelectedBackground = '#00FF41'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'Black'
-        UnselectedForeground = '#00FF41'
-        HoverBackground = '#00CC33'
-    }
-    'RoyalPurple' = @{
-        Name = 'Royal Purple'
-        Background = '#1A0D2E'
-        Primary = '#663399'
-        Hover = '#7A40B8'
-        Text = '#FFFFFF'
-        Secondary = '#2E1A4A'
-        Accent = '#9966CC'
-        TextSecondary = '#D6C7E3'
-        LogBg = '#1A0D2E'
-        SidebarBg = '#2E1A4A'
-        HeaderBg = '#3E2459'
-        # Navigation Farben
-        SelectedBackground = '#663399'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#7A40B8'
-    }
-    'GamingRed' = @{
-        Name = 'Gaming Red'
-        Background = '#1A0000'
-        Primary = '#FF0000'
-        Hover = '#CC0000'
-        Text = '#FFFFFF'
-        Secondary = '#330000'
-        Accent = '#FF3333'
-        TextSecondary = '#FFB3B3'
-        LogBg = '#1A0000'
-        SidebarBg = '#330000'
-        HeaderBg = '#4D0000'
-        # Navigation Farben
-        SelectedBackground = '#FF0000'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = '#FFFFFF'
-        HoverBackground = '#CC0000'
+# ---------- SIMPLIFIED THEME APPLICATION FUNCTION ----------
+function Apply-KoalaTheme {
+    try {
+        Log "Applying KOALA single theme..." 'Info'
+        if ($global:form) {
+            $global:form.Background = $global:KoalaTheme.Background
+        }
+        $panels = @('panelDashboard', 'panelBasicOpt', 'panelAdvanced', 'panelGames', 'panelNetwork', 'panelOptions', 'panelBackup')
+        foreach ($panelName in $panels) {
+            $panel = $form.FindName($panelName)
+            if ($panel) {
+                $panel.Background = $global:KoalaTheme.Background
+            }
+        }
+        $navButtons = @{
+            'btnNavDashboard' = '📊 Dashboard'
+            'btnNavBasicOpt' = '⚡ Quick Optimize'
+            'btnNavAdvanced' = '⚙️ Advanced Settings'
+            'btnNavGames' = '🎮 Game Profiles'
+            'btnNavNetwork' = '🌐 Network'
+            'btnNavOptions' = '🎨 Settings'
+            'btnNavBackup' = '💾 Backup & Restore'
+        }
+        foreach ($btnItem in $navButtons.GetEnumerator()) {
+            $btn = $form.FindName($btnItem.Key)
+            if ($btn) {
+                $btn.Content = $btnItem.Value
+                $btn.Foreground = $global:KoalaTheme.Text
+                $btn.FontWeight = "SemiBold"
+                $btn.FontSize = 13
+                if ($btn.Tag -eq "Selected") {
+                    $btn.Background = $global:KoalaTheme.SelectedBackground
+                    $btn.BorderBrush = $global:KoalaTheme.ButtonBorder
+                } else {
+                    $btn.Background = $global:KoalaTheme.UnselectedBackground
+                    $btn.BorderBrush = $global:KoalaTheme.Primary
+                }
+            }
+        }
+        $allButtons = $form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.Button] }
+        foreach ($button in $allButtons) {
+            if ($button.Name -notlike "btnNav*") {
+                $button.Background = $global:KoalaTheme.ButtonBackground
+                $button.Foreground = $global:KoalaTheme.ButtonText
+                $button.BorderBrush = $global:KoalaTheme.ButtonBorder
+            }
+        }
+        $textElements = $form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.TextBlock] }
+        foreach ($text in $textElements) {
+            $text.Foreground = $global:KoalaTheme.Text
+        }
+        $logBox = $form.FindName("txtActivityLog")
+        if ($logBox) {
+            $logBox.Background = $global:KoalaTheme.LogBg
+            $logBox.Foreground = $global:KoalaTheme.Text
+        }
+        Log "KOALA theme applied successfully" 'Success'
+    } catch {
+        Log "Error applying KOALA theme: $_" 'Warning'
     }
 }
 
 
 # Einfache Funktion zum Abrufen eines Themes
-function Get-ThemeColors {
-    param([string]$ThemeName = 'DarkPurple')
-    
-    if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
-        return $global:ThemeDefinitions[$ThemeName]
-    } else {
-        Log "Theme '$ThemeName' nicht gefunden, verwende DarkPurple" 'Warning'
-        return $global:ThemeDefinitions['DarkPurple']
-    }
-}
-
-function Ensure-NavigationVisibility {
-    <#
-    .SYNOPSIS
-    Ensures navigation buttons remain visible and functional across all themes
-    #>
-    param([string]$ThemeName = 'DarkPurple')
-    
-    try {
-        $colors = Get-ThemeColors -ThemeName $ThemeName
-        
-        # Validate that navigation colors have sufficient contrast
-        if (-not $colors.UnselectedForeground -or -not $colors.SelectedForeground) {
-            Log "Warning: Navigation foreground colors missing in theme '$ThemeName'" 'Warning'
-            return $false
-        }
-        
-        # Apply colors to all navigation buttons with error handling
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-        $validButtons = 0
-        
-        foreach ($btnName in $navButtons) {
-            $btn = $form.FindName($btnName)
-            if ($btn) {
-                try {
-                    # Ensure button is visible and has proper styling
-                    $btn.Visibility = "Visible"
-                    $btn.IsEnabled = $true
-                    
-                    # Ensure font size is maintained
-                    if (-not $btn.FontSize -or $btn.FontSize -lt 10) {
-                        $btn.FontSize = 12
-                    }
-                    
-                    # Apply theme colors based on selection state
-                    if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $colors.SelectedBackground
-                        $btn.Foreground = $colors.SelectedForeground
-                    } else {
-                        $btn.Background = $colors.UnselectedBackground
-                        $btn.Foreground = $colors.UnselectedForeground
-                    }
-                    
-                    # Ensure button content/text is visible
-                    if (-not $btn.Content) {
-                        # Restore button content if missing
-                        switch ($btnName) {
-                            'btnNavDashboard' { $btn.Content = "📊 Dashboard" }
-                            'btnNavBasicOpt' { $btn.Content = "⚡ Quick Optimize" }
-                            'btnNavAdvanced' { $btn.Content = "⚙️ Advanced Settings" }
-                            'btnNavGames' { $btn.Content = "🎮 Game Profiles" }
-                            'btnNavNetwork' { $btn.Content = "🌐 Network" }
-                            'btnNavSystem' { $btn.Content = "💻 System Optimization" }
-                            'btnNavOptions' { $btn.Content = "🎨 Options & Themes" }
-                            'btnNavBackup' { $btn.Content = "💾 Backup & Restore" }
-                        }
-                    }
-                    
-                    # Force visual update
-                    $btn.InvalidateVisual()
-                    $btn.UpdateLayout()
-                    $validButtons++
-                } catch {
-                    Log "Warning: Could not update navigation button '$btnName': $($_.Exception.Message)" 'Warning'
-                }
-            }
-        }
-        
-        # Ensure sidebar background is properly set
-        if ($form.Children -and $form.Children.Count -gt 0) {
-            $firstChild = $form.Children[0]
-            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-                $sidebar = $firstChild.Children[0]
-                if ($sidebar) {
-                    try {
-                        $sidebar.Background = $colors.SidebarBg
-                        $sidebar.Visibility = "Visible"
-                        Set-BorderBrushSafe -Element $sidebar -BorderBrushValue $colors.Primary
-                        $sidebar.InvalidateVisual()
-                        $sidebar.UpdateLayout()
-                    } catch {
-                        Log "Warning: Could not update sidebar: $($_.Exception.Message)" 'Warning'
-                    }
-                }
-            }
-        }
-        
-        Log "Navigation visibility ensured: $validButtons/$($navButtons.Count) buttons updated" 'Info'
-        return $validButtons -eq $navButtons.Count
-        
-    } catch {
-        Log "Error ensuring navigation visibility: $($_.Exception.Message)" 'Error'
-        return $false
-    }
-}
 
 function Initialize-AdvancedPanelControls {
     <#
@@ -4649,98 +4320,17 @@ function Remove-Reg {
               <StackPanel>
                 <TextBlock Text="[Themes] Options and Settings" Style="{StaticResource HeaderText}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 
-                <!-- Theme Settings -->
+                <!-- KOALA Gaming Theme - Single Stable Theme Applied -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="[Themes] Theme Settings" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
-                    <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                      </Grid.ColumnDefinitions>
-                      <TextBlock Grid.Column="0" Text="Theme:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                      <ComboBox x:Name="cmbOptionsThemeMain" Grid.Column="1" Style="{StaticResource ModernComboBox}" Margin="0,0,8,0">
-                        <ComboBoxItem Content="Dark Purple" Tag="DarkPurple"/>
-                        <ComboBoxItem Content="GitHub Dark" Tag="GitHubDark"/>
-                        <ComboBoxItem Content="Light Mode" Tag="Light"/>
-                        <ComboBoxItem Content="YouTube" Tag="YouTube"/>
-                        <ComboBoxItem Content="Facebook" Tag="Facebook"/>
-                        <ComboBoxItem Content="Reddit" Tag="Reddit"/>
-                        <ComboBoxItem Content="Discord" Tag="Discord"/>
-                        <ComboBoxItem Content="Twitch" Tag="Twitch"/>
-                        <ComboBoxItem Content="Forest" Tag="Forest"/>
-                        <ComboBoxItem Content="Ocean" Tag="Ocean"/>
-                        <ComboBoxItem Content="PORNHUB" Tag="PORNHUB"/>
-                        <ComboBoxItem Content="Custom" Tag="Custom"/>
-                      </ComboBox>
-                      <Button x:Name="btnOptionsApplyThemeMain" Grid.Column="2" Content="Apply Theme" Width="100" Height="32" 
-                              Style="{StaticResource SuccessButton}" FontSize="10"/>
-                      <!-- Hidden alias button for test compatibility -->
-                      <Button x:Name="btnApplyTheme" Visibility="Collapsed" Width="0" Height="0"/>
-                    </Grid>
-                    
-                    <!-- Color Preview Panel -->
-                    <Border x:Name="themeColorPreview" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
-                            CornerRadius="4" Padding="12" Margin="0,8,0,0">
-                      <StackPanel>
-                        <TextBlock Text="[Themes] Color Preview" Foreground="#00FF88" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                          </Grid.ColumnDefinitions>
-                          <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                            <TextBlock Text="Background" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
-                            <Rectangle x:Name="previewBg" Height="20" Fill="#0A0E27" Stroke="White" StrokeThickness="1"/>
-                          </StackPanel>
-                          <StackPanel Grid.Column="1" Margin="2,0,2,0">
-                            <TextBlock Text="Primary" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
-                            <Rectangle x:Name="previewPrimary" Height="20" Fill="#6B46C1" Stroke="White" StrokeThickness="1"/>
-                          </StackPanel>
-                          <StackPanel Grid.Column="2" Margin="2,0,2,0">
-                            <TextBlock Text="Hover" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
-                            <Rectangle x:Name="previewHover" Height="20" Fill="#8B5CF6" Stroke="White" StrokeThickness="1"/>
-                          </StackPanel>
-                          <StackPanel Grid.Column="3" Margin="4,0,0,0">
-                            <TextBlock Text="Text" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
-                            <Rectangle x:Name="previewText" Height="20" Fill="White" Stroke="Gray" StrokeThickness="1"/>
-                          </StackPanel>
-                        </Grid>
-                      </StackPanel>
-                    </Border>
+                    <TextBlock Text="[KOALA] Single Gaming Theme" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock Text="KOALA Gaming Theme is automatically applied for optimal gaming performance and visibility." 
+                              Foreground="White" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <Button x:Name="btnApplyKoalaTheme" Content="🎮 Refresh KOALA Theme" Width="180" Height="32" 
+                            Style="{StaticResource SuccessButton}" FontSize="12" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </Border>
 
-                <!-- Custom Theme Colors -->
-                <Border x:Name="customThemePanel" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
-                        CornerRadius="6" Padding="16" Margin="0,0,0,12" Visibility="Collapsed">
-                  <StackPanel>
-                    <TextBlock Text="[Themes] Custom Theme Colors" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
-                    <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                      </Grid.ColumnDefinitions>
-                      <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <TextBlock Text="Background Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Text="#0A0E27" Margin="0,0,0,8"/>
-                        <TextBlock Text="Primary Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Text="#6B46C1" Margin="0,0,0,8"/>
-                      </StackPanel>
-                      <StackPanel Grid.Column="1">
-                        <TextBlock Text="Hover Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Text="#8B5CF6" Margin="0,0,0,8"/>
-                        <TextBlock Text="Text Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Text="White" Margin="0,0,0,8"/>
-                      </StackPanel>
-                    </Grid>
-                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" 
-                            Style="{StaticResource SuccessButton}" Margin="0,8,0,0"/>
-                  </StackPanel>
-                </Border>
                 
                 <!-- UI Scaling -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
@@ -5111,23 +4701,8 @@ $gameListPanel = $form.FindName('gameListPanel')
 $btnSearchGames = $form.FindName('btnSearchGames')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
 
-# Options and theme controls - cmbOptionsTheme cmbUIScale btnApplyScale pattern for validation
-$cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
-$btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
-$btnApplyTheme = $form.FindName('btnApplyTheme')  # Alias for test compatibility
-$customThemePanel = $form.FindName('customThemePanel')
-$txtCustomBg = $form.FindName('txtCustomBg')
-$txtCustomPrimary = $form.FindName('txtCustomPrimary')
-$txtCustomHover = $form.FindName('txtCustomHover')
-$txtCustomText = $form.FindName('txtCustomText')
-$btnApplyCustomTheme = $form.FindName('btnApplyCustomTheme')
-
-# Color preview controls
-$themeColorPreview = $form.FindName('themeColorPreview')
-$previewBg = $form.FindName('previewBg')
-$previewPrimary = $form.FindName('previewPrimary')
-$previewHover = $form.FindName('previewHover')
-$previewText = $form.FindName('previewText')
+# KOALA Theme controls - single stable theme system
+$btnApplyKoalaTheme = $form.FindName('btnApplyKoalaTheme')
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -5301,12 +4876,8 @@ function Switch-Panel {
         if ($panelOptions) { $panelOptions.Visibility = "Collapsed" }
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
         
-        # Get current theme
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
+        # Get current theme - always KOALA Gaming Theme
+        $currentTheme = 'KOALA'
         
         # Show selected panel and update navigation
         switch ($PanelName) {
@@ -5580,57 +5151,23 @@ if ($btnNavSystem) {
 #     if ($cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
 #         $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
 #         Log "Theme change requested from header: $selectedTheme" 'Info'
-#         Switch-Theme -ThemeName $selectedTheme
 #         
 #         # Sync with options panel theme selector
-#         if ($cmbOptionsTheme) {
-#             try {
-#                 foreach ($item in $cmbOptionsTheme.Items) {
-#                     if ($item.Tag -eq $selectedTheme) {
-#                         $cmbOptionsTheme.SelectedItem = $item
-#                         break
-#                     }
-#                 }
-#             } catch {
-#                 Log "Could not sync options theme selector: $($_.Exception.Message)" 'Warning'
-#             }
-#         }
-#     }
-# })
 # }
 
-# Custom theme panel visibility handler
-if ($cmbOptionsTheme) {
-    $cmbOptionsTheme.Add_SelectionChanged({
-        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag -eq "Custom") {
-            $customThemePanel.Visibility = "Visible"
-        } else {
-            $customThemePanel.Visibility = "Collapsed"
+# KOALA Theme button event handler
+if ($btnApplyKoalaTheme) {
+    $btnApplyKoalaTheme.Add_Click({
+        try {
+            Log "Manually refreshing KOALA Gaming Theme..." 'Info'
+            Apply-KoalaTheme
+            [System.Windows.MessageBox]::Show("KOALA Gaming Theme refreshed successfully!", "KOALA Theme", 'OK', 'Information')
+        } catch {
+            Log "Error refreshing KOALA theme: $_" 'Error'
+            [System.Windows.MessageBox]::Show("Error refreshing theme: $_", "Error", 'OK', 'Error')
         }
     })
 }
-
-# Custom theme application
-if ($btnApplyCustomTheme) {
-    $btnApplyCustomTheme.Add_Click({
-    try {
-        $bg = $txtCustomBg.Text
-        $primary = $txtCustomPrimary.Text  
-        $hover = $txtCustomHover.Text
-        $text = $txtCustomText.Text
-        
-        Log "Applying custom theme: BG=$bg, Primary=$primary, Hover=$hover, Text=$text" 'Info'
-        Apply-ThemeColors -Background $bg -Primary $primary -Hover $hover -Foreground $text
-        
-        [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
-    } catch {
-        Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-    }
-})
-}
-
-# Function to update color preview panel
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
     
@@ -5653,310 +5190,6 @@ function Update-ThemeColorPreview {
 }
 
 # Enhanced Theme System with Additional Themes
-function Switch-Theme {
-    param([string]$ThemeName)
-    
-    try {
-        # Eingabe validieren
-        if (-not $ThemeName) {
-            Log "Theme-Name ist leer, verwende Standard" 'Warning'
-            $ThemeName = "DarkPurple"
-        }
-        
-        if (-not $form) {
-            Log "UI-Formular nicht verfügbar, Theme kann nicht gewechselt werden" 'Error'
-            return
-        }
-        
-        # Prüfen ob Theme existiert
-        if (-not $global:ThemeDefinitions.ContainsKey($ThemeName)) {
-            Log "Theme '$ThemeName' nicht gefunden, wechsle zu DarkPurple" 'Warning'
-            $ThemeName = "DarkPurple"
-        }
-        
-        # Theme-Farben aus zentralem Array holen
-        $themeColors = Get-ThemeColors -ThemeName $ThemeName
-        
-        Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
-        
-        # Theme anwenden
-        Apply-ThemeColors -ThemeName $ThemeName
-        
-        # Erste umfassende UI-Aktualisierung
-        $form.Dispatcher.Invoke([action]{
-            
-            # 1. HAUPTFENSTER komplett neu setzen
-            $form.Background = $themeColors.Background
-            $form.InvalidateVisual()
-            $form.InvalidateMeasure() 
-            $form.InvalidateArrange()
-            $form.UpdateLayout()
-            
-            # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
-            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-            
-            foreach ($btnName in $navButtons) {
-                $btn = $form.FindName($btnName)
-                if ($btn) {
-                    # Farben basierend auf Selected-State setzen
-                    if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $themeColors.SelectedBackground
-                        $btn.Foreground = $themeColors.SelectedForeground
-                    } else {
-                        $btn.Background = $themeColors.UnselectedBackground
-                        $btn.Foreground = $themeColors.UnselectedForeground
-                    }
-                    
-                    # Button komplett neu zeichnen
-                    $btn.InvalidateVisual()
-                    $btn.InvalidateMeasure()
-                    $btn.UpdateLayout()
-                }
-            }
-            
-            # 3. ALLE CONTAINER UND PANELS AKTUALISIEREN - with bounds checking
-            if ($form.Children -and $form.Children.Count -gt 0) {
-                $firstChild = $form.Children[0]
-                if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-                    $sidebar = $firstChild.Children[0]
-                    if ($sidebar) {
-                        $sidebar.Background = $themeColors.SidebarBg
-                        try { $sidebar.BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                        $sidebar.InvalidateVisual()
-                        $sidebar.UpdateLayout()
-                    }
-                    
-                    if ($firstChild.Children.Count -gt 1) {
-                        $mainContent = $firstChild.Children[1]
-                        if ($mainContent) {
-                            # Header aktualisieren with bounds checking
-                            if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
-                                $mainContent.Children[0].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[0].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                            }
-                            
-                            # Footer aktualisieren with bounds checking
-                            if ($mainContent.Children.Count -gt 2) {
-                                $mainContent.Children[2].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                            }
-                            
-                            # Activity Log aktualisieren with bounds checking
-                            if ($mainContent.Children.Count -gt 3) {
-                                $mainContent.Children[3].Background = $themeColors.LogBg
-                                try { $mainContent.Children[3].BorderBrush = $themeColors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                            }
-                            
-                            $mainContent.InvalidateVisual()
-                            $mainContent.UpdateLayout()
-                        }
-                    }
-                }
-            }
-            
-            # 4. ALLE PANELS EXPLIZIT AKTUALISIEREN
-            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
-            foreach ($panel in $panels) {
-                if ($panel) {
-                    $panel.InvalidateVisual()
-                    $panel.UpdateLayout()
-                }
-            }
-            
-            # 4.1. ADVANCED PANEL SPEZIELLE BEHANDLUNG
-            if ($panelAdvanced -and $panelAdvanced.Visibility -eq "Visible") {
-                # Advanced panel expanders theming
-                $advancedExpanders = @($expanderNetworkTweaks, $expanderSystemOptimizations, $expanderServiceManagement)
-                foreach ($expander in $advancedExpanders) {
-                    if ($expander) {
-                        try {
-                            $expander.Background = $themeColors.Secondary
-                            $expander.Foreground = $themeColors.Text
-                            Set-BorderBrushSafe -Element $expander -BorderBrushValue $themeColors.Primary
-                            $expander.InvalidateVisual()
-                            $expander.UpdateLayout()
-                        } catch {
-                            Write-Verbose "Could not theme advanced expander: $($_.Exception.Message)"
-                        }
-                    }
-                }
-                
-                # Advanced panel buttons theming
-                $advancedButtons = @($btnApplyAdvancedSettings, $btnTestAdvancedSettings, $btnResetAdvancedSettings)
-                foreach ($button in $advancedButtons) {
-                    if ($button) {
-                        try {
-                            $button.Foreground = $themeColors.Text
-                            $button.InvalidateVisual()
-                            $button.UpdateLayout()
-                        } catch {
-                            Write-Verbose "Could not theme advanced button: $($_.Exception.Message)"
-                        }
-                    }
-                }
-            }
-            
-            # 5. LOGBOX AKTUALISIEREN
-            if ($global:LogBox) {
-                $global:LogBox.Background = $themeColors.LogBg
-                $global:LogBox.Foreground = $themeColors.Accent
-                $global:LogBox.InvalidateVisual()
-                $global:LogBox.UpdateLayout()
-            }
-            
-            # 5.5. ADMIN STATUS SECTION AKTUALISIEREN (Fix for Admin Status theme issues)
-            if ($lblSidebarAdminStatus) {
-                try {
-                    # Keep Admin Status text colors functional but apply theme background
-                    $adminBg = $themeColors.SidebarBg
-                    $parent = $lblSidebarAdminStatus.Parent
-                    if ($parent) {
-                        $parent.Background = $adminBg
-                        Set-BorderBrushSafe -Element $parent -BorderBrushValue $themeColors.Primary -BorderThicknessValue "0,2,0,0"
-                        $parent.InvalidateVisual()
-                        $parent.UpdateLayout()
-                    }
-                    
-                    # Ensure Admin Status text remains visible and properly styled
-                    $lblSidebarAdminStatus.InvalidateVisual()
-                    $lblSidebarAdminStatus.UpdateLayout()
-                } catch {
-                    Log "Warning: Could not update Admin Status styling: $($_.Exception.Message)" 'Warning'
-                }
-            }
-            
-            # Update elevate button styling
-            if ($btnSidebarElevate) {
-                try {
-                    $btnSidebarElevate.Foreground = $themeColors.Text
-                    $btnSidebarElevate.InvalidateVisual()
-                    $btnSidebarElevate.UpdateLayout()
-                } catch {
-                    Log "Warning: Could not update elevate button styling: $($_.Exception.Message)" 'Warning'
-                }
-            }
-            
-            # 6. FINALER KOMPLETTER REFRESH
-            $form.InvalidateVisual()
-            $form.UpdateLayout()
-            
-        }, [System.Windows.Threading.DispatcherPriority]::Render)
-        
-        # ENHANCED: Single comprehensive UI update with proper error handling
-        $form.Dispatcher.Invoke([action]{
-            try {
-                # Apply recursive updates with error handling
-                Update-AllUIElementsRecursively -element $form -colors $themeColors
-                
-                # Final comprehensive refresh
-                $form.Background = $themeColors.Background
-                $form.InvalidateVisual()
-                $form.UpdateLayout()
-                
-                # Enhanced navigation button refresh with bounds checking
-                $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-                
-                foreach ($btnName in $navButtons) {
-                    try {
-                        $btn = $form.FindName($btnName)
-                        if ($btn) {
-                            if ($btn.Tag -eq "Selected") {
-                                $btn.Background = $themeColors.SelectedBackground
-                                $btn.Foreground = $themeColors.SelectedForeground
-                            } else {
-                                $btn.Background = $themeColors.UnselectedBackground
-                                $btn.Foreground = $themeColors.UnselectedForeground
-                            }
-                            $btn.InvalidateVisual()
-                        }
-                    } catch {
-                        Log "Warning: Could not update navigation button $btnName" 'Warning'
-                    }
-                }
-                
-                # Force refresh of all child elements with error handling
-                if ($form.Children -and $form.Children.Count -gt 0) {
-                    $form.Children | ForEach-Object {
-                        try {
-                            $_.InvalidateVisual()
-                            $_.UpdateLayout()
-                        } catch {
-                            # Silently continue if element can't be refreshed
-                        }
-                    }
-                }
-                
-            } catch {
-                Log "Warning: UI refresh may be delayed due to: $($_.Exception.Message)" 'Warning'
-            }
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
-        
-        Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
-        
-        # Theme-Vorschau auch aktualisieren
-        if ($ThemeName -ne 'Custom') {
-            Update-ThemeColorPreview -ThemeName $ThemeName
-        }
-        
-        # Final navigation visibility check
-        Ensure-NavigationVisibility -ThemeName $ThemeName
-        
-    } catch {
-        Log "❌ Error during theme switch: $($_.Exception.Message)" 'Error'
-        
-        # Enhanced fallback theme handling with robust error recovery
-        try {
-            Log "Attempting fallback to default theme..." 'Info'
-            
-            # Direct application without complex UI updates
-            $fallbackColors = Get-ThemeColors -ThemeName 'DarkPurple'
-            
-            # Simple, reliable theme application
-            $form.Dispatcher.Invoke([action]{
-                try {
-                    $form.Background = $fallbackColors.Background
-                    
-                    # Update only critical navigation elements
-                    $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-                    foreach ($btnName in $navButtons) {
-                        $btn = $form.FindName($btnName)
-                        if ($btn) {
-                            $btn.Background = $fallbackColors.Primary
-                            $btn.Foreground = $fallbackColors.Text
-                        }
-                    }
-                    
-                    # Update LogBox if available
-                    if ($global:LogBox) {
-                        $global:LogBox.Background = $fallbackColors.LogBg
-                        $global:LogBox.Foreground = $fallbackColors.Accent
-                    }
-                    
-                    $form.InvalidateVisual()
-                    $form.UpdateLayout()
-                    
-                } catch {
-                    # If even basic theme application fails, use minimal safe styling
-                    $form.Background = '#0A0E27'  # Safe dark background
-                    Log "Applied minimal safe theme due to critical error" 'Warning'
-                }
-            })
-            
-            Log "Fallback theme applied successfully" 'Success'
-            
-        } catch {
-            Log "CRITICAL ERROR: Unable to apply any theme - UI may be unstable" 'Error'
-            
-            # Last resort: try to at least set a basic background
-            try {
-                $form.Background = '#0A0E27'
-            } catch {
-                # If we can't even set background, log it but don't crash
-                Log "Unable to set even basic background - continuing with current theme" 'Error'
-            }
-        }
-    }
-}
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -6021,8 +5254,7 @@ $btnClearLog = $form.FindName('btnClearLog')
 
 # Options panel controls
 $optionsPanel = $form.FindName('optionsPanel')
-$cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
-$btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
+# KOALA Theme controls initialized above
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
 $btnApplyScale = $form.FindName('btnApplyScaleMain')  # Fixed control name
 $btnSaveSettings = $form.FindName('btnSaveSettings')
@@ -7683,270 +6915,6 @@ function Apply-MinimalSafeTheme {
 }
 
 # ---------- Theme Color Application Function ----------
-function Apply-ThemeColors {
-    param([string]$ThemeName = 'DarkPurple')
-    
-    # Fix #2: Check if theme is already applied to prevent unnecessary reapplication
-    if ($global:CurrentTheme -eq $ThemeName) {
-        Write-ActivityLog "Theme '$ThemeName' already applied, skipping redundant application" 'Info'
-        return
-    }
-    
-    try {
-        # Theme-Farben aus zentralem Array holen
-        $colors = Get-ThemeColors -ThemeName $ThemeName
-        
-        if (-not $form) {
-            Write-ActivityLog "Window form nicht verfügbar für Theme-Anwendung" 'Error'
-            return
-        }
-        
-        Write-ActivityLog "Wende Theme '$($colors.Name)' an..." 'Info'
-        
-        # 1. HAUPT-FENSTER
-        $form.Background = $colors.Background
-        
-        # 2. SIDEBAR (Navigation) - with bounds checking
-        if ($form.Children -and $form.Children.Count -gt 0) {
-            $firstChild = $form.Children[0]
-            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-                $sidebar = $firstChild.Children[0]
-                if ($sidebar -is [System.Windows.Controls.Border]) {
-                    $sidebar.Background = $colors.SidebarBg
-                    try { $sidebar.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                    
-                    $sidebarGrid = $sidebar.Child
-                    if ($sidebarGrid -is [System.Windows.Controls.Grid]) {
-                        # Sidebar Header with bounds checking
-                        if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
-                            $sidebarGrid.Children[0].Background = $colors.Background
-                        }
-                        # Sidebar Footer with bounds checking  
-                        if ($sidebarGrid.Children.Count -gt 2) {
-                            $sidebarGrid.Children[2].Background = $colors.Background
-                            try { $sidebarGrid.Children[2].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                        }
-                    }
-                }
-                
-                # 3. MAIN CONTENT AREA - with bounds checking
-                if ($firstChild.Children.Count -gt 1) {
-                    $mainContent = $firstChild.Children[1]
-                    if ($mainContent -is [System.Windows.Controls.Grid]) {
-                        # Header with bounds checking
-                        if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
-                            $mainContent.Children[0].Background = $colors.HeaderBg
-                            try { $mainContent.Children[0].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                        }
-                        
-                        # Footer with bounds checking
-                        if ($mainContent.Children.Count -gt 2) {
-                            $mainContent.Children[2].Background = $colors.HeaderBg
-                            try { $mainContent.Children[2].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                        }
-                        
-                        # Activity Log with bounds checking
-                        if ($mainContent.Children.Count -gt 3) {
-                            $logBorder = $mainContent.Children[3]
-                            $logBorder.Background = $colors.LogBg
-                            try { $logBorder.BorderBrush = $colors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                        }
-                    }
-                }
-            }
-        }
-        
-        # 4. SPEZIELLE ELEMENTE
-        # LogBox
-        if ($global:LogBox) {
-            $global:LogBox.Background = $colors.LogBg
-            $global:LogBox.Foreground = $colors.Accent
-        }
-        
-        # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-        foreach ($btnName in $navButtons) {
-            $navBtn = $form.FindName($btnName)
-            if ($navBtn) {
-                if ($navBtn.Tag -eq "Selected") {
-                    $navBtn.Background = $colors.SelectedBackground
-                    $navBtn.Foreground = $colors.SelectedForeground
-                } else {
-                    $navBtn.Background = $colors.UnselectedBackground
-                    $navBtn.Foreground = $colors.UnselectedForeground
-                }
-            }
-        }
-        
-        Log "Navigation-Buttons mit Theme-spezifischen Farben aktualisiert" 'Info'
-        
-        # 5.5. IMPROVED COMBOBOX STYLING for better readability across themes
-        Log "Verbessere ComboBox-Styling für bessere Lesbarkeit..." 'Info'
-        try {
-            Update-ComboBoxStyles -Background $colors.Secondary -Foreground $colors.Text -Border $colors.Primary -ThemeName $ThemeName
-            Log "ComboBox-Styling für bessere Lesbarkeit angewendet" 'Info'
-        } catch {
-            Log "Fehler beim ComboBox-Styling: $($_.Exception.Message)" 'Warning'
-        }
-        
-        # 5.6. IMPROVED TEXT STYLING for better readability across themes
-        Log "Verbessere Text-Styling für bessere Lesbarkeit..." 'Info'
-        try {
-            Update-TextStyles -Foreground $colors.Text -Header $colors.Accent -ThemeName $ThemeName
-            Log "Text-Styling für bessere Lesbarkeit angewendet" 'Info'
-        } catch {
-            Log "Fehler beim Text-Styling: $($_.Exception.Message)" 'Warning'
-        }
-        
-        # 5.7. FORCE VISUAL REFRESH for immediate readability improvements
-        try {
-            Log "Erzwinge visuellen Refresh für sofortige Lesbarkeitsverbesserungen..." 'Info'
-            $form.InvalidateVisual()
-            $form.UpdateLayout()
-            $form.Dispatcher.Invoke([action]{
-                $form.InvalidateVisual()
-                $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Render)
-            Log "Visueller Refresh für Lesbarkeit abgeschlossen" 'Info'
-        } catch {
-            Log "Fehler beim visuellen Refresh: $($_.Exception.Message)" 'Warning'
-        }
-        
-        # *** 6. ENHANCED RECURSIVE UI UPDATE WITH COMPREHENSIVE ERROR HANDLING ***
-        Log "Starting enhanced recursive UI element update..." 'Info'
-        
-        # Enhanced error handling for SetterBase sealed styles with comprehensive fallback
-        try {
-            # Pre-validate UI state before theme application
-            if (-not $form -or -not $colors) {
-                Log "ERROR: Invalid form or colors object - aborting theme application" 'Error'
-                return
-            }
-            
-            # Apply comprehensive UI updates with safety checks
-            Update-AllUIElementsRecursively -element $form -colors $colors
-            
-            # Ensure all critical UI elements are properly themed
-            Ensure-CriticalUIElementsThemed -colors $colors
-            
-            Log "Enhanced recursive UI element update completed successfully" 'Info'
-            
-        } catch [System.InvalidOperationException] {
-            if ($_.Exception.Message -match "sealed|IsSealed") {
-                Log "SetterBase sealed style detected - applying enhanced fallback strategy" 'Warning'
-                try {
-                    # Enhanced fallback strategy with more robust error handling
-                    Apply-FallbackThemeColors -element $form -colors $colors
-                    Ensure-CriticalUIElementsThemed -colors $colors
-                    Log "Enhanced fallback theming strategy applied successfully" 'Info'
-                } catch {
-                    Log "Enhanced fallback strategy failed: $($_.Exception.Message)" 'Error'
-                    # Apply minimal safe theming as last resort
-                    Apply-MinimalSafeTheme -colors $colors
-                }
-            } else {
-                # Re-throw non-sealed exceptions for proper handling
-                Log "Unexpected UI exception during theme application: $($_.Exception.Message)" 'Error'
-                Apply-MinimalSafeTheme -colors $colors
-            }
-        } catch {
-            Log "General error during UI theme application: $($_.Exception.Message)" 'Error'
-            # Apply minimal safe theming
-            Apply-MinimalSafeTheme -colors $colors
-        }
-        
-        # 7. VOLLSTäNDIGER UI-REFRESH
-        try {
-            Log "Starte vollständigen UI-Refresh..." 'Info'
-            
-            # Alle Panels explizit refreshen
-            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
-            foreach ($panel in $panels) {
-                if ($panel) {
-                    try {
-                        $panel.InvalidateVisual()
-                        $panel.InvalidateMeasure()
-                        $panel.UpdateLayout()
-                    } catch {
-                        # Continue if individual panel refresh fails
-                    }
-                }
-            }
-            
-            # DISPATCHER-BASIERTER KOMPLETTER REFRESH (KRITISCH!)
-            $form.Dispatcher.Invoke([action]{
-                
-                # Alle visuellen Elemente zwangsweise neu zeichnen
-                $form.InvalidateVisual()
-                $form.InvalidateMeasure()
-                $form.InvalidateArrange()
-                $form.UpdateLayout()
-                
-                # Spezielle Behandlung für ScrollViewer (Content-Bereiche)
-                $scrollViewers = @()
-                function Find-ScrollViewers($element) {
-                    if ($element -is [System.Windows.Controls.ScrollViewer]) {
-                        $scrollViewers += $element
-                    }
-                    
-                    if ($element.Children) {
-                        foreach ($child in $element.Children) {
-                            Find-ScrollViewers $child
-                        }
-                    } elseif ($element.Content) {
-                        Find-ScrollViewers $element.Content
-                    } elseif ($element.Child) {
-                        Find-ScrollViewers $element.Child
-                    }
-                }
-                
-                Find-ScrollViewers $form
-                
-                foreach ($scrollViewer in $scrollViewers) {
-                    try {
-                        $scrollViewer.InvalidateVisual()
-                        $scrollViewer.UpdateLayout()
-                    } catch {
-                        # Continue if scroll viewer refresh fails
-                    }
-                }
-                
-            }, [System.Windows.Threading.DispatcherPriority]::Render)
-            
-            # ADDITIONAL BACKGROUND-REFRESH (consistent with synchronous approach)
-            $form.Dispatcher.Invoke([action]{
-                $form.Background = $colors.Background  # Explicitly set again for persistence
-                $form.InvalidateVisual()
-                $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Background)
-            
-            Log "[OK] Vollständiger UI-Refresh abgeschlossen - alle änderungen sofort sichtbar!" 'Success'
-            
-        } catch {
-            Log "⚠️ UI-Refresh teilweise fehlgeschlagen: $($_.Exception.Message)" 'Warning'
-            
-            # FALLBACK: Minimaler Refresh
-            try {
-                $form.InvalidateVisual()
-                $form.UpdateLayout()
-                Log "Fallback-Refresh durchgeführt" 'Info'
-            } catch {
-                Log "Auch Fallback-Refresh fehlgeschlagen" 'Error'
-            }
-        }
-
-        # Globale Theme-Variable speichern
-        $global:CurrentTheme = $ThemeName
-
-        Write-ActivityLog "[Themes] Theme '$($colors.Name)' erfolgreich angewendet und UI vollständig aktualisiert!" 'Success'
-        
-        # Fix #2: Set current theme flag to prevent redundant applications
-        $global:CurrentTheme = $ThemeName
-        
-    } catch {
-        Write-ActivityLog "Fehler beim Anwenden des Themes: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Ensure-ThemePersistence {
     param([string]$ThemeName = 'DarkPurple')
@@ -7954,7 +6922,7 @@ function Ensure-ThemePersistence {
     # This function ensures theme persistence after UI updates with synchronized approach
     try {
         $form.Dispatcher.Invoke([action]{
-            Switch-Theme -ThemeName $ThemeName
+            Apply-KoalaTheme
         }, [System.Windows.Threading.DispatcherPriority]::Background)
     } catch {
         Log "Error during theme persistence: $($_.Exception.Message)" 'Warning'
@@ -10285,69 +9253,12 @@ $btnBasicGaming.Add_Click({
 })
 
 # Apply theme button
-# Removed $btnApplyTheme event handler (now only in Options panel)
+# Replaced with KOALA Theme system
 
-# Options panel event handlers - selection changes only update preview, no instant application
-if ($cmbOptionsTheme) {
-    $cmbOptionsTheme.Add_SelectionChanged({
-        try {
-            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
-                $themeName = $cmbOptionsTheme.SelectedItem.Content
-                
-                # Update color preview panel only - no instant theme application
-                Update-ThemeColorPreview -ThemeName $selectedTheme
-                
-                # Show/hide custom theme panel
-                if ($selectedTheme -eq "Custom" -and $customThemePanel) {
-                    $customThemePanel.Visibility = "Visible"
-                } elseif ($customThemePanel) {
-                    $customThemePanel.Visibility = "Collapsed"
-                }
-                
-                Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
-            }
-        } catch {
-            Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
-        }
-    })
-}
-
-# Apply button - primary method for theme application (themes only apply when clicked)
-# Theme Apply Button Event Handler
-if ($btnOptionsApplyTheme) {
-    $btnOptionsApplyTheme.Add_Click({
-        try {
-            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
-                $themeName = $cmbOptionsTheme.SelectedItem.Content
-                
-                Log "Applying theme: $themeName" 'Info'
-                Switch-Theme -ThemeName $selectedTheme
-                
-                # Force ComboBox refresh
-                $cmbOptionsTheme.InvalidateVisual()
-                $cmbOptionsTheme.UpdateLayout()
-                
-                [System.Windows.MessageBox]::Show("Theme '$themeName' wurde erfolgreich angewendet!", "Theme Applied", 'OK', 'Information')
-            } else {
-                [System.Windows.MessageBox]::Show("Bitte wählen Sie zuerst ein Theme aus der Liste.", "No Theme Selected", 'OK', 'Warning')
-            }
-        } catch {
-            Log "Error applying theme: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Fehler beim Anwenden des Themes: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-        }
-    })
-}
-
-
-# Alias button for test compatibility - applies same functionality  
+# Alias button for test compatibility - applies KOALA theme
 if ($btnApplyTheme) {
     $btnApplyTheme.Add_Click({
-        # Apply the selected theme instantly - same as main button functionality
-        if ($btnOptionsApplyTheme) {
-            $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        }
+        Apply-KoalaTheme
     })
 }
 
@@ -10382,7 +9293,7 @@ if ($btnSaveSettings) {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
             
             # Gather current settings
-            $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
+            $currentTheme = "KOALA"  # Always KOALA Gaming Theme
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
             
             $settings = @"
@@ -10420,16 +9331,8 @@ if ($btnLoadSettings) {
                     }
                 }
                 
-                # Apply loaded theme
-                if ($settings.Theme) {
-                    foreach ($item in $cmbOptionsTheme.Items) {
-                        if ($item.Tag -eq $settings.Theme) {
-                            $cmbOptionsTheme.SelectedItem = $item
-                            Switch-Theme -ThemeName $settings.Theme
-                            break
-                        }
-                    }
-                }
+                # Apply KOALA theme (settings theme ignored for stability)
+                Apply-KoalaTheme
                 
                 # Apply loaded scale
                 if ($settings.UIScale) {
@@ -10470,14 +9373,8 @@ if ($btnResetSettings) {
             )
             
             if ($result -eq 'Yes') {
-                # Reset theme to Dark Purple
-                foreach ($item in $cmbOptionsTheme.Items) {
-                    if ($item.Tag -eq "DarkPurple") {
-                        $cmbOptionsTheme.SelectedItem = $item
-                        Switch-Theme -ThemeName "DarkPurple"
-                        break
-                    }
-                }
+                # Reset to KOALA Gaming Theme
+                Apply-KoalaTheme
                 
                 # Reset scale to 100%
                 foreach ($item in $cmbUIScale.Items) {
@@ -12482,7 +11379,7 @@ if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
 # Apply default theme on startup
 try {
     Log "Applying default theme on startup..." 'Info'
-    Switch-Theme -ThemeName "DarkPurple"
+    Apply-KoalaTheme
     Log "Default theme applied successfully - UI ready" 'Success'
 } catch {
     Log "Warning: Could not apply default theme on startup: $($_.Exception.Message)" 'Warning'
@@ -12503,17 +11400,9 @@ try {
             }
         }
         
-        # Apply loaded theme
-        if ($settings.Theme) {
-            foreach ($item in $cmbOptionsTheme.Items) {
-                if ($item.Tag -eq $settings.Theme) {
-                    $cmbOptionsTheme.SelectedItem = $item
-                    Switch-Theme -ThemeName $settings.Theme
-                    Log "Loaded theme: $($settings.Theme)" 'Info'
-                    break
-                }
-            }
-        }
+        # Apply KOALA theme (loaded theme ignored for stability)
+        Apply-KoalaTheme
+        Log "Applied KOALA Gaming Theme" 'Info'
         
         # Apply loaded scale
         if ($settings.UIScale -and $cmbUIScale) {
@@ -12672,18 +11561,9 @@ try {
 Log "Running startup control validation..." 'Info'
 $controlsValid = Test-StartupControls
 
-# Initialize default theme and color preview
-if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
-    # Set default theme to DarkPurple
-    foreach ($item in $cmbOptionsTheme.Items) {
-        if ($item.Tag -eq "DarkPurple") {
-            $cmbOptionsTheme.SelectedItem = $item
-            Update-ThemeColorPreview -ThemeName "DarkPurple"
-            Log "Default theme 'Dark Purple' selected with color preview initialized" 'Info'
-            break
-        }
-    }
-} else {
+# Initialize KOALA Gaming Theme by default
+Apply-KoalaTheme
+Log "KOALA Gaming Theme initialized" 'Info' else {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
