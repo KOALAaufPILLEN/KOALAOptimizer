@@ -697,29 +697,38 @@ function Set-BorderBrushSafe {
     }
 }
 
-# ---------- CENTRALIZED THEME ARRAY - ONLY CHANGE HERE! ----------
-# ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
-$global:ThemeDefinitions = @{
-    'DarkPurple' = @{
-        Name = 'Dark Purple'
-        Background = '#0A0E27'
-        Primary = '#6B46C1'
-        Hover = '#8B5CF6'
-        Text = 'White'
-        Secondary = '#1A1625'
-        Accent = '#00FF88'
-        TextSecondary = '#B8B3E6'
-        LogBg = '#0D1117'
-        SidebarBg = '#1A1625'
-        HeaderBg = '#1A1625'
-        # Navigation Farben
-        SelectedBackground = '#8B5CF6'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = 'White'
-        UnselectedForeground = 'White'
-        HoverBackground = '#6B46C1'
-    }
-    'GitHubDark' = @{
+# ---------- KOALA THEME DEFINITION - SINGLE STABLE THEME ----------
+# Enhanced visibility and stability with single Koala theme for version 3.1.1
+$global:KoalaTheme = @{
+    Name = 'KOALA Gaming Theme'
+    Background = '#0A0E27'
+    Primary = '#6B46C1'
+    Hover = '#8B5CF6'
+    Text = 'White'
+    Secondary = '#1A1625'
+    Accent = '#00FF88'
+    TextSecondary = '#B8B3E6'
+    LogBg = '#0D1117'
+    SidebarBg = '#1A1625'
+    HeaderBg = '#1A1625'
+    # Navigation colors for enhanced visibility
+    SelectedBackground = '#8B5CF6'
+    UnselectedBackground = 'Transparent'
+    SelectedForeground = 'White'
+    UnselectedForeground = 'White'
+    HoverBackground = '#6B46C1'
+    # Button styling for consistency
+    ButtonBackground = '#6B46C1'
+    ButtonHover = '#8B5CF6'
+    ButtonText = 'White'
+    ButtonBorder = '#8B5CF6'
+    # Enhanced readability settings
+    FontFamily = 'Segoe UI'
+    FontSize = '12'
+    FontWeight = 'Normal'
+}
+
+# ---------- SIMPLIFIED THEME APPLICATION FUNCTIONS ----------
         Name = 'GitHub Dark'
         Background = '#0D1117'
         Primary = '#8B5CF6'
