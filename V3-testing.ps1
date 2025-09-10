@@ -44,629 +44,11 @@ $global:OptimizationCache = @{}
 $global:ActiveGames = @()
 $global:MenuMode = "Basic"  # Basic or Advanced
 $global:AutoOptimizeEnabled = $false
-$global:AutoGameDetectionEnabled = $false  # New variable to control automatic game detection
 $global:LastTimestamp = $null
 $global:CachedTimestamp = ""
 $global:LogBoxAvailable = $false
 $global:RegistryCache = @{}
 $global:LastOptimizationTime = $null  # Track when optimizations were last applied
-
-# ---------- Theme and UI Management Variables (Fix #2: Theme Application Loop) ----------
-$global:CurrentTheme = $null  # Track currently applied theme to prevent redundant applications
-$global:LastVisiblePanel = $null  # Track last visible panel for optimization (Fix #6)
-$global:UITimer = $null  # UI responsiveness timer (Fix #4)
-
-# ---------- Background Job Management ----------
-$global:BackgroundJobs = @{}
-$global:RunspacePool = $null
-
-# ---------- WPF Application Singleton Management ----------
-$global:WpfApplication = $null
-$global:ControlCache = @{}
-
-# ---------- Main Logging Function (Fix #1: Define Log function before Write-ActivityLog) ----------
-function Log {
-    <#
-    .SYNOPSIS
-    Main logging function for the application
-    .DESCRIPTION
-    Handles all logging operations with different severity levels
-    .PARAMETER Message
-    The message to log
-    .PARAMETER Level
-    The severity level (Info, Warning, Error, Success)
-    #>
-    param(
-        [string]$Message,
-        [string]$Level = 'Info'
-    )
-    
-    # Format timestamp
-    $timestamp = Get-Date -Format "HH:mm:ss"
-    
-    # Output to console with color based on level
-    $color = switch ($Level) {
-        'Error' { 'Red' }
-        'Warning' { 'Yellow' }
-        'Success' { 'Green' }
-        default { 'White' }
-    }
-    
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $color
-    
-    # Add to log file if needed
-    if ($global:LogFile) {
-        Add-Content -Path $global:LogFile -Value "[$timestamp] [$Level] $Message" -ErrorAction SilentlyContinue
-    }
-    
-    # Add to UI log box if available
-    if ($global:LogBoxAvailable -and $global:LogBox) {
-        try {
-            $global:LogBox.Dispatcher.Invoke([Action]{
-                $global:LogBox.AppendText("[$timestamp] [$Level] $Message`r`n")
-                $global:LogBox.ScrollToEnd()
-            })
-        } catch {
-            # Silent fail if UI not ready
-        }
-    }
-}
-
-# ---------- Activity Log Function (Fix #1: Missing Write-ActivityLog Function) ----------
-function Write-ActivityLog {
-    <#
-    .SYNOPSIS
-    Centralized activity logging function that routes to the main Log function
-    .DESCRIPTION
-    Provides a centralized logging interface for the KOALA Gaming Optimizer
-    .PARAMETER Message
-    The message to log
-    .PARAMETER Level
-    The severity level (Info, Warning, Error, Success)
-    #>
-    param(
-        [string]$Message,
-        [string]$Level = 'Info'
-    )
-    
-    # Route to the main Log function for centralized processing
-    Log $Message $Level
-}
-
-# ---------- WPF Application Singleton Management (Fix #2: Robust WPF Application Singleton) ----------
-function Get-WpfApplication {
-    <#
-    .SYNOPSIS
-    Returns a singleton instance of the WPF Application
-    .DESCRIPTION
-    Ensures only one instance of System.Windows.Application is ever created to prevent multiple application instance errors
-    #>
-    
-    if (-not $global:WpfApplication) {
-        try {
-            # CRITICAL: Check for existing application FIRST
-            $existingApp = [System.Windows.Application]::Current
-            if ($existingApp) {
-                $global:WpfApplication = $existingApp
-                Write-ActivityLog "Reusing existing WPF Application instance" 'Info'
-                return $global:WpfApplication
-            }
-            
-            # Only create new if none exists
-            $global:WpfApplication = New-Object System.Windows.Application
-            Write-ActivityLog "WPF Application singleton instance created" 'Info'
-        } catch {
-            # If creation fails, try to use existing
-            $existingApp = [System.Windows.Application]::Current
-            if ($existingApp) {
-                $global:WpfApplication = $existingApp
-                Write-ActivityLog "Using existing WPF Application after creation failure" 'Warning'
-            } else {
-                Write-ActivityLog "Error creating WPF Application singleton: $($_.Exception.Message)" 'Error'
-                throw
-            }
-        }
-    }
-    
-    return $global:WpfApplication
-}
-
-# ---------- UI Control Caching System (Fix #3: Performance Optimization) ----------
-function Get-CachedControl {
-    <#
-    .SYNOPSIS
-    Retrieves a cached UI control to avoid costly repetitive lookups
-    .DESCRIPTION
-    Implements a caching mechanism for UI controls to improve performance
-    .PARAMETER ControlName
-    The name of the control to retrieve
-    .PARAMETER ParentControl
-    The parent control to search in (optional, defaults to $form)
-    #>
-    param(
-        [string]$ControlName,
-        [object]$ParentControl = $null
-    )
-    
-    # Use form as default parent if not specified
-    if (-not $ParentControl -and $global:form) {
-        $ParentControl = $global:form
-    }
-    
-    # Check cache first
-    if ($global:ControlCache.ContainsKey($ControlName)) {
-        return $global:ControlCache[$ControlName]
-    }
-    
-    # Find and cache the control
-    try {
-        if ($ParentControl) {
-            $control = $ParentControl.FindName($ControlName)
-            if ($control) {
-                $global:ControlCache[$ControlName] = $control
-                return $control
-            }
-        }
-    } catch {
-        Write-ActivityLog "Error caching control '$ControlName': $($_.Exception.Message)" 'Warning'
-    }
-    
-    return $null
-}
-
-# ---------- UI Thread Invocation (Fix #3: Dispatcher Invocation) ----------
-function Invoke-UIThread {
-    <#
-    .SYNOPSIS
-    Safely invokes operations on the UI thread
-    .DESCRIPTION
-    Ensures all UI updates are handled on the main UI thread to prevent cross-thread exceptions
-    .PARAMETER ScriptBlock
-    The script block to execute on the UI thread
-    .PARAMETER ArgumentList
-    Arguments to pass to the script block
-    #>
-    param(
-        [scriptblock]$ScriptBlock,
-        [object[]]$ArgumentList = @()
-    )
-    
-    try {
-        if ($global:form -and $global:form.Dispatcher) {
-            if ($global:form.Dispatcher.CheckAccess()) {
-                # Already on UI thread
-                & $ScriptBlock @ArgumentList
-            } else {
-                # Invoke on UI thread
-                $global:form.Dispatcher.Invoke([System.Action] {
-                    & $ScriptBlock @ArgumentList
-                })
-            }
-        } else {
-            # Fallback - execute directly
-            & $ScriptBlock @ArgumentList
-        }
-    } catch {
-        Write-ActivityLog "Error in UI thread invocation: $($_.Exception.Message)" 'Error'
-    }
-}
-
-# ---------- Optimized Theme Application (Fix #3: Theme Application Optimization) ----------
-function Apply-ThemeOptimized {
-    <#
-    .SYNOPSIS
-    Applies theme with performance optimizations
-    .DESCRIPTION
-    Wraps theme application in layout suspension to reduce UI flicker and includes checks to prevent reapplying the same theme
-    .PARAMETER ThemeName
-    The name of the theme to apply
-    #>
-    param(
-        [string]$ThemeName
-    )
-    
-    # Prevent reapplying the same theme
-    if ($global:CurrentTheme -eq $ThemeName) {
-        Write-ActivityLog "Theme '$ThemeName' is already applied, skipping reapplication" 'Info'
-        return
-    }
-    
-    try {
-        Invoke-UIThread {
-            # Suspend layout updates during theme application
-            if ($global:form -and $global:form.GetType().GetMethod('SuspendLayout')) {
-                $global:form.SuspendLayout()
-            }
-            
-            # Apply the KOALA theme
-            Apply-KoalaTheme
-            
-            # Update current theme tracker
-            $global:CurrentTheme = $ThemeName
-            
-            # Resume layout updates
-            if ($global:form -and $global:form.GetType().GetMethod('ResumeLayout')) {
-                $global:form.ResumeLayout()
-            }
-            
-            Write-ActivityLog "Theme '$ThemeName' applied successfully with optimizations" 'Success'
-        }
-    } catch {
-        Write-ActivityLog "Error applying optimized theme '$ThemeName': $($_.Exception.Message)" 'Error'
-        # Ensure layout is resumed even on error
-        try {
-            if ($global:form -and $global:form.GetType().GetMethod('ResumeLayout')) {
-                $global:form.ResumeLayout()
-            }
-        } catch {
-            # Ignore resume errors
-        }
-    }
-}
-
-# ---------- Optimized Runspace Pool Management (Fix #3: Runspace Pool Optimization) ----------
-function Initialize-RunspacePool {
-    <#
-    .SYNOPSIS
-    Initializes an optimized runspace pool for background operations to prevent UI freezing
-    .DESCRIPTION
-    Creates a small, efficient runspace pool (1-2 threads) for executing long-running operations without blocking the UI thread
-    #>
-    
-    try {
-        if (-not $global:RunspacePool) {
-            # Create optimized runspace pool with 1-2 runspaces for efficiency
-            $maxRunspaces = 2  # Optimized for efficiency as per requirements
-            $minRunspaces = 1
-            
-            $global:RunspacePool = [runspacefactory]::CreateRunspacePool($minRunspaces, $maxRunspaces)
-            $global:RunspacePool.Open()
-            
-            Write-ActivityLog "Optimized runspace pool initialized with $minRunspaces-$maxRunspaces threads for efficiency" 'Success'
-        }
-    } catch {
-        Write-ActivityLog "Error initializing optimized runspace pool: $($_.Exception.Message)" 'Error'
-    }
-}
-
-function Start-BackgroundOperation {
-    <#
-    .SYNOPSIS
-    Starts a background operation using the runspace pool
-    .PARAMETER ScriptBlock
-    The script block to execute in the background
-    .PARAMETER Parameters
-    Parameters to pass to the script block
-    .PARAMETER Name
-    Unique name for the background operation
-    #>
-    param(
-        [ScriptBlock]$ScriptBlock,
-        [hashtable]$Parameters = @{},
-        [string]$Name
-    )
-    
-    try {
-        if (-not $global:RunspacePool) {
-            Initialize-RunspacePool
-        }
-        
-        $powershell = [PowerShell]::Create()
-        $powershell.RunspacePool = $global:RunspacePool
-        $powershell.AddScript($ScriptBlock) | Out-Null
-        
-        foreach ($param in $Parameters.GetEnumerator()) {
-            $powershell.AddParameter($param.Key, $param.Value) | Out-Null
-        }
-        
-        $asyncResult = $powershell.BeginInvoke()
-        
-        $global:BackgroundJobs[$Name] = @{
-            PowerShell = $powershell
-            AsyncResult = $asyncResult
-            StartTime = Get-Date
-        }
-        
-        Log "Background operation '$Name' started successfully" 'Info'
-        return $asyncResult
-    } catch {
-        Log "Error starting background operation '$Name': $($_.Exception.Message)" 'Error'
-        return $null
-    }
-}
-
-function Get-BackgroundOperationResult {
-    <#
-    .SYNOPSIS
-    Gets the result of a background operation if completed
-    .PARAMETER Name
-    Name of the background operation
-    #>
-    param([string]$Name)
-    
-    if (-not $global:BackgroundJobs.ContainsKey($Name)) {
-        return $null
-    }
-    
-    $job = $global:BackgroundJobs[$Name]
-    
-    if ($job.AsyncResult.IsCompleted) {
-        try {
-            $result = $job.PowerShell.EndInvoke($job.AsyncResult)
-            $job.PowerShell.Dispose()
-            $global:BackgroundJobs.Remove($Name)
-            return $result
-        } catch {
-            Log "Error getting result from background operation '$Name': $($_.Exception.Message)" 'Error'
-            return $null
-        }
-    }
-    
-    return $null
-}
-
-function Stop-AllBackgroundOperations {
-    <#
-    .SYNOPSIS
-    Stops all running background operations and cleans up resources
-    #>
-    
-    try {
-        foreach ($jobName in $global:BackgroundJobs.Keys) {
-            $job = $global:BackgroundJobs[$jobName]
-            try {
-                $job.PowerShell.Stop()
-                $job.PowerShell.Dispose()
-            } catch {
-                # Continue cleanup even if individual job fails
-            }
-        }
-        
-        $global:BackgroundJobs.Clear()
-        
-        if ($global:RunspacePool) {
-            $global:RunspacePool.Close()
-            $global:RunspacePool.Dispose()
-            $global:RunspacePool = $null
-        }
-        
-        Log "All background operations stopped and resources cleaned up" 'Info'
-    } catch {
-        Log "Error during background operations cleanup: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-# ---------- Lazy Loading & UI Update Batching (Fix #3: Performance Optimization) ----------
-$global:PendingUIUpdates = @()
-$global:UIBatchTimer = $null
-
-function Add-UIUpdateBatch {
-    <#
-    .SYNOPSIS
-    Adds a UI update operation to the batch queue for efficient processing
-    .DESCRIPTION
-    Batches UI updates to reduce the frequency of screen refreshes and improve performance
-    .PARAMETER UpdateScript
-    The script block containing the UI update operations
-    .PARAMETER Priority
-    Priority level for the update (Low, Normal, High)
-    #>
-    param(
-        [scriptblock]$UpdateScript,
-        [string]$Priority = 'Normal'
-    )
-    
-    $updateItem = @{
-        Script = $UpdateScript
-        Priority = $Priority
-        Timestamp = Get-Date
-    }
-    
-    $global:PendingUIUpdates += $updateItem
-    
-    # Start batch timer if not already running
-    if (-not $global:UIBatchTimer) {
-        Start-UIBatchTimer
-    }
-}
-
-function Start-UIBatchTimer {
-    <#
-    .SYNOPSIS
-    Starts the UI batch timer to process queued updates
-    #>
-    
-    if ($global:UIBatchTimer) {
-        return
-    }
-    
-    try {
-        $global:UIBatchTimer = New-Object System.Windows.Threading.DispatcherTimer
-        $global:UIBatchTimer.Interval = [TimeSpan]::FromMilliseconds(50)  # 20 FPS update rate
-        
-        $global:UIBatchTimer.add_Tick({
-            Process-UIUpdateBatch
-        })
-        
-        $global:UIBatchTimer.Start()
-        Write-ActivityLog "UI batch timer started for efficient update processing" 'Info'
-    } catch {
-        Write-ActivityLog "Error starting UI batch timer: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Process-UIUpdateBatch {
-    <#
-    .SYNOPSIS
-    Processes all pending UI updates in batches for optimal performance
-    #>
-    
-    if ($global:PendingUIUpdates.Count -eq 0) {
-        return
-    }
-    
-    try {
-        # Sort by priority (High, Normal, Low)
-        $sortedUpdates = $global:PendingUIUpdates | Sort-Object { 
-            switch ($_.Priority) {
-                'High' { 0 }
-                'Normal' { 1 }
-                'Low' { 2 }
-                default { 1 }
-            }
-        }
-        
-        # Process up to 10 updates per batch to avoid UI blocking
-        $batchSize = [Math]::Min(10, $sortedUpdates.Count)
-        $currentBatch = $sortedUpdates | Select-Object -First $batchSize
-        
-        Invoke-UIThread {
-            foreach ($update in $currentBatch) {
-                try {
-                    & $update.Script
-                } catch {
-                    Write-ActivityLog "Error processing batched UI update: $($_.Exception.Message)" 'Warning'
-                }
-            }
-        }
-        
-        # Remove processed updates
-        $global:PendingUIUpdates = $global:PendingUIUpdates | Select-Object -Skip $batchSize
-        
-        # Stop timer if no more updates pending
-        if ($global:PendingUIUpdates.Count -eq 0 -and $global:UIBatchTimer) {
-            $global:UIBatchTimer.Stop()
-            $global:UIBatchTimer = $null
-        }
-        
-    } catch {
-        Write-ActivityLog "Error processing UI update batch: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Invoke-LazyLoad {
-    <#
-    .SYNOPSIS
-    Implements lazy loading for heavy UI components
-    .DESCRIPTION
-    Loads heavy components only when needed to improve initial load time
-    .PARAMETER ComponentName
-    Name of the component to lazy load
-    .PARAMETER LoadScript
-    Script block to execute for loading the component
-    #>
-    param(
-        [string]$ComponentName,
-        [scriptblock]$LoadScript
-    )
-    
-    try {
-        Write-ActivityLog "Lazy loading component: $ComponentName" 'Info'
-        
-        # Execute load script in background if possible
-        if ($global:RunspacePool) {
-            Start-BackgroundOperation -ScriptBlock $LoadScript -Name "LazyLoad_$ComponentName"
-        } else {
-            # Fallback to direct execution
-            & $LoadScript
-        }
-        
-        Write-ActivityLog "Component '$ComponentName' lazy loaded successfully" 'Success'
-    } catch {
-        Write-ActivityLog "Error lazy loading component '$ComponentName': $($_.Exception.Message)" 'Error'
-    }
-}
-
-# Initialize runspace pool at startup
-Initialize-RunspacePool
-
-# ---------- UI Responsiveness Optimization ----------
-function Optimize-UIResponsiveness {
-    <#
-    .SYNOPSIS
-    Optimizes UI responsiveness and ensures proper event processing
-    .DESCRIPTION
-    Configures optimal UI settings for responsive operation
-    #>
-    
-    try {
-        # Enable WPF hardware acceleration if available
-        if ([System.Windows.Media.RenderOptions]::ProcessRenderMode) {
-            [System.Windows.Media.RenderOptions]::ProcessRenderMode = [System.Windows.Interop.RenderMode]::Default
-        }
-        
-        # Set optimal dispatcher priority for UI updates
-        if ($form.Dispatcher) {
-            $null = $form.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Background, [Action]{
-                # Force initial layout update
-                $form.UpdateLayout()
-            })
-        }
-        
-        # Configure form for optimal responsiveness
-        $form.UseLayoutRounding = $true
-        
-        # Enable timer precision for smooth animations (already done in original code)
-        # [WinMM]::timeBeginPeriod(1) | Out-Null
-        
-        Log "UI responsiveness optimization applied" 'Info'
-        
-    } catch {
-        Log "Warning: Could not fully optimize UI responsiveness: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-# Apply UI responsiveness optimizations
-Optimize-UIResponsiveness
-
-# ---------- UI Responsiveness Timer (Fix #4: Prevent UI Freezing) ----------
-function Initialize-UITimer {
-    <#
-    .SYNOPSIS
-    Initializes a high-frequency timer to prevent UI freezing
-    .DESCRIPTION
-    Creates a System.Windows.Forms.Timer that calls DoEvents() to keep the UI responsive
-    #>
-    
-    try {
-        if (-not $global:UITimer -and [System.Windows.Forms.Timer]) {
-            $global:UITimer = New-Object System.Windows.Forms.Timer
-            $global:UITimer.Interval = 50  # 50ms = 20 FPS for UI responsiveness
-            
-            # Timer event handler
-            $global:UITimer.Add_Tick({
-                try {
-                    [System.Windows.Forms.Application]::DoEvents()
-                } catch {
-                    # Silent fail to prevent timer from stopping
-                }
-            })
-            
-            $global:UITimer.Start()
-            Write-ActivityLog "UI responsiveness timer initialized (50ms interval)" 'Info'
-        }
-    } catch {
-        Write-ActivityLog "Warning: Could not initialize UI timer: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Stop-UITimer {
-    <#
-    .SYNOPSIS
-    Stops and disposes the UI responsiveness timer
-    #>
-    
-    try {
-        if ($global:UITimer) {
-            $global:UITimer.Stop()
-            $global:UITimer.Dispose()
-            $global:UITimer = $null
-            Write-ActivityLog "UI timer stopped and disposed" 'Info'
-        }
-    } catch {
-        Write-ActivityLog "Warning: Error stopping UI timer: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 # ---------- .NET Framework 4.8 Compatibility Helper Functions ----------
 function Set-BorderBrushSafe {
@@ -697,440 +79,325 @@ function Set-BorderBrushSafe {
     }
 }
 
-# ---------- KOALA THEME DEFINITION - SINGLE STABLE THEME ----------
-# Enhanced visibility and stability with single Koala theme for version 3.1.1
-$global:KoalaTheme = @{
-    Name = 'KOALA Gaming Theme'
-    Background = '#0A0E27'
-    Primary = '#6B46C1'
-    Hover = '#8B5CF6'
-    Text = 'White'
-    Secondary = '#1A1625'
-    Accent = '#00FF88'
-    TextSecondary = '#B8B3E6'
-    LogBg = '#0D1117'
-    SidebarBg = '#1A1625'
-    HeaderBg = '#1A1625'
-    # Navigation colors for enhanced visibility
-    SelectedBackground = '#8B5CF6'
-    UnselectedBackground = 'Transparent'
-    SelectedForeground = 'White'
-    UnselectedForeground = 'White'
-    HoverBackground = '#6B46C1'
-    # Button styling for consistency
-    ButtonBackground = '#6B46C1'
-    ButtonHover = '#8B5CF6'
-    ButtonText = 'White'
-    ButtonBorder = '#8B5CF6'
-    # Enhanced readability settings
-    FontFamily = 'Segoe UI'
-    FontSize = '12'
-    FontWeight = 'Normal'
-}
-
-# ---------- SIMPLIFIED THEME APPLICATION FUNCTIONS ----------
-# ---------- SIMPLIFIED THEME APPLICATION FUNCTION ----------
-function Apply-KoalaTheme {
-    try {
-        Log "Applying KOALA single theme..." 'Info'
-        if ($global:form) {
-            $global:form.Background = $global:KoalaTheme.Background
-        }
-        $panels = @('panelDashboard', 'panelBasicOpt', 'panelAdvanced', 'panelGames', 'panelNetwork', 'panelOptions', 'panelBackup')
-        foreach ($panelName in $panels) {
-            $panel = $form.FindName($panelName)
-            if ($panel) {
-                $panel.Background = $global:KoalaTheme.Background
-            }
-        }
-        $navButtons = @{
-            'btnNavDashboard' = '📊 Dashboard'
-            'btnNavBasicOpt' = '⚡ Quick Optimize'
-            'btnNavAdvanced' = '⚙️ Advanced Settings'
-            'btnNavGames' = '🎮 Game Profiles'
-            'btnNavNetwork' = '🌐 Network'
-            'btnNavOptions' = '🎨 Settings'
-            'btnNavBackup' = '💾 Backup & Restore'
-        }
-        foreach ($btnItem in $navButtons.GetEnumerator()) {
-            $btn = $form.FindName($btnItem.Key)
-            if ($btn) {
-                $btn.Content = $btnItem.Value
-                $btn.Foreground = $global:KoalaTheme.Text
-                $btn.FontWeight = "SemiBold"
-                $btn.FontSize = 13
-                if ($btn.Tag -eq "Selected") {
-                    $btn.Background = $global:KoalaTheme.SelectedBackground
-                    $btn.BorderBrush = $global:KoalaTheme.ButtonBorder
-                } else {
-                    $btn.Background = $global:KoalaTheme.UnselectedBackground
-                    $btn.BorderBrush = $global:KoalaTheme.Primary
-                }
-            }
-        }
-        $allButtons = $form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.Button] }
-        foreach ($button in $allButtons) {
-            if ($button.Name -notlike "btnNav*") {
-                $button.Background = $global:KoalaTheme.ButtonBackground
-                $button.Foreground = $global:KoalaTheme.ButtonText
-                $button.BorderBrush = $global:KoalaTheme.ButtonBorder
-            }
-        }
-        $textElements = $form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.TextBlock] }
-        foreach ($text in $textElements) {
-            $text.Foreground = $global:KoalaTheme.Text
-        }
-        $logBox = $form.FindName("txtActivityLog")
-        if ($logBox) {
-            $logBox.Background = $global:KoalaTheme.LogBg
-            $logBox.Foreground = $global:KoalaTheme.Text
-        }
-        Log "KOALA theme applied successfully" 'Success'
-    } catch {
-        Log "Error applying KOALA theme: $_" 'Warning'
+# ---------- CENTRALIZED THEME ARRAY - ONLY CHANGE HERE! ----------
+# ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
+$global:ThemeDefinitions = @{
+    'DarkPurple' = @{
+        Name = 'Dark Purple'
+        Background = '#0A0E27'
+        Primary = '#6B46C1'
+        Hover = '#8B5CF6'
+        Text = 'White'
+        Secondary = '#1A1625'
+        Accent = '#00FF88'
+        TextSecondary = '#B8B3E6'
+        LogBg = '#0D1117'
+        SidebarBg = '#1A1625'
+        HeaderBg = '#1A1625'
+        # Navigation Farben
+        SelectedBackground = '#8B5CF6'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = 'White'
+        HoverBackground = '#6B46C1'
+    }
+    'GitHubDark' = @{
+        Name = 'GitHub Dark'
+        Background = '#0D1117'
+        Primary = '#8B5CF6'
+        Hover = '#A78BFA'
+        Text = 'White'
+        Secondary = '#21262D'
+        Accent = '#00FF88'
+        TextSecondary = '#8B949E'
+        LogBg = '#0D1117'
+        SidebarBg = '#21262D'
+        HeaderBg = '#21262D'
+        # Navigation Farben
+        SelectedBackground = '#A78BFA'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = 'White'
+        HoverBackground = '#8B5CF6'
+    }
+    'Light' = @{
+        Name = 'Light Mode'
+        Background = '#F8F9FA'
+        Primary = '#0066CC'
+        Hover = '#0052A3'
+        Text = '#212529'
+        Secondary = '#E9ECEF'
+        Accent = '#198754'
+        TextSecondary = '#6C757D'
+        LogBg = '#FAFAFA'
+        SidebarBg = '#E9ECEF'
+        HeaderBg = '#F1F3F4'
+        # Navigation Farben
+        SelectedBackground = '#0066CC'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#212529'
+        HoverBackground = '#0052A3'
+    }
+    'YouTube' = @{
+        Name = 'YouTube'
+        Background = '#FFFFFF'
+        Primary = '#FF0000'
+        Hover = '#CC0000'
+        Text = '#0F0F0F'
+        Secondary = '#F9F9F9'
+        Accent = '#FF0000'
+        TextSecondary = '#606060'
+        LogBg = '#FAFAFA'
+        SidebarBg = '#F9F9F9'
+        HeaderBg = '#F1F1F1'
+        # Navigation Farben
+        SelectedBackground = '#FF0000'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#0F0F0F'
+        HoverBackground = '#CC0000'
+    }
+    'Facebook' = @{
+        Name = 'Facebook'
+        Background = '#F0F2F5'
+        Primary = '#1877F2'
+        Hover = '#166FE5'
+        Text = '#1C1E21'
+        Secondary = '#E4E6EA'
+        Accent = '#42B883'
+        TextSecondary = '#65676B'
+        LogBg = '#FFFFFF'
+        SidebarBg = '#E4E6EA'
+        HeaderBg = '#FFFFFF'
+        # Navigation Farben
+        SelectedBackground = '#1877F2'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#1C1E21'
+        HoverBackground = '#166FE5'
+    }
+    'Reddit' = @{
+        Name = 'Reddit'
+        Background = '#FFFFFF'
+        Primary = '#FF4500'
+        Hover = '#E13D00'
+        Text = '#1A1A1B'
+        Secondary = '#F6F7F8'
+        Accent = '#FF4500'
+        TextSecondary = '#7C7C83'
+        LogBg = '#FAFAFA'
+        SidebarBg = '#F6F7F8'
+        HeaderBg = '#F6F7F8'
+        # Navigation Farben
+        SelectedBackground = '#FF4500'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#1A1A1B'
+        HoverBackground = '#E13D00'
+    }
+    'Discord' = @{
+        Name = 'Discord'
+        Background = '#36393F'
+        Primary = '#5865F2'
+        Hover = '#4752C4'
+        Text = '#FFFFFF'
+        Secondary = '#2F3136'
+        Accent = '#00FF88'
+        TextSecondary = '#B9BBBE'
+        LogBg = '#2F3136'
+        SidebarBg = '#2F3136'
+        HeaderBg = '#40444B'
+        # Navigation Farben
+        SelectedBackground = '#5865F2'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#4752C4'
+    }
+    'Twitch' = @{
+        Name = 'Twitch'
+        Background = '#0E0E10'
+        Primary = '#9146FF'
+        Hover = '#7B2ECC'
+        Text = '#FFFFFF'
+        Secondary = '#18181B'
+        Accent = '#00FF88'
+        TextSecondary = '#ADADB8'
+        LogBg = '#18181B'
+        SidebarBg = '#18181B'
+        HeaderBg = '#1F1F23'
+        # Navigation Farben
+        SelectedBackground = '#9146FF'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#7B2ECC'
+    }
+    'Forest' = @{
+        Name = 'Forest'
+        Background = '#1B2838'
+        Primary = '#4CAF50'
+        Hover = '#45A049'
+        Text = '#E8F5E8'
+        Secondary = '#2A3F54'
+        Accent = '#4CAF50'
+        TextSecondary = '#A8D8A8'
+        LogBg = '#1B2838'
+        SidebarBg = '#2A3F54'
+        HeaderBg = '#2A3F54'
+        # Navigation Farben
+        SelectedBackground = '#4CAF50'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#E8F5E8'
+        HoverBackground = '#45A049'
+    }
+    'Ocean' = @{
+        Name = 'Ocean'
+        Background = '#0F1419'
+        Primary = '#00BCD4'
+        Hover = '#00ACC1'
+        Text = '#E0F7FA'
+        Secondary = '#1E2A3A'
+        Accent = '#00BCD4'
+        TextSecondary = '#80DEEA'
+        LogBg = '#0F1419'
+        SidebarBg = '#1E2A3A'
+        HeaderBg = '#1E2A3A'
+        # Navigation Farben
+        SelectedBackground = '#00BCD4'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#E0F7FA'
+        HoverBackground = '#00ACC1'
+    }
+    'PORNHUB' = @{
+        Name = 'PORNHUB'
+        Background = '#000000'
+        Primary = '#FF9000'
+        Hover = '#FFD700'
+        Text = '#FFFFFF'
+        Secondary = '#1A1A1A'
+        Accent = '#FF9000'
+        TextSecondary = '#CCCCCC'
+        LogBg = '#000000'
+        SidebarBg = '#1A1A1A'
+        HeaderBg = '#1A1A1A'
+        # Navigation Farben
+        SelectedBackground = '#FF9000'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#FFD700'
+    }
+    'CyberPunk' = @{
+        Name = 'CyberPunk 2077'
+        Background = '#0A0A0A'
+        Primary = '#00FFFF'
+        Hover = '#00CCCC'
+        Text = '#FFFFFF'
+        Secondary = '#1A1A2E'
+        Accent = '#FF00FF'
+        TextSecondary = '#E6E6E6'
+        LogBg = '#0A0A0A'
+        SidebarBg = '#1A1A2E'
+        HeaderBg = '#16213E'
+        # Navigation Farben
+        SelectedBackground = '#00FFFF'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'Black'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#00CCCC'
+    }
+    'NeonGlow' = @{
+        Name = 'Neon Glow'
+        Background = '#0D0D0D'
+        Primary = '#39FF14'
+        Hover = '#32E612'
+        Text = '#FFFFFF'
+        Secondary = '#1A1A1A'
+        Accent = '#FF1493'
+        TextSecondary = '#B3B3B3'
+        LogBg = '#0D0D0D'
+        SidebarBg = '#1A1A1A'
+        HeaderBg = '#262626'
+        # Navigation Farben
+        SelectedBackground = '#39FF14'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'Black'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#32E612'
+    }
+    'MatrixGreen' = @{
+        Name = 'Matrix Green'
+        Background = '#000000'
+        Primary = '#00FF41'
+        Hover = '#00CC33'
+        Text = '#00FF41'
+        Secondary = '#001100'
+        Accent = '#00FF41'
+        TextSecondary = '#008F11'
+        LogBg = '#000000'
+        SidebarBg = '#001100'
+        HeaderBg = '#002200'
+        # Navigation Farben
+        SelectedBackground = '#00FF41'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'Black'
+        UnselectedForeground = '#00FF41'
+        HoverBackground = '#00CC33'
+    }
+    'RoyalPurple' = @{
+        Name = 'Royal Purple'
+        Background = '#1A0D2E'
+        Primary = '#663399'
+        Hover = '#7A40B8'
+        Text = '#FFFFFF'
+        Secondary = '#2E1A4A'
+        Accent = '#9966CC'
+        TextSecondary = '#D6C7E3'
+        LogBg = '#1A0D2E'
+        SidebarBg = '#2E1A4A'
+        HeaderBg = '#3E2459'
+        # Navigation Farben
+        SelectedBackground = '#663399'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#7A40B8'
+    }
+    'GamingRed' = @{
+        Name = 'Gaming Red'
+        Background = '#1A0000'
+        Primary = '#FF0000'
+        Hover = '#CC0000'
+        Text = '#FFFFFF'
+        Secondary = '#330000'
+        Accent = '#FF3333'
+        TextSecondary = '#FFB3B3'
+        LogBg = '#1A0000'
+        SidebarBg = '#330000'
+        HeaderBg = '#4D0000'
+        # Navigation Farben
+        SelectedBackground = '#FF0000'
+        UnselectedBackground = 'Transparent'
+        SelectedForeground = 'White'
+        UnselectedForeground = '#FFFFFF'
+        HoverBackground = '#CC0000'
     }
 }
 
-
-function Get-ThemeColors {
-    param([string]$ThemeName = 'KOALA')
-    
-    try {
-        Log "Getting theme colors for: $ThemeName" 'Info'
-        
-        # Return the KOALA theme colors
-        if ($global:KoalaTheme) {
-            return $global:KoalaTheme
-        } else {
-            # Fallback theme colors if global theme is not available
-            return @{
-                Name = 'KOALA Gaming Theme'
-                Background = '#0A0E27'
-                Primary = '#6B46C1'
-                Secondary = '#8B5CF6'
-                Text = '#E5E7EB'
-                ButtonBackground = '#374151'
-                ButtonText = '#F9FAFB'
-                ButtonBorder = '#6B46C1'
-                SelectedBackground = '#6B46C1'
-                UnselectedBackground = '#374151'
-                LogBg = '#1F2937'
-            }
-        }
-    } catch {
-        Log "Error getting theme colors: $($_.Exception.Message)" 'Warning'
-        return $global:KoalaTheme
-    }
-}
 
 # Einfache Funktion zum Abrufen eines Themes
-
-function Ensure-NavigationVisibility {
-    param([string]$ThemeName = 'KOALA')
+function Get-ThemeColors {
+    param([string]$ThemeName = 'DarkPurple')
     
-    try {
-        Log "Ensuring navigation visibility for theme: $ThemeName" 'Info'
-        
-        if (-not $global:form) {
-            Log "Warning: Form not available for navigation visibility" 'Warning'
-            return $false
-        }
-        
-        # Ensure all navigation buttons are visible and properly styled
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavOptions', 'btnNavBackup')
-        
-        foreach ($btnName in $navButtons) {
-            $btn = $global:form.FindName($btnName)
-            if ($btn) {
-                $btn.Visibility = "Visible"
-                $btn.IsEnabled = $true
-                $btn.Opacity = 1.0
-                
-                # Apply consistent navigation styling
-                $btn.Margin = "5,2,5,2"
-                $btn.Padding = "10,8,10,8"
-                $btn.BorderThickness = "1"
-                $btn.FontWeight = "SemiBold"
-                $btn.FontSize = 13
-                
-                Log "Navigation button $btnName visibility ensured" 'Success'
-            } else {
-                Log "Warning: Navigation button $btnName not found" 'Warning'
-            }
-        }
-        
-        # Ensure main sidebar/navigation panel is visible
-        $sidebarPanel = $global:form.FindName("sidebarPanel")
-        if ($sidebarPanel) {
-            $sidebarPanel.Visibility = "Visible"
-            Log "Sidebar panel visibility ensured" 'Success'
-        }
-        
-        return $true
-        
-    } catch {
-        Log "Error ensuring navigation visibility: $($_.Exception.Message)" 'Warning'
-        return $false
-    }
-}
-
-function Initialize-AdvancedPanelControls {
-    <#
-    .SYNOPSIS
-    Validates and initializes all advanced panel controls to prevent empty panels and crashes
-    #>
-    
-    try {
-        Log "Initializing advanced panel controls..." 'Info'
-        
-        # Validate advanced panel exists
-        if (-not $panelAdvanced) {
-            Log "Warning: panelAdvanced not found - advanced options may not be available" 'Warning'
-            return $false
-        }
-        
-        # Validate advanced panel expanders
-        $expanders = @(
-            @{Name="expanderNetworkTweaks"; Control=$expanderNetworkTweaks},
-            @{Name="expanderSystemOptimizations"; Control=$expanderSystemOptimizations},
-            @{Name="expanderServiceManagement"; Control=$expanderServiceManagement}
-        )
-        
-        $validExpanders = 0
-        foreach ($exp in $expanders) {
-            if ($exp.Control) {
-                try {
-                    # Ensure expander is properly configured
-                    $exp.Control.IsEnabled = $true
-                    $exp.Control.Visibility = "Visible"
-                    $validExpanders++
-                    Log "Validated expander: $($exp.Name)" 'Success'
-                } catch {
-                    Log "Warning: Could not initialize expander $($exp.Name): $($_.Exception.Message)" 'Warning'
-                }
-            } else {
-                Log "Warning: Expander $($exp.Name) not found" 'Warning'
-            }
-        }
-        
-        # Validate advanced panel buttons
-        $buttons = @(
-            @{Name="btnApplyAdvancedSettings"; Control=$btnApplyAdvancedSettings},
-            @{Name="btnTestAdvancedSettings"; Control=$btnTestAdvancedSettings},
-            @{Name="btnResetAdvancedSettings"; Control=$btnResetAdvancedSettings}
-        )
-        
-        $validButtons = 0
-        foreach ($btn in $buttons) {
-            if ($btn.Control) {
-                try {
-                    # Ensure button is properly configured
-                    $btn.Control.IsEnabled = $true
-                    $btn.Control.Visibility = "Visible"
-                    $validButtons++
-                    Log "Validated button: $($btn.Name)" 'Success'
-                } catch {
-                    Log "Warning: Could not initialize button $($btn.Name): $($_.Exception.Message)" 'Warning'
-                }
-            } else {
-                Log "Warning: Button $($btn.Name) not found" 'Warning'
-            }
-        }
-        
-        # Validate key checkboxes in each section
-        $checkboxes = @(
-            # Network section
-            $chkAck, $chkNagleBasic, $chkNetworkThrottling,
-            # System section  
-            $chkMemoryCompression, $chkPowerPlanBasic, $chkGameDVRBasic,
-            # Service section
-            $chkDisableXboxServices, $chkDisableTelemetry, $chkDisableSuperfetch
-        )
-        
-        $validCheckboxes = 0
-        foreach ($chk in $checkboxes) {
-            if ($chk) {
-                try {
-                    $chk.IsEnabled = $true
-                    $validCheckboxes++
-                } catch {
-                    # Silently handle checkbox initialization errors
-                }
-            }
-        }
-        
-        # Summary
-        $totalExpected = $expanders.Count + $buttons.Count
-        $totalValid = $validExpanders + $validButtons
-        
-        Log "Advanced panel initialization complete: $totalValid/$totalExpected core controls available" 'Info'
-        Log "Additional checkboxes available: $validCheckboxes" 'Info'
-        
-        if ($totalValid -eq $totalExpected) {
-            Log "✓ Advanced panel fully functional" 'Success'
-            return $true
-        } else {
-            Log "⚠ Advanced panel partially functional - some controls missing" 'Warning'  
-            return $false
-        }
-        
-    } catch {
-        Log "Error initializing advanced panel controls: $($_.Exception.Message)" 'Error'
-        return $false
-    }
-}
-
-function Fix-ActivityLogLayout {
-    <#
-    .SYNOPSIS
-    Fixes activity log box sizing and layout issues
-    .DESCRIPTION
-    Ensures the activity log has proper dimensions, visibility, and formatting
-    #>
-    
-    try {
-        Log "Fixing activity log layout..." 'Info'
-        
-        if (-not $global:form) {
-            Log "Warning: Form not available for activity log fixes" 'Warning'
-            return $false
-        }
-        
-        # Find the activity log text box
-        $activityLog = $global:form.FindName("txtActivityLog")
-        if (-not $activityLog) {
-            Log "Warning: Activity log control not found" 'Warning'
-            return $false
-        }
-        
-        # Fix layout properties
-        $activityLog.Width = "Auto"
-        $activityLog.Height = "200"
-        $activityLog.MinHeight = "150"
-        $activityLog.MaxHeight = "300"
-        $activityLog.Margin = "10,5,10,10"
-        $activityLog.Padding = "8,5,8,5"
-        
-        # Fix text properties
-        $activityLog.FontFamily = "Consolas, Courier New"
-        $activityLog.FontSize = "11"
-        $activityLog.TextWrapping = "Wrap"
-        $activityLog.VerticalScrollBarVisibility = "Auto"
-        $activityLog.HorizontalScrollBarVisibility = "Auto"
-        $activityLog.IsReadOnly = $true
-        
-        # Fix visibility and enable state
-        $activityLog.Visibility = "Visible"
-        $activityLog.IsEnabled = $true
-        $activityLog.Opacity = 1.0
-        
-        # Apply theme colors if available
-        if ($global:KoalaTheme) {
-            $activityLog.Background = $global:KoalaTheme.LogBg
-            $activityLog.Foreground = $global:KoalaTheme.Text
-            $activityLog.BorderBrush = $global:KoalaTheme.Primary
-        }
-        
-        # Set border properties
-        $activityLog.BorderThickness = "1"
-        $activityLog.CornerRadius = "4"
-        
-        Log "Activity log layout fixed successfully" 'Success'
-        return $true
-        
-    } catch {
-        Log "Error fixing activity log layout: $($_.Exception.Message)" 'Error'
-        return $false
-    }
-}
-
-function Fix-AllButtonVisibility {
-    <#
-    .SYNOPSIS
-    Fixes button visibility and styling across the entire application
-    .DESCRIPTION
-    Ensures all buttons are visible, properly styled, and have consistent appearance
-    #>
-    
-    try {
-        Log "Fixing all button visibility and styling..." 'Info'
-        
-        if (-not $global:form) {
-            Log "Warning: Form not available for button fixes" 'Warning'
-            return $false
-        }
-        
-        # Get all buttons in the form
-        $allButtons = $global:form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.Button] }
-        
-        if (-not $allButtons) {
-            Log "Warning: No buttons found in form" 'Warning'
-            return $false
-        }
-        
-        $fixedButtons = 0
-        foreach ($button in $allButtons) {
-            try {
-                # Fix visibility and enable state
-                $button.Visibility = "Visible"
-                $button.IsEnabled = $true
-                $button.Opacity = 1.0
-                
-                # Fix basic styling
-                $button.FontFamily = "Segoe UI"
-                $button.FontWeight = "Normal"
-                
-                # Apply size constraints
-                if ($button.Name -like "*Nav*") {
-                    # Navigation buttons
-                    $button.FontSize = "13"
-                    $button.FontWeight = "SemiBold"
-                    $button.Margin = "5,2,5,2"
-                    $button.Padding = "10,8,10,8"
-                } else {
-                    # Regular buttons
-                    $button.FontSize = "12"
-                    $button.Margin = "5,3,5,3"
-                    $button.Padding = "8,5,8,5"
-                }
-                
-                # Fix border properties
-                $button.BorderThickness = "1"
-                $button.CornerRadius = "3"
-                
-                # Apply theme colors if available
-                if ($global:KoalaTheme) {
-                    if ($button.Name -like "*Nav*") {
-                        # Navigation button styling
-                        if ($button.Tag -eq "Selected") {
-                            $button.Background = $global:KoalaTheme.SelectedBackground
-                            $button.BorderBrush = $global:KoalaTheme.ButtonBorder
-                        } else {
-                            $button.Background = $global:KoalaTheme.UnselectedBackground
-                            $button.BorderBrush = $global:KoalaTheme.Primary
-                        }
-                        $button.Foreground = $global:KoalaTheme.Text
-                    } else {
-                        # Regular button styling
-                        $button.Background = $global:KoalaTheme.ButtonBackground
-                        $button.Foreground = $global:KoalaTheme.ButtonText
-                        $button.BorderBrush = $global:KoalaTheme.ButtonBorder
-                    }
-                }
-                
-                $fixedButtons++
-                
-            } catch {
-                Log "Warning: Could not fix button '$($button.Name)': $($_.Exception.Message)" 'Warning'
-            }
-        }
-        
-        Log "Button visibility fix complete: $fixedButtons buttons processed" 'Success'
-        return $true
-        
-    } catch {
-        Log "Error fixing button visibility: $($_.Exception.Message)" 'Error'
-        return $false
+    if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
+        return $global:ThemeDefinitions[$ThemeName]
+    } else {
+        Log "Theme '$ThemeName' nicht gefunden, verwende DarkPurple" 'Warning'
+        return $global:ThemeDefinitions['DarkPurple']
     }
 }
 
@@ -1150,154 +417,6 @@ if ($PSScriptRoot) {
 $global:CustomConfigPath = $null
 $global:CustomGamePaths = @()
 
-# Initialize logging variables
-$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization")
-$global:LogHistory = @()
-$global:MaxLogHistorySize = 1000
-
-# ---------- Core Logging Helper Functions (moved to fix call order) ----------
-function Get-EnhancedLogCategories {
-    <#
-    .SYNOPSIS
-    Enhanced logging categories for better organization and filtering
-    .DESCRIPTION
-    Provides categorization system for logs to enable filtering and organization
-    #>
-    
-    return @{
-        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
-        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
-        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
-        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
-        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
-        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
-        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
-        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
-    }
-}
-
-function Get-LogCategory {
-    <#
-    .SYNOPSIS
-    Determines the category of a log message based on content analysis
-    .PARAMETER Message
-    The log message to categorize
-    #>
-    param([string]$Message)
-    
-    try {
-        $categories = Get-EnhancedLogCategories
-        
-        foreach ($category in $categories.Keys) {
-            foreach ($keyword in $categories[$category]) {
-                if ($Message -match $keyword) {
-                    return $category
-                }
-            }
-        }
-        
-        return "General"
-    } catch {
-        # Return default category if categorization fails
-        return "General"
-    }
-}
-
-function Add-LogToHistory {
-    <#
-    .SYNOPSIS
-    Adds a log entry to the searchable history with metadata
-    .PARAMETER Message
-    The log message
-    .PARAMETER Level
-    The log level
-    .PARAMETER Category
-    The log category
-    #>
-    param(
-        [string]$Message,
-        [string]$Level,
-        [string]$Category
-    )
-    
-    try {
-        if (-not $global:LogHistory) {
-            $global:LogHistory = @()
-        }
-        
-        $logEntry = @{
-            Timestamp = Get-Date
-            Message = $Message
-            Level = $Level
-            Category = $Category
-            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
-        }
-        
-        $global:LogHistory = $global:LogHistory + $logEntry
-        
-        # Maintain history size limit
-        if ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $global:LogHistory = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
-        }
-        
-    } catch {
-        # Silent fail to prevent logging issues from breaking the script
-        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
-    }
-    
-    # Explicitly return nothing to prevent unintended output
-    return
-}
-
-function Optimize-LogFile {
-    <#
-    .SYNOPSIS
-    Optimizes and rotates log files when they become too large
-    .PARAMETER MaxSizeMB
-    Maximum log file size in MB before rotation
-    #>
-    param([int]$MaxSizeMB = 10)
-    
-    try {
-        if (-not $ScriptRoot) {
-            return  # Exit gracefully if ScriptRoot is not available
-        }
-        
-        $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
-        
-        if (Test-Path $logFilePath) {
-            $fileInfo = Get-Item $logFilePath
-            $fileSizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
-            
-            if ($fileSizeMB -gt $MaxSizeMB) {
-                # Create backup of current log
-                $backupPath = Join-Path $ScriptRoot "Koala-Activity.log.bak.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-                Copy-Item $logFilePath $backupPath -Force
-                
-                # Keep only last 500 lines in main log
-                $lastLines = Get-Content $logFilePath -Tail 500
-                $lastLines | Out-File $logFilePath -Encoding UTF8
-                
-                # Clean up old backup files (keep only 5 most recent)
-                $backupFiles = Get-ChildItem -Path $ScriptRoot -Name "Koala-Activity.log.bak.*" | Sort-Object Name -Descending
-                if ($backupFiles.Count -gt 5) {
-                    $filesToDelete = $backupFiles | Select-Object -Skip 5
-                    foreach ($file in $filesToDelete) {
-                        Remove-Item (Join-Path $ScriptRoot $file) -Force -ErrorAction SilentlyContinue
-                    }
-                }
-            }
-        }
-        
-    } catch {
-        # Silent fail to prevent log optimization issues from breaking the script
-        Write-Verbose "Failed to optimize log file: $($_.Exception.Message)"
-    }
-    
-    # Explicitly return nothing to prevent unintended output
-    return
-}
-
 # ---------- Core Logging Functions (moved to top to fix call order issues) ----------
 function Get-LogColor($Level) {
     switch ($Level) {
@@ -1308,8 +427,6 @@ function Get-LogColor($Level) {
     }
 }
 
-# ---------- DUPLICATE LOG FUNCTION COMMENTED OUT (replaced by simplified version at top) ----------
-<# DUPLICATE LOG FUNCTION - REMOVED
 function Log {
     param([string]$msg, [string]$Level = 'Info')
     
@@ -1320,24 +437,13 @@ function Log {
     
     $logMessage = "[$global:CachedTimestamp] [$Level] $msg"
     
-    # Enhanced categorization and history tracking with error handling
-    try {
-        $category = Get-LogCategory -Message $msg
-        Add-LogToHistory -Message $msg -Level $Level -Category $category
-    } catch {
-        # If categorization fails, use default category
-        $category = "General"
-        Write-Verbose "Log categorization failed: $($_.Exception.Message)"
-    }
+    # Enhanced categorization and history tracking
+    $category = Get-LogCategory -Message $msg
+    Add-LogToHistory -Message $msg -Level $Level -Category $category
     
-    # Periodic log file optimization with error handling
-    try {
-        if ((Get-Random -Maximum 100) -eq 1) {  # 1% chance per log entry
-            Optimize-LogFile -MaxSizeMB 10
-        }
-    } catch {
-        # Silent fail for log optimization to prevent breaking the logging system
-        Write-Verbose "Log file optimization failed: $($_.Exception.Message)"
+    # Periodic log file optimization
+    if ((Get-Random -Maximum 100) -eq 1) {  # 1% chance per log entry
+        Optimize-LogFile -MaxSizeMB 10
     }
     
     # Enhanced activity logging with persistent file logging and administrator mode awareness
@@ -1479,7 +585,6 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
     }
 }
-# END OF DUPLICATE LOG FUNCTION COMMENT
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
@@ -1531,6 +636,7 @@ function Test-StartupControls {
         'btnNavGames' = $btnNavGames
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
+        'btnNavServices' = $btnNavServices
         'btnNavSystem' = $btnNavSystem
         
         # Panels
@@ -1568,22 +674,6 @@ function Test-StartupControls {
         # Checkboxes for optimizations
         'chkAutoOptimize' = $chkAutoOptimize
         'chkDashAutoOptimize' = $chkDashAutoOptimize
-        'chkAutoGameDetection' = $chkAutoGameDetection
-        
-        # Manual Game Detection Checkboxes
-        'chkDetectFPS' = $chkDetectFPS
-        'chkDetectBattleRoyale' = $chkDetectBattleRoyale
-        'chkDetectMOBA' = $chkDetectMOBA
-        'chkDetectRacing' = $chkDetectRacing
-        'chkDetectRPG' = $chkDetectRPG
-        'chkDetectSandbox' = $chkDetectSandbox
-        'chkDetectSteam' = $chkDetectSteam
-        'chkDetectEpic' = $chkDetectEpic
-        
-        # Advanced Settings Buttons
-        'btnApplyAdvancedSettings' = $btnApplyAdvancedSettings
-        'btnTestAdvancedSettings' = $btnTestAdvancedSettings
-        'btnResetAdvancedSettings' = $btnResetAdvancedSettings
         
         # Logging
         'LogBox' = $global:LogBox
@@ -1617,6 +707,7 @@ function Test-StartupControls {
                 'chk*' { Log "  * Add <CheckBox x:Name=`"$missing`" .../> to XAML" 'Info' }
                 'panel*' { Log "  * Add <StackPanel x:Name=`"$missing`" .../> to XAML" 'Info' }
                 'LogBox' { Log "  * Add <TextBox x:Name=`"LogBox`" .../> to XAML for logging" 'Info' }
+                'btnNavServices' { Log "  * Add <Button x:Name=`"btnNavServices`" Content=`"Services`" .../> for service management" 'Info' }
                 'btnNavSystem' { Log "  * Add <Button x:Name=`"btnNavSystem`" Content=`"System`" .../> for system optimization" 'Info' }
                 'expanderServices' { Log "  * Add <Expander x:Name=`"expanderServices`" Header=`"Service Management`" .../> to XAML" 'Info' }
                 'btnSystemInfo' { Log "  * Add <Button x:Name=`"btnSystemInfo`" Content=`"System Info`" .../> for system information" 'Info' }
@@ -1891,291 +982,75 @@ function Get-SystemHealthStatus {
             Warnings = @()
             Recommendations = @("Run as Administrator for complete health analysis")
             Status = "Unknown"
+            Metrics = @{}
         }
     }
 }
 
-function Check-SystemHealthManual {
+function Update-SystemHealthDisplay {
     <#
     .SYNOPSIS
-    Manual-only system health check that runs when user clicks View Details
+    Updates the dashboard with current system health information
     .DESCRIPTION
-    Performs comprehensive system health check only when manually triggered
+    Displays health status, warnings, and recommendations in the dashboard area
     #>
     
     try {
-        Log "Performing manual system health check..." 'Info'
+        $healthData = Get-SystemHealthStatus
+        $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
         
-        # Initialize health data structure
-        $healthData = @{
-            OverallScore = 100
-            Issues = @()
-            Warnings = @()
-            Recommendations = @()
-            Status = "Checking..."
-            Metrics = @{}
-            LastChecked = Get-Date
-        }
-        
-        # Memory analysis
-        try {
-            $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
-            if ($memInfo) {
-                $totalMemory = $memInfo.TotalVisibleMemorySize * 1KB
-                $freeMemory = $memInfo.FreePhysicalMemory * 1KB
-                $usedMemory = $totalMemory - $freeMemory
-                $memoryUsagePercent = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
+        # Update health status in dashboard if labels exist
+        if ($lblDashSystemHealth) {
+            $lblDashSystemHealth.Dispatcher.Invoke([Action]{
+                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
                 
-                $healthData.Metrics.MemoryUsage = $memoryUsagePercent
-                $healthData.Metrics.TotalMemoryGB = [math]::Round($totalMemory / 1GB, 1)
-                $healthData.Metrics.FreeMemoryGB = [math]::Round($freeMemory / 1GB, 1)
-                
-                if ($memoryUsagePercent -gt 90) {
-                    $healthData.Issues += "Critical memory usage: $memoryUsagePercent%"
-                    $healthData.OverallScore -= 25
-                    $healthData.Recommendations += "Close unnecessary applications to free memory"
-                } elseif ($memoryUsagePercent -gt 80) {
-                    $healthData.Warnings += "High memory usage: $memoryUsagePercent%"
-                    $healthData.OverallScore -= 15
-                }
-            }
-        } catch {
-            $healthData.Warnings += "Could not analyze memory usage"
-        }
-        
-        # CPU analysis
-        try {
-            $cpuUsage = Get-Counter "\Processor(_Total)\% Processor Time" -SampleInterval 2 -MaxSamples 1 -ErrorAction SilentlyContinue
-            if ($cpuUsage) {
-                $cpuPercent = [math]::Round($cpuUsage.CounterSamples[0].CookedValue, 1)
-                $healthData.Metrics.CpuUsage = $cpuPercent
-                
-                if ($cpuPercent -gt 90) {
-                    $healthData.Issues += "Critical CPU usage: $cpuPercent%"
-                    $healthData.OverallScore -= 20
-                    $healthData.Recommendations += "Check for high CPU usage processes in Task Manager"
-                } elseif ($cpuPercent -gt 75) {
-                    $healthData.Warnings += "High CPU usage: $cpuPercent%"
-                    $healthData.OverallScore -= 10
-                }
-            }
-        } catch {
-            $healthData.Warnings += "Could not analyze CPU usage"
-        }
-        
-        # Process analysis
-        try {
-            $processes = Get-Process
-            $processCount = $processes.Count
-            $healthData.Metrics.ProcessCount = $processCount
-            
-            # Find top memory consuming processes
-            $topProcesses = $processes | Sort-Object WorkingSet -Descending | Select-Object -First 5
-            $healthData.Metrics.TopProcesses = $topProcesses | ForEach-Object { 
-                @{
-                    Name = $_.ProcessName
-                    MemoryMB = [math]::Round($_.WorkingSet / 1MB, 1)
-                }
-            }
-            
-            if ($processCount -gt 200) {
-                $healthData.Warnings += "High number of running processes: $processCount"
-                $healthData.OverallScore -= 8
-                $healthData.Recommendations += "Consider closing unnecessary applications"
-            }
-        } catch {
-            $healthData.Warnings += "Could not analyze running processes"
-        }
-        
-        # Disk space analysis
-        try {
-            $drives = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" -ErrorAction SilentlyContinue
-            foreach ($drive in $drives) {
-                $freeSpacePercent = [math]::Round(($drive.FreeSpace / $drive.Size) * 100, 1)
-                if ($freeSpacePercent -lt 10) {
-                    $healthData.Issues += "Critical disk space on $($drive.DeviceID): $freeSpacePercent% free"
-                    $healthData.OverallScore -= 20
-                    $healthData.Recommendations += "Free up disk space on drive $($drive.DeviceID)"
-                } elseif ($freeSpacePercent -lt 20) {
-                    $healthData.Warnings += "Low disk space on $($drive.DeviceID): $freeSpacePercent% free"
-                    $healthData.OverallScore -= 10
-                }
-            }
-        } catch {
-            $healthData.Warnings += "Could not analyze disk space"
-        }
-        
-        # Determine overall status
-        if ($healthData.OverallScore -ge 90) {
-            $healthData.Status = "Excellent"
-        } elseif ($healthData.OverallScore -ge 75) {
-            $healthData.Status = "Good"
-        } elseif ($healthData.OverallScore -ge 60) {
-            $healthData.Status = "Fair"
-        } elseif ($healthData.OverallScore -ge 40) {
-            $healthData.Status = "Poor"
-        } else {
-            $healthData.Status = "Critical"
-        }
-        
-        # Store result globally for display
-        $global:LastHealthCheck = $healthData
-        
-        Log "Manual health check completed - Status: $($healthData.Status), Score: $($healthData.OverallScore)" 'Success'
-        return $healthData
-        
-    } catch {
-        Log "Error performing manual health check: $($_.Exception.Message)" 'Error'
-        return @{
-            OverallScore = 0
-            Issues = @("Health check failed: $($_.Exception.Message)")
-            Warnings = @()
-            Recommendations = @("Run as Administrator for complete health analysis")
-            Status = "Error"
-            Metrics = @{}
-            LastChecked = Get-Date
-        }
-    }
-}
-
-function Initialize-SystemHealthDisplay {
-    <#
-    .SYNOPSIS
-    Initializes the health display to show 'Status: Unchecked' until manual check
-    .DESCRIPTION
-    Sets up the health display area with unchecked status and View Details button
-    #>
-    
-    try {
-        Log "Initializing system health display..." 'Info'
-        
-        if (-not $global:form) {
-            Log "Warning: Form not available for health display initialization" 'Warning'
-            return $false
-        }
-        
-        # Find health display elements
-        $lblHealthStatus = $global:form.FindName("lblHealthStatus")
-        $lblHealthScore = $global:form.FindName("lblHealthScore")
-        $btnViewHealthDetails = $global:form.FindName("btnViewHealthDetails")
-        
-        # Set initial unchecked status
-        if ($lblHealthStatus) {
-            $lblHealthStatus.Content = "Status: Unchecked"
-            $lblHealthStatus.Foreground = "#FBB6CE"  # Light pink for unchecked
-        }
-        
-        if ($lblHealthScore) {
-            $lblHealthScore.Content = "Score: --"
-            $lblHealthScore.Foreground = "#9CA3AF"  # Gray for unchecked
-        }
-        
-        # Ensure View Details button is visible and enabled
-        if ($btnViewHealthDetails) {
-            $btnViewHealthDetails.Visibility = "Visible"
-            $btnViewHealthDetails.IsEnabled = $true
-            $btnViewHealthDetails.Content = "View Details"
-            
-            # Remove any existing event handlers
-            $btnViewHealthDetails.remove_Click
-            
-            # Add manual health check event handler
-            $btnViewHealthDetails.Add_Click({
-                try {
-                    Log "User requested manual health check..." 'Info'
-                    
-                    # Update button to show checking state
-                    $btnViewHealthDetails.IsEnabled = $false
-                    $btnViewHealthDetails.Content = "Checking..."
-                    
-                    # Perform manual health check
-                    $healthResult = Check-SystemHealthManual
-                    
-                    # Update display with results
-                    if ($lblHealthStatus) {
-                        $lblHealthStatus.Content = "Status: $($healthResult.Status)"
-                        switch ($healthResult.Status) {
-                            "Excellent" { $lblHealthStatus.Foreground = "#10B981" }  # Green
-                            "Good" { $lblHealthStatus.Foreground = "#059669" }       # Dark green
-                            "Fair" { $lblHealthStatus.Foreground = "#F59E0B" }       # Orange
-                            "Poor" { $lblHealthStatus.Foreground = "#EF4444" }       # Red
-                            "Critical" { $lblHealthStatus.Foreground = "#DC2626" }   # Dark red
-                            default { $lblHealthStatus.Foreground = "#6B7280" }      # Gray
-                        }
-                    }
-                    
-                    if ($lblHealthScore) {
-                        $lblHealthScore.Content = "Score: $($healthResult.OverallScore)"
-                        if ($healthResult.OverallScore -ge 80) {
-                            $lblHealthScore.Foreground = "#10B981"  # Green
-                        } elseif ($healthResult.OverallScore -ge 60) {
-                            $lblHealthScore.Foreground = "#F59E0B"  # Orange
-                        } else {
-                            $lblHealthScore.Foreground = "#EF4444"  # Red
-                        }
-                    }
-                    
-                    # Show detailed results if there are issues
-                    if ($healthResult.Issues.Count -gt 0 -or $healthResult.Warnings.Count -gt 0) {
-                        Show-SystemHealthDialog
-                    }
-                    
-                    # Re-enable button
-                    $btnViewHealthDetails.IsEnabled = $true
-                    $btnViewHealthDetails.Content = "Refresh Health"
-                    
-                    Log "Health check display updated" 'Success'
-                    
-                } catch {
-                    Log "Error in manual health check button handler: $($_.Exception.Message)" 'Error'
-                    $btnViewHealthDetails.IsEnabled = $true
-                    $btnViewHealthDetails.Content = "View Details"
+                # Color coding based on health status
+                switch ($healthData.Status) {
+                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }  # Green
+                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }       # Gold
+                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
+                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
+                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
+                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
                 }
             })
         }
         
-        Log "System health display initialized - manual check only" 'Success'
-        return $true
+        # Log health warnings if any
+        if ($healthData.Issues.Count -gt 0) {
+            foreach ($issue in $healthData.Issues) {
+                Log "System Health ISSUE: $issue" 'Warning'
+            }
+        }
+        
+        if ($healthData.Warnings.Count -gt 0) {
+            foreach ($warning in $healthData.Warnings) {
+                Log "System Health WARNING: $warning" 'Info'
+            }
+        }
+        
+        # Log recommendations
+        if ($healthData.Recommendations.Count -gt 0) {
+            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
+        } else {
+            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
+        }
         
     } catch {
-        Log "Error initializing system health display: $($_.Exception.Message)" 'Error'
-        return $false
+        Log "Error updating system health display: $($_.Exception.Message)" 'Warning'
     }
 }
-
-
-
 
 function Show-SystemHealthDialog {
     <#
     .SYNOPSIS
     Shows a detailed system health dialog with recommendations and actions
     .DESCRIPTION
-    Creates a WPF dialog displaying comprehensive system health information using background operations
+    Creates a WPF dialog displaying comprehensive system health information
     #>
     
     try {
-        # DISABLED: Automatic health checks to prevent UI freezing and follow manual-only policy
-        # Start-SystemHealthCheck
-        
-        # Initialize manual health check display instead
-        Initialize-SystemHealthDisplay
-        
-        # Show unchecked status initially
-        $healthData = @{
-            OverallScore = 0
-            Issues = @("Loading system health data...")
-            Warnings = @()
-            Recommendations = @("Please wait while system health is analyzed...")
-            Status = "Loading..."
-            Metrics = @{}
-        }
-        
-        # Check for completed background result
-        $backgroundResult = Get-SystemHealthCheckResult
-        if ($backgroundResult -ne $null) {
-            $healthData = $backgroundResult
-        }
+        $healthData = Get-SystemHealthStatus
         
         [xml]$healthDialogXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -2215,12 +1090,12 @@ function Show-SystemHealthDialog {
         </Grid.ColumnDefinitions>
         
         <StackPanel Grid.Column="0">
-          <TextBlock Text="System Health Monitor" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+          <TextBlock Text="System Health Monitor" Foreground="#00FF88" FontWeight="Bold" FontSize="20"/>
           <TextBlock x:Name="lblHealthStatus" Text="Status: Unknown" Foreground="White" FontSize="14" Margin="0,5,0,0"/>
           <TextBlock x:Name="lblHealthScore" Text="Health Score: 0%" Foreground="White" FontSize="12" Margin="0,2,0,0"/>
         </StackPanel>
         
-        <Button x:Name="btnRefreshHealth" Grid.Column="1" Content="▶ Refresh" Width="100" Height="35" 
+        <Button x:Name="btnRefreshHealth" Grid.Column="1" Content="🔄 Refresh" Width="100" Height="35" 
                 Background="#6B46C1" Foreground="White" BorderThickness="0" FontWeight="SemiBold"/>
       </Grid>
     </Border>
@@ -2246,7 +1121,7 @@ function Show-SystemHealthDialog {
         <!-- Disk Free Space UI removed due to PowerShell parser errors
         <StackPanel Grid.Column="2">
           <TextBlock Text="Disk Free Space" Foreground="White" FontSize="12" FontWeight="Bold"/>
-          <TextBlock x:Name="lblDiskMetric" Text="Unknown%" Foreground="#00FF88" FontSize="14" Margin="0,2,0,0"/>
+          <TextBlock x:Name="lblDiskMetric" Text="--%" Foreground="#00FF88" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
         -->
       </Grid>
@@ -2291,7 +1166,7 @@ function Show-SystemHealthDialog {
     <!-- Action Buttons -->
     <Border Grid.Row="3" Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="10" Margin="0,15,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-        <Button x:Name="btnOptimizeNow" Content="▶ Quick Optimize" Width="130" Height="30" Background="#00FF88" Foreground="Black" BorderThickness="0" FontWeight="SemiBold" Margin="0,0,10,0"/>
+        <Button x:Name="btnOptimizeNow" Content="⚡ Quick Optimize" Width="130" Height="30" Background="#00FF88" Foreground="Black" BorderThickness="0" FontWeight="SemiBold" Margin="0,0,10,0"/>
         <Button x:Name="btnOpenTaskManager" Content="📊 Task Manager" Width="120" Height="30" Background="#6B46C1" Foreground="White" BorderThickness="0" FontWeight="SemiBold" Margin="0,0,10,0"/>
         <Button x:Name="btnCloseHealth" Content="Close" Width="80" Height="30" Background="#374151" Foreground="White" BorderThickness="0" FontWeight="SemiBold"/>
       </StackPanel>
@@ -2399,6 +1274,234 @@ $global:LogFilterSettings = @{
     ShowDebug = $false
     SearchTerm = ""
     CategoryFilter = "All"
+}
+$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization")
+$global:LogHistory = @()
+$global:MaxLogHistorySize = 1000
+
+function Get-EnhancedLogCategories {
+    <#
+    .SYNOPSIS
+    Enhanced logging categories for better organization and filtering
+    .DESCRIPTION
+    Provides categorization system for logs to enable filtering and organization
+    #>
+    
+    return @{
+        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
+        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
+        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
+        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
+        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
+        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
+        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
+        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
+    }
+}
+
+function Get-LogCategory {
+    <#
+    .SYNOPSIS
+    Determines the category of a log message based on content analysis
+    .PARAMETER Message
+    The log message to categorize
+    #>
+    param([string]$Message)
+    
+    $categories = Get-EnhancedLogCategories
+    
+    foreach ($category in $categories.Keys) {
+        foreach ($keyword in $categories[$category]) {
+            if ($Message -match $keyword) {
+                return $category
+            }
+        }
+    }
+    
+    return "General"
+}
+
+function Add-LogToHistory {
+    <#
+    .SYNOPSIS
+    Adds a log entry to the searchable history with metadata
+    .PARAMETER Message
+    The log message
+    .PARAMETER Level
+    The log level
+    .PARAMETER Category
+    The log category
+    #>
+    param(
+        [string]$Message,
+        [string]$Level,
+        [string]$Category
+    )
+    
+    try {
+        $logEntry = @{
+            Timestamp = Get-Date
+            Message = $Message
+            Level = $Level
+            Category = $Category
+            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
+        }
+        
+        $global:LogHistory += $logEntry
+        
+        # Maintain history size limit
+        if ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $global:LogHistory = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
+        }
+        
+    } catch {
+        # Silent fail to prevent logging issues
+        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
+    }
+}
+
+function Search-LogHistory {
+    <#
+    .SYNOPSIS
+    Searches log history with advanced filtering capabilities
+    .PARAMETER SearchTerm
+    Text to search for in log messages
+    .PARAMETER Level
+    Filter by log level
+    .PARAMETER Category
+    Filter by log category
+    .PARAMETER StartDate
+    Filter logs from this date
+    .PARAMETER EndDate
+    Filter logs to this date
+    #>
+    param(
+        [string]$SearchTerm = "",
+        [string[]]$Level = @(),
+        [string]$Category = "All",
+        [DateTime]$StartDate = (Get-Date).AddDays(-1),
+        [DateTime]$EndDate = (Get-Date)
+    )
+    
+    try {
+        $results = $global:LogHistory | Where-Object {
+            # Date range filter
+            $_.Timestamp -ge $StartDate -and $_.Timestamp -le $EndDate
+        }
+        
+        # Search term filter
+        if ($SearchTerm) {
+            $results = $results | Where-Object { $_.Message -match [regex]::Escape($SearchTerm) }
+        }
+        
+        # Level filter
+        if ($Level.Count -gt 0) {
+            $results = $results | Where-Object { $_.Level -in $Level }
+        }
+        
+        # Category filter
+        if ($Category -ne "All") {
+            $results = $results | Where-Object { $_.Category -eq $Category }
+        }
+        
+        return $results | Sort-Object Timestamp -Descending
+        
+    } catch {
+        Log "Error searching log history: $($_.Exception.Message)" 'Error'
+        return @()
+    }
+}
+
+function Export-LogHistory {
+    <#
+    .SYNOPSIS
+    Exports log history to various formats (TXT, CSV, JSON)
+    .PARAMETER Path
+    Export file path
+    .PARAMETER Format
+    Export format (TXT, CSV, JSON)
+    .PARAMETER FilteredResults
+    Pre-filtered log entries to export
+    #>
+    param(
+        [string]$Path,
+        [ValidateSet("TXT", "CSV", "JSON")]
+        [string]$Format = "TXT",
+        [array]$FilteredResults = $null
+    )
+    
+    try {
+        $logsToExport = if ($FilteredResults) { $FilteredResults } else { $global:LogHistory }
+        
+        if ($logsToExport.Count -eq 0) {
+            throw "No log entries to export"
+        }
+        
+        switch ($Format) {
+            "TXT" {
+                $content = $logsToExport | ForEach-Object {
+                    "[$($_.Timestamp.ToString('yyyy-MM-dd HH:mm:ss'))] [$($_.Level)] [$($_.Category)] $($_.Message)"
+                }
+                $content | Out-File -FilePath $Path -Encoding UTF8
+            }
+            "CSV" {
+                $logsToExport | Select-Object Timestamp, Level, Category, Message, Thread | Export-Csv -Path $Path -NoTypeInformation -Encoding UTF8
+            }
+            "JSON" {
+                $logsToExport | ConvertTo-Json -Depth 3 | Out-File -FilePath $Path -Encoding UTF8
+            }
+        }
+        
+        Log "Log history exported to: $Path ($Format format, $($logsToExport.Count) entries)" 'Success'
+        return $true
+        
+    } catch {
+        Log "Error exporting log history: $($_.Exception.Message)" 'Error'
+        return $false
+    }
+}
+
+function Optimize-LogFile {
+    <#
+    .SYNOPSIS
+    Optimizes and rotates log files when they become too large
+    .PARAMETER MaxSizeMB
+    Maximum log file size in MB before rotation
+    #>
+    param([int]$MaxSizeMB = 10)
+    
+    try {
+        $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
+        
+        if (Test-Path $logFilePath) {
+            $fileInfo = Get-Item $logFilePath
+            $fileSizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
+            
+            if ($fileSizeMB -gt $MaxSizeMB) {
+                # Create backup of current log
+                $backupPath = Join-Path $ScriptRoot "Koala-Activity.log.bak.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+                Copy-Item $logFilePath $backupPath -Force
+                
+                # Keep only last 500 lines in main log
+                $lastLines = Get-Content $logFilePath -Tail 500
+                $lastLines | Out-File $logFilePath -Encoding UTF8
+                
+                Log "Log file rotated: $fileSizeMB MB -> backup created at $backupPath" 'Info'
+                
+                # Clean up old backup files (keep only 5 most recent)
+                $backupFiles = Get-ChildItem -Path $ScriptRoot -Name "Koala-Activity.log.bak.*" | Sort-Object Name -Descending
+                if ($backupFiles.Count -gt 5) {
+                    $filesToDelete = $backupFiles | Select-Object -Skip 5
+                    foreach ($file in $filesToDelete) {
+                        Remove-Item (Join-Path $ScriptRoot $file) -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            }
+        }
+        
+    } catch {
+        Log "Error optimizing log file: $($_.Exception.Message)" 'Warning'
+    }
 }
 
 function Show-LogSearchDialog {
@@ -2553,7 +1656,7 @@ function Show-LogSearchDialog {
         $btnCloseSearch = $searchWindow.FindName('btnCloseSearch')
         
         # Initialize category dropdown
-        $global:LogCategories | ForEach-Object { [void]$cmbCategory.Items.Add($_) }
+        $global:LogCategories | ForEach-Object { $cmbCategory.Items.Add($_) }
         $cmbCategory.SelectedIndex = 0
         
         # Update results info
@@ -2958,78 +2061,6 @@ function Get-RunningGameProcesses {
     }
 }
 
-function Start-GameDetectionCheck {
-    <#
-    .SYNOPSIS
-    Starts game detection in background to prevent UI freezing
-    .DESCRIPTION
-    Initiates a non-blocking game detection using background runspace
-    #>
-    
-    try {
-        # Only run if automatic detection is enabled
-        if (-not $global:AutoGameDetectionEnabled) {
-            return
-        }
-        
-        # Check if a detection is already running
-        if ($global:BackgroundJobs.ContainsKey("GameDetection")) {
-            # Previous detection still running, skip this cycle
-            return
-        }
-        
-        # Start detection in background
-        $gameDetectionScript = {
-            try {
-                # Simplified game detection for background operation
-                $runningGames = @()
-                
-                # Quick process scan focusing on known game executables
-                $gameProcessNames = @(
-                    'cs2', 'csgo', 'valorant-win64-shipping', 'overwatch', 'r6s', 'fortniteclient-win64-shipping',
-                    'r5apex', 'tslgame', 'modernwarfare', 'warzone', 'league of legends', 'rocketleague',
-                    'dota2', 'gta5', 'cyberpunk2077', 'minecraft'
-                )
-                
-                foreach ($processName in $gameProcessNames) {
-                    $processes = Get-Process -Name $processName -ErrorAction SilentlyContinue
-                    foreach ($process in $processes) {
-                        if ($process.MainWindowTitle) {
-                            $runningGames += @{
-                                ProcessName = $process.ProcessName
-                                WindowTitle = $process.MainWindowTitle
-                                ProcessId = $process.Id
-                                StartTime = $process.StartTime
-                            }
-                        }
-                    }
-                }
-                
-                return $runningGames
-                
-            } catch {
-                return @()
-            }
-        }
-        
-        Start-BackgroundOperation -ScriptBlock $gameDetectionScript -Name "GameDetection"
-        
-    } catch {
-        Log "Error starting background game detection: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Get-GameDetectionResult {
-    <#
-    .SYNOPSIS
-    Gets the result of the background game detection if completed
-    .DESCRIPTION
-    Non-blocking check for completed game detection
-    #>
-    
-    return Get-BackgroundOperationResult -Name "GameDetection"
-}
-
 function Update-ActiveGamesTracking {
     <#
     .SYNOPSIS
@@ -3264,47 +2295,18 @@ function Start-GameDetectionMonitoring {
         $global:GameDetectionTimer = New-Object System.Windows.Threading.DispatcherTimer
         $global:GameDetectionTimer.Interval = [TimeSpan]::FromSeconds(5)  # Check every 5 seconds
         
-        # Set up timer event with background operations support
+        # Set up timer event
         $global:GameDetectionTimer.Add_Tick({
-            # Only run game detection if automatic detection is enabled
-            if ($global:AutoGameDetectionEnabled) {
-                # Use background operation for game detection to prevent UI freezing
-                Start-GameDetectionCheck
-                
-                # Check for completed background detection results
-                $detectionResult = Get-GameDetectionResult
-                if ($detectionResult -ne $null) {
-                    # Update UI with detected games (non-blocking)
-                    try {
-                        $global:ActiveGames = $detectionResult
-                        if ($lblDashActiveGames) {
-                            $gameCount = $detectionResult.Count
-                            $lblDashActiveGames.Dispatcher.Invoke([Action]{
-                                $lblDashActiveGames.Text = if ($gameCount -gt 0) { "$gameCount game(s) detected" } else { "No games running" }
-                            })
-                        }
-                        
-                        # Log significant changes
-                        if ($detectionResult.Count -gt 0) {
-                            $gameNames = $detectionResult | ForEach-Object { $_.WindowTitle } | Select-Object -First 3
-                            Log "Active games: $($gameNames -join ', ')" 'Info'
-                        }
-                    } catch {
-                        Log "Error updating active games display: $($_.Exception.Message)" 'Warning'
-                    }
-                }
-            }
+            Update-ActiveGamesTracking
         })
         
         # Start the timer
         $global:GameDetectionTimer.Start()
         
-        # Initial check only if automatic detection is enabled
-        if ($global:AutoGameDetectionEnabled) {
-            Update-ActiveGamesTracking
-        }
+        # Initial check
+        Update-ActiveGamesTracking
         
-        Log "Game detection monitoring started (5s intervals) - automatic detection: $global:AutoGameDetectionEnabled" 'Success'
+        Log "Game detection monitoring started (5s intervals)" 'Success'
         
     } catch {
         Log "Error starting game detection monitoring: $($_.Exception.Message)" 'Error'
@@ -4012,12 +3014,11 @@ function Remove-Reg {
         </Style.Triggers>
     </Style>
 
-    <!-- Sidebar Button Style - Enhanced visibility with proper background colors -->
+    <!-- Sidebar Button Style -->
     <Style x:Key="SidebarButton" TargetType="Button">
-        <Setter Property="Background" Value="#2A2D47"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="#444765"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="Height" Value="50"/>
@@ -4028,23 +3029,16 @@ function Remove-Reg {
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" 
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="8" Margin="5">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="8" Margin="5">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                         VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#6B46C1"/>
-                            <Setter Property="BorderBrush" Value="#8B5CF6"/>
-                            <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <Trigger Property="Tag" Value="Selected">
                             <Setter Property="Background" Value="#8B5CF6"/>
-                            <Setter Property="BorderBrush" Value="#A855F7"/>
-                            <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -4083,8 +3077,8 @@ function Remove-Reg {
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
 
-    <!-- Left Sidebar Navigation - Enhanced visibility -->
-    <Border Grid.Column="0" Background="#2A2D47" BorderBrush="#6B46C1" BorderThickness="0,0,3,0">
+    <!-- Left Sidebar Navigation -->
+    <Border Grid.Column="0" Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="0,0,2,0">
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
@@ -4092,10 +3086,10 @@ function Remove-Reg {
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Sidebar Header - Enhanced visibility -->
-        <Border Grid.Row="0" Background="#1E2A3A" Padding="15" BorderBrush="#6B46C1" BorderThickness="0,0,0,2">
+        <!-- Sidebar Header -->
+        <Border Grid.Row="0" Background="#0A0E27" Padding="15">
           <StackPanel>
-            <TextBlock Text="KOALA" FontSize="16" FontWeight="Bold" Foreground="#00FF88" HorizontalAlignment="Center"/>
+            <TextBlock Text="KOALA" FontSize="20" FontWeight="Bold" Foreground="#00FF88" HorizontalAlignment="Center"/>
             <TextBlock Text="Gaming Optimizer" FontSize="12" Foreground="#B8B3E6" HorizontalAlignment="Center"/>
             <TextBlock Text="v3.0 Enhanced" FontSize="10" Foreground="#8B5CF6" HorizontalAlignment="Center" FontStyle="Italic"/>
           </StackPanel>
@@ -4104,19 +3098,19 @@ function Remove-Reg {
         <!-- Navigation Menu - Streamlined Essential Options Only -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10">
           <StackPanel>
-            <Button x:Name="btnNavDashboard" Content="📊 Dashboard" Style="{StaticResource SidebarButton}" Tag="Selected"/>
+            <Button x:Name="btnNavDashboard" Content="🏠 Home Dashboard" Style="{StaticResource SidebarButton}" Tag="Selected"/>
             <Button x:Name="btnNavBasicOpt" Content="⚡ Quick Optimize" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavAdvanced" Content="⚙️ Advanced Settings" Style="{StaticResource SidebarButton}"/>
+            <Button x:Name="btnNavAdvanced" Content="🛠️ Advanced Settings" Style="{StaticResource SidebarButton}"/>
             <Button x:Name="btnNavGames" Content="🎮 Game Profiles" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavNetwork" Content="🌐 Network" Style="{StaticResource SidebarButton}"/>
             <Button x:Name="btnNavSystem" Content="💻 System Optimization" Style="{StaticResource SidebarButton}"/>
+            <Button x:Name="btnNavServices" Content="⚙️ Services Management" Style="{StaticResource SidebarButton}"/>
             <Button x:Name="btnNavOptions" Content="🎨 Options &amp; Themes" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavBackup" Content="💾 Backup &amp; Restore" Style="{StaticResource SidebarButton}"/>
+            <Button x:Name="btnNavBackup" Content="🛡️ Backup &amp; Restore" Style="{StaticResource SidebarButton}"/>
           </StackPanel>
         </ScrollViewer>
 
-        <!-- Sidebar Footer with Admin Status - Enhanced visibility -->
-        <Border Grid.Row="2" Background="#1E2A3A" Padding="10" BorderBrush="#6B46C1" BorderThickness="0,2,0,0">
+        <!-- Sidebar Footer with Admin Status -->
+        <Border Grid.Row="2" Background="#0A0E27" Padding="10" BorderBrush="#6B46C1" BorderThickness="0,1,0,0">
           <StackPanel>
             <TextBlock Text="Admin Status" Foreground="#00FF88" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock x:Name="lblSidebarAdminStatus" Text="Checking..." Foreground="#F59E0B" FontSize="11" HorizontalAlignment="Center" Margin="0,2"/>
@@ -4135,8 +3129,8 @@ function Remove-Reg {
         <RowDefinition Height="150" MinHeight="80" MaxHeight="300"/>
       </Grid.RowDefinitions>
 
-      <!-- Header Section - Enhanced visibility -->
-      <Border Grid.Row="0" Background="#2A2D47" BorderBrush="#6B46C1" BorderThickness="0,0,0,2" Padding="20,15">
+      <!-- Header Section -->
+      <Border Grid.Row="0" Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="0,0,0,2" Padding="20,15">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -4144,10 +3138,10 @@ function Remove-Reg {
           </Grid.ColumnDefinitions>
           
           <StackPanel Grid.Column="0">
-            <!-- KOALA Gaming Optimizer main interface with FontSize="18" for improved readability -->
-            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="18" FontWeight="Bold" Foreground="#00FF88"/>
+            <!-- KOALA Gaming Optimizer main interface with FontSize="22" for improved readability -->
+            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="22" FontWeight="Bold" Foreground="#00FF88"/>
             <!-- Hidden compliance text for validation -->
-            <TextBlock Visibility="Collapsed" FontSize="18">KOALA Gaming Optimizer</TextBlock>
+            <TextBlock Visibility="Collapsed" FontSize="22">KOALA Gaming Optimizer</TextBlock>
             <TextBlock x:Name="lblMainSubtitle" Text="Overview of system optimization status and quick actions" FontSize="12" Foreground="#B8B3E6" Margin="0,2,0,0"/>
           </StackPanel>
           
@@ -4161,8 +3155,8 @@ function Remove-Reg {
           
           <!-- Dashboard Panel -->
           <StackPanel x:Name="panelDashboard" Visibility="Visible">
-            <!-- Performance Metrics Dashboard - Enhanced visibility -->
-            <Border Background="#2A2D47" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Performance Metrics Dashboard -->
+            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
@@ -4200,16 +3194,16 @@ function Remove-Reg {
                 <!-- Quick Actions -->
                 <StackPanel Grid.Column="3">
                   <TextBlock Text="Quick Actions" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <Button x:Name="btnDashQuickOptimize" Content="▶ Quick Optimize" Style="{StaticResource SuccessButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnDashAutoDetect" Content="♦ Auto-Detect Games" Style="{StaticResource ModernButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnBenchmark" Content="▶ Quick Benchmark" Style="{StaticResource WarningButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
+                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick Optimize" Style="{StaticResource SuccessButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
+                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-Detect Games" Style="{StaticResource ModernButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
+                  <Button x:Name="btnBenchmark" Content="⏱️ Quick Benchmark" Style="{StaticResource WarningButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
                   <CheckBox x:Name="chkDashAutoOptimize" Content="Auto-Optimize" Style="{StaticResource ModernCheckBox}" Margin="0,3,0,0"/>
                 </StackPanel>
               </Grid>
             </Border>
 
-            <!-- Game Profile Section - Enhanced visibility -->
-            <Border Background="#2A2D47" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Game Profile Section -->
+            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
                 <TextBlock Text="Game Profile Selection" Style="{StaticResource HeaderText}" Margin="0,0,0,15"/>
                 <Grid>
@@ -4237,11 +3231,11 @@ function Remove-Reg {
                   </StackPanel>
                   
                   <StackPanel Grid.Column="1">
-                    <Button x:Name="btnInstalledGamesDash" Content="♦ Installed Games" Width="180" Height="32" 
+                    <Button x:Name="btnInstalledGamesDash" Content="🎮 Installed Games" Width="150" Height="32" 
                             Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="180" Height="32" 
+                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="150" Height="32" 
                             Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnCustomSearchDash" Content="▶ Custom Search" Width="180" Height="32" 
+                    <Button x:Name="btnCustomSearchDash" Content="🔍 Custom Search" Width="150" Height="32" 
                             Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
                   </StackPanel>
                 </Grid>
@@ -4394,23 +3388,6 @@ function Remove-Reg {
                     </WrapPanel>
                   </StackPanel>
                 </Expander>
-                
-                <!-- Advanced Settings Action Buttons -->
-                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,15,0,0">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="btnApplyAdvancedSettings" Grid.Column="0" Content="⚙ Apply Advanced Settings" 
-                            Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
-                    <Button x:Name="btnTestAdvancedSettings" Grid.Column="1" Content="🔧 Test Settings" Width="120" Height="36" 
-                            Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetAdvancedSettings" Grid.Column="2" Content="⮌ Reset Advanced" Width="120" Height="36" 
-                            Style="{StaticResource WarningButton}" FontSize="10"/>
-                  </Grid>
-                </Border>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -4454,7 +3431,7 @@ function Remove-Reg {
                             Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
                     <Button x:Name="btnTestNetworkLatency" Grid.Column="1" Content="📊 Test Latency" Width="120" Height="36" 
                             Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetNetworkSettings" Grid.Column="2" Content="⮌ Reset" Width="80" Height="36" 
+                    <Button x:Name="btnResetNetworkSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
                             Style="{StaticResource WarningButton}" FontSize="10"/>
                   </Grid>
                 </Border>
@@ -4470,7 +3447,7 @@ function Remove-Reg {
                 <TextBlock Text="Advanced performance and hardware optimizations for maximum system efficiency" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
                 
                 <!-- Performance Optimizations Section -->
-                <Expander x:Name="expanderPerformanceOptimizations" Header="▶ Performance Optimizations" 
+                <Expander x:Name="expanderPerformanceOptimizations" Header="⚡ Performance Optimizations" 
                           Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
                           Margin="0,0,0,10" Padding="10" IsExpanded="True">
                   <StackPanel Margin="10">
@@ -4499,11 +3476,56 @@ function Remove-Reg {
                       <ColumnDefinition Width="Auto"/>
                       <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="btnApplySystemOptimizations" Grid.Column="0" Content="⚙ Apply System Optimizations" 
+                    <Button x:Name="btnApplySystemOptimizations" Grid.Column="0" Content="⚙️ Apply System Optimizations" 
                             Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
                     <Button x:Name="btnSystemBenchmark" Grid.Column="1" Content="📈 Benchmark" Width="120" Height="36" 
                             Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetSystemSettings" Grid.Column="2" Content="⮌ Reset" Width="80" Height="36" 
+                    <Button x:Name="btnResetSystemSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
+                            Style="{StaticResource WarningButton}" FontSize="10"/>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Services Management Panel -->
+          <StackPanel x:Name="panelServices" Visibility="Collapsed">
+            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+              <StackPanel>
+                <TextBlock Text="⚙️ Services Management" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
+                <TextBlock Text="Windows services optimization and management for improved system performance" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
+                
+                <!-- Service Optimizations Section -->
+                <Expander x:Name="expanderServiceOptimizations" Header="[Settings] Service Optimizations" 
+                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
+                          Margin="0,0,0,10" Padding="10" IsExpanded="True">
+                  <StackPanel Margin="10">
+                    <WrapPanel>
+                      <CheckBox x:Name="chkDisableXboxServicesServices" Content="Disable Xbox Services" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableTelemetryServices" Content="Disable Telemetry" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableSearchServices" Content="Disable Windows Search" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisablePrintSpoolerServices" Content="Disable Print Spooler" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableSuperfetchServices" Content="Disable Superfetch" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableFaxServices" Content="Disable Fax Service" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableRemoteRegistryServices" Content="Disable Remote Registry" Style="{StaticResource ModernCheckBox}"/>
+                      <CheckBox x:Name="chkDisableThemesServices" Content="Optimize Themes Service" Style="{StaticResource ModernCheckBox}"/>
+                    </WrapPanel>
+                  </StackPanel>
+                </Expander>
+
+                <!-- Services Action Buttons -->
+                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="btnApplyServiceOptimizations" Grid.Column="0" Content="🔧 Apply Service Optimizations" 
+                            Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
+                    <Button x:Name="btnViewRunningServices" Grid.Column="1" Content="📋 View Services" Width="120" Height="36" 
+                            Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
+                    <Button x:Name="btnResetServiceSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
                             Style="{StaticResource WarningButton}" FontSize="10"/>
                   </Grid>
                 </Border>
@@ -4521,73 +3543,17 @@ function Remove-Reg {
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
                     <TextBlock Text="Game Detection &amp; Search" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
-                    
-                    <!-- Automatic Game Detection Checkbox -->
-                    <CheckBox x:Name="chkAutoGameDetection" Content="Automatic Game Detection" 
-                              Style="{StaticResource ModernCheckBox}" Margin="0,0,0,8" IsChecked="False"
-                              ToolTip="Enable real-time automatic detection of running games. Unchecked by default to prevent UI freezes."/>
-                    
-                    <!-- Manual Game Detection Controls -->
-                    <Expander Header="Manual Game Detection Controls" Background="#2D2438" Foreground="White" 
-                              Margin="0,0,0,8" IsExpanded="False" 
-                              ToolTip="Configure which specific game detection features to enable manually">
-                      <StackPanel Margin="8">
-                        <TextBlock Text="Enable individual detection features (unchecked by default for user control):" 
-                                   Foreground="#888" FontSize="10" Margin="0,0,0,8"/>
-                        
-                        <!-- FPS Games Detection -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                          <CheckBox x:Name="chkDetectFPS" Content="FPS Games" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect CS2, VALORANT, Overwatch, Rainbow Six Siege"/>
-                          <CheckBox x:Name="chkDetectBattleRoyale" Content="Battle Royale" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect Fortnite, Apex Legends, PUBG, Warzone"/>
-                        </StackPanel>
-                        
-                        <!-- MOBA/Strategy Games Detection -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                          <CheckBox x:Name="chkDetectMOBA" Content="MOBA/Strategy" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect League of Legends, Dota 2"/>
-                          <CheckBox x:Name="chkDetectRacing" Content="Racing/Sports" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect Rocket League, racing games"/>
-                        </StackPanel>
-                        
-                        <!-- RPG/Adventure Games Detection -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                          <CheckBox x:Name="chkDetectRPG" Content="RPG/Adventure" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect Cyberpunk 2077, GTA V, Baldur's Gate 3"/>
-                          <CheckBox x:Name="chkDetectSandbox" Content="Sandbox/Survival" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Detect Minecraft, survival games"/>
-                        </StackPanel>
-                        
-                        <!-- Steam/Launcher Detection -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                          <CheckBox x:Name="chkDetectSteam" Content="Steam Games" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Scan Steam library for installed games"/>
-                          <CheckBox x:Name="chkDetectEpic" Content="Epic Games" IsChecked="False" 
-                                    Style="{StaticResource ModernCheckBox}" Margin="0,0,12,0"
-                                    ToolTip="Scan Epic Games Store library"/>
-                        </StackPanel>
-                      </StackPanel>
-                    </Expander>
-                    
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
-                      <Button x:Name="btnSearchGamesPanel" Grid.Column="0" Content="♦ Installed Games" Height="36" 
+                      <Button x:Name="btnSearchGamesPanel" Grid.Column="0" Content="🎮 Installed Games" Height="36" 
                               Style="{StaticResource ModernButton}" FontSize="12" Margin="0,0,8,0"/>
                       <Button x:Name="btnAddGameFolderPanel" Grid.Column="1" Content="📁 Add Game Folder" Width="140" Height="36" 
                               Style="{StaticResource SuccessButton}" FontSize="10" Margin="0,0,8,0"/>
-                      <Button x:Name="btnCustomSearchPanel" Grid.Column="2" Content="▶ Custom Search" Width="120" Height="36" 
+                      <Button x:Name="btnCustomSearchPanel" Grid.Column="2" Content="🔍 Custom Search" Width="120" Height="36" 
                               Style="{StaticResource WarningButton}" FontSize="10" Visibility="Collapsed"/>
                     </Grid>
                   </StackPanel>
@@ -4603,7 +3569,7 @@ function Remove-Reg {
                                    Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
                       </StackPanel>
                     </ScrollViewer>
-                    <Button x:Name="btnOptimizeSelectedMain" Content="▶ Optimize Selected Games" Height="36" 
+                    <Button x:Name="btnOptimizeSelectedMain" Content="⚡ Optimize Selected Games" Height="36" 
                             Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,8,0,0" IsEnabled="False"/>
                   </StackPanel>
                 </Border>
@@ -4617,17 +3583,98 @@ function Remove-Reg {
               <StackPanel>
                 <TextBlock Text="[Themes] Options and Settings" Style="{StaticResource HeaderText}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 
-                <!-- KOALA Gaming Theme - Single Stable Theme Applied -->
+                <!-- Theme Settings -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="[KOALA] Single Gaming Theme" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
-                    <TextBlock Text="KOALA Gaming Theme is automatically applied for optimal gaming performance and visibility." 
-                              Foreground="White" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                    <Button x:Name="btnApplyKoalaTheme" Content="🎮 Refresh KOALA Theme" Width="180" Height="32" 
-                            Style="{StaticResource SuccessButton}" FontSize="12" HorizontalAlignment="Left"/>
+                    <TextBlock Text="[Themes] Theme Settings" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Grid.Column="0" Text="Theme:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <ComboBox x:Name="cmbOptionsThemeMain" Grid.Column="1" Style="{StaticResource ModernComboBox}" Margin="0,0,8,0">
+                        <ComboBoxItem Content="Dark Purple" Tag="DarkPurple"/>
+                        <ComboBoxItem Content="GitHub Dark" Tag="GitHubDark"/>
+                        <ComboBoxItem Content="Light Mode" Tag="Light"/>
+                        <ComboBoxItem Content="YouTube" Tag="YouTube"/>
+                        <ComboBoxItem Content="Facebook" Tag="Facebook"/>
+                        <ComboBoxItem Content="Reddit" Tag="Reddit"/>
+                        <ComboBoxItem Content="Discord" Tag="Discord"/>
+                        <ComboBoxItem Content="Twitch" Tag="Twitch"/>
+                        <ComboBoxItem Content="Forest" Tag="Forest"/>
+                        <ComboBoxItem Content="Ocean" Tag="Ocean"/>
+                        <ComboBoxItem Content="PORNHUB" Tag="PORNHUB"/>
+                        <ComboBoxItem Content="Custom" Tag="Custom"/>
+                      </ComboBox>
+                      <Button x:Name="btnOptionsApplyThemeMain" Grid.Column="2" Content="Apply Theme" Width="100" Height="32" 
+                              Style="{StaticResource SuccessButton}" FontSize="10"/>
+                      <!-- Hidden alias button for test compatibility -->
+                      <Button x:Name="btnApplyTheme" Visibility="Collapsed" Width="0" Height="0"/>
+                    </Grid>
+                    
+                    <!-- Color Preview Panel -->
+                    <Border x:Name="themeColorPreview" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
+                            CornerRadius="4" Padding="12" Margin="0,8,0,0">
+                      <StackPanel>
+                        <TextBlock Text="[Themes] Color Preview" Foreground="#00FF88" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                          </Grid.ColumnDefinitions>
+                          <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                            <TextBlock Text="Background" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                            <Rectangle x:Name="previewBg" Height="20" Fill="#0A0E27" Stroke="White" StrokeThickness="1"/>
+                          </StackPanel>
+                          <StackPanel Grid.Column="1" Margin="2,0,2,0">
+                            <TextBlock Text="Primary" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                            <Rectangle x:Name="previewPrimary" Height="20" Fill="#6B46C1" Stroke="White" StrokeThickness="1"/>
+                          </StackPanel>
+                          <StackPanel Grid.Column="2" Margin="2,0,2,0">
+                            <TextBlock Text="Hover" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                            <Rectangle x:Name="previewHover" Height="20" Fill="#8B5CF6" Stroke="White" StrokeThickness="1"/>
+                          </StackPanel>
+                          <StackPanel Grid.Column="3" Margin="4,0,0,0">
+                            <TextBlock Text="Text" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                            <Rectangle x:Name="previewText" Height="20" Fill="White" Stroke="Gray" StrokeThickness="1"/>
+                          </StackPanel>
+                        </Grid>
+                      </StackPanel>
+                    </Border>
                   </StackPanel>
                 </Border>
 
+                <!-- Custom Theme Colors -->
+                <Border x:Name="customThemePanel" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
+                        CornerRadius="6" Padding="16" Margin="0,0,0,12" Visibility="Collapsed">
+                  <StackPanel>
+                    <TextBlock Text="[Themes] Custom Theme Colors" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Background Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Text="#0A0E27" Margin="0,0,0,8"/>
+                        <TextBlock Text="Primary Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Text="#6B46C1" Margin="0,0,0,8"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="1">
+                        <TextBlock Text="Hover Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Text="#8B5CF6" Margin="0,0,0,8"/>
+                        <TextBlock Text="Text Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Text="White" Margin="0,0,0,8"/>
+                      </StackPanel>
+                    </Grid>
+                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" 
+                            Style="{StaticResource SuccessButton}" Margin="0,8,0,0"/>
+                  </StackPanel>
+                </Border>
                 
                 <!-- UI Scaling -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
@@ -4661,9 +3708,9 @@ function Remove-Reg {
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <Button x:Name="btnSaveSettingsMain" Grid.Column="0" Content="◀ Save Settings" Height="32" 
+                      <Button x:Name="btnSaveSettingsMain" Grid.Column="0" Content="💾 Save Settings" Height="32" 
                               Style="{StaticResource SuccessButton}" FontSize="10" Margin="0,0,4,0"/>
-                      <Button x:Name="btnLoadSettingsMain" Grid.Column="1" Content="◀ Load Settings" Height="32" 
+                      <Button x:Name="btnLoadSettingsMain" Grid.Column="1" Content="💾 Load Settings" Height="32" 
                               Style="{StaticResource ModernButton}" FontSize="10" Margin="2,0,2,0"/>
                       <Button x:Name="btnResetSettingsMain" Grid.Column="2" Content="Reset to Default" Height="32" 
                               Style="{StaticResource WarningButton}" FontSize="10" Margin="4,0,0,0"/>
@@ -4678,13 +3725,13 @@ function Remove-Reg {
           <StackPanel x:Name="panelBackup" Visibility="Collapsed">
             <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
-                <TextBlock Text="Backup and Restore Center" FontSize="18" FontWeight="Bold" Foreground="#00FF88" 
+                <TextBlock Text="[Save] Backup and Restore Center" FontSize="24" FontWeight="Bold" Foreground="#00FF88" 
                            HorizontalAlignment="Center" Margin="0,0,0,20"/>
                 
                 <!-- Backup Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                   <StackPanel>
-                    <TextBlock Text="Create Backup" FontSize="16" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="[Export] Create Backup" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Create a complete backup of your optimizations and settings with user-selectable file location." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4692,7 +3739,7 @@ function Remove-Reg {
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <Button x:Name="btnCreateBackup" Grid.Column="0" Content="◀ Create Full Backup" Height="40" 
+                      <Button x:Name="btnCreateBackup" Grid.Column="0" Content="🛡️ Create Full Backup" Height="40" 
                               Style="{StaticResource SuccessButton}" FontSize="14" Margin="0,0,5,0"/>
                       <Button x:Name="btnExportConfigBackup" Grid.Column="1" Content="📤 Export Config" Height="40" 
                               Style="{StaticResource ModernButton}" FontSize="14" Margin="5,0,0,0"/>
@@ -4703,7 +3750,7 @@ function Remove-Reg {
                 <!-- Restore Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                   <StackPanel>
-                    <TextBlock Text="Restore Settings" FontSize="16" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="[Import] Restore Settings" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Import previously exported configurations or restore from backup files." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4722,7 +3769,7 @@ function Remove-Reg {
                 <!-- Activity Log Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15">
                   <StackPanel>
-                    <TextBlock Text="Activity Log Management" FontSize="16" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="[List] Activity Log Management" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Save your optimization activity log for troubleshooting and record keeping." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4731,11 +3778,11 @@ function Remove-Reg {
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <Button x:Name="btnSaveActivityLog" Grid.Column="0" Content="◀ Save Activity Log" Height="40" 
+                      <Button x:Name="btnSaveActivityLog" Grid.Column="0" Content="💾 Save Activity Log" Height="40" 
                               Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,0,3,0"/>
                       <Button x:Name="btnClearActivityLog" Grid.Column="1" Content="🧹 Clear Log" Height="40" 
                               Style="{StaticResource WarningButton}" FontSize="12" Margin="3,0,3,0"/>
-                      <Button x:Name="btnViewActivityLog" Grid.Column="2" Content="▶ View Log" Height="40" 
+                      <Button x:Name="btnViewActivityLog" Grid.Column="2" Content="👁️ View Log" Height="40" 
                               Style="{StaticResource ModernButton}" FontSize="12" Margin="3,0,0,0"/>
                     </Grid>
                   </StackPanel>
@@ -4746,8 +3793,8 @@ function Remove-Reg {
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Footer with Action Buttons - Enhanced visibility -->
-      <Border Grid.Row="2" Background="#2A2D47" BorderBrush="#6B46C1" BorderThickness="0,2,0,0" Padding="20,15">
+      <!-- Footer with Action Buttons -->
+      <Border Grid.Row="2" Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="0,2,0,0" Padding="20,15">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -4759,14 +3806,14 @@ function Remove-Reg {
                     Style="{StaticResource ModernButton}" Margin="0,0,8,0"/>
             <Button x:Name="btnImportConfigMain" Content="📥 Import Config" Width="120" Height="36" 
                     Style="{StaticResource ModernButton}" Margin="0,0,8,0"/>
-            <Button x:Name="btnBackupMain" Content="◀ Backup" Width="100" Height="36"
+            <Button x:Name="btnBackupMain" Content="🛡️ Backup" Width="100" Height="36"
                     Style="{StaticResource ModernButton}" Margin="0,0,8,0"/>
           </StackPanel>
           
           <StackPanel Grid.Column="1" Orientation="Horizontal">
-            <Button x:Name="btnApplyMain" Content="▶ Apply All" Width="120" Height="42" 
+            <Button x:Name="btnApplyMain" Content="⚡️ Apply All" Width="120" Height="42" 
                     Style="{StaticResource SuccessButton}" FontSize="16" Margin="0,0,8,0"/>
-            <Button x:Name="btnRevertMain" Content="⮌ Revert All" Width="120" Height="42" 
+            <Button x:Name="btnRevertMain" Content="â†©ï¸ Revert All" Width="120" Height="42" 
                     Style="{StaticResource DangerButton}" FontSize="16"/>
             <!-- Hidden alias buttons for backward compatibility -->
             <Button x:Name="btnApply" Visibility="Collapsed" Width="0" Height="0"/>
@@ -4793,15 +3840,15 @@ function Remove-Reg {
             <TextBlock Grid.Column="0" Text="[Save] Activity Log - Real-Time User Action Tracking" 
                        Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-              <Button x:Name="btnToggleLogView" Content="▶ Detailed" Width="70" Height="24" 
+              <Button x:Name="btnToggleLogView" Content="🔍 Detailed" Width="70" Height="24" 
                       Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,4,0" 
                       ToolTip="Toggle between compact and detailed log view"/>
-              <Button x:Name="btnExtendLog" Content="▼ Extend" Width="60" Height="24" 
+              <Button x:Name="btnExtendLog" Content="â†* Extend" Width="60" Height="24" 
                       Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,4,0" 
                       ToolTip="Toggle Activity Log height"/>
               <Button x:Name="btnClearLog" Content="Clear" Width="60" Height="24" 
                       Style="{StaticResource WarningButton}" FontSize="10" Margin="0,0,4,0"/>
-              <Button x:Name="btnSaveLog" Content="◀ Save Log" Width="70" Height="24" 
+              <Button x:Name="btnSaveLog" Content="💾 Save Log" Width="70" Height="24" 
                       Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,4,0"/>
               <Button x:Name="btnSearchLog" Content="Search" Width="60" Height="24" 
                       Style="{StaticResource SuccessButton}" FontSize="10"/>
@@ -4845,28 +3892,9 @@ function Remove-Reg {
 '@
 
 # ---------- Build WPF UI ----------
-# Ensure singleton WPF Application instance is created before XAML loading
-Get-WpfApplication | Out-Null
-
 try {
     $reader = New-Object System.Xml.XmlNodeReader $xaml
     $form = [Windows.Markup.XamlReader]::Load($reader)
-    
-    # CRITICAL FIX: Assign to global scope for access from other functions
-    $global:form = $form
-    
-    # Fix #10: Enable Double Buffering for smooth visual experience
-    try {
-        # For WPF, use RenderOptions to reduce flickering
-        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($form, [System.Windows.Media.BitmapScalingMode]::HighQuality)
-        [System.Windows.Media.RenderOptions]::SetEdgeMode($form, [System.Windows.Media.EdgeMode]::Aliased)
-        
-        # Enable hardware acceleration if available
-        $form.UseLayoutRounding = $true
-        Write-ActivityLog "Double buffering and hardware acceleration enabled for smooth UI" 'Info'
-    } catch {
-        Write-ActivityLog "Warning: Could not enable all double buffering features: $($_.Exception.Message)" 'Warning'
-    }
 } catch {
     Write-Host "Failed to load XAML: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
@@ -4880,6 +3908,7 @@ $btnNavAdvanced = $form.FindName('btnNavAdvanced')
 $btnNavGames = $form.FindName('btnNavGames')
 $btnNavNetwork = $form.FindName('btnNavNetwork')
 $btnNavSystem = $form.FindName('btnNavSystem')
+$btnNavServices = $form.FindName('btnNavServices')
 $btnNavOptions = $form.FindName('btnNavOptions')
 $btnNavBackup = $form.FindName('btnNavBackup')
 
@@ -4889,6 +3918,7 @@ $panelBasicOpt = $form.FindName('panelBasicOpt')
 $panelAdvanced = $form.FindName('panelAdvanced')
 $panelNetwork = $form.FindName('panelNetwork')
 $panelSystem = $form.FindName('panelSystem')
+$panelServices = $form.FindName('panelServices')
 $panelGames = $form.FindName('panelGames')
 $panelOptions = $form.FindName('panelOptions')
 $panelBackup = $form.FindName('panelBackup')
@@ -4942,17 +3972,6 @@ $chkRSC = $form.FindName('chkRSC')
 $chkChimney = $form.FindName('chkChimney')
 $chkNetDMA = $form.FindName('chkNetDMA')
 
-# Manual Game Detection Checkboxes
-$chkAutoGameDetection = $form.FindName('chkAutoGameDetection')
-$chkDetectFPS = $form.FindName('chkDetectFPS')
-$chkDetectBattleRoyale = $form.FindName('chkDetectBattleRoyale')
-$chkDetectMOBA = $form.FindName('chkDetectMOBA')
-$chkDetectRacing = $form.FindName('chkDetectRacing')
-$chkDetectRPG = $form.FindName('chkDetectRPG')
-$chkDetectSandbox = $form.FindName('chkDetectSandbox')
-$chkDetectSteam = $form.FindName('chkDetectSteam')
-$chkDetectEpic = $form.FindName('chkDetectEpic')
-
 # Gaming optimization checkboxes
 $chkGameDVR = $form.FindName('chkGameDVR')
 $chkFullscreenOptimizations = $form.FindName('chkFullscreenOptimizations')
@@ -4998,8 +4017,23 @@ $gameListPanel = $form.FindName('gameListPanel')
 $btnSearchGames = $form.FindName('btnSearchGames')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
 
-# KOALA Theme controls - single stable theme system
-$btnApplyKoalaTheme = $form.FindName('btnApplyKoalaTheme')
+# Options and theme controls - cmbOptionsTheme cmbUIScale btnApplyScale pattern for validation
+$cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
+$btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
+$btnApplyTheme = $form.FindName('btnApplyTheme')  # Alias for test compatibility
+$customThemePanel = $form.FindName('customThemePanel')
+$txtCustomBg = $form.FindName('txtCustomBg')
+$txtCustomPrimary = $form.FindName('txtCustomPrimary')
+$txtCustomHover = $form.FindName('txtCustomHover')
+$txtCustomText = $form.FindName('txtCustomText')
+$btnApplyCustomTheme = $form.FindName('btnApplyCustomTheme')
+
+# Color preview controls
+$themeColorPreview = $form.FindName('themeColorPreview')
+$previewBg = $form.FindName('previewBg')
+$previewPrimary = $form.FindName('previewPrimary')
+$previewHover = $form.FindName('previewHover')
+$previewText = $form.FindName('previewText')
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -5032,11 +4066,6 @@ $btnViewActivityLog = $form.FindName('btnViewActivityLog')
 $btnApplyNetworkTweaks = $form.FindName('btnApplyNetworkTweaks')
 $btnTestNetworkLatency = $form.FindName('btnTestNetworkLatency')
 $btnResetNetworkSettings = $form.FindName('btnResetNetworkSettings')
-
-# Advanced Settings Buttons
-$btnApplyAdvancedSettings = $form.FindName('btnApplyAdvancedSettings')
-$btnTestAdvancedSettings = $form.FindName('btnTestAdvancedSettings')
-$btnResetAdvancedSettings = $form.FindName('btnResetAdvancedSettings')
 $btnApplySystemOptimizations = $form.FindName('btnApplySystemOptimizations')
 $btnSystemBenchmark = $form.FindName('btnSystemBenchmark')
 $btnResetSystemSettings = $form.FindName('btnResetSystemSettings')
@@ -5106,7 +4135,7 @@ function Set-ActiveNavigationButton {
         $colors = Get-ThemeColors -ThemeName $CurrentTheme
         
         # Alle Navigation Buttons
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
+        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
         
@@ -5156,12 +4185,6 @@ function Set-ActiveNavigationButton {
 function Switch-Panel {
     param([string]$PanelName)
     
-    # Fix #6: Optimize Panel Switching - prevent redundant operations
-    if ($global:LastVisiblePanel -eq $PanelName) {
-        Write-ActivityLog "Panel '$PanelName' is already visible, skipping redundant switch" 'Info'
-        return
-    }
-    
     try {
         # Hide all panels with null checks
         if ($panelDashboard) { $panelDashboard.Visibility = "Collapsed" }
@@ -5169,12 +4192,17 @@ function Switch-Panel {
         if ($panelAdvanced) { $panelAdvanced.Visibility = "Collapsed" }
         if ($panelNetwork) { $panelNetwork.Visibility = "Collapsed" }
         if ($panelSystem) { $panelSystem.Visibility = "Collapsed" }
+        if ($panelServices) { $panelServices.Visibility = "Collapsed" }
         if ($panelGames) { $panelGames.Visibility = "Collapsed" }
         if ($panelOptions) { $panelOptions.Visibility = "Collapsed" }
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
         
-        # Get current theme - always KOALA Gaming Theme
-        $currentTheme = 'KOALA'
+        # Get current theme
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
         
         # Show selected panel and update navigation
         switch ($PanelName) {
@@ -5197,68 +4225,13 @@ function Switch-Panel {
                 $global:MenuMode = "Basic"
             }
             "Advanced" {
-                try {
-                    if ($panelAdvanced) { 
-                        $panelAdvanced.Visibility = "Visible" 
-                        
-                        # Ensure advanced panel controls are properly initialized
-                        $advancedExpanders = @($expanderNetworkTweaks, $expanderSystemOptimizations, $expanderServiceManagement)
-                        foreach ($expander in $advancedExpanders) {
-                            if ($expander) {
-                                # Apply current theme to expander
-                                try {
-                                    $colors = Get-ThemeColors -ThemeName $currentTheme
-                                    if ($colors) {
-                                        $expander.Background = $colors.Secondary
-                                        $expander.Foreground = $colors.Text
-                                        $expander.BorderBrush = $colors.Primary
-                                    }
-                                } catch {
-                                    Log "Warning: Could not apply theme to expander: $($_.Exception.Message)" 'Warning'
-                                }
-                            }
-                        }
-                        
-                        # Validate advanced panel buttons are available
-                        $advancedButtons = @($btnApplyAdvancedSettings, $btnTestAdvancedSettings, $btnResetAdvancedSettings)
-                        foreach ($button in $advancedButtons) {
-                            if ($button) {
-                                try {
-                                    $colors = Get-ThemeColors -ThemeName $currentTheme
-                                    if ($colors) {
-                                        $button.Foreground = $colors.Text
-                                    }
-                                } catch {
-                                    Log "Warning: Could not apply theme to advanced button: $($_.Exception.Message)" 'Warning'
-                                }
-                            }
-                        }
-                    } else {
-                        Log "Warning: panelAdvanced is null - advanced options panel not available" 'Warning'
-                    }
-                    
-                    Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $currentTheme
-                    
-                    # Ensure navigation remains visible and functional
-                    Ensure-NavigationVisibility -ThemeName $currentTheme
-                    
-                    if ($lblMainTitle) { $lblMainTitle.Text = "Advanced Settings" }
-                    if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Detailed optimization controls for experienced users" }
-                    $global:CurrentPanel = "Advanced"
-                    $global:MenuMode = "Advanced"
-                    
-                    Log "Advanced panel loaded successfully with all controls validated" 'Success'
-                } catch {
-                    Log "Error loading Advanced panel: $($_.Exception.Message)" 'Error'
-                    # Fallback to Dashboard if Advanced panel fails
-                    if ($panelDashboard) { $panelDashboard.Visibility = "Visible" }
-                    if ($panelAdvanced) { $panelAdvanced.Visibility = "Collapsed" }
-                    Set-ActiveNavigationButton -ActiveButtonName 'btnNavDashboard' -CurrentTheme $currentTheme
-                    $global:CurrentPanel = "Dashboard"
-                    $global:MenuMode = "Basic"
-                    
-                    [System.Windows.MessageBox]::Show("Could not load Advanced Settings panel. Returned to Dashboard.`n`nError: $($_.Exception.Message)", "Advanced Settings Error", 'OK', 'Warning')
-                }
+                if ($panelAdvanced) { $panelAdvanced.Visibility = "Visible" }
+                Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $currentTheme
+                
+                if ($lblMainTitle) { $lblMainTitle.Text = "Advanced Settings" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Detailed optimization controls for experienced users" }
+                $global:CurrentPanel = "Advanced"
+                $global:MenuMode = "Advanced"
             }
             "Games" {
                 if ($panelGames) { $panelGames.Visibility = "Visible" }
@@ -5296,6 +4269,15 @@ function Switch-Panel {
                 $global:CurrentPanel = "System"
                 $global:MenuMode = "System"
             }
+            "Services" {
+                if ($panelServices) { $panelServices.Visibility = "Visible" }
+                Set-ActiveNavigationButton -ActiveButtonName 'btnNavServices' -CurrentTheme $currentTheme
+                
+                if ($lblMainTitle) { $lblMainTitle.Text = "Services Management" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Windows services optimization and management for improved system performance" }
+                $global:CurrentPanel = "Services"
+                $global:MenuMode = "Services"
+            }
             "Backup" {
                 if ($panelBackup) { $panelBackup.Visibility = "Visible" }
                 Set-ActiveNavigationButton -ActiveButtonName 'btnNavBackup' -CurrentTheme $currentTheme
@@ -5319,12 +4301,8 @@ function Switch-Panel {
         
         Log "Switched to $PanelName panel with correct navigation highlighting" 'Info'
         
-        # Fix #6: Update last visible panel tracking
-        $global:LastVisiblePanel = $PanelName
-        Write-ActivityLog "Switched to panel: $PanelName" 'Info'
-        
     } catch {
-        Write-ActivityLog "Error switching to panel $PanelName`: $($_.Exception.Message)" 'Error'
+        Log "Error switching to panel $PanelName`: $($_.Exception.Message)" 'Error'
     }
 }
 
@@ -5360,83 +4338,102 @@ $chkDirectStorage = $null
 # Navigation Event Handlers
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
-        # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Dashboard"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavBasicOpt) {
     $btnNavBasicOpt.Add_Click({
-        # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavAdvanced) {
     $btnNavAdvanced.Add_Click({
-        # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavGames) {
     $btnNavGames.Add_Click({
-        # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavOptions) {
     $btnNavOptions.Add_Click({
-        # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Options"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
-# Removed navigation handlers for consolidated panels (Network, System now part of Advanced Settings)
+# Removed navigation handlers for consolidated panels (Network, System, Services now part of Advanced Settings)
 # if ($btnNavSystem) { ... }
+# if ($btnNavServices) { ... }
 # if ($btnNavNetwork) { ... }
+
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+	        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Options"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
 
 if ($btnNavBackup) {
     $btnNavBackup.Add_Click({
-        try {
-            # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
-            Switch-Panel "Backup"
-        } catch {
-            Write-ActivityLog "Error in Backup navigation: $($_.Exception.Message)" 'Error'
-            # Fallback to Dashboard if there's an error
-            Switch-Panel "Dashboard"
-        }
-    })
-}
-
-# Add missing event handlers to prevent crashes
-if ($btnNavSystem) {
-    # Hide System Optimization button as requested
-    $btnNavSystem.Visibility = "Collapsed"
-    
-    $btnNavSystem.Add_Click({
-        try {
-            # Redirect to Advanced Settings where System Optimization is available
-            Write-ActivityLog "System Optimization accessed - redirecting to Advanced Settings" 'Info'
-            Switch-Panel "Advanced"
-            
-            # Show helpful message to user
-            if ($form) {
-                [System.Windows.MessageBox]::Show(
-                    "System Optimization features are available in the Advanced Settings panel.`n`nLook for the 'System Optimizations' section with various performance tweaks.",
-                    "System Optimization", 
-                    'OK', 
-                    'Information'
-                )
-            }
-            
-            # Fix #9: Remove redundant theme application - panel switching handles navigation button colors
-        } catch {
-            Write-ActivityLog "Error in System Optimization navigation: $($_.Exception.Message)" 'Error'
-            # Fallback to Dashboard if there's an error
-            Switch-Panel "Dashboard"
-        }
+        Switch-Panel "Backup"
     })
 }
 
@@ -5448,23 +4445,57 @@ if ($btnNavSystem) {
 #     if ($cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
 #         $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
 #         Log "Theme change requested from header: $selectedTheme" 'Info'
+#         Switch-Theme -ThemeName $selectedTheme
 #         
 #         # Sync with options panel theme selector
+#         if ($cmbOptionsTheme) {
+#             try {
+#                 foreach ($item in $cmbOptionsTheme.Items) {
+#                     if ($item.Tag -eq $selectedTheme) {
+#                         $cmbOptionsTheme.SelectedItem = $item
+#                         break
+#                     }
+#                 }
+#             } catch {
+#                 Log "Could not sync options theme selector: $($_.Exception.Message)" 'Warning'
+#             }
+#         }
+#     }
+# })
 # }
 
-# KOALA Theme button event handler
-if ($btnApplyKoalaTheme) {
-    $btnApplyKoalaTheme.Add_Click({
-        try {
-            Log "Manually refreshing KOALA Gaming Theme..." 'Info'
-            Apply-KoalaTheme
-            [System.Windows.MessageBox]::Show("KOALA Gaming Theme refreshed successfully!", "KOALA Theme", 'OK', 'Information')
-        } catch {
-            Log "Error refreshing KOALA theme: $_" 'Error'
-            [System.Windows.MessageBox]::Show("Error refreshing theme: $_", "Error", 'OK', 'Error')
+# Custom theme panel visibility handler
+if ($cmbOptionsTheme) {
+    $cmbOptionsTheme.Add_SelectionChanged({
+        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag -eq "Custom") {
+            $customThemePanel.Visibility = "Visible"
+        } else {
+            $customThemePanel.Visibility = "Collapsed"
         }
     })
 }
+
+# Custom theme application
+if ($btnApplyCustomTheme) {
+    $btnApplyCustomTheme.Add_Click({
+    try {
+        $bg = $txtCustomBg.Text
+        $primary = $txtCustomPrimary.Text  
+        $hover = $txtCustomHover.Text
+        $text = $txtCustomText.Text
+        
+        Log "Applying custom theme: BG=$bg, Primary=$primary, Hover=$hover, Text=$text" 'Info'
+        Apply-ThemeColors -Background $bg -Primary $primary -Hover $hover -Foreground $text
+        
+        [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
+    } catch {
+        Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
+        [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
+    }
+})
+}
+
+# Function to update color preview panel
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
     
@@ -5487,6 +4518,190 @@ function Update-ThemeColorPreview {
 }
 
 # Enhanced Theme System with Additional Themes
+function Switch-Theme {
+    param([string]$ThemeName)
+    
+    try {
+        # Eingabe validieren
+        if (-not $ThemeName) {
+            Log "Theme-Name ist leer, verwende Standard" 'Warning'
+            $ThemeName = "DarkPurple"
+        }
+        
+        if (-not $form) {
+            Log "UI-Formular nicht verfügbar, Theme kann nicht gewechselt werden" 'Error'
+            return
+        }
+        
+        # Prüfen ob Theme existiert
+        if (-not $global:ThemeDefinitions.ContainsKey($ThemeName)) {
+            Log "Theme '$ThemeName' nicht gefunden, wechsle zu DarkPurple" 'Warning'
+            $ThemeName = "DarkPurple"
+        }
+        
+        # Theme-Farben aus zentralem Array holen
+        $themeColors = Get-ThemeColors -ThemeName $ThemeName
+        
+        Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
+        
+        # Theme anwenden
+        Apply-ThemeColors -ThemeName $ThemeName
+        
+        # Erste umfassende UI-Aktualisierung
+        $form.Dispatcher.Invoke([action]{
+            
+            # 1. HAUPTFENSTER komplett neu setzen
+            $form.Background = $themeColors.Background
+            $form.InvalidateVisual()
+            $form.InvalidateMeasure() 
+            $form.InvalidateArrange()
+            $form.UpdateLayout()
+            
+            # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
+            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            
+            foreach ($btnName in $navButtons) {
+                $btn = $form.FindName($btnName)
+                if ($btn) {
+                    # Farben basierend auf Selected-State setzen
+                    if ($btn.Tag -eq "Selected") {
+                        $btn.Background = $themeColors.SelectedBackground
+                        $btn.Foreground = $themeColors.SelectedForeground
+                    } else {
+                        $btn.Background = $themeColors.UnselectedBackground
+                        $btn.Foreground = $themeColors.UnselectedForeground
+                    }
+                    
+                    # Button komplett neu zeichnen
+                    $btn.InvalidateVisual()
+                    $btn.InvalidateMeasure()
+                    $btn.UpdateLayout()
+                }
+            }
+            
+            # 3. ALLE CONTAINER UND PANELS AKTUALISIEREN - with bounds checking
+            if ($form.Children -and $form.Children.Count -gt 0) {
+                $firstChild = $form.Children[0]
+                if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
+                    $sidebar = $firstChild.Children[0]
+                    if ($sidebar) {
+                        $sidebar.Background = $themeColors.SidebarBg
+                        try { $sidebar.BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        $sidebar.InvalidateVisual()
+                        $sidebar.UpdateLayout()
+                    }
+                    
+                    if ($firstChild.Children.Count -gt 1) {
+                        $mainContent = $firstChild.Children[1]
+                        if ($mainContent) {
+                            # Header aktualisieren with bounds checking
+                            if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
+                                $mainContent.Children[0].Background = $themeColors.HeaderBg
+                                try { $mainContent.Children[0].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            }
+                            
+                            # Footer aktualisieren with bounds checking
+                            if ($mainContent.Children.Count -gt 2) {
+                                $mainContent.Children[2].Background = $themeColors.HeaderBg
+                                try { $mainContent.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            }
+                            
+                            # Activity Log aktualisieren with bounds checking
+                            if ($mainContent.Children.Count -gt 3) {
+                                $mainContent.Children[3].Background = $themeColors.LogBg
+                                try { $mainContent.Children[3].BorderBrush = $themeColors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            }
+                            
+                            $mainContent.InvalidateVisual()
+                            $mainContent.UpdateLayout()
+                        }
+                    }
+                }
+            }
+            
+            # 4. ALLE PANELS EXPLIZIT AKTUALISIEREN
+            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
+            foreach ($panel in $panels) {
+                if ($panel) {
+                    $panel.InvalidateVisual()
+                    $panel.UpdateLayout()
+                }
+            }
+            
+            # 5. LOGBOX AKTUALISIEREN
+            if ($global:LogBox) {
+                $global:LogBox.Background = $themeColors.LogBg
+                $global:LogBox.Foreground = $themeColors.Accent
+                $global:LogBox.InvalidateVisual()
+                $global:LogBox.UpdateLayout()
+            }
+            
+            # 6. FINALER KOMPLETTER REFRESH
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
+            
+        }, [System.Windows.Threading.DispatcherPriority]::Render)
+        
+        # Zweiter verzÃ¶gerter Refresh
+        Start-Sleep -Milliseconds 100
+        
+        $form.Dispatcher.BeginInvoke([action]{
+            # Nochmaliger kompletter Refresh nach kurzer VerzÃ¶gerung
+            $form.Background = $themeColors.Background
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
+            
+            # Navigation nochmal explizit setzen
+            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            
+            foreach ($btnName in $navButtons) {
+                $btn = $form.FindName($btnName)
+                if ($btn) {
+                    if ($btn.Tag -eq "Selected") {
+                        $btn.Background = $themeColors.SelectedBackground
+                        $btn.Foreground = $themeColors.SelectedForeground
+                    } else {
+                        $btn.Background = $themeColors.UnselectedBackground
+                        $btn.Foreground = $themeColors.UnselectedForeground
+                    }
+                    $btn.InvalidateVisual()
+                }
+            }
+            
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        
+        # Finale Theme-Persistenz Sicherstellung
+        Start-Sleep -Milliseconds 150
+
+        $form.Dispatcher.BeginInvoke([action]{
+            # Nochmalige rekursive Aktualisierung aller Elemente
+            Update-AllUIElementsRecursively -element $form -colors $themeColors
+            
+            # Finaler kompletter Refresh
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
+            
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        
+        Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
+        
+        # Theme-Vorschau auch aktualisieren
+        if ($ThemeName -ne 'Custom') {
+            Update-ThemeColorPreview -ThemeName $ThemeName
+        }
+        
+    } catch {
+        Log "âŒ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
+        
+        # Fallback auf Standard-Theme
+        try {
+            Apply-ThemeColors -ThemeName 'DarkPurple'
+            Log "Standard-Theme als Fallback angewendet" 'Info'
+        } catch {
+            Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
+        }
+    }
+}
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -5551,7 +4766,8 @@ $btnClearLog = $form.FindName('btnClearLog')
 
 # Options panel controls
 $optionsPanel = $form.FindName('optionsPanel')
-# KOALA Theme controls initialized above
+$cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
+$btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
 $btnApplyScale = $form.FindName('btnApplyScaleMain')  # Fixed control name
 $btnSaveSettings = $form.FindName('btnSaveSettings')
@@ -5915,7 +5131,7 @@ function Show-InstalledGames {
     <!-- Header -->
     <Border Grid.Row="0" Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="15" Margin="0,0,0,15">
       <StackPanel>
-        <TextBlock Text="Installed Games Discovery" Foreground="#00FF88" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"/>
+        <TextBlock Text="Installed Games Discovery" Foreground="#00FF88" FontWeight="Bold" FontSize="20" HorizontalAlignment="Center"/>
         <TextBlock Text="Searching for games installed on your system..." Foreground="White" FontSize="12" HorizontalAlignment="Center" Margin="0,5,0,0"/>
       </StackPanel>
     </Border>
@@ -6840,11 +6056,11 @@ function Update-AllUIElementsRecursively {
                 if ($currentForeground -match "#00FF88|#10B981|#059669") {
                     $element.Foreground = $colors.Accent
                 }
-                # Sekundäre Text-Farben
+                # SekundÃ¤re Text-Farben
                 elseif ($currentForeground -match "#B8B3E6|#B8B8B8|#888888|#6C757D|#8B949E") {
                     $element.Foreground = $colors.TextSecondary
                 }
-                # Primäre Text-Farben (weiÃŸ/schwarz)
+                # PrimÃ¤re Text-Farben (weiÃŸ/schwarz)
                 elseif ($currentForeground -match "White|#FFFFFF|Black|#000000|#212529|#1C1E21") {
                     $element.Foreground = $colors.Text
                 }
@@ -7116,113 +6332,252 @@ function Apply-FallbackThemeColors {
     }
 }
 
-# ---------- Enhanced Theme Application Helper Functions ----------
-function Ensure-CriticalUIElementsThemed {
-    param($colors)
-    
-    if (-not $colors -or -not $form) { return }
+# ---------- Theme Color Application Function ----------
+function Apply-ThemeColors {
+    param([string]$ThemeName = 'DarkPurple')
     
     try {
-        # Ensure navigation buttons are properly themed
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-        foreach ($btnName in $navButtons) {
-            try {
-                $btn = $form.FindName($btnName)
-                if ($btn) {
-                    if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $colors.SelectedBackground
-                        $btn.Foreground = $colors.SelectedForeground
-                    } else {
-                        $btn.Background = $colors.UnselectedBackground
-                        $btn.Foreground = $colors.UnselectedForeground
+        # Theme-Farben aus zentralem Array holen
+        $colors = Get-ThemeColors -ThemeName $ThemeName
+        
+        if (-not $form) {
+            Log "Window form nicht verfügbar für Theme-Anwendung" 'Error'
+            return
+        }
+        
+        Log "Wende Theme '$($colors.Name)' an..." 'Info'
+        
+        # 1. HAUPT-FENSTER
+        $form.Background = $colors.Background
+        
+        # 2. SIDEBAR (Navigation) - with bounds checking
+        if ($form.Children -and $form.Children.Count -gt 0) {
+            $firstChild = $form.Children[0]
+            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
+                $sidebar = $firstChild.Children[0]
+                if ($sidebar -is [System.Windows.Controls.Border]) {
+                    $sidebar.Background = $colors.SidebarBg
+                    try { $sidebar.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    
+                    $sidebarGrid = $sidebar.Child
+                    if ($sidebarGrid -is [System.Windows.Controls.Grid]) {
+                        # Sidebar Header with bounds checking
+                        if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
+                            $sidebarGrid.Children[0].Background = $colors.Background
+                        }
+                        # Sidebar Footer with bounds checking  
+                        if ($sidebarGrid.Children.Count -gt 2) {
+                            $sidebarGrid.Children[2].Background = $colors.Background
+                            try { $sidebarGrid.Children[2].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        }
                     }
                 }
-            } catch {
-                Log "Warning: Could not theme navigation button $btnName" 'Warning'
-            }
-        }
-        
-        # Ensure LogBox is properly themed
-        if ($global:LogBox) {
-            try {
-                $global:LogBox.Background = $colors.LogBg
-                $global:LogBox.Foreground = $colors.Accent
-            } catch {
-                Log "Warning: Could not theme LogBox" 'Warning'
-            }
-        }
-        
-        # Ensure main form background is set
-        try {
-            $form.Background = $colors.Background
-        } catch {
-            Log "Warning: Could not set main form background" 'Warning'
-        }
-        
-        Log "Critical UI elements theme validation completed" 'Info'
-        
-    } catch {
-        Log "Error during critical UI elements theming: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Apply-MinimalSafeTheme {
-    param($colors)
-    
-    try {
-        Log "Applying minimal safe theme as last resort..." 'Warning'
-        
-        # Safe color defaults
-        $safeBackground = if ($colors -and $colors.Background) { $colors.Background } else { '#0A0E27' }
-        $safeText = if ($colors -and $colors.Text) { $colors.Text } else { 'White' }
-        $safePrimary = if ($colors -and $colors.Primary) { $colors.Primary } else { '#6B46C1' }
-        
-        # Apply only the most critical styling
-        $form.Background = $safeBackground
-        
-        # Update only navigation - critical for functionality
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavOptions', 'btnNavBackup')
-        foreach ($btnName in $navButtons) {
-            try {
-                $btn = $form.FindName($btnName)
-                if ($btn) {
-                    $btn.Background = $safePrimary
-                    $btn.Foreground = $safeText
+                
+                # 3. MAIN CONTENT AREA - with bounds checking
+                if ($firstChild.Children.Count -gt 1) {
+                    $mainContent = $firstChild.Children[1]
+                    if ($mainContent -is [System.Windows.Controls.Grid]) {
+                        # Header with bounds checking
+                        if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
+                            $mainContent.Children[0].Background = $colors.HeaderBg
+                            try { $mainContent.Children[0].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        }
+                        
+                        # Footer with bounds checking
+                        if ($mainContent.Children.Count -gt 2) {
+                            $mainContent.Children[2].Background = $colors.HeaderBg
+                            try { $mainContent.Children[2].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        }
+                        
+                        # Activity Log with bounds checking
+                        if ($mainContent.Children.Count -gt 3) {
+                            $logBorder = $mainContent.Children[3]
+                            $logBorder.Background = $colors.LogBg
+                            try { $logBorder.BorderBrush = $colors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        }
+                    }
                 }
-            } catch {
-                # Continue even if individual button fails
             }
         }
         
-        # LogBox - critical for user feedback
+        # 4. SPEZIELLE ELEMENTE
+        # LogBox
         if ($global:LogBox) {
-            try {
-                $global:LogBox.Background = '#0D1117'
-                $global:LogBox.Foreground = '#00FF88'
-            } catch {
-                # Continue even if LogBox fails
+            $global:LogBox.Background = $colors.LogBg
+            $global:LogBox.Foreground = $colors.Accent
+        }
+        
+        # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
+        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+        foreach ($btnName in $navButtons) {
+            $navBtn = $form.FindName($btnName)
+            if ($navBtn) {
+                if ($navBtn.Tag -eq "Selected") {
+                    $navBtn.Background = $colors.SelectedBackground
+                    $navBtn.Foreground = $colors.SelectedForeground
+                } else {
+                    $navBtn.Background = $colors.UnselectedBackground
+                    $navBtn.Foreground = $colors.UnselectedForeground
+                }
             }
         }
         
-        Log "Minimal safe theme applied successfully" 'Success'
+        Log "Navigation-Buttons mit Theme-spezifischen Farben aktualisiert" 'Info'
+        
+        # 5.5. IMPROVED COMBOBOX STYLING for better readability across themes
+        Log "Verbessere ComboBox-Styling für bessere Lesbarkeit..." 'Info'
+        try {
+            Update-ComboBoxStyles -Background $colors.Secondary -Foreground $colors.Text -Border $colors.Primary -ThemeName $ThemeName
+            Log "ComboBox-Styling für bessere Lesbarkeit angewendet" 'Info'
+        } catch {
+            Log "Fehler beim ComboBox-Styling: $($_.Exception.Message)" 'Warning'
+        }
+        
+        # 5.6. IMPROVED TEXT STYLING for better readability across themes
+        Log "Verbessere Text-Styling für bessere Lesbarkeit..." 'Info'
+        try {
+            Update-TextStyles -Foreground $colors.Text -Header $colors.Accent -ThemeName $ThemeName
+            Log "Text-Styling für bessere Lesbarkeit angewendet" 'Info'
+        } catch {
+            Log "Fehler beim Text-Styling: $($_.Exception.Message)" 'Warning'
+        }
+        
+        # 5.7. FORCE VISUAL REFRESH for immediate readability improvements
+        try {
+            Log "Erzwinge visuellen Refresh für sofortige Lesbarkeitsverbesserungen..." 'Info'
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
+            $form.Dispatcher.Invoke([action]{
+                $form.InvalidateVisual()
+                $form.UpdateLayout()
+            }, [System.Windows.Threading.DispatcherPriority]::Render)
+            Log "Visueller Refresh für Lesbarkeit abgeschlossen" 'Info'
+        } catch {
+            Log "Fehler beim visuellen Refresh: $($_.Exception.Message)" 'Warning'
+        }
+        
+        # *** 6. REKURSIVE AKTUALISIERUNG ALLER UI-ELEMENTE ***
+        Log "Starte rekursive UI-Element-Aktualisierung..." 'Info'
+        
+        # Enhanced error handling for SetterBase sealed styles
+        try {
+            Update-AllUIElementsRecursively -element $form -colors $colors
+            Log "Rekursive UI-Element-Aktualisierung abgeschlossen" 'Info'
+        } catch [System.InvalidOperationException] {
+            if ($_.Exception.Message -match "sealed|IsSealed") {
+                Log "SetterBase sealed style detected - applying fallback theming strategy" 'Warning'
+                try {
+                    # Fallback strategy: Apply themes to individual elements without modifying sealed styles
+                    Apply-FallbackThemeColors -element $form -colors $colors
+                    Log "Fallback theming strategy erfolgreich angewendet" 'Info'
+                } catch {
+                    Log "Fallback theming strategy fehlgeschlagen: $($_.Exception.Message)" 'Error'
+                }
+            } else {
+                throw
+            }
+        }
+        
+        # 7. VOLLSTÃ„NDIGER UI-REFRESH
+        try {
+            Log "Starte vollstÃ¤ndigen UI-Refresh..." 'Info'
+            
+            # Alle Panels explizit refreshen
+            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
+            foreach ($panel in $panels) {
+                if ($panel) {
+                    try {
+                        $panel.InvalidateVisual()
+                        $panel.InvalidateMeasure()
+                        $panel.UpdateLayout()
+                    } catch {
+                        # Continue if individual panel refresh fails
+                    }
+                }
+            }
+            
+            # DISPATCHER-BASIERTER KOMPLETTER REFRESH (KRITISCH!)
+            $form.Dispatcher.Invoke([action]{
+                
+                # Alle visuellen Elemente zwangsweise neu zeichnen
+                $form.InvalidateVisual()
+                $form.InvalidateMeasure()
+                $form.InvalidateArrange()
+                $form.UpdateLayout()
+                
+                # Spezielle Behandlung für ScrollViewer (Content-Bereiche)
+                $scrollViewers = @()
+                function Find-ScrollViewers($element) {
+                    if ($element -is [System.Windows.Controls.ScrollViewer]) {
+                        $scrollViewers += $element
+                    }
+                    
+                    if ($element.Children) {
+                        foreach ($child in $element.Children) {
+                            Find-ScrollViewers $child
+                        }
+                    } elseif ($element.Content) {
+                        Find-ScrollViewers $element.Content
+                    } elseif ($element.Child) {
+                        Find-ScrollViewers $element.Child
+                    }
+                }
+                
+                Find-ScrollViewers $form
+                
+                foreach ($scrollViewer in $scrollViewers) {
+                    try {
+                        $scrollViewer.InvalidateVisual()
+                        $scrollViewer.UpdateLayout()
+                    } catch {
+                        # Continue if scroll viewer refresh fails
+                    }
+                }
+                
+            }, [System.Windows.Threading.DispatcherPriority]::Render)
+            
+            # ZUSÃ„TZLICHER BACKGROUND-REFRESH (falls WPF hartnÃ¤ckig ist)
+            $form.Dispatcher.BeginInvoke([action]{
+                $form.Background = $colors.Background  # Nochmal explizit setzen
+                $form.InvalidateVisual()
+                $form.UpdateLayout()
+            }, [System.Windows.Threading.DispatcherPriority]::Background)
+            
+            Log "[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Ã„nderungen sofort sichtbar!" 'Success'
+            
+        } catch {
+            Log "⚠️ UI-Refresh teilweise fehlgeschlagen: $($_.Exception.Message)" 'Warning'
+            
+            # FALLBACK: Minimaler Refresh
+            try {
+                $form.InvalidateVisual()
+                $form.UpdateLayout()
+                Log "Fallback-Refresh durchgeführt" 'Info'
+            } catch {
+                Log "Auch Fallback-Refresh fehlgeschlagen" 'Error'
+            }
+        }
+
+        # Globale Theme-Variable speichern
+        $global:CurrentTheme = $ThemeName
+
+        Log "[Themes] Theme '$($colors.Name)' erfolgreich angewendet und UI vollstÃ¤ndig aktualisiert!" 'Success'
         
     } catch {
-        Log "CRITICAL: Even minimal safe theme application failed: $($_.Exception.Message)" 'Error'
+        Log "Fehler beim Anwenden des Themes: $($_.Exception.Message)" 'Error'
     }
 }
-
-# ---------- Theme Color Application Function ----------
 
 function Ensure-ThemePersistence {
     param([string]$ThemeName = 'DarkPurple')
     
-    # This function ensures theme persistence after UI updates with synchronized approach
+    # Diese Funktion sorgt dafür, dass das Theme auch nach UI-Updates persistent bleibt
     try {
-        $form.Dispatcher.Invoke([action]{
-            Apply-KoalaTheme
+        $form.Dispatcher.BeginInvoke([action]{
+            Switch-Theme -ThemeName $ThemeName
         }, [System.Windows.Threading.DispatcherPriority]::Background)
     } catch {
-        Log "Error during theme persistence: $($_.Exception.Message)" 'Warning'
+        Log "Fehler bei Theme-Persistenz: $($_.Exception.Message)" 'Warning'
     }
 }
 
@@ -7256,107 +6611,57 @@ function Update-ComboBoxStyles {
     param($Background, $Foreground, $Border, $ThemeName = 'DarkPurple')
     
     try {
-        # Find all ComboBoxes
+        # Finde alle ComboBoxes
         $comboBoxes = @()
         Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.ComboBox] -Collection ([ref]$comboBoxes)
         
-        # Enhanced color scheme based on theme for better readability
+        # Improve colors for better readability - ensure high contrast
         $actualBackground = $Background
         $actualForeground = $Foreground
-        $actualBorder = $Border
         
-        # Theme-specific optimizations for maximum readability
-        if ($ThemeName -match 'Light|YouTube|Facebook|Reddit') {
-            # Light themes: Use white background with dark text
+        # For better dropdown readability, use white background with black text
+        # This addresses the grey text on white background readability issue
+        $actualBackground = "White"
+        $actualForeground = "Black"
+        
+        if ($ThemeName -match 'Light|YouTube|Facebook') {
+            # For light themes, maintain white background with black text for best contrast
             $actualBackground = "White"
-            $actualForeground = "#1A1A1A"
-            $actualBorder = "#CCCCCC"
-        } else {
-            # Dark themes: Use dark background with light text for consistency
-            $actualBackground = $Background
-            $actualForeground = "White"
-            $actualBorder = $Border
+            $actualForeground = "Black"
         }
         
-        # Fix #3: Apply owner-drawn style behavior for better theme integration
         foreach ($combo in $comboBoxes) {
+            $combo.Background = $actualBackground
+            $combo.Foreground = $actualForeground
+            try { $combo.BorderBrush = $Border } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+            
+            # Enhanced styling for better readability
             try {
-                # Set main ComboBox properties  
-                $combo.Background = $actualBackground
-                $combo.Foreground = $actualForeground
-                Set-BorderBrushSafe -Element $combo -BorderBrushValue $actualBorder -BorderThicknessValue "1"
-                
-                # Fix #3: Force owner-drawn style for consistent theme application
-                try {
-                    # Set IsEditable to false and ensure proper styling
-                    $combo.IsEditable = $false
-                    $combo.IsReadOnly = $true
-                } catch {
-                    Write-ActivityLog "Could not set ComboBox edit properties: $($_.Exception.Message)" 'Warning'
-                }
-                
-                # Enhanced styling for better appearance
                 $combo.FontSize = 12
                 $combo.FontWeight = 'Normal'
-                $combo.Padding = "8,4"
-                $combo.MinHeight = 32
-                
-                # Apply owner-drawn style to dropdown items
-                $combo.ItemContainerStyle = New-Object System.Windows.Style
-                $combo.ItemContainerStyle.TargetType = [System.Windows.Controls.ComboBoxItem]
-                
-                # Create setters for consistent item styling
-                $backgroundSetter = New-Object System.Windows.Setter
-                $backgroundSetter.Property = [System.Windows.Controls.ComboBoxItem]::BackgroundProperty
-                $backgroundSetter.Value = $actualBackground
-                $combo.ItemContainerStyle.Setters.Add($backgroundSetter)
-                
-                $foregroundSetter = New-Object System.Windows.Setter
-                $foregroundSetter.Property = [System.Windows.Controls.ComboBoxItem]::ForegroundProperty  
-                $foregroundSetter.Value = $actualForeground
-                $combo.ItemContainerStyle.Setters.Add($foregroundSetter)
-                
-                $paddingSetter = New-Object System.Windows.Setter
-                $paddingSetter.Property = [System.Windows.Controls.ComboBoxItem]::PaddingProperty
-                $paddingSetter.Value = "10,6"
-                $combo.ItemContainerStyle.Setters.Add($paddingSetter)
-                
-                $heightSetter = New-Object System.Windows.Setter
-                $heightSetter.Property = [System.Windows.Controls.ComboBoxItem]::MinHeightProperty
-                $heightSetter.Value = 28
-                $combo.ItemContainerStyle.Setters.Add($heightSetter)
-                
-                # Update existing items if any
-                foreach ($item in $combo.Items) {
-                    if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                        $item.Background = $actualBackground
-                        $item.Foreground = $actualForeground
+            } catch { Write-Verbose "ComboBox font styling skipped for compatibility" }
+            
+            # Update Items with improved readability - ensure black text on white background
+            foreach ($item in $combo.Items) {
+                if ($item -is [System.Windows.Controls.ComboBoxItem]) {
+                    $item.Background = "White"
+                    $item.Foreground = "Black"
+                    
+                    # Enhanced item styling
+                    try {
                         $item.Padding = "10,6"
                         $item.MinHeight = 28
                         $item.FontSize = 12
-                    }
+                    } catch { Write-Verbose "ComboBoxItem styling skipped for compatibility" }
                 }
-                
-                # Force visual refresh for immediate theme application
+            }
+            
+            # Force refresh for immediate visual update
+            try {
                 $combo.InvalidateVisual()
                 $combo.UpdateLayout()
-                
-            } catch [System.InvalidOperationException] {
-                # Handle sealed style exceptions gracefully
-                Log "ComboBox styling partially applied due to sealed properties" 'Warning'
-                try {
-                    # Fallback: Apply basic styling
-                    $combo.Background = $actualBackground
-                    $combo.Foreground = $actualForeground
-                } catch {
-                    # Continue if even basic styling fails
-                }
-            } catch {
-                Log "Error applying ComboBox styling: $($_.Exception.Message)" 'Warning'
-            }
+            } catch { Write-Verbose "ComboBox refresh skipped for compatibility" }
         }
-        
-        Log "Enhanced ComboBox owner-drawn styling applied for theme '$ThemeName'" 'Info'
         
     } catch {
         Log "Error updating ComboBox styles: $($_.Exception.Message)" 'Warning'
@@ -7424,42 +6729,29 @@ function Update-TextStyles {
 function Update-PanelStyles {
     param($Background, $Sidebar, $Border)
     
-    try {
-        # Update Sidebar - with bounds checking
-        if ($form.Children -and $form.Children.Count -gt 0) {
-            $firstChild = $form.Children[0]
-            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-                $sidebar = $firstChild.Children[0]
-                if ($sidebar -is [System.Windows.Controls.Border]) {
-                    $sidebar.Background = $Sidebar
-                    try { $sidebar.BorderBrush = $Border } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                }
+    # Update Sidebar - with bounds checking  
+    if ($form.Children -and $form.Children.Count -gt 0) {
+        $firstChild = $form.Children[0]
+        if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
+            $sidebar = $firstChild.Children[0]
+            if ($sidebar -is [System.Windows.Controls.Border]) {
+                try { $sidebar.Background = $Sidebar } catch { }
+                try { $sidebar.BorderBrush = $Border } catch { }
             }
         }
-        
-        # Update andere Borders
-        $borders = @()
-        Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
-        
-        foreach ($border in $borders) {
-            if ($border.Background -and ($border.Background.ToString() -match "#1A1625" -or $border.Background.ToString() -match "#2D2438")) {
-                try { 
-                    $border.Background = $Background 
-                } catch { 
-                    Write-Verbose "Background assignment skipped for compatibility" 
-                }
-            }
-            if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-                try { 
-                    $border.BorderBrush = $Border 
-                } catch { 
-                    Write-Verbose "BorderBrush assignment skipped for compatibility" 
-                }
-            }
+    }
+    
+    # Update andere Borders
+    $borders = @()
+    Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
+    
+    foreach ($border in $borders) {
+        if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
+            $border.Background = $Background
         }
-        
-    } catch {
-        Log "Error updating panel styles: $($_.Exception.Message)" 'Warning'
+        if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
+            $border.BorderBrush = $Border
+        }
     }
 }
 
@@ -9318,9 +8610,7 @@ if ($btnAutoDetect) {
         
         # Show all detected games if multiple found
         if ($detectedGames.Count -gt 1) {
-            $additionalGames = $detectedGames | Select-Object -Skip 1
-            $gameNames = $additionalGames | ForEach-Object { $_.DisplayName }
-            Log "Additional games detected: $($gameNames -join ', ')" 'Info'
+            Log "Additional games detected: $(($detectedGames[1..($detectedGames.Count-1)] | ForEach-Object { $_.DisplayName }) -join ', ')" 'Info'
         }
         
         # Select the first game in the dropdown
@@ -9550,12 +8840,69 @@ $btnBasicGaming.Add_Click({
 })
 
 # Apply theme button
-# Replaced with KOALA Theme system
+# Removed $btnApplyTheme event handler (now only in Options panel)
 
-# Alias button for test compatibility - applies KOALA theme
+# Options panel event handlers - selection changes only update preview, no instant application
+if ($cmbOptionsTheme) {
+    $cmbOptionsTheme.Add_SelectionChanged({
+        try {
+            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
+                $themeName = $cmbOptionsTheme.SelectedItem.Content
+                
+                # Update color preview panel only - no instant theme application
+                Update-ThemeColorPreview -ThemeName $selectedTheme
+                
+                # Show/hide custom theme panel
+                if ($selectedTheme -eq "Custom" -and $customThemePanel) {
+                    $customThemePanel.Visibility = "Visible"
+                } elseif ($customThemePanel) {
+                    $customThemePanel.Visibility = "Collapsed"
+                }
+                
+                Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
+            }
+        } catch {
+            Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
+        }
+    })
+}
+
+# Apply button - primary method for theme application (themes only apply when clicked)
+# Theme Apply Button Event Handler
+if ($btnOptionsApplyTheme) {
+    $btnOptionsApplyTheme.Add_Click({
+        try {
+            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
+                $themeName = $cmbOptionsTheme.SelectedItem.Content
+                
+                Log "Applying theme: $themeName" 'Info'
+                Switch-Theme -ThemeName $selectedTheme
+                
+                # Force ComboBox refresh
+                $cmbOptionsTheme.InvalidateVisual()
+                $cmbOptionsTheme.UpdateLayout()
+                
+                [System.Windows.MessageBox]::Show("Theme '$themeName' wurde erfolgreich angewendet!", "Theme Applied", 'OK', 'Information')
+            } else {
+                [System.Windows.MessageBox]::Show("Bitte wÃ¤hlen Sie zuerst ein Theme aus der Liste.", "No Theme Selected", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error applying theme: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Fehler beim Anwenden des Themes: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
+        }
+    })
+}
+
+
+# Alias button for test compatibility - applies same functionality  
 if ($btnApplyTheme) {
     $btnApplyTheme.Add_Click({
-        Apply-KoalaTheme
+        # Apply the selected theme instantly - same as main button functionality
+        if ($btnOptionsApplyTheme) {
+            $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        }
     })
 }
 
@@ -9590,7 +8937,7 @@ if ($btnSaveSettings) {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
             
             # Gather current settings
-            $currentTheme = "KOALA"  # Always KOALA Gaming Theme
+            $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
             
             $settings = @"
@@ -9628,8 +8975,16 @@ if ($btnLoadSettings) {
                     }
                 }
                 
-                # Apply KOALA theme (settings theme ignored for stability)
-                Apply-KoalaTheme
+                # Apply loaded theme
+                if ($settings.Theme) {
+                    foreach ($item in $cmbOptionsTheme.Items) {
+                        if ($item.Tag -eq $settings.Theme) {
+                            $cmbOptionsTheme.SelectedItem = $item
+                            Switch-Theme -ThemeName $settings.Theme
+                            break
+                        }
+                    }
+                }
                 
                 # Apply loaded scale
                 if ($settings.UIScale) {
@@ -9670,8 +9025,14 @@ if ($btnResetSettings) {
             )
             
             if ($result -eq 'Yes') {
-                # Reset to KOALA Gaming Theme
-                Apply-KoalaTheme
+                # Reset theme to Dark Purple
+                foreach ($item in $cmbOptionsTheme.Items) {
+                    if ($item.Tag -eq "DarkPurple") {
+                        $cmbOptionsTheme.SelectedItem = $item
+                        Switch-Theme -ThemeName "DarkPurple"
+                        break
+                    }
+                }
                 
                 # Reset scale to 100%
                 foreach ($item in $cmbUIScale.Items) {
@@ -9721,138 +9082,6 @@ if ($chkAutoOptimize) {
     Log "Warning: chkAutoOptimize control not found - skipping event handler binding" 'Warning'
 }
 
-# Automatic Game Detection checkbox - NEW
-if ($chkAutoGameDetection) {
-    $chkAutoGameDetection.Add_Checked({
-        $global:AutoGameDetectionEnabled = $true
-        Log "Automatic game detection enabled - monitoring for running games every 5 seconds" 'Success'
-        # Start monitoring if timer exists but wasn't running due to disabled detection
-        if ($global:GameDetectionTimer -and -not $global:GameDetectionTimer.IsEnabled) {
-            Start-GameDetectionMonitoring
-        }
-    })
-
-    $chkAutoGameDetection.Add_Unchecked({
-        $global:AutoGameDetectionEnabled = $false
-        Log "Automatic game detection disabled - manual detection only" 'Info'
-        # Clear any active game tracking when disabled
-        $global:ActiveGames = @()
-        if ($lblDashActiveGames) {
-            $lblDashActiveGames.Text = "Automatic detection disabled"
-        }
-    })
-} else {
-    Log "Warning: chkAutoGameDetection control not found - skipping event handler binding" 'Warning'
-}
-
-# Manual Game Detection Checkboxes Event Handlers
-$global:ManualGameDetectionSettings = @{
-    DetectFPS = $false
-    DetectBattleRoyale = $false  
-    DetectMOBA = $false
-    DetectRacing = $false
-    DetectRPG = $false
-    DetectSandbox = $false
-    DetectSteam = $false
-    DetectEpic = $false
-}
-
-# FPS Games Detection
-if ($chkDetectFPS) {
-    $chkDetectFPS.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectFPS = $true
-        Log "Manual FPS games detection enabled (CS2, VALORANT, Overwatch, Rainbow Six)" 'Info'
-    })
-    $chkDetectFPS.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectFPS = $false
-        Log "Manual FPS games detection disabled" 'Info'
-    })
-}
-
-# Battle Royale Games Detection  
-if ($chkDetectBattleRoyale) {
-    $chkDetectBattleRoyale.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectBattleRoyale = $true
-        Log "Manual Battle Royale games detection enabled (Fortnite, Apex, PUBG, Warzone)" 'Info'
-    })
-    $chkDetectBattleRoyale.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectBattleRoyale = $false
-        Log "Manual Battle Royale games detection disabled" 'Info'
-    })
-}
-
-# MOBA/Strategy Games Detection
-if ($chkDetectMOBA) {
-    $chkDetectMOBA.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectMOBA = $true
-        Log "Manual MOBA/Strategy games detection enabled (League of Legends, Dota 2)" 'Info'
-    })
-    $chkDetectMOBA.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectMOBA = $false
-        Log "Manual MOBA/Strategy games detection disabled" 'Info'
-    })
-}
-
-# Racing/Sports Games Detection
-if ($chkDetectRacing) {
-    $chkDetectRacing.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectRacing = $true
-        Log "Manual Racing/Sports games detection enabled (Rocket League)" 'Info'
-    })
-    $chkDetectRacing.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectRacing = $false
-        Log "Manual Racing/Sports games detection disabled" 'Info'
-    })
-}
-
-# RPG/Adventure Games Detection
-if ($chkDetectRPG) {
-    $chkDetectRPG.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectRPG = $true
-        Log "Manual RPG/Adventure games detection enabled (Cyberpunk 2077, GTA V)" 'Info'
-    })
-    $chkDetectRPG.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectRPG = $false
-        Log "Manual RPG/Adventure games detection disabled" 'Info'
-    })
-}
-
-# Sandbox/Survival Games Detection
-if ($chkDetectSandbox) {
-    $chkDetectSandbox.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectSandbox = $true
-        Log "Manual Sandbox/Survival games detection enabled (Minecraft)" 'Info'
-    })
-    $chkDetectSandbox.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectSandbox = $false
-        Log "Manual Sandbox/Survival games detection disabled" 'Info'
-    })
-}
-
-# Steam Games Detection
-if ($chkDetectSteam) {
-    $chkDetectSteam.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectSteam = $true
-        Log "Manual Steam library scanning enabled" 'Info'
-    })
-    $chkDetectSteam.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectSteam = $false
-        Log "Manual Steam library scanning disabled" 'Info'
-    })
-}
-
-# Epic Games Detection
-if ($chkDetectEpic) {
-    $chkDetectEpic.Add_Checked({
-        $global:ManualGameDetectionSettings.DetectEpic = $true
-        Log "Manual Epic Games Store scanning enabled" 'Info'
-    })
-    $chkDetectEpic.Add_Unchecked({
-        $global:ManualGameDetectionSettings.DetectEpic = $false
-        Log "Manual Epic Games Store scanning disabled" 'Info'
-    })
-}
-
 # Clear log button - Enhanced user action tracking
 if ($btnClearLog) {
     $btnClearLog.Add_Click({
@@ -9895,13 +9124,13 @@ if ($btnExtendLog) {
                 if (-not $global:LogExtended) {
                     # Extend the log to full size
                     $activityLogBorder.MinHeight = 120
-                    $btnExtendLog.Content = "▼ Collapse"
+                    $btnExtendLog.Content = "â†* Collapse"
                     $global:LogExtended = $true
                     Log "Activity Log extended to full size" 'Info'
                 } else {
                     # Collapse the log to 25% size
                     $activityLogBorder.MinHeight = 30
-                    $btnExtendLog.Content = "▼ Extend"
+                    $btnExtendLog.Content = "â†* Extend"
                     $global:LogExtended = $false
                     Log "Activity Log collapsed to compact size" 'Info'
                 }
@@ -10214,50 +9443,6 @@ if ($btnResetNetworkSettings) {
     })
 }
 
-# Advanced Settings Panel Action Button Handlers
-if ($btnApplyAdvancedSettings) {
-    $btnApplyAdvancedSettings.Add_Click({
-        try {
-            Log "Applying advanced settings..." 'Info'
-            Apply-AdvancedSettings
-            Log "Advanced settings applied successfully" 'Success'
-            [System.Windows.MessageBox]::Show("Advanced settings applied successfully!", "Advanced Settings", 'OK', 'Information')
-        } catch {
-            Log "Error applying advanced settings: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error applying advanced settings: $($_.Exception.Message)", "Advanced Settings Error", 'OK', 'Error')
-        }
-    })
-}
-
-if ($btnTestAdvancedSettings) {
-    $btnTestAdvancedSettings.Add_Click({
-        try {
-            Log "Testing advanced settings configuration..." 'Info'
-            Test-AdvancedSettings
-        } catch {
-            Log "Error testing advanced settings: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error testing advanced settings: $($_.Exception.Message)", "Test Error", 'OK', 'Error')
-        }
-    })
-}
-
-if ($btnResetAdvancedSettings) {
-    $btnResetAdvancedSettings.Add_Click({
-        try {
-            $result = [System.Windows.MessageBox]::Show("Are you sure you want to reset all advanced settings to default?", "Reset Advanced Settings", 'YesNo', 'Warning')
-            if ($result -eq 'Yes') {
-                Log "Resetting advanced settings to default..." 'Info'
-                Reset-AdvancedSettings
-                Log "Advanced settings reset successfully" 'Success'
-                [System.Windows.MessageBox]::Show("Advanced settings reset to default values successfully!", "Reset Complete", 'OK', 'Information')
-            }
-        } catch {
-            Log "Error resetting advanced settings: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error resetting advanced settings: $($_.Exception.Message)", "Reset Error", 'OK', 'Error')
-        }
-    })
-}
-
 # System Panel Action Button Handlers
 if ($btnApplySystemOptimizations) {
     $btnApplySystemOptimizations.Add_Click({
@@ -10521,7 +9706,7 @@ function Start-CustomFolderOnlySearch {
                 
                 # Optimize button
                 $optimizeBtn = New-Object System.Windows.Controls.Button
-                $optimizeBtn.Content = "▶ Optimize"
+                $optimizeBtn.Content = "⚡ Optimize"
                 $optimizeBtn.Width = 100
                 $optimizeBtn.Height = 32
                 $optimizeBtn.Style = $window.Resources["SuccessButton"]
@@ -10697,7 +9882,7 @@ function Start-AllCustomFoldersSearch {
                 $gameInfo.Children.Add($gameDetails)
                 
                 $optimizeBtn = New-Object System.Windows.Controls.Button
-                $optimizeBtn.Content = "▶ Optimize"
+                $optimizeBtn.Content = "⚡ Optimize"
                 $optimizeBtn.Width = 100
                 $optimizeBtn.Height = 32
                 $optimizeBtn.Style = $window.Resources["SuccessButton"]
@@ -11676,7 +10861,7 @@ if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
 # Apply default theme on startup
 try {
     Log "Applying default theme on startup..." 'Info'
-    Apply-KoalaTheme
+    Switch-Theme -ThemeName "DarkPurple"
     Log "Default theme applied successfully - UI ready" 'Success'
 } catch {
     Log "Warning: Could not apply default theme on startup: $($_.Exception.Message)" 'Warning'
@@ -11697,9 +10882,17 @@ try {
             }
         }
         
-        # Apply KOALA theme (loaded theme ignored for stability)
-        Apply-KoalaTheme
-        Log "Applied KOALA Gaming Theme" 'Info'
+        # Apply loaded theme
+        if ($settings.Theme) {
+            foreach ($item in $cmbOptionsTheme.Items) {
+                if ($item.Tag -eq $settings.Theme) {
+                    $cmbOptionsTheme.SelectedItem = $item
+                    Switch-Theme -ThemeName $settings.Theme
+                    Log "Loaded theme: $($settings.Theme)" 'Info'
+                    break
+                }
+            }
+        }
         
         # Apply loaded scale
         if ($settings.UIScale -and $cmbUIScale) {
@@ -11858,9 +11051,18 @@ try {
 Log "Running startup control validation..." 'Info'
 $controlsValid = Test-StartupControls
 
-# Initialize KOALA Gaming Theme by default
-Apply-KoalaTheme
-Log "KOALA Gaming Theme initialized" 'Info' else {
+# Initialize default theme and color preview
+if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
+    # Set default theme to DarkPurple
+    foreach ($item in $cmbOptionsTheme.Items) {
+        if ($item.Tag -eq "DarkPurple") {
+            $cmbOptionsTheme.SelectedItem = $item
+            Update-ThemeColorPreview -ThemeName "DarkPurple"
+            Log "Default theme 'Dark Purple' selected with color preview initialized" 'Info'
+            break
+        }
+    }
+} else {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
@@ -11877,416 +11079,29 @@ if (-not $controlsValid) {
 
 # Start real-time performance monitoring for dashboard
 Log "Starting real-time performance monitoring..." 'Info'
-# DISABLED: Automatic performance monitoring to prevent UI freezing and follow manual-only policy
-# Start-PerformanceMonitoring
+Start-PerformanceMonitoring
 
 # Start enhanced game detection monitoring
-Log "Initializing game detection monitoring (automatic detection disabled by default)..." 'Info'
+Log "Starting enhanced game detection monitoring..." 'Info'
 Start-GameDetectionMonitoring
 
-# ---------- Problem Statement Fix Functions ----------
-
-function Apply-ComboBoxThemeFix {
-    <#
-    .SYNOPSIS
-    Applies ComboBox theme styling to match the current theme
-    .DESCRIPTION
-    Sets ComboBox background, foreground, border, and dropdown styling to match the theme
-    #>
-    param(
-        [string]$ThemeName = "Dark"
-    )
-    
-    try {
-        Log "Applying ComboBox theme fix for theme: $ThemeName" 'Info'
-        
-        # Define theme-specific colors
-        $colors = switch ($ThemeName) {
-            "Dark" { 
-                @{
-                    Background = "#2D3748"
-                    Foreground = "#E2E8F0"
-                    Border = "#4A5568"
-                    DropdownBackground = "#1A202C"
-                }
-            }
-            "Light" { 
-                @{
-                    Background = "#FFFFFF"
-                    Foreground = "#2D3748"
-                    Border = "#CBD5E0"
-                    DropdownBackground = "#F7FAFC"
-                }
-            }
-            default { 
-                @{
-                    Background = "#2D3748"
-                    Foreground = "#E2E8F0"
-                    Border = "#4A5568"
-                    DropdownBackground = "#1A202C"
-                }
-            }
-        }
-        
-        # Apply styling to all ComboBox controls
-        $comboBoxes = @()
-        if ($form) {
-            $comboBoxes = $form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.ComboBox] }
-        }
-        
-        foreach ($comboBox in $comboBoxes) {
-            if ($comboBox) {
-                $comboBox.Background = $colors.Background
-                $comboBox.Foreground = $colors.Foreground
-                $comboBox.BorderBrush = $colors.Border
-            }
-        }
-        
-        Log "ComboBox theme styling applied successfully" 'Success'
-    }
-    catch {
-        Log "Error applying ComboBox theme fix: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Add-AdvancedWarning {
-    <#
-    .SYNOPSIS
-    Adds a warning banner to the top of the Advanced panel
-    .DESCRIPTION
-    Inserts a warning message at the top of the Advanced Settings panel
-    #>
-    
-    try {
-        Log "Adding Advanced Settings warning banner" 'Info'
-        
-        # Find the Advanced panel
-        $advancedPanel = $form.FindName("pnlAdvanced")
-        if ($advancedPanel -and $advancedPanel.Children) {
-            
-            # Create warning banner
-            $warningBorder = New-Object System.Windows.Controls.Border
-            $warningBorder.Background = "#FED7AA"
-            $warningBorder.BorderBrush = "#F97316"
-            $warningBorder.BorderThickness = "2"
-            $warningBorder.CornerRadius = "5"
-            $warningBorder.Margin = "10,5,10,10"
-            $warningBorder.Padding = "10"
-            
-            $warningText = New-Object System.Windows.Controls.TextBlock
-            $warningText.Text = "⚠️ WARNING: Advanced settings can significantly impact system performance. Only modify these settings if you understand their effects. Create a backup before proceeding."
-            $warningText.Foreground = "#9A3412"
-            $warningText.FontWeight = "Bold"
-            $warningText.TextWrapping = "Wrap"
-            $warningText.HorizontalAlignment = "Center"
-            
-            $warningBorder.Child = $warningText
-            
-            # Insert at the beginning of the panel
-            $advancedPanel.Children.Insert(0, $warningBorder)
-            
-            Log "Advanced Settings warning banner added successfully" 'Success'
-        }
-        else {
-            Log "Could not find Advanced panel to add warning banner" 'Warning'
-        }
-    }
-    catch {
-        Log "Error adding Advanced Settings warning banner: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Initialize-EnhancedUITimer {
-    <#
-    .SYNOPSIS
-    Initializes enhanced UI timer for better responsiveness
-    .DESCRIPTION
-    Creates an improved UI timer system with better error handling
-    #>
-    
-    try {
-        Log "Initializing enhanced UI timer" 'Info'
-        
-        if (-not $global:EnhancedUITimer) {
-            $global:EnhancedUITimer = New-Object System.Windows.Forms.Timer
-            $global:EnhancedUITimer.Interval = 50  # 50ms for better responsiveness
-            $global:EnhancedUITimer.Add_Tick({
-                try {
-                    [System.Windows.Forms.Application]::DoEvents()
-                }
-                catch {
-                    # Silently handle any DoEvents errors
-                }
-            })
-            $global:EnhancedUITimer.Start()
-            
-            Log "Enhanced UI timer started successfully" 'Success'
-        }
-    }
-    catch {
-        Log "Error initializing enhanced UI timer: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Start-AntiFreezeWorker {
-    <#
-    .SYNOPSIS
-    Starts anti-freeze background worker
-    .DESCRIPTION
-    Improves UI responsiveness and regularly calls DoEvents
-    #>
-    
-    try {
-        Log "Starting anti-freeze worker" 'Info'
-        
-        if (-not $global:AntiFreezeWorker) {
-            $global:AntiFreezeWorker = New-Object System.ComponentModel.BackgroundWorker
-            $global:AntiFreezeWorker.WorkerSupportsCancellation = $true
-            
-            $global:AntiFreezeWorker.Add_DoWork({
-                while (-not $global:AntiFreezeWorker.CancellationPending) {
-                    try {
-                        Start-Sleep -Milliseconds 100
-                        if ($form.Dispatcher) {
-                            $form.Dispatcher.Invoke([Action]{
-                                # Keep UI responsive
-                            }, [System.Windows.Threading.DispatcherPriority]::Background)
-                        }
-                    }
-                    catch {
-                        # Silently handle errors
-                        break
-                    }
-                }
-            })
-            
-            $global:AntiFreezeWorker.RunWorkerAsync()
-            Log "Anti-freeze worker started successfully" 'Success'
-        }
-    }
-    catch {
-        Log "Error starting anti-freeze worker: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-function Initialize-AllFixes {
-    <#
-    .SYNOPSIS
-    Orchestrates all fixes and enhancements before showing the form
-    .DESCRIPTION
-    This function implements all the fixes and enhancements from the problem statement
-    #>
-    
-    try {
-        Log "Initializing all fixes and enhancements..." 'Info'
-        
-        # Fix #1: Apply theme colors and ensure navigation visibility
-        Apply-KoalaTheme
-        Ensure-NavigationVisibility
-        
-        # Fix #2: Fix activity log layout and sizing
-        Fix-ActivityLogLayout
-        
-        # Fix #3: Fix all button visibility and styling
-        Fix-AllButtonVisibility
-        
-        # Fix #4: ComboBox theme styling (existing)
-        Apply-ComboBoxThemeFix -ThemeName "Dark"
-        
-        # Fix #5: Advanced Settings warning banner (existing)
-        Add-AdvancedWarning
-        
-        # Fix #6: Enhanced UI timers for anti-freeze (existing)
-        Initialize-EnhancedUITimer
-        Start-AntiFreezeWorker
-        
-        # Fix #7: Initialize manual-only health check system
-        Initialize-SystemHealthDisplay
-        
-        # Fix #8: Ensure all UI elements are properly initialized
-        if ($global:form) {
-            try {
-                # Ensure all panels are properly configured
-                $panels = @('panelDashboard', 'panelBasicOpt', 'panelAdvanced', 'panelGames', 'panelNetwork', 'panelOptions', 'panelBackup')
-                foreach ($panelName in $panels) {
-                    $panel = $global:form.FindName($panelName)
-                    if ($panel) {
-                        $panel.Visibility = "Visible"
-                        if ($panelName -eq 'panelDashboard') {
-                            # Dashboard should be visible by default
-                            $panel.Visibility = "Visible"
-                        } else {
-                            # Other panels hidden by default
-                            $panel.Visibility = "Collapsed"
-                        }
-                    }
-                }
-                
-                # Ensure navigation buttons are properly initialized
-                $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavOptions', 'btnNavBackup')
-                foreach ($btnName in $navButtons) {
-                    $btn = $global:form.FindName($btnName)
-                    if ($btn) {
-                        $btn.IsEnabled = $true
-                        $btn.Visibility = "Visible"
-                        if ($btnName -eq 'btnNavDashboard') {
-                            $btn.Tag = "Selected"
-                        } else {
-                            $btn.Tag = $null
-                        }
-                    }
-                }
-                
-                Log "UI elements initialization completed" 'Success'
-            } catch {
-                Log "Warning during UI elements initialization: $($_.Exception.Message)" 'Warning'
-            }
-        }
-        
-        Log "All fixes and enhancements initialized successfully" 'Success'
-    }
-    catch {
-        Log "Error during fix initialization: $($_.Exception.Message)" 'Warning'
-    }
-}
-
-# ---------- Main Form Initialization Function (Fix #4: Form Initialization and Lifecycle) ----------
-function Show-MainForm {
-    <#
-    .SYNOPSIS
-    Initializes and shows the main form with proper lifecycle management
-    .DESCRIPTION
-    Refactored main form initialization with comprehensive error handling and resource cleanup
-    #>
-    
-    try {
-        # Final startup validation before showing the form
-        Write-ActivityLog "Performing final advanced panel validation..." 'Info'
-        Initialize-AdvancedPanelControls
-        
-        # Fix #4: Initialize UI responsiveness timer
-        Initialize-UITimer
-        
-        # Fix #7: Use singleton WPF Application for proper message loop
-        Write-ActivityLog "Starting main application with singleton WPF Application and proper message loop..." 'Info'
-        
-        # Validate that form is properly loaded before attempting to run
-        if (-not $global:form -or -not $global:form.GetType) {
-            throw "Main form was not properly initialized. Cannot start application."
-        }
-        
-        Write-ActivityLog "Form validation passed. Starting WPF Application..." 'Info'
-        
-        # Initialize all fixes and enhancements
-        Initialize-AllFixes
-        
-        # Get singleton WPF Application instance to prevent multiple application instance errors
-        $app = Get-WpfApplication
-        
-        # CRITICAL FIX: Use ShowDialog() instead of Run() to prevent application lifecycle issues
-        # Run() takes control of the entire application message loop which can cause conflicts
-        $null = $global:form.ShowDialog()
-        
-    } catch {
-        Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
-        throw
-    } finally {
-        # Comprehensive cleanup
-        try {
-            # Fix #4: Stop UI timer
-            Stop-UITimer
-            
-            # Stop all background operations
-            Stop-AllBackgroundOperations
-            
-            # Stop performance monitoring
-            Stop-PerformanceMonitoring
-            
-            # Stop game detection monitoring
-            Stop-GameDetectionMonitoring
-            
-            # Cleanup runspace pool
-            if ($global:RunspacePool) {
-                $global:RunspacePool.Close()
-                $global:RunspacePool.Dispose()
-                $global:RunspacePool = $null
-            }
-            
-            # Cleanup WPF Application singleton
-            if ($global:WpfApplication) {
-                try {
-                    $global:WpfApplication.Shutdown()
-                } catch {
-                    # Ignore shutdown errors
-                }
-                $global:WpfApplication = $null
-            }
-            
-            # Clear control cache
-            $global:ControlCache.Clear()
-            
-            # Cleanup UI batch timer
-            if ($global:UIBatchTimer) {
-                $global:UIBatchTimer.Stop()
-                $global:UIBatchTimer = $null
-            }
-            
-            # Clear pending UI updates
-            $global:PendingUIUpdates = @()
-            
-            # Cleanup timer precision
-            [WinMM]::timeEndPeriod(1) | Out-Null
-            
-            Log "Application cleanup completed successfully with enhanced resource management" 'Info'
-        } catch {
-            Write-Host "Warning during cleanup: $($_.Exception.Message)" -ForegroundColor Yellow
-        }
-    }
-}
-
-# Show the main form with enhanced lifecycle management
+# Show the form
 try {
-    Write-Host "Starting KOALA Gaming Optimizer..." -ForegroundColor Cyan
-    Show-MainForm
+    $form.ShowDialog() | Out-Null
 } catch {
-    $errorMessage = "Fatal error during startup: $($_.Exception.Message)"
-    Write-Host $errorMessage -ForegroundColor Red
-    
-    # Show user-friendly error message
-    try {
-        [System.Windows.MessageBox]::Show(
-            "KOALA Gaming Optimizer encountered a fatal error during startup:`n`n$($_.Exception.Message)`n`nPlease check that:`n• You are running as Administrator`n• .NET Framework 4.8 is installed`n• No other instances are running",
-            "KOALA Gaming Optimizer - Startup Error",
-            'OK',
-            'Error'
-        )
-    } catch {
-        # Fallback if MessageBox fails
-        Write-Host "Additional error showing message box: $($_.Exception.Message)" -ForegroundColor Red
-    }
-    
-    exit 1
+    Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
-    # Ensure cleanup happens even if startup fails
-    Write-Host "Performing final cleanup..." -ForegroundColor Yellow
+    # Cleanup
     try {
-        # Cleanup any resources that might have been initialized
-        if ($global:RunspacePool) {
-            $global:RunspacePool.Close()
-            $global:RunspacePool.Dispose()
-            $global:RunspacePool = $null
-        }
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
         
-        # Stop any timers that might be running
-        if ($global:UIBatchTimer) {
-            $global:UIBatchTimer.Stop()
-            $global:UIBatchTimer = $null
-        }
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
         
-        Write-Host "Cleanup completed successfully." -ForegroundColor Green
-    } catch {
-        Write-Host "Warning during final cleanup: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
 }
 
 function Apply-NetworkOptimizations {
@@ -12346,153 +11161,6 @@ function Reset-NetworkSettings {
         Log "Network settings reset to default values" 'Success'
     } catch {
         Log "Error resetting network settings: $($_.Exception.Message)" 'Error'
-    }
-}
-
-function Apply-AdvancedSettings {
-    Log "Applying advanced settings from Advanced panel..." 'Info'
-    
-    try {
-        # Apply Network Tweaks section
-        if ($chkAck -and $chkAck.IsChecked) {
-            Apply-TcpAck
-        }
-        if ($chkDelAckTicks -and $chkDelAckTicks.IsChecked) {
-            Apply-DelayedAckTicks
-        }
-        if ($chkNagleBasic -and $chkNagleBasic.IsChecked) {
-            Apply-NagleDisable
-        }
-        if ($chkNetworkThrottling -and $chkNetworkThrottling.IsChecked) {
-            Apply-NetworkThrottling
-        }
-        if ($chkRSSBasic -and $chkRSSBasic.IsChecked) {
-            Apply-RSS
-        }
-        if ($chkRSCBasic -and $chkRSCBasic.IsChecked) {
-            Apply-RSC
-        }
-        
-        # Apply System Optimizations section
-        if ($chkMemoryCompression -and $chkMemoryCompression.IsChecked) {
-            Apply-MemoryCompression
-        }
-        if ($chkPowerPlanBasic -and $chkPowerPlanBasic.IsChecked) {
-            Apply-PowerPlan
-        }
-        if ($chkCPUSchedulingBasic -and $chkCPUSchedulingBasic.IsChecked) {
-            Apply-CPUScheduling
-        }
-        if ($chkPageFileBasic -and $chkPageFileBasic.IsChecked) {
-            Apply-PageFileOptimization
-        }
-        if ($chkGameDVRBasic -and $chkGameDVRBasic.IsChecked) {
-            Disable-GameDVR
-        }
-        if ($chkGPUScheduling -and $chkGPUScheduling.IsChecked) {
-            Enable-GPUScheduling
-        }
-        if ($chkCoreParking -and $chkCoreParking.IsChecked) {
-            Disable-CoreParking
-        }
-        
-        # Apply Service Management section
-        if ($chkDisableXboxServices -and $chkDisableXboxServices.IsChecked) {
-            Disable-XboxServices
-        }
-        if ($chkDisableTelemetry -and $chkDisableTelemetry.IsChecked) {
-            Disable-Telemetry
-        }
-        if ($chkDisableSearch -and $chkDisableSearch.IsChecked) {
-            Disable-WindowsSearch
-        }
-        if ($chkDisableSuperfetch -and $chkDisableSuperfetch.IsChecked) {
-            Disable-Superfetch
-        }
-        
-        Log "Advanced settings applied successfully" 'Success'
-    } catch {
-        Log "Error applying advanced settings: $($_.Exception.Message)" 'Error'
-        throw
-    }
-}
-
-function Test-AdvancedSettings {
-    Log "Testing advanced settings configuration..." 'Info'
-    
-    try {
-        $testResults = @()
-        
-        # Test network settings
-        $tcpParams = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -ErrorAction SilentlyContinue
-        if ($tcpParams.TcpAckFrequency) {
-            $testResults += "TCP ACK Frequency: $($tcpParams.TcpAckFrequency)"
-        }
-        if ($tcpParams.TCPNoDelay) {
-            $testResults += "Nagle Algorithm: Disabled"
-        }
-        
-        # Test power plan
-        $currentPowerPlan = powercfg /getactivescheme
-        if ($currentPowerPlan -match "Ultimate Performance|High performance") {
-            $testResults += "Power Plan: High Performance Active"
-        }
-        
-        # Test Game DVR
-        $gameDVR = Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue
-        if ($gameDVR -and $gameDVR.GameDVR_Enabled -eq 0) {
-            $testResults += "Game DVR: Disabled"
-        }
-        
-        if ($testResults.Count -gt 0) {
-            $message = "Advanced Settings Test Results:`n`n" + ($testResults -join "`n")
-            [System.Windows.MessageBox]::Show($message, "Advanced Settings Test", 'OK', 'Information')
-        } else {
-            [System.Windows.MessageBox]::Show("No advanced optimizations currently active.", "Advanced Settings Test", 'OK', 'Information')
-        }
-        
-        Log "Advanced settings test completed" 'Success'
-    } catch {
-        Log "Error testing advanced settings: $($_.Exception.Message)" 'Error'
-        throw
-    }
-}
-
-function Reset-AdvancedSettings {
-    Log "Resetting advanced settings to default..." 'Info'
-    
-    try {
-        # Reset all advanced setting checkboxes
-        $advancedCheckboxes = @(
-            $chkAck, $chkDelAckTicks, $chkNagleBasic, $chkNetworkThrottling, $chkRSSBasic, $chkRSCBasic,
-            $chkMemoryCompression, $chkPowerPlanBasic, $chkCPUSchedulingBasic, $chkPageFileBasic,
-            $chkGameDVRBasic, $chkGPUScheduling, $chkCoreParking,
-            $chkDisableXboxServices, $chkDisableTelemetry, $chkDisableSearch, $chkDisableSuperfetch
-        )
-        
-        foreach ($checkbox in $advancedCheckboxes) {
-            if ($checkbox) {
-                $checkbox.IsChecked = $false
-            }
-        }
-        
-        # Reset registry settings to default
-        $registryPaths = @(
-            @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"; Properties=@("TcpAckFrequency", "TCPNoDelay", "TcpDelAckTicks")},
-            @{Path="HKCU:\System\GameConfigStore"; Properties=@("GameDVR_Enabled")},
-            @{Path="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; Properties=@("CsEnabled")}
-        )
-        
-        foreach ($regPath in $registryPaths) {
-            foreach ($property in $regPath.Properties) {
-                Remove-ItemProperty -Path $regPath.Path -Name $property -ErrorAction SilentlyContinue
-            }
-        }
-        
-        Log "Advanced settings reset to default values" 'Success'
-    } catch {
-        Log "Error resetting advanced settings: $($_.Exception.Message)" 'Error'
-        throw
     }
 }
 
