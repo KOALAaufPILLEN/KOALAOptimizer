@@ -996,20 +996,29 @@ function Update-SystemHealthDisplay {
     #>
     
     try {
-        # Fix: Enhanced error handling for system health data retrieval
+        # Fix: Enhanced error handling for system health data retrieval with fallback data
         $healthData = $null
         try {
             $healthData = Get-SystemHealthStatus
             $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
         } catch {
-            Log "Error retrieving system health data: $($_.Exception.Message)" 'Warning'
-            return
+            # Fix: Default fallback health data when retrieval fails
+            Log "Error retrieving system health data, using fallback data: $($_.Exception.Message)" 'Warning'
+            $healthData = @{
+                Status = 'Unknown'
+                OverallScore = 0
+                Issues = @('Health monitoring temporarily unavailable')
+                Warnings = @()
+                Recommendations = @('System health monitoring will resume automatically')
+            }
+            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true }
         }
         
         # Fix: Enhanced UI update segment with robust try-catch error handling
         # Update health status in dashboard if labels exist
         if ($lblDashSystemHealth) {
             try {
+                # Fix: All UI updates wrapped in try/catch blocks
                 $lblDashSystemHealth.Dispatcher.Invoke([Action]{
                     try {
                         # Fix: Protected UI text property update
@@ -1024,68 +1033,129 @@ function Update-SystemHealthDisplay {
                                 'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
                                 'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
                                 'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
+                                'Unknown' { $lblDashSystemHealth.Foreground = "#888888" }    # Gray for fallback
                                 default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
                             }
                         } catch {
                             # Fix: Fallback for color update failure
-                            try { $lblDashSystemHealth.Foreground = "#B8B3E6" } catch { }
+                            try { 
+                                $lblDashSystemHealth.Foreground = "#B8B3E6" 
+                                Log "Failed to update health display color" 'Warning'
+                            } catch { 
+                                Write-Verbose "Critical UI color update failure"
+                            }
                         }
                     } catch {
-                        Write-Verbose "Dashboard UI update failed - silent fail to prevent application disruption"
+                        # Fix: Error logging for UI update failures
+                        try {
+                            Log "Dashboard UI text update failed" 'Warning'
+                        } catch {
+                            Write-Verbose "Dashboard UI update failed - silent fail to prevent application disruption"
+                        }
                     }
                 })
             } catch {
+                # Fix: Error logging for any failures in health information display
                 Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'
             }
         }
         
         # Fix: Enhanced logging segment with individual try-catch blocks
-        # Log health warnings if any
+        # Log health issues if any
         try {
-            if ($healthData.Issues.Count -gt 0) {
+            if ($healthData.Issues -and $healthData.Issues.Count -gt 0) {
                 foreach ($issue in $healthData.Issues) {
                     try {
                         Log "System Health ISSUE: $issue" 'Warning'
                     } catch {
-                        Write-Verbose "Failed to log health issue: $issue"
+                        # Fix: Error logging for any failures
+                        try {
+                            Write-Verbose "Failed to log health issue: $issue"
+                            Log "Failed to log a health issue" 'Warning'
+                        } catch {
+                            Write-Verbose "Critical logging failure for health issue"
+                        }
                     }
                 }
             }
         } catch {
-            Write-Verbose "Error processing health issues for logging"
+            # Fix: Error logging for any failures in health information display
+            try {
+                Log "Error processing health issues for logging" 'Warning'
+            } catch {
+                Write-Verbose "Error processing health issues for logging"
+            }
         }
         
+        # Fix: Enhanced warning processing with comprehensive error handling
         try {
-            if ($healthData.Warnings.Count -gt 0) {
+            if ($healthData.Warnings -and $healthData.Warnings.Count -gt 0) {
                 foreach ($warning in $healthData.Warnings) {
                     try {
                         Log "System Health WARNING: $warning" 'Info'
                     } catch {
-                        Write-Verbose "Failed to log health warning: $warning"
+                        # Fix: Error logging for any failures
+                        try {
+                            Write-Verbose "Failed to log health warning: $warning"
+                            Log "Failed to log a health warning" 'Warning'
+                        } catch {
+                            Write-Verbose "Critical logging failure for health warning"
+                        }
                     }
                 }
             }
         } catch {
-            Write-Verbose "Error processing health warnings for logging"
+            # Fix: Error logging for any failures in health information display
+            try {
+                Log "Error processing health warnings for logging" 'Warning'
+            } catch {
+                Write-Verbose "Error processing health warnings for logging"
+            }
         }
         
-        # Fix: Enhanced recommendation logging with try-catch protection
+        # Fix: Enhanced recommendation logging with comprehensive try-catch protection
         try {
-            if ($healthData.Recommendations.Count -gt 0) {
-                Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
+            if ($healthData.Recommendations -and $healthData.Recommendations.Count -gt 0) {
+                try {
+                    Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
+                } catch {
+                    # Fix: Error logging for any failures
+                    Log "System Health Check completed with partial logging errors" 'Warning'
+                }
             } else {
-                Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
+                try {
+                    Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
+                } catch {
+                    # Fix: Error logging for any failures
+                    Log "System Health Check completed" 'Info'
+                }
             }
         } catch {
+            # Fix: Error logging for any failures in health information display
             try {
                 Log "System Health Check completed with logging errors" 'Warning'
             } catch {
-                Write-Verbose "Critical logging failure in health display update"
+                try {
+                    Write-Verbose "Critical logging failure in health display update"
+                    Log "Health monitoring encountered logging issues" 'Warning'
+                } catch {
+                    Write-Verbose "Complete logging system failure in health display"
+                }
             }
         }
         
     } catch {
-        Log "Error updating system health display: $($_.Exception.Message)" 'Warning'
+        # Fix: Enhanced error handling with fallback logging
+        try {
+            Log "Error updating system health display: $($_.Exception.Message)" 'Warning'
+        } catch {
+            try {
+                Write-Verbose "Critical error in system health display update: $($_.Exception.Message)"
+                Log "Critical health display error" 'Warning'
+            } catch {
+                Write-Verbose "Complete failure in system health display update"
+            }
+        }
     }
 }
 
@@ -6810,27 +6880,6 @@ function Update-PanelStyles {
         Log "Error updating panel styles: $($_.Exception.Message)" 'Warning'
     }
 }
-
-function Find-AllControlsOfType {
-    param($Parent, $ControlType, [ref]$Collection)
-    
-    try {
-        if ($Parent -and $Parent.GetType() -eq $ControlType) {
-            $Collection.Value += $Parent
-        }
-        
-        if ($Parent.Children) {
-            foreach ($child in $Parent.Children) {
-                Find-AllControlsOfType -Parent $child -ControlType $ControlType -Collection $Collection
-            }
-        } elseif ($Parent.Content) {
-            Find-AllControlsOfType -Parent $Parent.Content -ControlType $ControlType -Collection $Collection
-        }
-    } catch {
-        # Ignore errors in recursion
-    }
-}
-
 
 # ---------- Performance Monitoring Functions ----------
 function Update-PerformanceDisplay {
