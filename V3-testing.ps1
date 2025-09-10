@@ -792,7 +792,87 @@ function Apply-KoalaTheme {
 }
 
 
+function Get-ThemeColors {
+    param([string]$ThemeName = 'KOALA')
+    
+    try {
+        Log "Getting theme colors for: $ThemeName" 'Info'
+        
+        # Return the KOALA theme colors
+        if ($global:KoalaTheme) {
+            return $global:KoalaTheme
+        } else {
+            # Fallback theme colors if global theme is not available
+            return @{
+                Name = 'KOALA Gaming Theme'
+                Background = '#0A0E27'
+                Primary = '#6B46C1'
+                Secondary = '#8B5CF6'
+                Text = '#E5E7EB'
+                ButtonBackground = '#374151'
+                ButtonText = '#F9FAFB'
+                ButtonBorder = '#6B46C1'
+                SelectedBackground = '#6B46C1'
+                UnselectedBackground = '#374151'
+                LogBg = '#1F2937'
+            }
+        }
+    } catch {
+        Log "Error getting theme colors: $($_.Exception.Message)" 'Warning'
+        return $global:KoalaTheme
+    }
+}
+
 # Einfache Funktion zum Abrufen eines Themes
+
+function Ensure-NavigationVisibility {
+    param([string]$ThemeName = 'KOALA')
+    
+    try {
+        Log "Ensuring navigation visibility for theme: $ThemeName" 'Info'
+        
+        if (-not $global:form) {
+            Log "Warning: Form not available for navigation visibility" 'Warning'
+            return $false
+        }
+        
+        # Ensure all navigation buttons are visible and properly styled
+        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavOptions', 'btnNavBackup')
+        
+        foreach ($btnName in $navButtons) {
+            $btn = $global:form.FindName($btnName)
+            if ($btn) {
+                $btn.Visibility = "Visible"
+                $btn.IsEnabled = $true
+                $btn.Opacity = 1.0
+                
+                # Apply consistent navigation styling
+                $btn.Margin = "5,2,5,2"
+                $btn.Padding = "10,8,10,8"
+                $btn.BorderThickness = "1"
+                $btn.FontWeight = "SemiBold"
+                $btn.FontSize = 13
+                
+                Log "Navigation button $btnName visibility ensured" 'Success'
+            } else {
+                Log "Warning: Navigation button $btnName not found" 'Warning'
+            }
+        }
+        
+        # Ensure main sidebar/navigation panel is visible
+        $sidebarPanel = $global:form.FindName("sidebarPanel")
+        if ($sidebarPanel) {
+            $sidebarPanel.Visibility = "Visible"
+            Log "Sidebar panel visibility ensured" 'Success'
+        }
+        
+        return $true
+        
+    } catch {
+        Log "Error ensuring navigation visibility: $($_.Exception.Message)" 'Warning'
+        return $false
+    }
+}
 
 function Initialize-AdvancedPanelControls {
     <#
@@ -896,6 +976,160 @@ function Initialize-AdvancedPanelControls {
         
     } catch {
         Log "Error initializing advanced panel controls: $($_.Exception.Message)" 'Error'
+        return $false
+    }
+}
+
+function Fix-ActivityLogLayout {
+    <#
+    .SYNOPSIS
+    Fixes activity log box sizing and layout issues
+    .DESCRIPTION
+    Ensures the activity log has proper dimensions, visibility, and formatting
+    #>
+    
+    try {
+        Log "Fixing activity log layout..." 'Info'
+        
+        if (-not $global:form) {
+            Log "Warning: Form not available for activity log fixes" 'Warning'
+            return $false
+        }
+        
+        # Find the activity log text box
+        $activityLog = $global:form.FindName("txtActivityLog")
+        if (-not $activityLog) {
+            Log "Warning: Activity log control not found" 'Warning'
+            return $false
+        }
+        
+        # Fix layout properties
+        $activityLog.Width = "Auto"
+        $activityLog.Height = "200"
+        $activityLog.MinHeight = "150"
+        $activityLog.MaxHeight = "300"
+        $activityLog.Margin = "10,5,10,10"
+        $activityLog.Padding = "8,5,8,5"
+        
+        # Fix text properties
+        $activityLog.FontFamily = "Consolas, Courier New"
+        $activityLog.FontSize = "11"
+        $activityLog.TextWrapping = "Wrap"
+        $activityLog.VerticalScrollBarVisibility = "Auto"
+        $activityLog.HorizontalScrollBarVisibility = "Auto"
+        $activityLog.IsReadOnly = $true
+        
+        # Fix visibility and enable state
+        $activityLog.Visibility = "Visible"
+        $activityLog.IsEnabled = $true
+        $activityLog.Opacity = 1.0
+        
+        # Apply theme colors if available
+        if ($global:KoalaTheme) {
+            $activityLog.Background = $global:KoalaTheme.LogBg
+            $activityLog.Foreground = $global:KoalaTheme.Text
+            $activityLog.BorderBrush = $global:KoalaTheme.Primary
+        }
+        
+        # Set border properties
+        $activityLog.BorderThickness = "1"
+        $activityLog.CornerRadius = "4"
+        
+        Log "Activity log layout fixed successfully" 'Success'
+        return $true
+        
+    } catch {
+        Log "Error fixing activity log layout: $($_.Exception.Message)" 'Error'
+        return $false
+    }
+}
+
+function Fix-AllButtonVisibility {
+    <#
+    .SYNOPSIS
+    Fixes button visibility and styling across the entire application
+    .DESCRIPTION
+    Ensures all buttons are visible, properly styled, and have consistent appearance
+    #>
+    
+    try {
+        Log "Fixing all button visibility and styling..." 'Info'
+        
+        if (-not $global:form) {
+            Log "Warning: Form not available for button fixes" 'Warning'
+            return $false
+        }
+        
+        # Get all buttons in the form
+        $allButtons = $global:form.FindName("*") | Where-Object { $_ -is [System.Windows.Controls.Button] }
+        
+        if (-not $allButtons) {
+            Log "Warning: No buttons found in form" 'Warning'
+            return $false
+        }
+        
+        $fixedButtons = 0
+        foreach ($button in $allButtons) {
+            try {
+                # Fix visibility and enable state
+                $button.Visibility = "Visible"
+                $button.IsEnabled = $true
+                $button.Opacity = 1.0
+                
+                # Fix basic styling
+                $button.FontFamily = "Segoe UI"
+                $button.FontWeight = "Normal"
+                
+                # Apply size constraints
+                if ($button.Name -like "*Nav*") {
+                    # Navigation buttons
+                    $button.FontSize = "13"
+                    $button.FontWeight = "SemiBold"
+                    $button.Margin = "5,2,5,2"
+                    $button.Padding = "10,8,10,8"
+                } else {
+                    # Regular buttons
+                    $button.FontSize = "12"
+                    $button.Margin = "5,3,5,3"
+                    $button.Padding = "8,5,8,5"
+                }
+                
+                # Fix border properties
+                $button.BorderThickness = "1"
+                $button.CornerRadius = "3"
+                
+                # Apply theme colors if available
+                if ($global:KoalaTheme) {
+                    if ($button.Name -like "*Nav*") {
+                        # Navigation button styling
+                        if ($button.Tag -eq "Selected") {
+                            $button.Background = $global:KoalaTheme.SelectedBackground
+                            $button.BorderBrush = $global:KoalaTheme.ButtonBorder
+                        } else {
+                            $button.Background = $global:KoalaTheme.UnselectedBackground
+                            $button.BorderBrush = $global:KoalaTheme.Primary
+                        }
+                        $button.Foreground = $global:KoalaTheme.Text
+                    } else {
+                        # Regular button styling
+                        $button.Background = $global:KoalaTheme.ButtonBackground
+                        $button.Foreground = $global:KoalaTheme.ButtonText
+                        $button.BorderBrush = $global:KoalaTheme.ButtonBorder
+                    }
+                }
+                
+                $fixedButtons++
+                
+            } catch {
+                Log "Warning: Could not fix button '$($button.Name)': $($_.Exception.Message)" 'Warning'
+            }
+        }
+        
+        Log "Button visibility fix complete: $fixedButtons buttons processed" 'Success'
+        return $true
+        
+    } catch {
+        Log "Error fixing button visibility: $($_.Exception.Message)" 'Error'
         return $false
     }
 }
@@ -1245,7 +1479,7 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
     }
 }
-#> END OF DUPLICATE LOG FUNCTION COMMENT
+# END OF DUPLICATE LOG FUNCTION COMMENT
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
@@ -1661,196 +1895,256 @@ function Get-SystemHealthStatus {
     }
 }
 
-function Start-SystemHealthCheck {
+function Check-SystemHealthManual {
     <#
     .SYNOPSIS
-    Starts system health monitoring in background to prevent UI freezing
+    Manual-only system health check that runs when user clicks View Details
     .DESCRIPTION
-    Initiates a non-blocking system health check using background runspace
+    Performs comprehensive system health check only when manually triggered
     #>
     
     try {
-        # Check if a health check is already running
-        if ($global:BackgroundJobs.ContainsKey("SystemHealth")) {
-            Log "System health check already in progress" 'Info'
-            return
+        Log "Performing manual system health check..." 'Info'
+        
+        # Initialize health data structure
+        $healthData = @{
+            OverallScore = 100
+            Issues = @()
+            Warnings = @()
+            Recommendations = @()
+            Status = "Checking..."
+            Metrics = @{}
+            LastChecked = Get-Date
         }
         
-        Log "Starting background system health check..." 'Info'
-        
-        # Start health check in background
-        $healthCheckScript = {
-            try {
-                # Import the logging function for the background runspace
-                function Log { 
-                    param([string]$Message, [string]$Level = 'Info')
-                    # Simplified logging for background operations
-                    Write-Verbose "[$Level] $Message"
-                }
+        # Memory analysis
+        try {
+            $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
+            if ($memInfo) {
+                $totalMemory = $memInfo.TotalVisibleMemorySize * 1KB
+                $freeMemory = $memInfo.FreePhysicalMemory * 1KB
+                $usedMemory = $totalMemory - $freeMemory
+                $memoryUsagePercent = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
                 
-                # Simplified health check for background operation
-                $healthData = @{
-                    OverallScore = 100
-                    Issues = @()
-                    Warnings = @()
-                    Recommendations = @()
-                    Status = "Excellent"
-                    Metrics = @{}
-                }
+                $healthData.Metrics.MemoryUsage = $memoryUsagePercent
+                $healthData.Metrics.TotalMemoryGB = [math]::Round($totalMemory / 1GB, 1)
+                $healthData.Metrics.FreeMemoryGB = [math]::Round($freeMemory / 1GB, 1)
                 
-                # Memory check (quick)
-                try {
-                    $memInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
-                    if ($memInfo) {
-                        $totalMemory = $memInfo.TotalVisibleMemorySize * 1KB
-                        $freeMemory = $memInfo.FreePhysicalMemory * 1KB
-                        $usedMemory = $totalMemory - $freeMemory
-                        $memoryUsagePercent = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
-                        
-                        $healthData.Metrics.MemoryUsage = $memoryUsagePercent
-                        
-                        if ($memoryUsagePercent -gt 90) {
-                            $healthData.Issues += "Critical memory usage: $memoryUsagePercent%"
-                            $healthData.OverallScore -= 25
-                        } elseif ($memoryUsagePercent -gt 80) {
-                            $healthData.Warnings += "High memory usage: $memoryUsagePercent%"
-                            $healthData.OverallScore -= 15
-                        }
-                    }
-                } catch {
-                    # Silent fail for memory check
-                }
-                
-                # CPU check (quick)
-                try {
-                    $cpuUsage = Get-Counter "\Processor(_Total)\% Processor Time" -SampleInterval 1 -MaxSamples 1 -ErrorAction SilentlyContinue
-                    if ($cpuUsage) {
-                        $cpuPercent = [math]::Round($cpuUsage.CounterSamples[0].CookedValue, 1)
-                        $healthData.Metrics.CpuUsage = $cpuPercent
-                        
-                        if ($cpuPercent -gt 90) {
-                            $healthData.Issues += "Critical CPU usage: $cpuPercent%"
-                            $healthData.OverallScore -= 20
-                        } elseif ($cpuPercent -gt 75) {
-                            $healthData.Warnings += "High CPU usage: $cpuPercent%"
-                            $healthData.OverallScore -= 10
-                        }
-                    }
-                } catch {
-                    # Silent fail for CPU check
-                }
-                
-                # Process count check (quick)
-                try {
-                    $processCount = (Get-Process).Count
-                    $healthData.Metrics.ProcessCount = $processCount
-                    
-                    if ($processCount -gt 200) {
-                        $healthData.Warnings += "High number of running processes: $processCount"
-                        $healthData.OverallScore -= 8
-                    }
-                } catch {
-                    # Silent fail for process check
-                }
-                
-                # Determine overall status
-                if ($healthData.OverallScore -ge 90) {
-                    $healthData.Status = "Excellent"
-                } elseif ($healthData.OverallScore -ge 75) {
-                    $healthData.Status = "Good"
-                } elseif ($healthData.OverallScore -ge 60) {
-                    $healthData.Status = "Fair"
-                } elseif ($healthData.OverallScore -ge 40) {
-                    $healthData.Status = "Poor"
-                } else {
-                    $healthData.Status = "Critical"
-                }
-                
-                return $healthData
-                
-            } catch {
-                return @{
-                    OverallScore = 0
-                    Issues = @("Health check failed")
-                    Warnings = @()
-                    Recommendations = @("Run as Administrator for complete health analysis")
-                    Status = "Unknown"
-                    Metrics = @{}
+                if ($memoryUsagePercent -gt 90) {
+                    $healthData.Issues += "Critical memory usage: $memoryUsagePercent%"
+                    $healthData.OverallScore -= 25
+                    $healthData.Recommendations += "Close unnecessary applications to free memory"
+                } elseif ($memoryUsagePercent -gt 80) {
+                    $healthData.Warnings += "High memory usage: $memoryUsagePercent%"
+                    $healthData.OverallScore -= 15
                 }
             }
+        } catch {
+            $healthData.Warnings += "Could not analyze memory usage"
         }
         
-        Start-BackgroundOperation -ScriptBlock $healthCheckScript -Name "SystemHealth"
+        # CPU analysis
+        try {
+            $cpuUsage = Get-Counter "\Processor(_Total)\% Processor Time" -SampleInterval 2 -MaxSamples 1 -ErrorAction SilentlyContinue
+            if ($cpuUsage) {
+                $cpuPercent = [math]::Round($cpuUsage.CounterSamples[0].CookedValue, 1)
+                $healthData.Metrics.CpuUsage = $cpuPercent
+                
+                if ($cpuPercent -gt 90) {
+                    $healthData.Issues += "Critical CPU usage: $cpuPercent%"
+                    $healthData.OverallScore -= 20
+                    $healthData.Recommendations += "Check for high CPU usage processes in Task Manager"
+                } elseif ($cpuPercent -gt 75) {
+                    $healthData.Warnings += "High CPU usage: $cpuPercent%"
+                    $healthData.OverallScore -= 10
+                }
+            }
+        } catch {
+            $healthData.Warnings += "Could not analyze CPU usage"
+        }
+        
+        # Process analysis
+        try {
+            $processes = Get-Process
+            $processCount = $processes.Count
+            $healthData.Metrics.ProcessCount = $processCount
+            
+            # Find top memory consuming processes
+            $topProcesses = $processes | Sort-Object WorkingSet -Descending | Select-Object -First 5
+            $healthData.Metrics.TopProcesses = $topProcesses | ForEach-Object { 
+                @{
+                    Name = $_.ProcessName
+                    MemoryMB = [math]::Round($_.WorkingSet / 1MB, 1)
+                }
+            }
+            
+            if ($processCount -gt 200) {
+                $healthData.Warnings += "High number of running processes: $processCount"
+                $healthData.OverallScore -= 8
+                $healthData.Recommendations += "Consider closing unnecessary applications"
+            }
+        } catch {
+            $healthData.Warnings += "Could not analyze running processes"
+        }
+        
+        # Disk space analysis
+        try {
+            $drives = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" -ErrorAction SilentlyContinue
+            foreach ($drive in $drives) {
+                $freeSpacePercent = [math]::Round(($drive.FreeSpace / $drive.Size) * 100, 1)
+                if ($freeSpacePercent -lt 10) {
+                    $healthData.Issues += "Critical disk space on $($drive.DeviceID): $freeSpacePercent% free"
+                    $healthData.OverallScore -= 20
+                    $healthData.Recommendations += "Free up disk space on drive $($drive.DeviceID)"
+                } elseif ($freeSpacePercent -lt 20) {
+                    $healthData.Warnings += "Low disk space on $($drive.DeviceID): $freeSpacePercent% free"
+                    $healthData.OverallScore -= 10
+                }
+            }
+        } catch {
+            $healthData.Warnings += "Could not analyze disk space"
+        }
+        
+        # Determine overall status
+        if ($healthData.OverallScore -ge 90) {
+            $healthData.Status = "Excellent"
+        } elseif ($healthData.OverallScore -ge 75) {
+            $healthData.Status = "Good"
+        } elseif ($healthData.OverallScore -ge 60) {
+            $healthData.Status = "Fair"
+        } elseif ($healthData.OverallScore -ge 40) {
+            $healthData.Status = "Poor"
+        } else {
+            $healthData.Status = "Critical"
+        }
+        
+        # Store result globally for display
+        $global:LastHealthCheck = $healthData
+        
+        Log "Manual health check completed - Status: $($healthData.Status), Score: $($healthData.OverallScore)" 'Success'
+        return $healthData
         
     } catch {
-        Log "Error starting background system health check: $($_.Exception.Message)" 'Error'
+        Log "Error performing manual health check: $($_.Exception.Message)" 'Error'
+        return @{
+            OverallScore = 0
+            Issues = @("Health check failed: $($_.Exception.Message)")
+            Warnings = @()
+            Recommendations = @("Run as Administrator for complete health analysis")
+            Status = "Error"
+            Metrics = @{}
+            LastChecked = Get-Date
+        }
     }
 }
 
-function Get-SystemHealthCheckResult {
+function Initialize-SystemHealthDisplay {
     <#
     .SYNOPSIS
-    Gets the result of the background system health check if completed
+    Initializes the health display to show 'Status: Unchecked' until manual check
     .DESCRIPTION
-    Non-blocking check for completed health status
-    #>
-    
-    return Get-BackgroundOperationResult -Name "SystemHealth"
-}
-
-function Update-SystemHealthDisplay {
-    <#
-    .SYNOPSIS
-    Updates the dashboard with current system health information
-    .DESCRIPTION
-    Displays health status, warnings, and recommendations in the dashboard area
+    Sets up the health display area with unchecked status and View Details button
     #>
     
     try {
-        $healthData = Get-SystemHealthStatus
-        $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
+        Log "Initializing system health display..." 'Info'
         
-        # Update health status in dashboard if labels exist
-        if ($lblDashSystemHealth) {
-            $lblDashSystemHealth.Dispatcher.Invoke([Action]{
-                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
-                
-                # Color coding based on health status
-                switch ($healthData.Status) {
-                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }  # Green
-                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }       # Gold
-                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
-                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
-                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
-                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
+        if (-not $global:form) {
+            Log "Warning: Form not available for health display initialization" 'Warning'
+            return $false
+        }
+        
+        # Find health display elements
+        $lblHealthStatus = $global:form.FindName("lblHealthStatus")
+        $lblHealthScore = $global:form.FindName("lblHealthScore")
+        $btnViewHealthDetails = $global:form.FindName("btnViewHealthDetails")
+        
+        # Set initial unchecked status
+        if ($lblHealthStatus) {
+            $lblHealthStatus.Content = "Status: Unchecked"
+            $lblHealthStatus.Foreground = "#FBB6CE"  # Light pink for unchecked
+        }
+        
+        if ($lblHealthScore) {
+            $lblHealthScore.Content = "Score: --"
+            $lblHealthScore.Foreground = "#9CA3AF"  # Gray for unchecked
+        }
+        
+        # Ensure View Details button is visible and enabled
+        if ($btnViewHealthDetails) {
+            $btnViewHealthDetails.Visibility = "Visible"
+            $btnViewHealthDetails.IsEnabled = $true
+            $btnViewHealthDetails.Content = "View Details"
+            
+            # Remove any existing event handlers
+            $btnViewHealthDetails.remove_Click
+            
+            # Add manual health check event handler
+            $btnViewHealthDetails.Add_Click({
+                try {
+                    Log "User requested manual health check..." 'Info'
+                    
+                    # Update button to show checking state
+                    $btnViewHealthDetails.IsEnabled = $false
+                    $btnViewHealthDetails.Content = "Checking..."
+                    
+                    # Perform manual health check
+                    $healthResult = Check-SystemHealthManual
+                    
+                    # Update display with results
+                    if ($lblHealthStatus) {
+                        $lblHealthStatus.Content = "Status: $($healthResult.Status)"
+                        switch ($healthResult.Status) {
+                            "Excellent" { $lblHealthStatus.Foreground = "#10B981" }  # Green
+                            "Good" { $lblHealthStatus.Foreground = "#059669" }       # Dark green
+                            "Fair" { $lblHealthStatus.Foreground = "#F59E0B" }       # Orange
+                            "Poor" { $lblHealthStatus.Foreground = "#EF4444" }       # Red
+                            "Critical" { $lblHealthStatus.Foreground = "#DC2626" }   # Dark red
+                            default { $lblHealthStatus.Foreground = "#6B7280" }      # Gray
+                        }
+                    }
+                    
+                    if ($lblHealthScore) {
+                        $lblHealthScore.Content = "Score: $($healthResult.OverallScore)"
+                        if ($healthResult.OverallScore -ge 80) {
+                            $lblHealthScore.Foreground = "#10B981"  # Green
+                        } elseif ($healthResult.OverallScore -ge 60) {
+                            $lblHealthScore.Foreground = "#F59E0B"  # Orange
+                        } else {
+                            $lblHealthScore.Foreground = "#EF4444"  # Red
+                        }
+                    }
+                    
+                    # Show detailed results if there are issues
+                    if ($healthResult.Issues.Count -gt 0 -or $healthResult.Warnings.Count -gt 0) {
+                        Show-SystemHealthDialog
+                    }
+                    
+                    # Re-enable button
+                    $btnViewHealthDetails.IsEnabled = $true
+                    $btnViewHealthDetails.Content = "Refresh Health"
+                    
+                    Log "Health check display updated" 'Success'
+                    
+                } catch {
+                    Log "Error in manual health check button handler: $($_.Exception.Message)" 'Error'
+                    $btnViewHealthDetails.IsEnabled = $true
+                    $btnViewHealthDetails.Content = "View Details"
                 }
             })
         }
         
-        # Log health warnings if any
-        if ($healthData.Issues.Count -gt 0) {
-            foreach ($issue in $healthData.Issues) {
-                Log "System Health ISSUE: $issue" 'Warning'
-            }
-        }
-        
-        if ($healthData.Warnings.Count -gt 0) {
-            foreach ($warning in $healthData.Warnings) {
-                Log "System Health WARNING: $warning" 'Info'
-            }
-        }
-        
-        # Log recommendations
-        if ($healthData.Recommendations.Count -gt 0) {
-            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
-        } else {
-            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
-        }
+        Log "System health display initialized - manual check only" 'Success'
+        return $true
         
     } catch {
-        Log "Error updating system health display: $($_.Exception.Message)" 'Warning'
+        Log "Error initializing system health display: $($_.Exception.Message)" 'Error'
+        return $false
     }
 }
+
+
+
 
 function Show-SystemHealthDialog {
     <#
@@ -1861,10 +2155,13 @@ function Show-SystemHealthDialog {
     #>
     
     try {
-        # Start background system health check to prevent UI freezing
-        Start-SystemHealthCheck
+        # DISABLED: Automatic health checks to prevent UI freezing and follow manual-only policy
+        # Start-SystemHealthCheck
         
-        # Show a loading message initially
+        # Initialize manual health check display instead
+        Initialize-SystemHealthDisplay
+        
+        # Show unchecked status initially
         $healthData = @{
             OverallScore = 0
             Issues = @("Loading system health data...")
@@ -11580,7 +11877,8 @@ if (-not $controlsValid) {
 
 # Start real-time performance monitoring for dashboard
 Log "Starting real-time performance monitoring..." 'Info'
-Start-PerformanceMonitoring
+# DISABLED: Automatic performance monitoring to prevent UI freezing and follow manual-only policy
+# Start-PerformanceMonitoring
 
 # Start enhanced game detection monitoring
 Log "Initializing game detection monitoring (automatic detection disabled by default)..." 'Info'
@@ -11782,15 +12080,68 @@ function Initialize-AllFixes {
     try {
         Log "Initializing all fixes and enhancements..." 'Info'
         
-        # Fix #4: ComboBox theme styling
+        # Fix #1: Apply theme colors and ensure navigation visibility
+        Apply-KoalaTheme
+        Ensure-NavigationVisibility
+        
+        # Fix #2: Fix activity log layout and sizing
+        Fix-ActivityLogLayout
+        
+        # Fix #3: Fix all button visibility and styling
+        Fix-AllButtonVisibility
+        
+        # Fix #4: ComboBox theme styling (existing)
         Apply-ComboBoxThemeFix -ThemeName "Dark"
         
-        # Fix #5: Advanced Settings warning banner
+        # Fix #5: Advanced Settings warning banner (existing)
         Add-AdvancedWarning
         
-        # Fix #6: Enhanced UI timers for anti-freeze
+        # Fix #6: Enhanced UI timers for anti-freeze (existing)
         Initialize-EnhancedUITimer
         Start-AntiFreezeWorker
+        
+        # Fix #7: Initialize manual-only health check system
+        Initialize-SystemHealthDisplay
+        
+        # Fix #8: Ensure all UI elements are properly initialized
+        if ($global:form) {
+            try {
+                # Ensure all panels are properly configured
+                $panels = @('panelDashboard', 'panelBasicOpt', 'panelAdvanced', 'panelGames', 'panelNetwork', 'panelOptions', 'panelBackup')
+                foreach ($panelName in $panels) {
+                    $panel = $global:form.FindName($panelName)
+                    if ($panel) {
+                        $panel.Visibility = "Visible"
+                        if ($panelName -eq 'panelDashboard') {
+                            # Dashboard should be visible by default
+                            $panel.Visibility = "Visible"
+                        } else {
+                            # Other panels hidden by default
+                            $panel.Visibility = "Collapsed"
+                        }
+                    }
+                }
+                
+                # Ensure navigation buttons are properly initialized
+                $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavOptions', 'btnNavBackup')
+                foreach ($btnName in $navButtons) {
+                    $btn = $global:form.FindName($btnName)
+                    if ($btn) {
+                        $btn.IsEnabled = $true
+                        $btn.Visibility = "Visible"
+                        if ($btnName -eq 'btnNavDashboard') {
+                            $btn.Tag = "Selected"
+                        } else {
+                            $btn.Tag = $null
+                        }
+                    }
+                }
+                
+                Log "UI elements initialization completed" 'Success'
+            } catch {
+                Log "Warning during UI elements initialization: $($_.Exception.Message)" 'Warning'
+            }
+        }
         
         Log "All fixes and enhancements initialized successfully" 'Success'
     }
