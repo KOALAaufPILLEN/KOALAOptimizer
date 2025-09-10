@@ -64,6 +64,54 @@ $global:RunspacePool = $null
 $global:WpfApplication = $null
 $global:ControlCache = @{}
 
+# ---------- Main Logging Function (Fix #1: Define Log function before Write-ActivityLog) ----------
+function Log {
+    <#
+    .SYNOPSIS
+    Main logging function for the application
+    .DESCRIPTION
+    Handles all logging operations with different severity levels
+    .PARAMETER Message
+    The message to log
+    .PARAMETER Level
+    The severity level (Info, Warning, Error, Success)
+    #>
+    param(
+        [string]$Message,
+        [string]$Level = 'Info'
+    )
+    
+    # Format timestamp
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    
+    # Output to console with color based on level
+    $color = switch ($Level) {
+        'Error' { 'Red' }
+        'Warning' { 'Yellow' }
+        'Success' { 'Green' }
+        default { 'White' }
+    }
+    
+    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $color
+    
+    # Add to log file if needed
+    if ($global:LogFile) {
+        Add-Content -Path $global:LogFile -Value "[$timestamp] [$Level] $Message" -ErrorAction SilentlyContinue
+    }
+    
+    # Add to UI log box if available
+    if ($global:LogBoxAvailable -and $global:LogBox) {
+        try {
+            $global:LogBox.Dispatcher.Invoke([Action]{
+                $global:LogBox.AppendText("[$timestamp] [$Level] $Message`r`n")
+                $global:LogBox.ScrollToEnd()
+            })
+        } catch {
+            # Silent fail if UI not ready
+        }
+    }
+}
+
 # ---------- Activity Log Function (Fix #1: Missing Write-ActivityLog Function) ----------
 function Write-ActivityLog {
     <#
@@ -85,7 +133,7 @@ function Write-ActivityLog {
     Log $Message $Level
 }
 
-# ---------- WPF Application Singleton Management (Fix #1: Multiple Application Instance Error) ----------
+# ---------- WPF Application Singleton Management (Fix #2: Robust WPF Application Singleton) ----------
 function Get-WpfApplication {
     <#
     .SYNOPSIS
@@ -96,11 +144,27 @@ function Get-WpfApplication {
     
     if (-not $global:WpfApplication) {
         try {
+            # CRITICAL: Check for existing application FIRST
+            $existingApp = [System.Windows.Application]::Current
+            if ($existingApp) {
+                $global:WpfApplication = $existingApp
+                Write-ActivityLog "Reusing existing WPF Application instance" 'Info'
+                return $global:WpfApplication
+            }
+            
+            # Only create new if none exists
             $global:WpfApplication = New-Object System.Windows.Application
             Write-ActivityLog "WPF Application singleton instance created" 'Info'
         } catch {
-            Write-ActivityLog "Error creating WPF Application singleton: $($_.Exception.Message)" 'Error'
-            throw
+            # If creation fails, try to use existing
+            $existingApp = [System.Windows.Application]::Current
+            if ($existingApp) {
+                $global:WpfApplication = $existingApp
+                Write-ActivityLog "Using existing WPF Application after creation failure" 'Warning'
+            } else {
+                Write-ActivityLog "Error creating WPF Application singleton: $($_.Exception.Message)" 'Error'
+                throw
+            }
         }
     }
     
@@ -533,7 +597,7 @@ function Optimize-UIResponsiveness {
         
         # Set optimal dispatcher priority for UI updates
         if ($form.Dispatcher) {
-            $form.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Background, [Action]{
+            $null = $form.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Background, [Action]{
                 # Force initial layout update
                 $form.UpdateLayout()
             })
@@ -1330,6 +1394,8 @@ function Get-LogColor($Level) {
     }
 }
 
+# ---------- DUPLICATE LOG FUNCTION COMMENTED OUT (replaced by simplified version at top) ----------
+<# DUPLICATE LOG FUNCTION - REMOVED
 function Log {
     param([string]$msg, [string]$Level = 'Info')
     
@@ -1499,6 +1565,7 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
     }
 }
+#> END OF DUPLICATE LOG FUNCTION COMMENT
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
@@ -4887,6 +4954,9 @@ Get-WpfApplication | Out-Null
 try {
     $reader = New-Object System.Xml.XmlNodeReader $xaml
     $form = [Windows.Markup.XamlReader]::Load($reader)
+    
+    # CRITICAL FIX: Assign to global scope for access from other functions
+    $global:form = $form
     
     # Fix #10: Enable Double Buffering for smooth visual experience
     try {
@@ -12643,9 +12713,19 @@ function Show-MainForm {
         # Fix #7: Use singleton WPF Application for proper message loop
         Write-ActivityLog "Starting main application with singleton WPF Application and proper message loop..." 'Info'
         
+        # Validate that form is properly loaded before attempting to run
+        if (-not $global:form -or -not $global:form.GetType) {
+            throw "Main form was not properly initialized. Cannot start application."
+        }
+        
+        Write-ActivityLog "Form validation passed. Starting WPF Application..." 'Info'
+        
         # Get singleton WPF Application instance to prevent multiple application instance errors
         $app = Get-WpfApplication
-        $app.Run($form) | Out-Null
+        
+        # CRITICAL FIX: Use ShowDialog() instead of Run() to prevent application lifecycle issues
+        # Run() takes control of the entire application message loop which can cause conflicts
+        $null = $global:form.ShowDialog()
         
     } catch {
         Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
