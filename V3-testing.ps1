@@ -2509,7 +2509,7 @@ function Show-LogSearchDialog {
         $btnCloseSearch = $searchWindow.FindName('btnCloseSearch')
         
         # Initialize category dropdown
-        $global:LogCategories | ForEach-Object { $cmbCategory.Items.Add($_) }
+        $global:LogCategories | ForEach-Object { [void]$cmbCategory.Items.Add($_) }
         $cmbCategory.SelectedIndex = 0
         
         # Update results info
@@ -4881,6 +4881,9 @@ function Remove-Reg {
 '@
 
 # ---------- Build WPF UI ----------
+# Ensure singleton WPF Application instance is created before XAML loading
+Get-WpfApplication | Out-Null
+
 try {
     $reader = New-Object System.Xml.XmlNodeReader $xaml
     $form = [Windows.Markup.XamlReader]::Load($reader)
