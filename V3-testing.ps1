@@ -996,44 +996,92 @@ function Update-SystemHealthDisplay {
     #>
     
     try {
-        $healthData = Get-SystemHealthStatus
-        $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
+        # Fix: Enhanced error handling for system health data retrieval
+        $healthData = $null
+        try {
+            $healthData = Get-SystemHealthStatus
+            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
+        } catch {
+            Log "Error retrieving system health data: $($_.Exception.Message)" 'Warning'
+            return
+        }
         
+        # Fix: Enhanced UI update segment with robust try-catch error handling
         # Update health status in dashboard if labels exist
         if ($lblDashSystemHealth) {
-            $lblDashSystemHealth.Dispatcher.Invoke([Action]{
-                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
-                
-                # Color coding based on health status
-                switch ($healthData.Status) {
-                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }  # Green
-                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }       # Gold
-                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
-                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
-                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
-                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
-                }
-            })
+            try {
+                $lblDashSystemHealth.Dispatcher.Invoke([Action]{
+                    try {
+                        # Fix: Protected UI text property update
+                        $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
+                        
+                        # Fix: Protected UI color coding with individual try-catch for each property update
+                        try {
+                            # Color coding based on health status
+                            switch ($healthData.Status) {
+                                'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }  # Green
+                                'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }       # Gold
+                                'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
+                                'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
+                                'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
+                                default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
+                            }
+                        } catch {
+                            # Fix: Fallback for color update failure
+                            try { $lblDashSystemHealth.Foreground = "#B8B3E6" } catch { }
+                        }
+                    } catch {
+                        Write-Verbose "Dashboard UI update failed - silent fail to prevent application disruption"
+                    }
+                })
+            } catch {
+                Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'
+            }
         }
         
+        # Fix: Enhanced logging segment with individual try-catch blocks
         # Log health warnings if any
-        if ($healthData.Issues.Count -gt 0) {
-            foreach ($issue in $healthData.Issues) {
-                Log "System Health ISSUE: $issue" 'Warning'
+        try {
+            if ($healthData.Issues.Count -gt 0) {
+                foreach ($issue in $healthData.Issues) {
+                    try {
+                        Log "System Health ISSUE: $issue" 'Warning'
+                    } catch {
+                        Write-Verbose "Failed to log health issue: $issue"
+                    }
+                }
             }
+        } catch {
+            Write-Verbose "Error processing health issues for logging"
         }
         
-        if ($healthData.Warnings.Count -gt 0) {
-            foreach ($warning in $healthData.Warnings) {
-                Log "System Health WARNING: $warning" 'Info'
+        try {
+            if ($healthData.Warnings.Count -gt 0) {
+                foreach ($warning in $healthData.Warnings) {
+                    try {
+                        Log "System Health WARNING: $warning" 'Info'
+                    } catch {
+                        Write-Verbose "Failed to log health warning: $warning"
+                    }
+                }
             }
+        } catch {
+            Write-Verbose "Error processing health warnings for logging"
         }
         
-        # Log recommendations
-        if ($healthData.Recommendations.Count -gt 0) {
-            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
-        } else {
-            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
+        # Fix: Enhanced recommendation logging with try-catch protection
+        try {
+            if ($healthData.Recommendations.Count -gt 0) {
+                Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
+            } else {
+                Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
+            }
+        } catch {
+            try {
+                Log "System Health Check completed with logging errors" 'Warning'
+            } catch {
+                Write-Verbose "Critical logging failure in health display update"
+            }
         }
         
     } catch {
@@ -6729,29 +6777,37 @@ function Update-TextStyles {
 function Update-PanelStyles {
     param($Background, $Sidebar, $Border)
     
-    # Update Sidebar - with bounds checking  
-    if ($form.Children -and $form.Children.Count -gt 0) {
-        $firstChild = $form.Children[0]
-        if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-            $sidebar = $firstChild.Children[0]
-            if ($sidebar -is [System.Windows.Controls.Border]) {
-                try { $sidebar.Background = $Sidebar } catch { }
-                try { $sidebar.BorderBrush = $Border } catch { }
+    # Fix: Added comprehensive try-catch wrapper for all UI update operations
+    try {
+        # Update Sidebar - with bounds checking  
+        if ($form.Children -and $form.Children.Count -gt 0) {
+            $firstChild = $form.Children[0]
+            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
+                $sidebar = $firstChild.Children[0]
+                if ($sidebar -is [System.Windows.Controls.Border]) {
+                    try { $sidebar.Background = $Sidebar } catch { }
+                    try { $sidebar.BorderBrush = $Border } catch { }
+                }
             }
         }
-    }
-    
-    # Update andere Borders
-    $borders = @()
-    Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
-    
-    foreach ($border in $borders) {
-        if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
-            $border.Background = $Background
+        
+        # Update andere Borders
+        $borders = @()
+        Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
+        
+        foreach ($border in $borders) {
+            if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
+                # Fix: Added try-catch for UI property update to prevent runtime errors
+                try { $border.Background = $Background } catch { }
+            }
+            if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
+                # Fix: Added try-catch for UI property update to prevent runtime errors
+                try { $border.BorderBrush = $Border } catch { }
+            }
         }
-        if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-            $border.BorderBrush = $Border
-        }
+    } catch {
+        # Fix: Added comprehensive error handling for panel style updates
+        Log "Error updating panel styles: $($_.Exception.Message)" 'Warning'
     }
 }
 
