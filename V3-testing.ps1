@@ -992,168 +992,291 @@ function Update-SystemHealthDisplay {
     .SYNOPSIS
     Updates the dashboard with current system health information
     .DESCRIPTION
-    Displays health status, warnings, and recommendations in the dashboard area
+    Displays health status, warnings, and recommendations in the dashboard area with robust error handling
     #>
     
+    # Main function wrapper with comprehensive error handling
     try {
-        # Fix: Enhanced error handling for system health data retrieval with fallback data
+        # SEGMENT 1: Health Data Retrieval with robust error handling and fallback
         $healthData = $null
         try {
+            # Attempt to retrieve system health data
             $healthData = Get-SystemHealthStatus
-            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date }
-        } catch {
-            # Fix: Default fallback health data when retrieval fails
-            Log "Error retrieving system health data, using fallback data: $($_.Exception.Message)" 'Warning'
-            $healthData = @{
-                Status = 'Unknown'
-                OverallScore = 0
-                Issues = @('Health monitoring temporarily unavailable')
-                Warnings = @()
-                Recommendations = @('System health monitoring will resume automatically')
+            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $false }
+            
+            # Validate retrieved data structure
+            if (-not $healthData -or -not $healthData.Status) {
+                throw "Invalid health data structure returned"
             }
-            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true }
         }
-        
-        # Fix: Enhanced UI update segment with robust try-catch error handling
-        # Update health status in dashboard if labels exist
-        if ($lblDashSystemHealth) {
+        catch {
+            # Default fallback health data when retrieval fails
             try {
-                # Fix: All UI updates wrapped in try/catch blocks
-                $lblDashSystemHealth.Dispatcher.Invoke([Action]{
-                    try {
-                        # Fix: Protected UI text property update
-                        $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
-                        
-                        # Fix: Protected UI color coding with individual try-catch for each property update
-                        try {
-                            # Color coding based on health status
-                            switch ($healthData.Status) {
-                                'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }  # Green
-                                'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }       # Gold
-                                'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }       # Orange
-                                'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }       # Light Red
-                                'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }   # Red
-                                'Unknown' { $lblDashSystemHealth.Foreground = "#888888" }    # Gray for fallback
-                                default { $lblDashSystemHealth.Foreground = "#B8B3E6" }      # Default
-                            }
-                        } catch {
-                            # Fix: Fallback for color update failure
-                            try { 
-                                $lblDashSystemHealth.Foreground = "#B8B3E6" 
-                                Log "Failed to update health display color" 'Warning'
-                            } catch { 
-                                Write-Verbose "Critical UI color update failure"
-                            }
-                        }
-                    } catch {
-                        # Fix: Error logging for UI update failures
-                        try {
-                            Log "Dashboard UI text update failed" 'Warning'
-                        } catch {
-                            Write-Verbose "Dashboard UI update failed - silent fail to prevent application disruption"
-                        }
-                    }
-                })
-            } catch {
-                # Fix: Error logging for any failures in health information display
-                Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'
+                Log "Error retrieving system health data, using fallback data: $($_.Exception.Message)" 'Warning'
+                $healthData = @{
+                    Status = 'Unknown'
+                    OverallScore = 0
+                    Issues = @('Health monitoring temporarily unavailable')
+                    Warnings = @('System health check failed - manual verification recommended')
+                    Recommendations = @('System health monitoring will resume automatically', 'Consider running manual diagnostics')
+                }
+                $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true }
+            }
+            catch {
+                # Critical fallback if even logging fails
+                Write-Verbose "Critical failure in health data retrieval and fallback processing"
+                $healthData = @{
+                    Status = 'Error'
+                    OverallScore = 0
+                    Issues = @('Critical health monitoring failure')
+                    Warnings = @()
+                    Recommendations = @()
+                }
+                $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true; CriticalError = $true }
             }
         }
         
-        # Fix: Enhanced logging segment with individual try-catch blocks
-        # Log health issues if any
+        # SEGMENT 2: UI Update with comprehensive error handling and error state management
+        try {
+            if ($lblDashSystemHealth) {
+                try {
+                    # UI updates with dispatcher invoke and nested error handling
+                    $lblDashSystemHealth.Dispatcher.Invoke([Action]{
+                        try {
+                            # Update display text with error state indication
+                            if ($global:SystemHealthData.CriticalError) {
+                                $lblDashSystemHealth.Text = "Error (System Check Failed)"
+                            }
+                            else {
+                                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
+                            }
+                            
+                            # Color coding with individual error handling for each color assignment
+                            try {
+                                switch ($healthData.Status) {
+                                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }    # Green
+                                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }         # Gold
+                                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }         # Orange
+                                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }         # Light Red
+                                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }     # Red
+                                    'Unknown' { $lblDashSystemHealth.Foreground = "#888888" }      # Gray for fallback
+                                    'Error' { $lblDashSystemHealth.Foreground = "#FF0000" }        # Bright Red for errors
+                                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }        # Default theme color
+                                }
+                            }
+                            catch {
+                                # Fallback color assignment with additional error handling
+                                try { 
+                                    $lblDashSystemHealth.Foreground = "#B8B3E6" 
+                                    Log "Failed to update health display color, using default" 'Warning'
+                                }
+                                catch { 
+                                    Write-Verbose "Critical UI color update failure - using system default"
+                                }
+                            }
+                            
+                            # Set UI error state if critical error occurred
+                            try {
+                                if ($global:SystemHealthData.CriticalError -and $lblDashSystemHealth.ToolTip) {
+                                    $lblDashSystemHealth.ToolTip = "Health monitoring encountered critical errors. Manual system check recommended."
+                                }
+                            }
+                            catch {
+                                Write-Verbose "Failed to set error state tooltip"
+                            }
+                        }
+                        catch {
+                            # UI text update error handling
+                            try {
+                                Log "Dashboard UI text update failed, attempting error state display" 'Warning'
+                                $lblDashSystemHealth.Text = "Health Check Error"
+                                $lblDashSystemHealth.Foreground = "#FF4444"
+                            }
+                            catch {
+                                Write-Verbose "Dashboard UI update failed completely - silent fail to prevent application disruption"
+                            }
+                        }
+                    })
+                }
+                catch {
+                    # Dispatcher invoke error handling
+                    try {
+                        Log "Error updating health display UI (Dispatcher): $($_.Exception.Message)" 'Warning'
+                        # Attempt direct UI update as fallback
+                        $lblDashSystemHealth.Text = "Health Update Error"
+                    }
+                    catch {
+                        Write-Verbose "Complete UI update failure for health display"
+                    }
+                }
+            }
+            else {
+                # Handle case where UI element doesn't exist
+                try {
+                    Log "Health display UI element not available" 'Info'
+                }
+                catch {
+                    Write-Verbose "Health display UI element not available and logging failed"
+                }
+            }
+        }
+        catch {
+            # Critical UI update error
+            try {
+                Log "Critical error in UI update segment: $($_.Exception.Message)" 'Error'
+            }
+            catch {
+                Write-Verbose "Critical UI update error and logging failure"
+            }
+        }
+        
+        # SEGMENT 3: Health Issues Logging with comprehensive error handling
         try {
             if ($healthData.Issues -and $healthData.Issues.Count -gt 0) {
                 foreach ($issue in $healthData.Issues) {
                     try {
                         Log "System Health ISSUE: $issue" 'Warning'
-                    } catch {
-                        # Fix: Error logging for any failures
+                    }
+                    catch {
+                        # Individual issue logging error handling
                         try {
                             Write-Verbose "Failed to log health issue: $issue"
                             Log "Failed to log a health issue" 'Warning'
-                        } catch {
+                        }
+                        catch {
                             Write-Verbose "Critical logging failure for health issue"
                         }
                     }
                 }
             }
-        } catch {
-            # Fix: Error logging for any failures in health information display
+        }
+        catch {
+            # Issues processing error handling
             try {
-                Log "Error processing health issues for logging" 'Warning'
-            } catch {
-                Write-Verbose "Error processing health issues for logging"
+                Log "Error processing health issues for logging: $($_.Exception.Message)" 'Warning'
+            }
+            catch {
+                Write-Verbose "Error processing health issues and logging failure"
             }
         }
         
-        # Fix: Enhanced warning processing with comprehensive error handling
+        # SEGMENT 4: Health Warnings Logging with comprehensive error handling
         try {
             if ($healthData.Warnings -and $healthData.Warnings.Count -gt 0) {
                 foreach ($warning in $healthData.Warnings) {
                     try {
                         Log "System Health WARNING: $warning" 'Info'
-                    } catch {
-                        # Fix: Error logging for any failures
+                    }
+                    catch {
+                        # Individual warning logging error handling
                         try {
                             Write-Verbose "Failed to log health warning: $warning"
                             Log "Failed to log a health warning" 'Warning'
-                        } catch {
+                        }
+                        catch {
                             Write-Verbose "Critical logging failure for health warning"
                         }
                     }
                 }
             }
-        } catch {
-            # Fix: Error logging for any failures in health information display
+        }
+        catch {
+            # Warnings processing error handling
             try {
-                Log "Error processing health warnings for logging" 'Warning'
-            } catch {
-                Write-Verbose "Error processing health warnings for logging"
+                Log "Error processing health warnings for logging: $($_.Exception.Message)" 'Warning'
+            }
+            catch {
+                Write-Verbose "Error processing health warnings and logging failure"
             }
         }
         
-        # Fix: Enhanced recommendation logging with comprehensive try-catch protection
+        # SEGMENT 5: Completion Logging with comprehensive error handling
         try {
             if ($healthData.Recommendations -and $healthData.Recommendations.Count -gt 0) {
                 try {
-                    Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
-                } catch {
-                    # Fix: Error logging for any failures
-                    Log "System Health Check completed with partial logging errors" 'Warning'
+                    $statusMsg = "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available"
+                    if ($global:SystemHealthData.FallbackMode) {
+                        $statusMsg += " (Fallback Mode)"
+                    }
+                    Log $statusMsg 'Info'
                 }
-            } else {
-                try {
-                    Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
-                } catch {
-                    # Fix: Error logging for any failures
-                    Log "System Health Check completed" 'Info'
+                catch {
+                    # Completion logging error handling
+                    try {
+                        Log "System Health Check completed with partial logging errors" 'Warning'
+                    }
+                    catch {
+                        Write-Verbose "Failed to log health check completion"
+                    }
                 }
             }
-        } catch {
-            # Fix: Error logging for any failures in health information display
+            else {
+                try {
+                    $statusMsg = "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected"
+                    if ($global:SystemHealthData.FallbackMode) {
+                        $statusMsg += " (Fallback Mode)"
+                    }
+                    Log $statusMsg 'Success'
+                }
+                catch {
+                    # No issues completion logging error handling
+                    try {
+                        Log "System Health Check completed" 'Info'
+                    }
+                    catch {
+                        Write-Verbose "Failed to log clean health check completion"
+                    }
+                }
+            }
+        }
+        catch {
+            # Completion segment error handling
             try {
                 Log "System Health Check completed with logging errors" 'Warning'
-            } catch {
+            }
+            catch {
                 try {
-                    Write-Verbose "Critical logging failure in health display update"
+                    Write-Verbose "Critical logging failure in health display completion"
                     Log "Health monitoring encountered logging issues" 'Warning'
-                } catch {
+                }
+                catch {
                     Write-Verbose "Complete logging system failure in health display"
                 }
             }
         }
         
-    } catch {
-        # Fix: Enhanced error handling with fallback logging
+    }
+    catch {
+        # MAIN FUNCTION ERROR HANDLER: Ultimate fallback with comprehensive error handling
         try {
-            Log "Error updating system health display: $($_.Exception.Message)" 'Warning'
-        } catch {
+            Log "Critical error updating system health display: $($_.Exception.Message)" 'Error'
+            
+            # Attempt to set UI error state if possible
+            try {
+                if ($lblDashSystemHealth) {
+                    $lblDashSystemHealth.Dispatcher.Invoke([Action]{
+                        try {
+                            $lblDashSystemHealth.Text = "Health System Error"
+                            $lblDashSystemHealth.Foreground = "#FF0000"
+                        }
+                        catch {
+                            Write-Verbose "Failed to set UI error state"
+                        }
+                    })
+                }
+            }
+            catch {
+                Write-Verbose "Failed to set UI error state after critical error"
+            }
+        }
+        catch {
+            # Ultimate fallback error handling
             try {
                 Write-Verbose "Critical error in system health display update: $($_.Exception.Message)"
-                Log "Critical health display error" 'Warning'
-            } catch {
-                Write-Verbose "Complete failure in system health display update"
+                Log "Critical health display error - system health monitoring may be unavailable" 'Error'
+            }
+            catch {
+                Write-Verbose "Complete failure in system health display update - all error handling exhausted"
             }
         }
     }
