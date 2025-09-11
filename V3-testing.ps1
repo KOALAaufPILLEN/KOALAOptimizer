@@ -1166,7 +1166,40 @@ function Update-SystemHealthDisplay {
         $healthData = $null
         
         # Get system health data with comprehensive error handling
-        try { Log "Starting system health data retrieval..." 'Info'; $healthData = Get-SystemHealthStatus; if (-not $healthData) { throw "Health data is null" }; if (-not $healthData.Status) { throw "Health data missing Status property" }; if (-not $healthData.OverallScore -and $healthData.OverallScore -ne 0) { throw "Health data missing OverallScore property" }; Log "System health data retrieved successfully: Status=$($healthData.Status), Score=$($healthData.OverallScore)%" 'Info' } catch { Log "Error retrieving system health data: $($_.Exception.Message)" 'Warning'; # Provide fallback health data if retrieval fails; $healthData = @{ Status = 'Unknown'; OverallScore = 0; Issues = @('Health monitoring temporarily unavailable'); Warnings = @('System health check failed - manual verification recommended'); Recommendations = @('System health monitoring will resume automatically', 'Check system resources manually', 'Run Windows Update'); Metrics = @{ CpuUsage = 0; MemoryUsage = 0; DiskFreeSpace = 0 } }; Log "Fallback health data initialized" 'Info' }
+        try {
+            Log "Starting system health data retrieval..." 'Info'
+            $healthData = Get-SystemHealthStatus
+            
+            if (-not $healthData) { 
+                throw "Health data is null" 
+            }
+            if (-not $healthData.Status) { 
+                throw "Health data missing Status property" 
+            }
+            if (-not $healthData.OverallScore -and $healthData.OverallScore -ne 0) { 
+                throw "Health data missing OverallScore property" 
+            }
+            
+            Log "System health data retrieved successfully: Status=$($healthData.Status), Score=$($healthData.OverallScore)%" 'Info'
+            
+        } catch {
+            Log "Error retrieving system health data: $($_.Exception.Message)" 'Warning'
+            
+            # Provide fallback health data if retrieval fails
+            $healthData = @{
+                Status = 'Unknown'
+                OverallScore = 0
+                Issues = @('Health monitoring temporarily unavailable')
+                Warnings = @('System health check failed - manual verification recommended')
+                Recommendations = @('System health monitoring will resume automatically', 'Check system resources manually', 'Run Windows Update')
+                Metrics = @{
+                    CpuUsage = 0
+                    MemoryUsage = 0
+                    DiskFreeSpace = 0
+                }
+            }
+            Log "Fallback health data initialized" 'Info'
+        }
         
         # Update health status and score controls with error handling
         if ($lblDashSystemHealth) { try { $displayText = "$($healthData.Status) ($($healthData.OverallScore)%)"; $lblDashSystemHealth.Text = $displayText; try { switch ($healthData.Status) { 'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88"; Log "Health status color set to Excellent (green)" 'Info' } 'Good' { $lblDashSystemHealth.Foreground = "#FFD700"; Log "Health status color set to Good (gold)" 'Info' } 'Fair' { $lblDashSystemHealth.Foreground = "#FFA500"; Log "Health status color set to Fair (orange)" 'Info' } 'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B"; Log "Health status color set to Poor (red)" 'Warning' } 'Critical' { $lblDashSystemHealth.Foreground = "#FF4444"; Log "Health status color set to Critical (bright red)" 'Warning' } default { $lblDashSystemHealth.Foreground = "#B8B3E6"; Log "Health status color set to default (purple)" 'Info' } } } catch { Log "Error setting health status color: $($_.Exception.Message)" 'Warning'; try { $lblDashSystemHealth.Foreground = "#B8B3E6" } catch { } }; Log "Health display UI updated successfully: $displayText" 'Info' } catch { Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'; try { $lblDashSystemHealth.Text = "Health Check Error"; $lblDashSystemHealth.Foreground = "#FF4444" } catch { Log "Failed to set error state in health display UI: $($_.Exception.Message)" 'Error' } } } else { Log "Health display label not found (lblDashSystemHealth)" 'Warning' }
@@ -1246,6 +1279,14 @@ function Update-SystemHealthDisplay {
         # Log successful completion
         Log "Update-SystemHealthDisplay completed successfully" 'Success'
         
+    } catch [System.Management.Automation.PipelineStoppedException] {
+        # Handle pipeline stopped exception specifically
+        Log "Update-SystemHealthDisplay: Pipeline stopped exception" 'Warning'
+        throw  # Re-throw to allow proper pipeline termination
+    } catch [System.Threading.ThreadAbortException] {
+        # Handle thread abort exception specifically  
+        Log "Update-SystemHealthDisplay: Thread abort exception" 'Warning'
+        throw  # Re-throw to allow proper thread termination
     } catch {
         # Main catch block for comprehensive error handling
         Log "Critical error in Update-SystemHealthDisplay: $($_.Exception.Message)" 'Error'
@@ -6743,6 +6784,23 @@ function Apply-ThemeColors {
                 }
             }
             
+            # Define helper function for finding ScrollViewers
+            function Find-ScrollViewers($element) {
+                if ($element -is [System.Windows.Controls.ScrollViewer]) {
+                    $script:scrollViewers += $element
+                }
+                
+                if ($element.Children) {
+                    foreach ($child in $element.Children) {
+                        Find-ScrollViewers $child
+                    }
+                } elseif ($element.Content) {
+                    Find-ScrollViewers $element.Content
+                } elseif ($element.Child) {
+                    Find-ScrollViewers $element.Child
+                }
+            }
+            
             # DISPATCHER-BASIERTER KOMPLETTER REFRESH (KRITISCH!)
             $form.Dispatcher.Invoke([action]{
                 
@@ -6753,26 +6811,10 @@ function Apply-ThemeColors {
                 $form.UpdateLayout()
                 
                 # Spezielle Behandlung für ScrollViewer (Content-Bereiche)
-                $scrollViewers = @()
-                function Find-ScrollViewers($element) {
-                    if ($element -is [System.Windows.Controls.ScrollViewer]) {
-                        $scrollViewers += $element
-                    }
-                    
-                    if ($element.Children) {
-                        foreach ($child in $element.Children) {
-                            Find-ScrollViewers $child
-                        }
-                    } elseif ($element.Content) {
-                        Find-ScrollViewers $element.Content
-                    } elseif ($element.Child) {
-                        Find-ScrollViewers $element.Child
-                    }
-                }
-                
+                $script:scrollViewers = @()
                 Find-ScrollViewers $form
                 
-                foreach ($scrollViewer in $scrollViewers) {
+                foreach ($scrollViewer in $script:scrollViewers) {
                     try {
                         $scrollViewer.InvalidateVisual()
                         $scrollViewer.UpdateLayout()
@@ -6880,13 +6922,19 @@ function Update-ComboBoxStyles {
         foreach ($combo in $comboBoxes) {
             $combo.Background = $actualBackground
             $combo.Foreground = $actualForeground
-            try { $combo.BorderBrush = $Border } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+            try { 
+                $combo.BorderBrush = $Border 
+            } catch { 
+                Write-Verbose "BorderBrush assignment skipped for compatibility" 
+            }
             
             # Enhanced styling for better readability
             try {
                 $combo.FontSize = 12
                 $combo.FontWeight = 'Normal'
-            } catch { Write-Verbose "ComboBox font styling skipped for compatibility" }
+            } catch { 
+                Write-Verbose "ComboBox font styling skipped for compatibility" 
+            }
             
             # Update Items with improved readability - ensure black text on white background
             foreach ($item in $combo.Items) {
@@ -6899,7 +6947,9 @@ function Update-ComboBoxStyles {
                         $item.Padding = "10,6"
                         $item.MinHeight = 28
                         $item.FontSize = 12
-                    } catch { Write-Verbose "ComboBoxItem styling skipped for compatibility" }
+                    } catch { 
+                        Write-Verbose "ComboBoxItem styling skipped for compatibility" 
+                    }
                 }
             }
             
@@ -6907,7 +6957,9 @@ function Update-ComboBoxStyles {
             try {
                 $combo.InvalidateVisual()
                 $combo.UpdateLayout()
-            } catch { Write-Verbose "ComboBox refresh skipped for compatibility" }
+            } catch { 
+                Write-Verbose "ComboBox refresh skipped for compatibility" 
+            }
         }
         
     } catch {
@@ -6983,8 +7035,16 @@ function Update-PanelStyles {
             if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
                 $sidebar = $firstChild.Children[0]
                 if ($sidebar -is [System.Windows.Controls.Border]) {
-                    try { $sidebar.Background = $Sidebar } catch { }
-                    try { $sidebar.BorderBrush = $Border } catch { }
+                    try { 
+                        $sidebar.Background = $Sidebar 
+                    } catch { 
+                        # Silent fail for compatibility
+                    }
+                    try { 
+                        $sidebar.BorderBrush = $Border 
+                    } catch { 
+                        # Silent fail for compatibility
+                    }
                 }
             }
         }
@@ -6995,10 +7055,18 @@ function Update-PanelStyles {
         
         foreach ($border in $borders) {
             if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
-                try { $border.Background = $Background } catch { }
+                try { 
+                    $border.Background = $Background 
+                } catch { 
+                    # Silent fail for compatibility
+                }
             }
             if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-                try { $border.BorderBrush = $Border } catch { }
+                try { 
+                    $border.BorderBrush = $Border 
+                } catch { 
+                    # Silent fail for compatibility
+                }
             }
         }
     } catch {
@@ -11585,6 +11653,42 @@ function Reset-ServiceSettings {
 # ============================================================================
 # END OF SCRIPT - Enhanced Gaming Optimizer with Dedicated Advanced Settings Panels
 # ============================================================================
+
+function Test-ScriptSyntax {
+    <#
+    .SYNOPSIS
+    Tests the PowerShell syntax of this script for validation
+    .DESCRIPTION
+    Validates the script syntax using multiple PowerShell parsers
+    #>
+    param(
+        [string]$ScriptPath = $PSCommandPath
+    )
+    
+    Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
+    
+    try {
+        $content = Get-Content $ScriptPath -Raw
+        
+        # Test with AST parser
+        $parseErrors = @()
+        $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
+        
+        if ($parseErrors.Count -eq 0) {
+            Write-Host "✅ Syntax validation passed" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "❌ Found $($parseErrors.Count) syntax errors:" -ForegroundColor Red
+            $parseErrors | ForEach-Object {
+                Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red
+            }
+            return $false
+        }
+    } catch {
+        Write-Host "❌ Syntax validation failed: $($_.Exception.Message)" -ForegroundColor Red
+        return $false
+    }
+}
 
 # - Service Management (Xbox, Telemetry, Search, Print Spooler, Superfetch)
 # - Engine-specific optimizations (Unreal, Unity, Source, Frostbite, RED Engine, Creation Engine)
