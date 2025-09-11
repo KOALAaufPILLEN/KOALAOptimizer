@@ -1166,104 +1166,10 @@ function Update-SystemHealthDisplay {
         $healthData = $null
         
         # Get system health data with comprehensive error handling
-        try {
-            Log "Starting system health data retrieval..." 'Info'
-            $healthData = Get-SystemHealthStatus
-            
-            # Validate health data structure
-            if (-not $healthData) {
-                throw "Health data is null"
-            }
-            if (-not $healthData.Status) {
-                throw "Health data missing Status property"
-            }
-            if (-not $healthData.OverallScore -and $healthData.OverallScore -ne 0) {
-                throw "Health data missing OverallScore property"
-            }
-            
-            Log "System health data retrieved successfully: Status=$($healthData.Status), Score=$($healthData.OverallScore)%" 'Info'
-            
-        } catch {
-            Log "Error retrieving system health data, using fallback: $($_.Exception.Message)" 'Warning'
-            
-            # Provide fallback health data if retrieval fails
-            $healthData = @{
-                Status = 'Unknown'
-                OverallScore = 0
-                Issues = @('Health monitoring temporarily unavailable')
-                Warnings = @('System health check failed - manual verification recommended')
-                Recommendations = @('System health monitoring will resume automatically', 'Check system resources manually', 'Run Windows Update')
-                Metrics = @{
-                    CpuUsage = 0
-                    MemoryUsage = 0
-                    DiskFreeSpace = 0
-                }
-            }
-            
-            Log "Fallback health data initialized" 'Info'
-        }
+        try { Log "Starting system health data retrieval..." 'Info'; $healthData = Get-SystemHealthStatus; if (-not $healthData) { throw "Health data is null" }; if (-not $healthData.Status) { throw "Health data missing Status property" }; if (-not $healthData.OverallScore -and $healthData.OverallScore -ne 0) { throw "Health data missing OverallScore property" }; Log "System health data retrieved successfully: Status=$($healthData.Status), Score=$($healthData.OverallScore)%" 'Info' } catch { Log "Error retrieving system health data: $($_.Exception.Message)" 'Warning'; # Provide fallback health data if retrieval fails; $healthData = @{ Status = 'Unknown'; OverallScore = 0; Issues = @('Health monitoring temporarily unavailable'); Warnings = @('System health check failed - manual verification recommended'); Recommendations = @('System health monitoring will resume automatically', 'Check system resources manually', 'Run Windows Update'); Metrics = @{ CpuUsage = 0; MemoryUsage = 0; DiskFreeSpace = 0 } }; Log "Fallback health data initialized" 'Info' }
         
         # Update health status and score controls with error handling
-        if ($lblDashSystemHealth) {
-            try {
-                # Set main health display text
-                $displayText = "$($healthData.Status) ($($healthData.OverallScore)%)"
-                $lblDashSystemHealth.Text = $displayText
-                
-                # Set color based on health status
-                try {
-                    switch ($healthData.Status) {
-                        'Excellent' { 
-                            $lblDashSystemHealth.Foreground = "#00FF88" 
-                            Log "Health status color set to Excellent (green)" 'Info'
-                        }
-                        'Good' { 
-                            $lblDashSystemHealth.Foreground = "#FFD700" 
-                            Log "Health status color set to Good (gold)" 'Info'
-                        }
-                        'Fair' { 
-                            $lblDashSystemHealth.Foreground = "#FFA500" 
-                            Log "Health status color set to Fair (orange)" 'Info'
-                        }
-                        'Poor' { 
-                            $lblDashSystemHealth.Foreground = "#FF6B6B" 
-                            Log "Health status color set to Poor (red)" 'Warning'
-                        }
-                        'Critical' { 
-                            $lblDashSystemHealth.Foreground = "#FF4444" 
-                            Log "Health status color set to Critical (bright red)" 'Warning'
-                        }
-                        default { 
-                            $lblDashSystemHealth.Foreground = "#B8B3E6" 
-                            Log "Health status color set to default (purple)" 'Info'
-                        }
-                    }
-                } catch {
-                    Log "Error setting health status color: $($_.Exception.Message)" 'Warning'
-                    # Fallback color setting
-                    try {
-                        $lblDashSystemHealth.Foreground = "#B8B3E6"
-                    } catch {
-                        # Silent fail for color setting
-                    }
-                }
-                
-                Log "Health display UI updated successfully: $displayText" 'Info'
-                
-            } catch {
-                Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'
-                
-                # Attempt to set error state in UI
-                try {
-                    $lblDashSystemHealth.Text = "Health Check Error"
-                    $lblDashSystemHealth.Foreground = "#FF4444"
-                } catch {
-                    Log "Failed to set error state in health display UI: $($_.Exception.Message)" 'Error'
-                }
-            }
-        } else {
-            Log "Health display label not found (lblDashSystemHealth)" 'Warning'
-        }
+        if ($lblDashSystemHealth) { try { $displayText = "$($healthData.Status) ($($healthData.OverallScore)%)"; $lblDashSystemHealth.Text = $displayText; try { switch ($healthData.Status) { 'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88"; Log "Health status color set to Excellent (green)" 'Info' } 'Good' { $lblDashSystemHealth.Foreground = "#FFD700"; Log "Health status color set to Good (gold)" 'Info' } 'Fair' { $lblDashSystemHealth.Foreground = "#FFA500"; Log "Health status color set to Fair (orange)" 'Info' } 'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B"; Log "Health status color set to Poor (red)" 'Warning' } 'Critical' { $lblDashSystemHealth.Foreground = "#FF4444"; Log "Health status color set to Critical (bright red)" 'Warning' } default { $lblDashSystemHealth.Foreground = "#B8B3E6"; Log "Health status color set to default (purple)" 'Info' } } } catch { Log "Error setting health status color: $($_.Exception.Message)" 'Warning'; try { $lblDashSystemHealth.Foreground = "#B8B3E6" } catch { } }; Log "Health display UI updated successfully: $displayText" 'Info' } catch { Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'; try { $lblDashSystemHealth.Text = "Health Check Error"; $lblDashSystemHealth.Foreground = "#FF4444" } catch { Log "Failed to set error state in health display UI: $($_.Exception.Message)" 'Error' } } } else { Log "Health display label not found (lblDashSystemHealth)" 'Warning' }
         
         # Update additional health score control if available
         try {
@@ -1280,8 +1186,12 @@ function Update-SystemHealthDisplay {
             if ($healthData.Issues -and $healthData.Issues.Count -gt 0) {
                 Log "Processing $($healthData.Issues.Count) health issues..." 'Info'
                 foreach ($issue in $healthData.Issues) {
-                    if ($issue) {
-                        Log "System Health ISSUE: $issue" 'Warning'
+                    try {
+                        if ($issue) {
+                            Log "System Health ISSUE: $issue" 'Warning'
+                        }
+                    } catch {
+                        Log "Error processing individual issue: $($_.Exception.Message)" 'Warning'
                     }
                 }
             } else {
@@ -1296,8 +1206,12 @@ function Update-SystemHealthDisplay {
             if ($healthData.Warnings -and $healthData.Warnings.Count -gt 0) {
                 Log "Processing $($healthData.Warnings.Count) health warnings..." 'Info'
                 foreach ($warning in $healthData.Warnings) {
-                    if ($warning) {
-                        Log "System Health WARNING: $warning" 'Warning'
+                    try {
+                        if ($warning) {
+                            Log "System Health WARNING: $warning" 'Warning'
+                        }
+                    } catch {
+                        Log "Error processing individual warning: $($_.Exception.Message)" 'Warning'
                     }
                 }
             } else {
@@ -1314,8 +1228,12 @@ function Update-SystemHealthDisplay {
                 
                 # Log individual recommendations for debugging
                 foreach ($recommendation in $healthData.Recommendations) {
-                    if ($recommendation) {
-                        Log "System Health RECOMMENDATION: $recommendation" 'Info'
+                    try {
+                        if ($recommendation) {
+                            Log "System Health RECOMMENDATION: $recommendation" 'Info'
+                        }
+                    } catch {
+                        Log "Error processing individual recommendation: $($_.Exception.Message)" 'Warning'
                     }
                 }
             } else {
