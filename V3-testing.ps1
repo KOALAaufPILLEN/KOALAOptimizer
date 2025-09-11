@@ -401,6 +401,166 @@ function Get-ThemeColors {
     }
 }
 
+# ---------- Missing Utility Functions ----------
+function Get-LogCategory {
+    param([string]$Message)
+    
+    # Categorize log messages for better organization
+    if ($Message -match "Error|Failed|Exception|Critical") {
+        return "Error"
+    } elseif ($Message -match "Warning|Could not|Missing") {
+        return "Warning"
+    } elseif ($Message -match "Success|Completed|OK|Ready") {
+        return "Success"
+    } elseif ($Message -match "Game|Profile|Detection") {
+        return "Gaming"
+    } elseif ($Message -match "Theme|UI|Display") {
+        return "UI"
+    } elseif ($Message -match "Performance|CPU|Memory|System") {
+        return "Performance"
+    } else {
+        return "General"
+    }
+}
+
+function Add-LogToHistory {
+    param(
+        [string]$Message,
+        [string]$Level = 'Info',
+        [string]$Category = 'General'
+    )
+    
+    # Initialize global log history if not exists
+    if (-not $global:LogHistory) {
+        $global:LogHistory = @()
+    }
+    
+    # Add to history with timestamp
+    $logEntry = @{
+        Timestamp = Get-Date
+        Message = $Message
+        Level = $Level
+        Category = $Category
+    }
+    
+    $global:LogHistory += $logEntry
+    
+    # Keep only last 1000 entries to prevent memory issues
+    if ($global:LogHistory.Count -gt 1000) {
+        $global:LogHistory = $global:LogHistory[-1000..-1]
+    }
+}
+
+function Optimize-LogFile {
+    param([int]$MaxSizeMB = 10)
+    
+    try {
+        $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
+        
+        if (Test-Path $logFilePath) {
+            $logFile = Get-Item $logFilePath
+            $sizeMB = [math]::Round($logFile.Length / 1MB, 2)
+            
+            if ($sizeMB -gt $MaxSizeMB) {
+                # Keep only the last 70% of the file
+                $content = Get-Content $logFilePath
+                $keepLines = [math]::Floor($content.Count * 0.7)
+                $content[-$keepLines..-1] | Set-Content $logFilePath
+                
+                # Add optimization notice
+                Add-Content $logFilePath "[$([DateTime]::Now.ToString('HH:mm:ss'))] [Info] Log file optimized - size reduced from $sizeMB MB"
+            }
+        }
+    } catch {
+        # Silent failure for log optimization to prevent recursion
+    }
+}
+
+function Get-SystemPerformanceMetrics {
+    param([switch]$Detailed)
+    
+    try {
+        $metrics = @{
+            CPU = 0
+            Memory = 0
+            Disk = 0
+            Network = 0
+        }
+        
+        # Get CPU usage
+        try {
+            $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
+            $metrics.CPU = [math]::Round($cpu.Average, 1)
+        } catch {
+            $metrics.CPU = 0
+        }
+        
+        # Get Memory usage
+        try {
+            $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
+            $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
+            $usedMemory = $totalMemory - $availableMemory
+            $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
+        } catch {
+            $metrics.Memory = 0
+        }
+        
+        if ($Detailed) {
+            # Add more detailed metrics if needed
+            $metrics.Timestamp = Get-Date
+            $metrics.Source = "WMI"
+        }
+        
+        return $metrics
+    } catch {
+        # Return default metrics on error
+        return @{
+            CPU = 0
+            Memory = 0
+            Disk = 0
+            Network = 0
+        }
+    }
+}
+
+function Ensure-NavigationVisibility {
+    param([System.Windows.Controls.Panel]$NavigationPanel)
+    
+    try {
+        if (-not $NavigationPanel) {
+            return
+        }
+        
+        # Ensure all navigation buttons are visible and properly styled
+        $navigationButtons = @(
+            'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
+            'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup'
+        )
+        
+        foreach ($buttonName in $navigationButtons) {
+            try {
+                $button = $form.FindName($buttonName)
+                if ($button) {
+                    $button.Visibility = [System.Windows.Visibility]::Visible
+                    
+                    # Ensure proper styling
+                    if (-not $button.Style) {
+                        $button.Background = '#6B46C1'
+                        $button.Foreground = 'White'
+                        $button.BorderThickness = '0'
+                        $button.Margin = '0,2'
+                        $button.Padding = '15,10'
+                    }
+                }
+            } catch {
+                # Silent failure for individual buttons
+            }
+        }
+    } catch {
+        # Silent failure for navigation visibility
+    }
+}
+
 
 # ---------- Paths with Admin-safe Configuration ----------
 if ($PSScriptRoot) {
@@ -995,288 +1155,69 @@ function Update-SystemHealthDisplay {
     Displays health status, warnings, and recommendations in the dashboard area with robust error handling
     #>
     
-    # Main function wrapper with comprehensive error handling
     try {
-        # SEGMENT 1: Health Data Retrieval with robust error handling and fallback
+        # Get system health data with fallback handling
         $healthData = $null
         try {
-            # Attempt to retrieve system health data
             $healthData = Get-SystemHealthStatus
-            $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $false }
-            
-            # Validate retrieved data structure
             if (-not $healthData -or -not $healthData.Status) {
-                throw "Invalid health data structure returned"
+                throw "Invalid health data structure"
             }
-        }
-        catch {
-            # Default fallback health data when retrieval fails
-            try {
-                Log "Error retrieving system health data, using fallback data: $($_.Exception.Message)" 'Warning'
-                $healthData = @{
-                    Status = 'Unknown'
-                    OverallScore = 0
-                    Issues = @('Health monitoring temporarily unavailable')
-                    Warnings = @('System health check failed - manual verification recommended')
-                    Recommendations = @('System health monitoring will resume automatically', 'Consider running manual diagnostics')
-                }
-                $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true }
-            }
-            catch {
-                # Critical fallback if even logging fails
-                Write-Verbose "Critical failure in health data retrieval and fallback processing"
-                $healthData = @{
-                    Status = 'Error'
-                    OverallScore = 0
-                    Issues = @('Critical health monitoring failure')
-                    Warnings = @()
-                    Recommendations = @()
-                }
-                $global:SystemHealthData = $healthData + @{ LastHealthCheck = Get-Date; FallbackMode = $true; CriticalError = $true }
+        } catch {
+            Log "Error retrieving system health data, using fallback: $($_.Exception.Message)" 'Warning'
+            $healthData = @{
+                Status = 'Unknown'
+                OverallScore = 0
+                Issues = @('Health monitoring temporarily unavailable')
+                Warnings = @('System health check failed - manual verification recommended')
+                Recommendations = @('System health monitoring will resume automatically')
             }
         }
         
-        # SEGMENT 2: UI Update with comprehensive error handling and error state management
-        try {
-            if ($lblDashSystemHealth) {
-                try {
-                    # UI updates with dispatcher invoke and nested error handling
-                    $lblDashSystemHealth.Dispatcher.Invoke([Action]{
-                        try {
-                            # Update display text with error state indication
-                            if ($global:SystemHealthData.CriticalError) {
-                                $lblDashSystemHealth.Text = "Error (System Check Failed)"
-                            }
-                            else {
-                                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
-                            }
-                            
-                            # Color coding with individual error handling for each color assignment
-                            try {
-                                switch ($healthData.Status) {
-                                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }    # Green
-                                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }         # Gold
-                                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }         # Orange
-                                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }         # Light Red
-                                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }     # Red
-                                    'Unknown' { $lblDashSystemHealth.Foreground = "#888888" }      # Gray for fallback
-                                    'Error' { $lblDashSystemHealth.Foreground = "#FF0000" }        # Bright Red for errors
-                                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }        # Default theme color
-                                }
-                            }
-                            catch {
-                                # Fallback color assignment with additional error handling
-                                try { 
-                                    $lblDashSystemHealth.Foreground = "#B8B3E6" 
-                                    Log "Failed to update health display color, using default" 'Warning'
-                                }
-                                catch { 
-                                    Write-Verbose "Critical UI color update failure - using system default"
-                                }
-                            }
-                            
-                            # Set UI error state if critical error occurred
-                            try {
-                                if ($global:SystemHealthData.CriticalError -and $lblDashSystemHealth.ToolTip) {
-                                    $lblDashSystemHealth.ToolTip = "Health monitoring encountered critical errors. Manual system check recommended."
-                                }
-                            }
-                            catch {
-                                Write-Verbose "Failed to set error state tooltip"
-                            }
-                        }
-                        catch {
-                            # UI text update error handling
-                            try {
-                                Log "Dashboard UI text update failed, attempting error state display" 'Warning'
-                                $lblDashSystemHealth.Text = "Health Check Error"
-                                $lblDashSystemHealth.Foreground = "#FF4444"
-                            }
-                            catch {
-                                Write-Verbose "Dashboard UI update failed completely - silent fail to prevent application disruption"
-                            }
-                        }
-                    })
-                }
-                catch {
-                    # Dispatcher invoke error handling
-                    try {
-                        Log "Error updating health display UI (Dispatcher): $($_.Exception.Message)" 'Warning'
-                        # Attempt direct UI update as fallback
-                        $lblDashSystemHealth.Text = "Health Update Error"
-                    }
-                    catch {
-                        Write-Verbose "Complete UI update failure for health display"
-                    }
-                }
-            }
-            else {
-                # Handle case where UI element doesn't exist
-                try {
-                    Log "Health display UI element not available" 'Info'
-                }
-                catch {
-                    Write-Verbose "Health display UI element not available and logging failed"
-                }
-            }
-        }
-        catch {
-            # Critical UI update error
+        # Update UI display with error handling
+        if ($lblDashSystemHealth) {
             try {
-                Log "Critical error in UI update segment: $($_.Exception.Message)" 'Error'
-            }
-            catch {
-                Write-Verbose "Critical UI update error and logging failure"
+                $lblDashSystemHealth.Text = "$($healthData.Status) ($($healthData.OverallScore)%)"
+                
+                # Set color based on status
+                switch ($healthData.Status) {
+                    'Excellent' { $lblDashSystemHealth.Foreground = "#00FF88" }
+                    'Good' { $lblDashSystemHealth.Foreground = "#FFD700" }
+                    'Fair' { $lblDashSystemHealth.Foreground = "#FFA500" }
+                    'Poor' { $lblDashSystemHealth.Foreground = "#FF6B6B" }
+                    'Critical' { $lblDashSystemHealth.Foreground = "#FF4444" }
+                    default { $lblDashSystemHealth.Foreground = "#B8B3E6" }
+                }
+            } catch {
+                Log "Error updating health display UI: $($_.Exception.Message)" 'Warning'
+                $lblDashSystemHealth.Text = "Health Check Error"
+                $lblDashSystemHealth.Foreground = "#FF4444"
             }
         }
         
-        # SEGMENT 3: Health Issues Logging with comprehensive error handling
-        try {
-            if ($healthData.Issues -and $healthData.Issues.Count -gt 0) {
-                foreach ($issue in $healthData.Issues) {
-                    try {
-                        Log "System Health ISSUE: $issue" 'Warning'
-                    }
-                    catch {
-                        # Individual issue logging error handling
-                        try {
-                            Write-Verbose "Failed to log health issue: $issue"
-                            Log "Failed to log a health issue" 'Warning'
-                        }
-                        catch {
-                            Write-Verbose "Critical logging failure for health issue"
-                        }
-                    }
-                }
-            }
-        }
-        catch {
-            # Issues processing error handling
-            try {
-                Log "Error processing health issues for logging: $($_.Exception.Message)" 'Warning'
-            }
-            catch {
-                Write-Verbose "Error processing health issues and logging failure"
+        # Log health issues if any
+        if ($healthData.Issues -and $healthData.Issues.Count -gt 0) {
+            foreach ($issue in $healthData.Issues) {
+                Log "System Health ISSUE: $issue" 'Warning'
             }
         }
         
-        # SEGMENT 4: Health Warnings Logging with comprehensive error handling
-        try {
-            if ($healthData.Warnings -and $healthData.Warnings.Count -gt 0) {
-                foreach ($warning in $healthData.Warnings) {
-                    try {
-                        Log "System Health WARNING: $warning" 'Info'
-                    }
-                    catch {
-                        # Individual warning logging error handling
-                        try {
-                            Write-Verbose "Failed to log health warning: $warning"
-                            Log "Failed to log a health warning" 'Warning'
-                        }
-                        catch {
-                            Write-Verbose "Critical logging failure for health warning"
-                        }
-                    }
-                }
-            }
-        }
-        catch {
-            # Warnings processing error handling
-            try {
-                Log "Error processing health warnings for logging: $($_.Exception.Message)" 'Warning'
-            }
-            catch {
-                Write-Verbose "Error processing health warnings and logging failure"
-            }
+        # Log completion
+        if ($healthData.Recommendations -and $healthData.Recommendations.Count -gt 0) {
+            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available" 'Info'
+        } else {
+            Log "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected" 'Success'
         }
         
-        # SEGMENT 5: Completion Logging with comprehensive error handling
-        try {
-            if ($healthData.Recommendations -and $healthData.Recommendations.Count -gt 0) {
-                try {
-                    $statusMsg = "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - $($healthData.Recommendations.Count) recommendations available"
-                    if ($global:SystemHealthData.FallbackMode) {
-                        $statusMsg += " (Fallback Mode)"
-                    }
-                    Log $statusMsg 'Info'
-                }
-                catch {
-                    # Completion logging error handling
-                    try {
-                        Log "System Health Check completed with partial logging errors" 'Warning'
-                    }
-                    catch {
-                        Write-Verbose "Failed to log health check completion"
-                    }
-                }
-            }
-            else {
-                try {
-                    $statusMsg = "System Health Check completed: $($healthData.Status) ($($healthData.OverallScore)%) - No issues detected"
-                    if ($global:SystemHealthData.FallbackMode) {
-                        $statusMsg += " (Fallback Mode)"
-                    }
-                    Log $statusMsg 'Success'
-                }
-                catch {
-                    # No issues completion logging error handling
-                    try {
-                        Log "System Health Check completed" 'Info'
-                    }
-                    catch {
-                        Write-Verbose "Failed to log clean health check completion"
-                    }
-                }
-            }
-        }
-        catch {
-            # Completion segment error handling
+    } catch {
+        # Main function error handler
+        Log "Critical error in Update-SystemHealthDisplay: $($_.Exception.Message)" 'Error'
+        if ($lblDashSystemHealth) {
             try {
-                Log "System Health Check completed with logging errors" 'Warning'
-            }
-            catch {
-                try {
-                    Write-Verbose "Critical logging failure in health display completion"
-                    Log "Health monitoring encountered logging issues" 'Warning'
-                }
-                catch {
-                    Write-Verbose "Complete logging system failure in health display"
-                }
-            }
-        }
-        
-    }
-    catch {
-        # MAIN FUNCTION ERROR HANDLER: Ultimate fallback with comprehensive error handling
-        try {
-            Log "Critical error updating system health display: $($_.Exception.Message)" 'Error'
-            
-            # Attempt to set UI error state if possible
-            try {
-                if ($lblDashSystemHealth) {
-                    $lblDashSystemHealth.Dispatcher.Invoke([Action]{
-                        try {
-                            $lblDashSystemHealth.Text = "Health System Error"
-                            $lblDashSystemHealth.Foreground = "#FF0000"
-                        }
-                        catch {
-                            Write-Verbose "Failed to set UI error state"
-                        }
-                    })
-                }
-            }
-            catch {
-                Write-Verbose "Failed to set UI error state after critical error"
-            }
-        }
-        catch {
-            # Ultimate fallback error handling
-            try {
-                Write-Verbose "Critical error in system health display update: $($_.Exception.Message)"
-                Log "Critical health display error - system health monitoring may be unavailable" 'Error'
-            }
-            catch {
-                Write-Verbose "Complete failure in system health display update - all error handling exhausted"
+                $lblDashSystemHealth.Text = "Health Monitor Error"
+                $lblDashSystemHealth.Foreground = "#FF0000"
+            } catch {
+                # Silent fail for UI updates
             }
         }
     }
@@ -4362,6 +4303,18 @@ $chkAutoOptimize = $chkDashAutoOptimize
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
 
+# ---------- STARTUP CONTROL VALIDATION (moved after form creation) ----------
+# Perform startup control validation after form and controls are created
+Log "Running startup control validation..." 'Info'
+$controlsValid = Test-StartupControls
+
+if (-not $controlsValid) {
+    Log "CRITICAL: Some controls are missing - application may have reduced functionality" 'Warning'
+    Log "The application will continue to run, but some features may not work properly" 'Warning'
+} else {
+    Log "[OK] All startup control validation checks passed - application ready" 'Success'
+}
+
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
 # ---------- SAUBERE NAVIGATION MIT THEME-FARBEN ----------
@@ -6970,9 +6923,8 @@ function Update-TextStyles {
 function Update-PanelStyles {
     param($Background, $Sidebar, $Border)
     
-    # Fix: Added comprehensive try-catch wrapper for all UI update operations
     try {
-        # Update Sidebar - with bounds checking  
+        # Update Sidebar with error handling
         if ($form.Children -and $form.Children.Count -gt 0) {
             $firstChild = $form.Children[0]
             if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
@@ -6984,22 +6936,19 @@ function Update-PanelStyles {
             }
         }
         
-        # Update andere Borders
+        # Update all borders
         $borders = @()
         Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
         
         foreach ($border in $borders) {
             if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
-                # Fix: Added try-catch for UI property update to prevent runtime errors
                 try { $border.Background = $Background } catch { }
             }
             if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-                # Fix: Added try-catch for UI property update to prevent runtime errors
                 try { $border.BorderBrush = $Border } catch { }
             }
         }
     } catch {
-        # Fix: Added comprehensive error handling for panel style updates
         Log "Error updating panel styles: $($_.Exception.Message)" 'Warning'
     }
 }
@@ -11275,10 +11224,6 @@ try {
     Log "Warning: Could not initialize Custom Search button visibility: $($_.Exception.Message)" 'Warning'
 }
 
-# Startup Control Validation
-Log "Running startup control validation..." 'Info'
-$controlsValid = Test-StartupControls
-
 # Initialize default theme and color preview
 if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     # Set default theme to DarkPurple
@@ -11292,17 +11237,6 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     }
 } else {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
-}
-
-# Perform startup control validation
-Log "=== PERFORMING STARTUP CONTROL VALIDATION ===" 'Info'
-$controlsValid = Test-StartupControls
-
-if (-not $controlsValid) {
-    Log "CRITICAL: Some controls are missing - application may have reduced functionality" 'Warning'
-    Log "The application will continue to run, but some features may not work properly" 'Warning'
-} else {
-    Log "[OK] All startup control validation checks passed - application ready" 'Success'
 }
 
 # Start real-time performance monitoring for dashboard
