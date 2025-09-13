@@ -6942,25 +6942,21 @@ function Update-PanelStyles {
         # Update all borders
         $borders = @()
         Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
-        
         foreach ($border in $borders) {
-            if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
-                try { 
-                    $border.Background = $Background 
-                } catch { 
-                    # Silent fail for compatibility
-                }
-            }
-            if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-                try { 
-                    $border.BorderBrush = $Border 
-                } catch { 
-                    # Silent fail for compatibility
-                }
-            }
+    if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
+        try { 
+            $border.Background = $Background 
+        } catch {
+            # Silent fail for compatibility
         }
-    } catch {
-        Log "Error updating panel styles: $($_.Exception.Message)" 'Warning'
+    }
+
+    if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
+        try { 
+            $border.BorderBrush = $Border 
+        } catch {
+            # Silent fail for compatibility
+        }
     }
 }
 
