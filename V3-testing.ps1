@@ -835,9 +835,10 @@ function Test-StartupControls {
     $criticalControls = @{
         # Navigation controls
         'btnNavDashboard' = $btnNavDashboard
-        'btnNavBasicOpt' = $btnNavBasicOpt  
+        'btnNavBasicOpt' = $btnNavBasicOpt
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
+        'btnNavNetwork' = $btnNavNetwork
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
         'btnNavServices' = $btnNavServices
@@ -997,10 +998,13 @@ public static class PerfMon {
 # ---------- System Health Monitoring and Alerts ----------
 $global:SystemHealthData = @{
     LastHealthCheck = $null
-    HealthStatus = "Unknown"
+    HealthStatus = 'Not Run'
     HealthWarnings = @()
-    HealthScore = 100
+    HealthScore = $null
     Recommendations = @()
+    Issues = @()
+    Metrics = @{}
+    LastResult = $null
 }
 
 function Get-SystemHealthStatus {
@@ -1191,64 +1195,85 @@ function Get-SystemHealthStatus {
     }
 }
 
-function Update-SystemHealthDisplay {
-    <#
-    .SYNOPSIS
-    Updates the dashboard with current system health information
-    .DESCRIPTION
-    Displays health status, warnings, and recommendations in the dashboard area
-    #>
-    
+function Update-SystemHealthSummary {
     try {
-        $healthData = Get-SystemHealthStatus
-        if ($healthData) {
-            $global:SystemHealthData = $healthData
-            try {
-                # UI update code
-                if ($txtHealthStatus) {
-                    $txtHealthStatus.Text = "Status: $($healthData.Status)"
-                    # Color coding based on health status
-                    switch ($healthData.Status) {
-                        'Excellent' { $txtHealthStatus.Foreground = '#00FF88' }  # Green
-                        'Good' { $txtHealthStatus.Foreground = '#FFD700' }       # Gold
-                        'Fair' { $txtHealthStatus.Foreground = '#FFA500' }       # Orange
-                        'Poor' { $txtHealthStatus.Foreground = '#FF6B6B' }       # Light Red
-                        'Critical' { $txtHealthStatus.Foreground = '#FF4444' }   # Red
-                        default { $txtHealthStatus.Foreground = '#B8B3E6' }      # Default
-                    }
-                }
-                if ($txtHealthScore) {
-                    $txtHealthScore.Text = "Score: $($healthData.OverallScore)%"
-                    if ($healthData.OverallScore -gt 80) {
-                        $txtHealthScore.Foreground = '#00FF88'
-                    } elseif ($healthData.OverallScore -gt 60) {
-                        $txtHealthScore.Foreground = '#FFD700'
-                    } elseif ($healthData.OverallScore -gt 40) {
-                        $txtHealthScore.Foreground = '#FFA500'
-                    } else {
-                        $txtHealthScore.Foreground = '#FF6B6B'
-                    }
-                }
-            } catch {
-                Log "Error updating UI: $_" 'Warning'
+        $status = if ($global:SystemHealthData.HealthStatus) { $global:SystemHealthData.HealthStatus } else { 'Not Run' }
+        $score = $global:SystemHealthData.HealthScore
+        $lastRun = $global:SystemHealthData.LastHealthCheck
+
+        $text = 'Not Run'
+        $foreground = '#B8B3E6'
+
+        if ($status -eq 'Error') {
+            $text = 'Error (see log)'
+            $foreground = '#FF4444'
+        } elseif ($lastRun) {
+            $timeStamp = $lastRun.ToString('HH:mm')
+            if ($score -ne $null) {
+                $roundedScore = [Math]::Round([double]$score, 0)
+                $text = '{0} ({1}% @ {2})' -f $status, [int]$roundedScore, $timeStamp
+            } else {
+                $text = '{0} (Last: {1})' -f $status, $timeStamp
             }
-            Log "Health check complete" 'Info'
+
+            switch ($status) {
+                'Excellent' { $foreground = '#00FF88' }
+                'Good' { $foreground = '#A7F3D0' }
+                'Fair' { $foreground = '#FFD700' }
+                'Poor' { $foreground = '#FFA500' }
+                'Critical' { $foreground = '#FF6B6B' }
+                default { $foreground = '#B8B3E6' }
+            }
+        }
+
+        if ($lblDashSystemHealth) {
+            $lblDashSystemHealth.Dispatcher.Invoke([Action]{
+                $lblDashSystemHealth.Text = $text
+                $lblDashSystemHealth.Foreground = $foreground
+            })
         }
     } catch {
-        Log "Error in Update-SystemHealthDisplay: $_" 'Error'
-        try {
-            if ($txtHealthStatus) {
-                $txtHealthStatus.Text = "Status: Error"
-                $txtHealthStatus.Foreground = '#FF0000'
-            }
-            if ($txtHealthScore) {
-                $txtHealthScore.Text = "Score: N/A"
-                $txtHealthScore.Foreground = '#FF0000'
-            }
-        } catch {
-            # Silent fail
-        }
+        Log "Error updating dashboard health summary: $($_.Exception.Message)" 'Warning'
     }
+}
+
+function Update-SystemHealthDisplay {
+    param([switch]$RunCheck)
+
+    try {
+        $shouldRun = $RunCheck -or -not $global:SystemHealthData.LastHealthCheck
+
+        if ($shouldRun) {
+            $healthData = Get-SystemHealthStatus
+            if ($healthData) {
+                $timestamp = Get-Date
+                $global:SystemHealthData.LastHealthCheck = $timestamp
+                $global:SystemHealthData.HealthStatus = $healthData.Status
+                $global:SystemHealthData.HealthScore = $healthData.OverallScore
+                $global:SystemHealthData.HealthWarnings = $healthData.Warnings
+                $global:SystemHealthData.Recommendations = $healthData.Recommendations
+                $global:SystemHealthData.Issues = $healthData.Issues
+                $global:SystemHealthData.Metrics = $healthData.Metrics
+                $global:SystemHealthData.LastResult = $healthData
+                Log "Health check complete: $($healthData.Status) ($($healthData.OverallScore)% score)" 'Info'
+            }
+        }
+    } catch {
+        $errorMessage = 'Error in Update-SystemHealthDisplay: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Error'
+        $global:SystemHealthData.LastHealthCheck = Get-Date
+        $global:SystemHealthData.HealthStatus = 'Error'
+        $global:SystemHealthData.HealthScore = $null
+        $global:SystemHealthData.HealthWarnings = @($errorMessage)
+        $global:SystemHealthData.Recommendations = @()
+        $global:SystemHealthData.Issues = @($errorMessage)
+        $global:SystemHealthData.Metrics = @{}
+        $global:SystemHealthData.LastResult = $null
+    }
+
+    Update-SystemHealthSummary
+
+    return $global:SystemHealthData
 }
 
 function Show-SystemHealthDialog {
@@ -1260,7 +1285,6 @@ function Show-SystemHealthDialog {
     #>
     
     try {
-        $healthData = Get-SystemHealthStatus
         
         [xml]$healthDialogXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -1404,35 +1428,66 @@ function Show-SystemHealthDialog {
         
         # Update display function
         $updateDisplay = {
-            $healthData = Get-SystemHealthStatus
-            
-            $lblHealthStatus.Text = "Status: $($healthData.Status)"
-            $lblHealthScore.Text = "Health Score: $($healthData.OverallScore)%"
-            
-            # Update metrics
-            if ($healthData.Metrics.CpuUsage) {
-                $lblCpuMetric.Text = "$($healthData.Metrics.CpuUsage)%"
+            param([bool]$RunCheck = $false)
+
+            if ($RunCheck) {
+                Update-SystemHealthDisplay -RunCheck | Out-Null
             }
-            if ($healthData.Metrics.MemoryUsage) {
-                $lblMemoryMetric.Text = "$($healthData.Metrics.MemoryUsage)%"
+
+            $data = $global:SystemHealthData
+
+            if (-not $data.LastHealthCheck) {
+                $lblHealthStatus.Text = 'Status: Not Run'
+                $lblHealthScore.Text = 'Health Score: N/A'
+                $lblCpuMetric.Text = '--%'
+                $lblMemoryMetric.Text = '--%'
+                if ($lblDiskMetric) { $lblDiskMetric.Text = '--%' }
+                $lstIssues.ItemsSource = @()
+                $lstRecommendations.ItemsSource = @("Click Refresh to run a health check.")
+                return
             }
-            # Disk space metrics commented out due to parser errors in health check
-            # if ($healthData.Metrics.DiskFreeSpace) {
-            #     $lblDiskMetric.Text = "$($healthData.Metrics.DiskFreeSpace)%"
-            # }
-            
-            # Update issues list
-            $allIssues = $healthData.Issues + $healthData.Warnings
-            $lstIssues.ItemsSource = $allIssues
-            
-            # Update recommendations
-            $lstRecommendations.ItemsSource = $healthData.Recommendations
-            
-            Log "System health dialog updated with current status: $($healthData.Status)" 'Info'
+
+            $timestamp = $data.LastHealthCheck.ToString('g')
+            $lblHealthStatus.Text = "Status: $($data.HealthStatus) (Last: $timestamp)"
+            if ($data.HealthScore -ne $null) {
+                $lblHealthScore.Text = "Health Score: $($data.HealthScore)%"
+            } else {
+                $lblHealthScore.Text = 'Health Score: N/A'
+            }
+
+            if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
+                $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
+            } else {
+                $lblCpuMetric.Text = '--%'
+            }
+
+            if ($data.Metrics.ContainsKey('MemoryUsage') -and $data.Metrics.MemoryUsage -ne $null) {
+                $lblMemoryMetric.Text = "$($data.Metrics.MemoryUsage)%"
+            } else {
+                $lblMemoryMetric.Text = '--%'
+            }
+
+            # Disk metric intentionally omitted (legacy compatibility)
+
+            $issues = @()
+            if ($data.Issues) { $issues += $data.Issues }
+            if ($data.HealthWarnings) { $issues += $data.HealthWarnings }
+            $lstIssues.ItemsSource = $issues
+
+            if ($data.Recommendations) {
+                $lstRecommendations.ItemsSource = $data.Recommendations
+            } else {
+                $lstRecommendations.ItemsSource = @('No recommendations available. Great job!')
+            }
+
+            Log "System health dialog updated with cached status: $($data.HealthStatus)" 'Info'
         }
-        
+
         # Event handlers
-        $btnRefreshHealth.Add_Click({ & $updateDisplay })
+        $btnRefreshHealth.Add_Click({
+            Log "Manual health check requested from System Health dialog" 'Info'
+            & $updateDisplay $true
+        })
         
         $btnOptimizeNow.Add_Click({
             try {
@@ -1464,8 +1519,8 @@ function Show-SystemHealthDialog {
             $healthWindow.Close()
         })
         
-        # Initial display update
-        & $updateDisplay
+        # Initial display update using cached data (no automatic check)
+        & $updateDisplay $false
         
         # Show the window
         $healthWindow.ShowDialog() | Out-Null
@@ -2142,14 +2197,8 @@ function Update-DashboardMetrics {
             })
         }
         
-        # Update System Health (less frequently - every 10th call)
-        if (-not $global:HealthCheckCounter) { $global:HealthCheckCounter = 0 }
-        $global:HealthCheckCounter++
-        
-        if ($global:HealthCheckCounter -ge 10) {  # Every 30 seconds (10 * 3 second intervals)
-            $global:HealthCheckCounter = 0
-            Update-SystemHealthDisplay
-        }
+        # Refresh System Health summary without running a full check
+        Update-SystemHealthSummary
         
     } catch {
         # Silent fail to prevent UI disruption
@@ -2534,6 +2583,14 @@ function Stop-GameDetectionMonitoring {
             $global:GameDetectionTimer.Stop()
             $global:GameDetectionTimer = $null
             Log "Game detection monitoring stopped" 'Info'
+        }
+        $global:ActiveGameProcesses = @()
+        $global:ActiveGames = @()
+        if ($lblDashActiveGames) {
+            $lblDashActiveGames.Dispatcher.Invoke([Action]{
+                $lblDashActiveGames.Text = "None detected"
+                $lblDashActiveGames.Foreground = "#B8B3E6"
+            })
         }
     } catch {
         Write-Verbose "Error stopping game detection monitoring: $($_.Exception.Message)"
@@ -3308,14 +3365,60 @@ function Remove-Reg {
         <!-- Navigation Menu - Streamlined Essential Options Only -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10">
           <StackPanel>
-            <Button x:Name="btnNavDashboard" Content="🏠 Home Dashboard" Style="{StaticResource SidebarButton}" Tag="Selected"/>
-            <Button x:Name="btnNavBasicOpt" Content="⚡ Quick Optimize" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavAdvanced" Content="🛠️ Advanced Settings" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavGames" Content="🎮 Game Profiles" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavSystem" Content="💻 System Optimization" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavServices" Content="⚙️ Services Management" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavOptions" Content="🎨 Options &amp; Themes" Style="{StaticResource SidebarButton}"/>
-            <Button x:Name="btnNavBackup" Content="🛡️ Backup &amp; Restore" Style="{StaticResource SidebarButton}"/>
+            <Button x:Name="btnNavDashboard" Style="{StaticResource SidebarButton}" Tag="Selected">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🏠" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Home Dashboard" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavBasicOpt" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚡" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Quick Optimize" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavAdvanced" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛠️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Advanced Settings" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavGames" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎮" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Game Profiles" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavNetwork" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🌐" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Network Tweaks" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💻" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="System Optimization" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚙️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Services Management" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Options &amp; Themes" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavBackup" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛡️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Backup &amp; Restore" FontSize="14"/>
+              </StackPanel>
+            </Button>
           </StackPanel>
         </ScrollViewer>
 
@@ -3397,8 +3500,9 @@ function Remove-Reg {
                 <StackPanel Grid.Column="2">
                   <TextBlock Text="System Health" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
                   <TextBlock Text="Health Status:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashSystemHealth" Text="Checking..." Foreground="#FFD700" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+                  <TextBlock x:Name="lblDashSystemHealth" Text="Not Run" Foreground="#B8B3E6" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
                   <Button x:Name="btnSystemHealth" Content="📊 View Details" Style="{StaticResource ModernButton}" Height="30" FontSize="11"/>
+                  <Button x:Name="btnSystemHealthRunCheck" Content="🩺 Run Check" Style="{StaticResource ModernButton}" Height="30" FontSize="11" Margin="0,4,0,0"/>
                 </StackPanel>
                 
                 <!-- Quick Actions -->
@@ -4163,9 +4267,12 @@ $lblDashActiveGames = $form.FindName('lblDashActiveGames')
 $lblDashLastOptimization = $form.FindName('lblDashLastOptimization')
 $lblDashSystemHealth = $form.FindName('lblDashSystemHealth')
 $btnSystemHealth = $form.FindName('btnSystemHealth')
+$btnSystemHealthRunCheck = $form.FindName('btnSystemHealthRunCheck')
 $btnDashQuickOptimize = $form.FindName('btnDashQuickOptimize')
 $btnDashAutoDetect = $form.FindName('btnDashAutoDetect')
 $chkDashAutoOptimize = $form.FindName('chkDashAutoOptimize')
+
+Update-SystemHealthSummary
 
 # Basic optimization buttons
 $btnBasicNetwork = $form.FindName('btnBasicNetwork')
@@ -4625,30 +4732,49 @@ if ($btnNavOptions) {
         } else {
             'DarkPurple'
         }
-        
+
         Switch-Panel "Options"
-        
+
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
-# Removed navigation handlers for consolidated panels (Network, System, Services now part of Advanced Settings)
-# if ($btnNavSystem) { ... }
-# if ($btnNavServices) { ... }
-# if ($btnNavNetwork) { ... }
-
-if ($btnNavOptions) {
-    $btnNavOptions.Add_Click({
-	        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
             'DarkPurple'
         }
-        
-        Switch-Panel "Options"
-        
-        # Theme nach Navigation nochmal anwenden
+
+        Switch-Panel "Network"
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "System"
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Services"
         Switch-Theme -ThemeName $currentTheme
     })
 }
@@ -8829,10 +8955,18 @@ if ($btnAutoDetect) {
         Log "Auto-detecting running games in $global:MenuMode mode..." 'Info'
         Log "Executable detection request - searching for running processes" 'Info'
         $detectedGames = Get-RunningGames
-        
+        $global:ActiveGames = $detectedGames
+
         if ($detectedGames.Count -gt 0) {
             $firstGame = $detectedGames[0]
             $process = $firstGame.Process
+
+            if ($lblDashActiveGames) {
+                $lblDashActiveGames.Dispatcher.Invoke([Action]{
+                    $lblDashActiveGames.Text = "$($detectedGames.Count) running"
+                    $lblDashActiveGames.Foreground = "#00FF88"
+                })
+            }
             
             # Enhanced logging with executable details
             Log "Detected Game: $($firstGame.DisplayName)" 'Success'
@@ -8865,6 +8999,12 @@ if ($btnAutoDetect) {
     } else {
         Log "No supported games detected" 'Warning'
         [System.Windows.MessageBox]::Show("No supported games are currently running.", "No Games Detected", 'OK', 'Information')
+        if ($lblDashActiveGames) {
+            $lblDashActiveGames.Dispatcher.Invoke([Action]{
+                $lblDashActiveGames.Text = "None detected"
+                $lblDashActiveGames.Foreground = "#B8B3E6"
+            })
+        }
     }
 })
 }
@@ -9309,11 +9449,14 @@ if ($chkAutoOptimize) {
         $global:AutoOptimizeEnabled = $true
         Log "Auto-optimization enabled in $global:MenuMode mode" 'Success'
         Log "System will now automatically optimize detected games every 5 seconds" 'Info'
+        Start-GameDetectionMonitoring
     })
 
     $chkAutoOptimize.Add_Unchecked({
         $global:AutoOptimizeEnabled = $false
         Log "Auto-optimization disabled in $global:MenuMode mode" 'Info'
+        Stop-GameDetectionMonitoring
+        $global:ActiveGames = @()
     })
 } else {
     Log "Warning: chkAutoOptimize control not found - skipping event handler binding" 'Warning'
@@ -9496,6 +9639,27 @@ if ($btnSystemHealth) {
     })
 } else {
     Log "Warning: btnSystemHealth control not found - skipping event handler binding" 'Warning'
+}
+
+if ($btnSystemHealthRunCheck) {
+    $btnSystemHealthRunCheck.Add_Click({
+        try {
+            Log "Manual system health check requested from dashboard" 'Info'
+            $result = Update-SystemHealthDisplay -RunCheck
+            if ($result.HealthStatus -eq 'Error') {
+                [System.Windows.MessageBox]::Show("Health check completed with errors. Please review the Activity Log for details.", "Health Check", 'OK', 'Warning') | Out-Null
+            } else {
+                $roundedScore = if ($result.HealthScore -ne $null) { [Math]::Round([double]$result.HealthScore, 0) } else { $null }
+                $summary = if ($roundedScore -ne $null) { "$($result.HealthStatus) ($roundedScore%)" } else { $result.HealthStatus }
+                [System.Windows.MessageBox]::Show("System health check completed: $summary.", "Health Check", 'OK', 'Information') | Out-Null
+            }
+        } catch {
+            Log "Error running dashboard health check: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error running health check: $($_.Exception.Message)", "Health Check", 'OK', 'Error') | Out-Null
+        }
+    })
+} else {
+    Log "Warning: btnSystemHealthRunCheck control not found - skipping event handler binding" 'Warning'
 }
 
 # Backup
@@ -11022,15 +11186,8 @@ function Initialize-Application {
         Log "Failed to start performance monitoring: $($_.Exception.Message)" 'Warning'
     }
     
-    # Enhanced game detection startup
-    try {
-        Log "Starting game detection loop..." 'Info'
-        $gameTimer = Start-GameDetectionLoop
-        $global:GameDetectionTimer = $gameTimer
-        Log "Game detection started successfully" 'Success'
-    } catch {
-        Log "Failed to start game detection: $($_.Exception.Message)" 'Warning'
-    }
+    # Enhanced game detection startup deferred until Auto-Optimize is enabled
+    Log "Game detection loop is idle until Auto-Optimize is enabled" 'Info'
     
     # Enhanced high precision timer activation
     try {
@@ -11303,9 +11460,8 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 Log "Starting real-time performance monitoring..." 'Info'
 Start-PerformanceMonitoring
 
-# Start enhanced game detection monitoring
-Log "Starting enhanced game detection monitoring..." 'Info'
-Start-GameDetectionMonitoring
+# Inform user that game detection monitoring is on-demand
+Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
 
 # Show the form
 try {
