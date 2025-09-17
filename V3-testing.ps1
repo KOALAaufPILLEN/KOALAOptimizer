@@ -615,6 +615,7 @@ function Ensure-NavigationVisibility {
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
             'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
+            'btnNavNetwork', 'btnNavSystem', 'btnNavServices',
             'btnNavOptions', 'btnNavBackup'
         )
         
@@ -889,6 +890,9 @@ function Test-StartupControls {
         'btnNavBasicOpt' = $btnNavBasicOpt
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
+        'btnNavNetwork' = $btnNavNetwork
+        'btnNavSystem' = $btnNavSystem
+        'btnNavServices' = $btnNavServices
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
 
@@ -1511,7 +1515,6 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
-
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -3446,6 +3449,24 @@ function Remove-Reg {
                 <TextBlock Text="Game Profiles" FontSize="14"/>
               </StackPanel>
             </Button>
+            <Button x:Name="btnNavNetwork" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🌐" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Network Tweaks" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💻" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="System Optimization" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚙️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Services Management" FontSize="14"/>
+              </StackPanel>
+            </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
@@ -4731,6 +4752,42 @@ if ($btnNavOptions) {
 
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
     })
 }
 
@@ -11551,7 +11608,7 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 
 function Invoke-NetworkPanelOptimizations {
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
-    
+
     # Apply network optimizations based on checked items in network panel
     if ($chkAckNetwork -and $chkAckNetwork.IsChecked) {
         Apply-TcpAck
