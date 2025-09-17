@@ -1302,7 +1302,7 @@ function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
 
     try {
-        $shouldRun = $RunCheck -or -not $global:SystemHealthData.LastHealthCheck
+        $shouldRun = [bool]$RunCheck
 
         if ($shouldRun) {
             $healthData = Get-SystemHealthStatus
@@ -1491,11 +1491,7 @@ function Show-SystemHealthDialog {
         $updateDisplay = {
             param([bool]$RunCheck = $false)
 
-            if ($RunCheck) {
-                Update-SystemHealthDisplay -RunCheck | Out-Null
-            }
-
-            $data = $global:SystemHealthData
+            $data = Update-SystemHealthDisplay -RunCheck:$RunCheck
 
             if (-not $data.LastHealthCheck) {
                 $lblHealthStatus.Text = 'Status: Not Run'
