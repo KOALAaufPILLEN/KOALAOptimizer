@@ -1293,6 +1293,7 @@ function Update-SystemHealthSummary {
                 $text = '{0} ({1}% @ {2})' -f $status, [int]$roundedScore, $timeStamp
             } else {
                 $text = '{0} (Last: {1})' -f $status, $timeStamp
+
             }
 
             switch ($status) {
@@ -1320,7 +1321,10 @@ function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
 
     try {
+
         $shouldRun = [bool]$RunCheck
+
+        $shouldRun = $RunCheck -or -not $global:SystemHealthData.LastHealthCheck
 
         if ($shouldRun) {
             $healthData = Get-SystemHealthStatus
@@ -1511,6 +1515,12 @@ function Show-SystemHealthDialog {
 
             $data = Update-SystemHealthDisplay -RunCheck:$RunCheck
 
+            if ($RunCheck) {
+                Update-SystemHealthDisplay -RunCheck | Out-Null
+            }
+
+            $data = $global:SystemHealthData
+
             if (-not $data.LastHealthCheck) {
                 $lblHealthStatus.Text = 'Status: Not Run'
                 $lblHealthScore.Text = 'Health Score: N/A'
@@ -1529,6 +1539,7 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
+
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -4781,6 +4792,78 @@ if ($btnNavNetwork) {
     })
 }
 
+if ($btnNavBasicOpt) {
+    $btnNavBasicOpt.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavAdvanced) {
+    $btnNavAdvanced.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavGames) {
+    $btnNavGames.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
 if ($btnNavSystem) {
     $btnNavSystem.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4795,6 +4878,7 @@ if ($btnNavSystem) {
 
 if ($btnNavServices) {
     $btnNavServices.Add_Click({
+
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
@@ -4819,11 +4903,22 @@ if ($btnAdvancedNetwork) {
 
 if ($btnAdvancedSystem) {
     $btnAdvancedSystem.Add_Click({
+
+
+    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
             'DarkPurple'
         }
+
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
@@ -4831,6 +4926,19 @@ if ($btnAdvancedSystem) {
 
 if ($btnAdvancedServices) {
     $btnAdvancedServices.Add_Click({
+
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+        Switch-Panel "System"
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
@@ -4838,6 +4946,9 @@ if ($btnAdvancedServices) {
         }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
+        Switch-Panel "Services"
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
@@ -6996,7 +7107,11 @@ function Apply-ThemeColors {
         # Globale Theme-Variable speichern
         $global:CurrentTheme = $ThemeName
 
+
         $successMessage = "🎨 Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
+        $successMessage = "[Themes] Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
         Log $successMessage 'Success'
         
     } catch {
@@ -11620,7 +11735,37 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
+
 function Invoke-NetworkPanelOptimizations {
+
+# Start real-time performance monitoring for dashboard
+Log "Starting real-time performance monitoring..." 'Info'
+Start-PerformanceMonitoring
+
+# Inform user that game detection monitoring is on-demand
+Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
+
+# Show the form
+try {
+    $form.ShowDialog() | Out-Null
+} catch {
+    Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
+} finally {
+    # Cleanup
+    try {
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
+        
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
+        
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
+}
+
+function Apply-NetworkOptimizations {
+
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
 
     # Apply network optimizations based on checked items in network panel
@@ -11901,6 +12046,32 @@ try {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     # Cleanup
+
+    try {
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
+        
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
+        
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
+}
+
+function Test-ScriptSyntax {
+    <#
+    .SYNOPSIS
+    Tests the PowerShell syntax of this script for validation
+    .DESCRIPTION
+    Validates the script syntax using multiple PowerShell parsers
+    #>
+    param(
+        [string]$ScriptPath = $PSCommandPath
+    )
+    
+    Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
+    
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
