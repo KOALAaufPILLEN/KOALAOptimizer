@@ -31,11 +31,41 @@ if ($PSVersionTable.PSVersion.Major -lt 5) {
     exit 1
 }
 
+# Detect whether the current platform supports the Windows-specific UI that the
+# optimizer relies on. Older PowerShell builds do not expose the $IsWindows
+# automatic variable, so fall back to the .NET APIs when necessary.
+$script:IsWindowsPlatform = $false
+try {
+    $script:IsWindowsPlatform = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+        [System.Runtime.InteropServices.OSPlatform]::Windows
+    )
+} catch {
+    $script:IsWindowsPlatform = ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)
+}
+
+if (-not $script:IsWindowsPlatform) {
+    Write-Host 'KOALA Gaming Optimizer requires Windows because it depends on WPF and Windows-specific APIs.' -ForegroundColor Yellow
+    return
+}
+
 # ---------- WPF Assemblies ----------
 try {
-    Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Xaml,System.Windows.Forms,Microsoft.VisualBasic -ErrorAction Stop
+    # Load required assemblies for the WPF-based UI. Breaking the list of
+    # assemblies into an array keeps the code readable and avoids issues with
+    # extremely long lines or accidental line wraps.
+    $assemblies = @(
+        'PresentationFramework'
+        'PresentationCore'
+        'WindowsBase'
+        'System.Xaml'
+        'System.Windows.Forms'
+        'Microsoft.VisualBasic'
+    )
+    Add-Type -AssemblyName $assemblies -ErrorAction Stop
 } catch {
-    Write-Host "Warning: WPF assemblies not available. This script requires Windows with .NET Framework." -ForegroundColor Yellow
+    $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
+    Write-Host $warning -ForegroundColor Yellow
+    return
 }
 
 # ---------- Global Performance Variables ----------
@@ -748,9 +778,23 @@ function Log {
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
-    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $p = New-Object Security.Principal.WindowsPrincipal($id)
-    return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if (-not $script:IsWindowsPlatform) {
+        return $false
+    }
+
+    try {
+        $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+        if (-not $id) {
+            return $false
+        }
+
+        $principal = New-Object Security.Principal.WindowsPrincipal($id)
+        return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    } catch {
+        $warningMessage = 'Admin privilege detection unavailable: {0}' -f $_.Exception.Message
+        Log $warningMessage 'Warning'
+        return $false
+    }
 }
 
 function Get-SafeConfigPath {
@@ -6722,28 +6766,31 @@ function Apply-ThemeColors {
                 $form.UpdateLayout()
             }, [System.Windows.Threading.DispatcherPriority]::Background)
             
-            Log "[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Ã„nderungen sofort sichtbar!" 'Success'
+            Log '[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
             
         } catch {
-            Log "⚠️ UI-Refresh teilweise fehlgeschlagen: $($_.Exception.Message)" 'Warning'
+            $warningMessage = '⚠️ UI-Refresh teilweise fehlgeschlagen: {0}' -f $_.Exception.Message
+            Log $warningMessage 'Warning'
             
             # FALLBACK: Minimaler Refresh
             try {
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
-                Log "Fallback-Refresh durchgeführt" 'Info'
+                Log 'Fallback-Refresh durchgeführt' 'Info'
             } catch {
-                Log "Auch Fallback-Refresh fehlgeschlagen" 'Error'
+                Log 'Auch Fallback-Refresh fehlgeschlagen' 'Error'
             }
         }
 
         # Globale Theme-Variable speichern
         $global:CurrentTheme = $ThemeName
 
-        Log "[Themes] Theme '$($colors.Name)' erfolgreich angewendet und UI vollstÃ¤ndig aktualisiert!" 'Success'
+        $successMessage = "[Themes] Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+        Log $successMessage 'Success'
         
     } catch {
-        Log "Fehler beim Anwenden des Themes: $($_.Exception.Message)" 'Error'
+        $errorMessage = 'Fehler beim Anwenden des Themes: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Error'
     }
 }
 
@@ -6756,7 +6803,8 @@ function Ensure-ThemePersistence {
             Switch-Theme -ThemeName $ThemeName
         }, [System.Windows.Threading.DispatcherPriority]::Background)
     } catch {
-        Log "Fehler bei Theme-Persistenz: $($_.Exception.Message)" 'Warning'
+        $errorMessage = 'Fehler bei Theme-Persistenz: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Warning'
     }
 }
 
@@ -6765,9 +6813,9 @@ function Update-ButtonStyles {
     
     try {
         # ModernButton Style
-        if ($form.Resources["ModernButton"]) {
-            $style = $form.Resources["ModernButton"]
-            $bgSetter = $style.Setters | Where-Object { $_.Property.Name -eq "Background" }
+        if ($form.Resources['ModernButton']) {
+            $style = $form.Resources['ModernButton']
+            $bgSetter = $style.Setters | Where-Object { $_.Property.Name -eq 'Background' }
             if ($bgSetter) { $bgSetter.Value = $Primary }
         }
         
@@ -6776,13 +6824,14 @@ function Update-ButtonStyles {
         Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Button] -Collection ([ref]$buttons)
         
         foreach ($button in $buttons) {
-            if ($button.Style -eq $form.Resources["ModernButton"]) {
+            if ($button.Style -eq $form.Resources['ModernButton']) {
                 $button.Background = $Primary
             }
         }
         
     } catch {
-        Log "Error updating button styles: $($_.Exception.Message)" 'Warning'
+        $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Warning'
     }
 }
 
@@ -6800,13 +6849,13 @@ function Update-ComboBoxStyles {
         
         # For better dropdown readability, use white background with black text
         # This addresses the grey text on white background readability issue
-        $actualBackground = "White"
-        $actualForeground = "Black"
+        $actualBackground = 'White'
+        $actualForeground = 'Black'
         
         if ($ThemeName -match 'Light|YouTube|Facebook') {
             # For light themes, maintain white background with black text for best contrast
-            $actualBackground = "White"
-            $actualForeground = "Black"
+            $actualBackground = 'White'
+            $actualForeground = 'Black'
         }
         
         foreach ($combo in $comboBoxes) {
@@ -6814,31 +6863,31 @@ function Update-ComboBoxStyles {
             $combo.Foreground = $actualForeground
             try { 
                 $combo.BorderBrush = $Border 
-            } catch { 
-                Write-Verbose "BorderBrush assignment skipped for compatibility" 
+            } catch {
+                Write-Verbose 'BorderBrush assignment skipped for compatibility'
             }
             
             # Enhanced styling for better readability
             try {
                 $combo.FontSize = 12
                 $combo.FontWeight = 'Normal'
-            } catch { 
-                Write-Verbose "ComboBox font styling skipped for compatibility" 
+            } catch {
+                Write-Verbose 'ComboBox font styling skipped for compatibility'
             }
             
             # Update Items with improved readability - ensure black text on white background
             foreach ($item in $combo.Items) {
                 if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                    $item.Background = "White"
-                    $item.Foreground = "Black"
-                    
+                    $item.Background = 'White'
+                    $item.Foreground = 'Black'
+
                     # Enhanced item styling
                     try {
-                        $item.Padding = "10,6"
+                        $item.Padding = '10,6'
                         $item.MinHeight = 28
                         $item.FontSize = 12
-                    } catch { 
-                        Write-Verbose "ComboBoxItem styling skipped for compatibility" 
+                    } catch {
+                        Write-Verbose 'ComboBoxItem styling skipped for compatibility'
                     }
                 }
             }
@@ -6847,13 +6896,14 @@ function Update-ComboBoxStyles {
             try {
                 $combo.InvalidateVisual()
                 $combo.UpdateLayout()
-            } catch { 
-                Write-Verbose "ComboBox refresh skipped for compatibility" 
+            } catch {
+                Write-Verbose 'ComboBox refresh skipped for compatibility'
             }
         }
         
     } catch {
-        Log "Error updating ComboBox styles: $($_.Exception.Message)" 'Warning'
+        $errorMessage = 'Error updating ComboBox styles: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Warning'
     }
 }
 
@@ -6869,7 +6919,7 @@ function Update-TextStyles {
         Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.TextBlock] -Collection ([ref]$textBlocks)
         
         foreach ($textBlock in $textBlocks) {
-            if ($textBlock.Style -eq $form.Resources["HeaderText"]) {
+            if ($textBlock.Style -eq $form.Resources['HeaderText']) {
                 $textBlock.Foreground = $Header
             } else {
                 $textBlock.Foreground = $Foreground
@@ -6890,8 +6940,8 @@ function Update-TextStyles {
                         $textBlock.Foreground = $colors.TextSecondary
                     }
                 }
-            } catch { 
-                Write-Verbose "TextBlock enhancement skipped for compatibility" 
+            } catch {
+                Write-Verbose 'TextBlock enhancement skipped for compatibility'
             }
         }
         
@@ -6905,57 +6955,60 @@ function Update-TextStyles {
                 if (-not $label.FontSize -or $label.FontSize -lt 11) {
                     $label.FontSize = 11
                 }
-            } catch { 
-                Write-Verbose "Label enhancement skipped for compatibility" 
+            } catch {
+                Write-Verbose 'Label enhancement skipped for compatibility'
             }
         }
         
     } catch {
-        Log "Error updating text styles: $($_.Exception.Message)" 'Warning'
+        $errorMessage = 'Error updating text styles: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Warning'
     }
 }
 
 function Update-PanelStyles {
     param($Background, $Sidebar, $Border)
-    
-    try {
-        # Update Sidebar with error handling
-        if ($form.Children -and $form.Children.Count -gt 0) {
-            $firstChild = $form.Children[0]
-            if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
-                $sidebar = $firstChild.Children[0]
-                if ($sidebar -is [System.Windows.Controls.Border]) {
-                    try { 
-                        $sidebar.Background = $Sidebar 
-                    } catch { 
-                        # Silent fail for compatibility
-                    }
-                    try { 
-                        $sidebar.BorderBrush = $Border 
-                    } catch { 
-                        # Silent fail for compatibility
-                    }
+
+    # Update Sidebar with error handling
+    if ($form.Children -and $form.Children.Count -gt 0) {
+        $firstChild = $form.Children[0]
+        if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
+            $sidebar = $firstChild.Children[0]
+            if ($sidebar -is [System.Windows.Controls.Border]) {
+                try {
+                    $sidebar.Background = $Sidebar
+                } catch {
+                    # Silent fail for compatibility
+                }
+                try {
+                    $sidebar.BorderBrush = $Border
+                } catch {
+                    # Silent fail for compatibility
                 }
             }
         }
-        
-        # Update all borders
-        $borders = @()
-        Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
-        foreach ($border in $borders) {
-    if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
-        try { 
-            $border.Background = $Background 
-        } catch {
-            # Silent fail for compatibility
-        }
     }
 
-    if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
-        try { 
-            $border.BorderBrush = $Border 
-        } catch {
-            # Silent fail for compatibility
+    # Update all borders
+    $borders = @()
+    Find-AllControlsOfType -Parent $form -ControlType [System.Windows.Controls.Border] -Collection ([ref]$borders)
+    foreach ($border in $borders) {
+        if ($border.Background -and $border.Background.ToString() -match "#1A1625|#2D2438") {
+            try {
+                $border.Background = $Background
+            }
+            catch {
+                Write-Verbose "Border background update skipped: $($_.Exception.Message)"
+            }
+        }
+
+        if ($border.BorderBrush -and $border.BorderBrush.ToString() -match "#6B46C1") {
+            try {
+                $border.BorderBrush = $Border
+            }
+            catch {
+                Write-Verbose "Border brush update skipped: $($_.Exception.Message)"
+            }
         }
     }
 }
@@ -11140,8 +11193,8 @@ function Update-UIScaling {
         Log "Updating UI scaling: Window $([int]$WindowWidth)x$([int]$WindowHeight), Scale factor: $([Math]::Round($scale, 2))" 'Info'
         
         # Apply scaling to key UI elements
-        if ($form.Resources["ModernButton"]) {
-            $buttonStyle = $form.Resources["ModernButton"]
+        if ($form.Resources['ModernButton']) {
+            $buttonStyle = $form.Resources['ModernButton']
             # Update font sizes proportionally
             $baseFontSize = 12
             $scaledFontSize = [Math]::Round($baseFontSize * $scale, 1)
