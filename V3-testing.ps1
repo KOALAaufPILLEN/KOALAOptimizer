@@ -615,7 +615,8 @@ function Ensure-NavigationVisibility {
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
             'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
-            'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup'
+            'btnNavNetwork', 'btnNavSystem', 'btnNavServices',
+            'btnNavOptions', 'btnNavBackup'
         )
         
         foreach ($buttonName in $navigationButtons) {
@@ -890,11 +891,13 @@ function Test-StartupControls {
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
         'btnNavNetwork' = $btnNavNetwork
+
+        'btnNavSystem' = $btnNavSystem
+        'btnNavServices' = $btnNavServices
+
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
-        'btnNavServices' = $btnNavServices
-        'btnNavSystem' = $btnNavSystem
-        
+
         # Panels
         'panelDashboard' = $panelDashboard
         'panelBasicOpt' = $panelBasicOpt
@@ -902,6 +905,9 @@ function Test-StartupControls {
         'panelGames' = $panelGames
         'panelOptions' = $panelOptions
         'panelBackup' = $panelBackup
+        'btnAdvancedNetwork' = $btnAdvancedNetwork
+        'btnAdvancedSystem' = $btnAdvancedSystem
+        'btnAdvancedServices' = $btnAdvancedServices
         
         # Critical buttons mentioned in problem statement
         'btnInstalledGames' = $btnInstalledGames
@@ -930,6 +936,18 @@ function Test-StartupControls {
         # Checkboxes for optimizations
         'chkAutoOptimize' = $chkAutoOptimize
         'chkDashAutoOptimize' = $chkDashAutoOptimize
+        'chkGameDVR' = $chkGameDVR
+        'chkFullscreenOptimizations' = $chkFullscreenOptimizations
+        'chkGPUScheduling' = $chkGPUScheduling
+        'chkTimerResolution' = $chkTimerResolution
+        'chkGameMode' = $chkGameMode
+        'chkMPO' = $chkMPO
+        'chkGameDVRSystem' = $chkGameDVRSystem
+        'chkGPUSchedulingSystem' = $chkGPUSchedulingSystem
+        'chkFullscreenOptimizationsSystem' = $chkFullscreenOptimizationsSystem
+        'chkTimerResolutionSystem' = $chkTimerResolutionSystem
+        'chkGameModeSystem' = $chkGameModeSystem
+        'chkMPOSystem' = $chkMPOSystem
         
         # Logging
         'LogBox' = $global:LogBox
@@ -963,8 +981,6 @@ function Test-StartupControls {
                 'chk*' { Log "  * Add <CheckBox x:Name=`"$missing`" .../> to XAML" 'Info' }
                 'panel*' { Log "  * Add <StackPanel x:Name=`"$missing`" .../> to XAML" 'Info' }
                 'LogBox' { Log "  * Add <TextBox x:Name=`"LogBox`" .../> to XAML for logging" 'Info' }
-                'btnNavServices' { Log "  * Add <Button x:Name=`"btnNavServices`" Content=`"Services`" .../> for service management" 'Info' }
-                'btnNavSystem' { Log "  * Add <Button x:Name=`"btnNavSystem`" Content=`"System`" .../> for system optimization" 'Info' }
                 'expanderServices' { Log "  * Add <Expander x:Name=`"expanderServices`" Header=`"Service Management`" .../> to XAML" 'Info' }
                 'btnSystemInfo' { Log "  * Add <Button x:Name=`"btnSystemInfo`" Content=`"System Info`" .../> for system information" 'Info' }
                 '*Optimize*' { Log "  * Add <Button x:Name=`"$missing`" .../> for optimization functionality" 'Info' }
@@ -1292,6 +1308,9 @@ function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
 
     try {
+
+        $shouldRun = [bool]$RunCheck
+
         $shouldRun = $RunCheck -or -not $global:SystemHealthData.LastHealthCheck
 
         if ($shouldRun) {
@@ -1481,11 +1500,15 @@ function Show-SystemHealthDialog {
         $updateDisplay = {
             param([bool]$RunCheck = $false)
 
+<
+            $data = Update-SystemHealthDisplay -RunCheck:$RunCheck
+
             if ($RunCheck) {
                 Update-SystemHealthDisplay -RunCheck | Out-Null
             }
 
             $data = $global:SystemHealthData
+
 
             if (-not $data.LastHealthCheck) {
                 $lblHealthStatus.Text = 'Status: Not Run'
@@ -1505,7 +1528,7 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
-
+            
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -3210,54 +3233,54 @@ function Remove-Reg {
   <Window.Resources>
     <!-- Global Default Font Family for Better Readability -->
     <Style TargetType="Control" x:Key="BaseStyle">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
         <Setter Property="FontSize" Value="12"/>
     </Style>
-    
+
     <!-- Apply Segoe UI to all TextBlocks for consistent readability -->
     <Style TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
         <Setter Property="FontSize" Value="12"/>
     </Style>
-    
+
     <!-- Apply Segoe UI to all Buttons for consistent readability -->
     <Style TargetType="Button">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="Normal"/>
     </Style>
-    
+
     <!-- Apply Segoe UI to all Labels for consistent readability -->
     <Style TargetType="Label">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
         <Setter Property="FontSize" Value="12"/>
     </Style>
-    
+
     <!-- ComboBox Style mit theme-responsive colors for better readability -->
     <Style x:Key="ModernComboBox" TargetType="ComboBox">
-        <Setter Property="Background" Value="White"/>
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Background" Value="#1F1B2E"/>
+        <Setter Property="Foreground" Value="White"/>
         <Setter Property="BorderBrush" Value="#6B46C1"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Height" Value="32"/>
         <Setter Property="Padding" Value="8,5"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="Normal"/>
         <Style.Resources>
             <!-- ComboBoxItem Style with improved readability -->
             <Style TargetType="ComboBoxItem">
-                <Setter Property="Background" Value="White"/>
-                <Setter Property="Foreground" Value="Black"/>
+                <Setter Property="Background" Value="#1F1B2E"/>
+                <Setter Property="Foreground" Value="White"/>
                 <Setter Property="Padding" Value="10,6"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontFamily" Value="Segoe UI, Segoe UI Emoji"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="MinHeight" Value="28"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#E0E7FF"/>
-                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="Background" Value="#322B44"/>
+                        <Setter Property="Foreground" Value="White"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                     </Trigger>
                     <Trigger Property="IsSelected" Value="True">
@@ -3266,8 +3289,8 @@ function Remove-Reg {
                         <Setter Property="FontWeight" Value="SemiBold"/>
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter Property="Background" Value="#E0E7FF"/>
-                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="Background" Value="#322B44"/>
+                        <Setter Property="Foreground" Value="White"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                     </Trigger>
                 </Style.Triggers>
@@ -3627,7 +3650,7 @@ function Remove-Reg {
                   
                   <Button x:Name="btnBasicNetwork" Grid.Column="0" Height="80" Style="{StaticResource ModernButton}" Margin="0,0,5,0">
                     <StackPanel>
-                      <TextBlock Text="[Network] Network" FontSize="16" FontWeight="Bold"/>
+                      <TextBlock Text="🌐 Network" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Optimizations" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Reduce latency and improve connection" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -3635,7 +3658,7 @@ function Remove-Reg {
                   
                   <Button x:Name="btnBasicSystem" Grid.Column="1" Height="80" Style="{StaticResource ModernButton}" Margin="5,0">
                     <StackPanel>
-                      <TextBlock Text="[System] System" FontSize="16" FontWeight="Bold"/>
+                      <TextBlock Text="💻 System" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Performance" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Optimize memory, CPU, and power settings" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -3643,7 +3666,7 @@ function Remove-Reg {
                   
                   <Button x:Name="btnBasicGaming" Grid.Column="2" Height="80" Style="{StaticResource ModernButton}" Margin="5,0,0,0">
                     <StackPanel>
-                      <TextBlock Text="[Games] Gaming" FontSize="16" FontWeight="Bold"/>
+                      <TextBlock Text="🎮 Gaming" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Optimizations" FontSize="16" FontWeight="Bold"/>
                       <TextBlock Text="Essential tweaks for better FPS" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -3658,242 +3681,183 @@ function Remove-Reg {
             <!-- Advanced Options Header -->
             <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
-                <TextBlock Text="[Settings] Advanced Options" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
+                <TextBlock Text="🧩 Advanced Options" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
                 <TextBlock Text="Collapsible sections for advanced system tweaks and optimizations" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
                 
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+                  <Button x:Name="btnAdvancedNetwork" Content="🌐 Network" Style="{StaticResource ModernButton}" MinWidth="110" Height="30" FontSize="12" Margin="4,0"/>
+                  <Button x:Name="btnAdvancedSystem" Content="💻 System" Style="{StaticResource ModernButton}" MinWidth="110" Height="30" FontSize="12" Margin="4,0"/>
+                  <Button x:Name="btnAdvancedServices" Content="🛠️ Services" Style="{StaticResource ModernButton}" MinWidth="110" Height="30" FontSize="12" Margin="4,0"/>
+                </StackPanel>
+
                 <!-- Network Tweaks Collapsible Section -->
-                <Expander x:Name="expanderNetworkTweaks" Header="[Network] Network Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
+                <Expander x:Name="expanderNetworkTweaks" Header="🌐 Network Optimizations"
+                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                           Margin="0,0,0,10" Padding="10">
                   <StackPanel Margin="10">
-                    <TextBlock Text="Network Tweaks - Advanced TCP optimization settings for reduced latency and improved network throughput performance" 
+                    <TextBlock Text="🌐 Network Tweaks - Advanced TCP optimization settings for reduced latency and improved network throughput performance"
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,10"/>
-                    <WrapPanel>
-                      <CheckBox x:Name="chkAck" Content="TCP ACK Frequency" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDelAckTicks" Content="Delayed ACK Ticks" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNagleBasic" Content="Disable Nagle Algorithm" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNetworkThrottling" Content="Network Throttling Index" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkRSSBasic" Content="Receive Side Scaling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkRSCBasic" Content="Receive Segment Coalescing" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkChimney" Content="TCP Chimney Offload" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNetDMA" Content="NetDMA State" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTcpTimestamps" Content="TCP Timestamps" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTcpWindowAutoTuning" Content="TCP Window Auto-Tuning" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
+                    <Expander x:Name="expanderNetworkOptimizations" Header="🌐 Core Network Tweaks"
+                              Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
+                              Margin="0,0,0,10" Padding="10" IsExpanded="True">
+                      <StackPanel Margin="10">
+                        <WrapPanel>
+                          <CheckBox x:Name="chkAckNetwork" Content="TCP ACK Frequency" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDelAckTicksNetwork" Content="Delayed ACK Ticks" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkNagleNetwork" Content="Disable Nagle Algorithm" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkNetworkThrottlingNetwork" Content="Network Throttling Index" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkRSSNetwork" Content="Receive Side Scaling" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkRSCNetwork" Content="Receive Segment Coalescing" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkChimneyNetwork" Content="TCP Chimney Offload" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkNetDMANetwork" Content="NetDMA State" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkTcpTimestampsNetwork" Content="TCP Timestamps" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkTcpWindowAutoTuningNetwork" Content="TCP Window Auto-Tuning" Style="{StaticResource ModernCheckBox}"/>
+                        </WrapPanel>
+                      </StackPanel>
+                    </Expander>
+                    <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="Auto"/>
+                          <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="btnApplyNetworkTweaks" Grid.Column="0" Content="🌐 Apply Network Optimizations"
+                                Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
+                        <Button x:Name="btnTestNetworkLatency" Grid.Column="1" Content="📊 Test Latency" Width="120" Height="36"
+                                Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
+                        <Button x:Name="btnResetNetworkSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36"
+                                Style="{StaticResource WarningButton}" FontSize="10"/>
+                      </Grid>
+                    </Border>
                   </StackPanel>
                 </Expander>
 
                 <!-- System Optimizations Collapsible Section -->
-                <Expander x:Name="expanderSystemOptimizations" Header="[System] System Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
+                <Expander x:Name="expanderSystemOptimizations" Header="💻 System Optimizations"
+                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                           Margin="0,0,0,10" Padding="10">
                   <StackPanel Margin="10">
-                    <TextBlock Text="System Optimizations - Advanced performance and hardware optimizations for maximum system efficiency" 
+                    <TextBlock Text="💻 System Optimizations - Advanced performance and hardware optimizations for maximum system efficiency"
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,10"/>
-                    <WrapPanel>
-                      <CheckBox x:Name="chkMemoryCompression" Content="Memory Compression" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkPowerPlanBasic" Content="High Performance Power Plan" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCPUSchedulingBasic" Content="CPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkPageFileBasic" Content="Page File Optimization" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkVisualEffectsBasic" Content="Disable Visual Effects" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCoreParking" Content="Core Parking" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGameDVRBasic" Content="Disable Game DVR" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkFullscreenOptimizations" Content="Fullscreen Exclusive" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGPUScheduling" Content="Hardware GPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTimerResolution" Content="Timer Resolution" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGameMode" Content="Game Mode" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkMPO" Content="MPO (Multi-Plane Overlay)" Style="{StaticResource ModernCheckBox}"/>
-                      <!-- Enhanced System Optimizations -->
-                      <CheckBox x:Name="chkDynamicResolution" Content="Dynamic Resolution Scaling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkEnhancedFramePacing" Content="Enhanced Frame Pacing" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGPUOverclocking" Content="Profile-based GPU Overclocking" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCompetitiveLatency" Content="Competitive Latency Reduction" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkAutoDiskOptimization" Content="Auto Disk Defrag/SSD Trim" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkAdaptivePowerManagement" Content="Adaptive Power Management" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkEnhancedPagingFile" Content="Enhanced Paging File Management" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDirectStorageEnhanced" Content="DirectStorage API Enhancement" Style="{StaticResource ModernCheckBox}"/>
-                      <!-- Razer Booster-inspired Advanced Optimizations -->
-                      <CheckBox x:Name="chkAdvancedTelemetryDisable" Content="Advanced Telemetry &amp; Tracking Disable" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkMemoryDefragmentation" Content="Memory Defragmentation &amp; Cleanup" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkServiceOptimization" Content="Advanced Service Optimization" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDiskTweaksAdvanced" Content="Advanced Disk I/O Tweaks" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNetworkLatencyOptimization" Content="Ultra-Low Network Latency Mode" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkFPSSmoothness" Content="FPS Smoothness &amp; Frame Time Optimization" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCPUMicrocode" Content="CPU Microcode &amp; Cache Optimization" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkRAMTimings" Content="RAM Timing &amp; Frequency Optimization" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
+                    <Expander x:Name="expanderPerformanceOptimizations" Header="⚡ Performance Optimizations"
+                              Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
+                              Margin="0,0,0,10" Padding="10" IsExpanded="True">
+                      <StackPanel Margin="10">
+                        <WrapPanel>
+                          <CheckBox x:Name="chkMemoryCompressionSystem" Content="Memory Compression" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkPowerPlanSystem" Content="High Performance Power Plan" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkCPUSchedulingSystem" Content="CPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkPageFileSystem" Content="Page File Optimization" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkVisualEffectsSystem" Content="Disable Visual Effects" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkCoreParkingSystem" Content="Core Parking" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkGameDVRSystem" Content="Disable Game DVR" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkFullscreenOptimizationsSystem" Content="Fullscreen Exclusive" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkGPUSchedulingSystem" Content="Hardware GPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkTimerResolutionSystem" Content="Timer Resolution" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkGameModeSystem" Content="Game Mode" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkMPOSystem" Content="MPO (Multi-Plane Overlay)" Style="{StaticResource ModernCheckBox}"/>
+                        </WrapPanel>
+                      </StackPanel>
+                    </Expander>
+                    <Expander Header="🚀 Advanced Performance Enhancements"
+                              Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
+                              Margin="0,0,0,10" Padding="10">
+                      <StackPanel Margin="10">
+                        <WrapPanel>
+                          <CheckBox x:Name="chkDynamicResolution" Content="Dynamic Resolution Scaling" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkEnhancedFramePacing" Content="Enhanced Frame Pacing" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkGPUOverclocking" Content="Profile-based GPU Overclocking" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkCompetitiveLatency" Content="Competitive Latency Reduction" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkAutoDiskOptimization" Content="Auto Disk Defrag/SSD Trim" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkAdaptivePowerManagement" Content="Adaptive Power Management" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkEnhancedPagingFile" Content="Enhanced Paging File Management" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDirectStorageEnhanced" Content="DirectStorage API Enhancement" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkAdvancedTelemetryDisable" Content="Advanced Telemetry &amp; Tracking Disable" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkMemoryDefragmentation" Content="Memory Defragmentation &amp; Cleanup" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkServiceOptimization" Content="Advanced Service Optimization" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDiskTweaksAdvanced" Content="Advanced Disk I/O Tweaks" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkNetworkLatencyOptimization" Content="Ultra-Low Network Latency Mode" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkFPSSmoothness" Content="FPS Smoothness &amp; Frame Time Optimization" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkCPUMicrocode" Content="CPU Microcode &amp; Cache Optimization" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkRAMTimings" Content="RAM Timing &amp; Frequency Optimization" Style="{StaticResource ModernCheckBox}"/>
+                        </WrapPanel>
+                      </StackPanel>
+                    </Expander>
+                    <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="Auto"/>
+                          <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="btnApplySystemOptimizations" Grid.Column="0" Content="⚙️ Apply System Optimizations"
+                                Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
+                        <Button x:Name="btnSystemBenchmark" Grid.Column="1" Content="📈 Benchmark" Width="120" Height="36"
+                                Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
+                        <Button x:Name="btnResetSystemSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36"
+                                Style="{StaticResource WarningButton}" FontSize="10"/>
+                      </Grid>
+                    </Border>
                   </StackPanel>
                 </Expander>
 
                 <!-- Service Management Collapsible Section -->
-                <Expander x:Name="expanderServiceManagement" Header="[Settings] Service Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
+                <Expander x:Name="expanderServiceManagement" Header="🛠️ Service Optimizations"
+                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                           Margin="0,0,0,10" Padding="10">
                   <StackPanel Margin="10">
-                    <TextBlock Text="Service Management - Windows services optimization and management for improved system performance" 
+                    <TextBlock Text="🛠️ Service Management - Windows services optimization and management for improved system performance"
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,10"/>
-                    <WrapPanel>
-                      <CheckBox x:Name="chkDisableXboxServices" Content="Disable Xbox Services" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableTelemetry" Content="Disable Windows Telemetry" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableSearch" Content="Disable Windows Search" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisablePrintSpooler" Content="Disable Print Spooler" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableSuperfetch" Content="Disable Superfetch" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableFax" Content="Disable Fax Service" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableRemoteRegistry" Content="Disable Remote Registry" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableThemes" Content="Optimize Themes Service" Style="{StaticResource ModernCheckBox}"/>
-                      <!-- Enhanced Razer Booster-inspired Service Optimizations -->
-                      <CheckBox x:Name="chkDisableCortana" Content="Disable Cortana &amp; Voice Assistant" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableWindowsUpdate" Content="Optimize Windows Update Service" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableBackgroundApps" Content="Disable Background App Refresh" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableLocationTracking" Content="Disable Location Tracking Services" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableAdvertisingID" Content="Disable Advertising ID Services" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableErrorReporting" Content="Disable Error Reporting Services" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableCompatTelemetry" Content="Disable Compatibility Telemetry" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableWSH" Content="Disable Windows Script Host" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
+                    <Expander x:Name="expanderServiceOptimizations" Header="🧰 Service Tweaks"
+                              Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
+                              Margin="0,0,0,10" Padding="10" IsExpanded="True">
+                      <StackPanel Margin="10">
+                        <WrapPanel>
+                          <CheckBox x:Name="chkDisableXboxServicesServices" Content="Disable Xbox Services" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableTelemetryServices" Content="Disable Telemetry" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableSearchServices" Content="Disable Windows Search" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisablePrintSpoolerServices" Content="Disable Print Spooler" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableSuperfetchServices" Content="Disable Superfetch" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableFaxServices" Content="Disable Fax Service" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableRemoteRegistryServices" Content="Disable Remote Registry" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableThemesServices" Content="Optimize Themes Service" Style="{StaticResource ModernCheckBox}"/>
+                        </WrapPanel>
+                      </StackPanel>
+                    </Expander>
+                    <Expander Header="🔒 Privacy &amp; Background Services"
+                              Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
+                              Margin="0,0,0,10" Padding="10">
+                      <StackPanel Margin="10">
+                        <WrapPanel>
+                          <CheckBox x:Name="chkDisableCortana" Content="Disable Cortana &amp; Voice Assistant" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableWindowsUpdate" Content="Optimize Windows Update Service" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableBackgroundApps" Content="Disable Background App Refresh" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableLocationTracking" Content="Disable Location Tracking Services" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableAdvertisingID" Content="Disable Advertising ID Services" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableErrorReporting" Content="Disable Error Reporting Services" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableCompatTelemetry" Content="Disable Compatibility Telemetry" Style="{StaticResource ModernCheckBox}"/>
+                          <CheckBox x:Name="chkDisableWSH" Content="Disable Windows Script Host" Style="{StaticResource ModernCheckBox}"/>
+                        </WrapPanel>
+                      </StackPanel>
+                    </Expander>
+                    <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="Auto"/>
+                          <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="btnApplyServiceOptimizations" Grid.Column="0" Content="🔧 Apply Service Optimizations"
+                                Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
+                        <Button x:Name="btnViewRunningServices" Grid.Column="1" Content="📋 View Services" Width="120" Height="36"
+                                Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
+                        <Button x:Name="btnResetServiceSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36"
+                                Style="{StaticResource WarningButton}" FontSize="10"/>
+                      </Grid>
+                    </Border>
                   </StackPanel>
                 </Expander>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- Network Tweaks Panel -->
-          <StackPanel x:Name="panelNetwork" Visibility="Collapsed">
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
-              <StackPanel>
-                <TextBlock Text="[Network] Network Tweaks" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                <TextBlock Text="Advanced TCP optimization settings for reduced latency and improved network throughput performance" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
-                
-                <!-- Network Optimizations Section -->
-                <Expander x:Name="expanderNetworkOptimizations" Header="[Network] Network Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
-                          Margin="0,0,0,10" Padding="10" IsExpanded="True">
-                  <StackPanel Margin="10">
-                    <WrapPanel>
-                      <CheckBox x:Name="chkAckNetwork" Content="TCP ACK Frequency" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDelAckTicksNetwork" Content="Delayed ACK Ticks" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNagleNetwork" Content="Disable Nagle Algorithm" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNetworkThrottlingNetwork" Content="Network Throttling Index" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkRSSNetwork" Content="Receive Side Scaling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkRSCNetwork" Content="Receive Segment Coalescing" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkChimneyNetwork" Content="TCP Chimney Offload" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkNetDMANetwork" Content="NetDMA State" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTcpTimestampsNetwork" Content="TCP Timestamps" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTcpWindowAutoTuningNetwork" Content="TCP Window Auto-Tuning" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
-                  </StackPanel>
-                </Expander>
-
-                <!-- Network Action Buttons -->
-                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="btnApplyNetworkTweaks" Grid.Column="0" Content="🌐 Apply Network Optimizations" 
-                            Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
-                    <Button x:Name="btnTestNetworkLatency" Grid.Column="1" Content="📊 Test Latency" Width="120" Height="36" 
-                            Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetNetworkSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
-                            Style="{StaticResource WarningButton}" FontSize="10"/>
-                  </Grid>
-                </Border>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- System Optimization Panel -->
-          <StackPanel x:Name="panelSystem" Visibility="Collapsed">
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
-              <StackPanel>
-                <TextBlock Text="[PC] System Optimization" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                <TextBlock Text="Advanced performance and hardware optimizations for maximum system efficiency" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
-                
-                <!-- Performance Optimizations Section -->
-                <Expander x:Name="expanderPerformanceOptimizations" Header="⚡ Performance Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
-                          Margin="0,0,0,10" Padding="10" IsExpanded="True">
-                  <StackPanel Margin="10">
-                    <WrapPanel>
-                      <CheckBox x:Name="chkMemoryCompressionSystem" Content="Memory Compression" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkPowerPlanSystem" Content="High Performance Power Plan" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCPUSchedulingSystem" Content="CPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkPageFileSystem" Content="Page File Optimization" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkVisualEffectsSystem" Content="Disable Visual Effects" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkCoreParkingSystem" Content="Core Parking" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGameDVRSystem" Content="Disable Game DVR" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkFullscreenOptimizationsSystem" Content="Fullscreen Exclusive" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGPUSchedulingSystem" Content="Hardware GPU Scheduling" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkTimerResolutionSystem" Content="Timer Resolution" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkGameModeSystem" Content="Game Mode" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkMPOSystem" Content="MPO (Multi-Plane Overlay)" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
-                  </StackPanel>
-                </Expander>
-
-                <!-- System Action Buttons -->
-                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="btnApplySystemOptimizations" Grid.Column="0" Content="⚙️ Apply System Optimizations" 
-                            Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
-                    <Button x:Name="btnSystemBenchmark" Grid.Column="1" Content="📈 Benchmark" Width="120" Height="36" 
-                            Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetSystemSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
-                            Style="{StaticResource WarningButton}" FontSize="10"/>
-                  </Grid>
-                </Border>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- Services Management Panel -->
-          <StackPanel x:Name="panelServices" Visibility="Collapsed">
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
-              <StackPanel>
-                <TextBlock Text="⚙️ Services Management" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                <TextBlock Text="Windows services optimization and management for improved system performance" Foreground="#B8B3E6" FontSize="14" Margin="0,0,0,15"/>
-                
-                <!-- Service Optimizations Section -->
-                <Expander x:Name="expanderServiceOptimizations" Header="[Settings] Service Optimizations" 
-                          Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1" 
-                          Margin="0,0,0,10" Padding="10" IsExpanded="True">
-                  <StackPanel Margin="10">
-                    <WrapPanel>
-                      <CheckBox x:Name="chkDisableXboxServicesServices" Content="Disable Xbox Services" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableTelemetryServices" Content="Disable Telemetry" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableSearchServices" Content="Disable Windows Search" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisablePrintSpoolerServices" Content="Disable Print Spooler" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableSuperfetchServices" Content="Disable Superfetch" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableFaxServices" Content="Disable Fax Service" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableRemoteRegistryServices" Content="Disable Remote Registry" Style="{StaticResource ModernCheckBox}"/>
-                      <CheckBox x:Name="chkDisableThemesServices" Content="Optimize Themes Service" Style="{StaticResource ModernCheckBox}"/>
-                    </WrapPanel>
-                  </StackPanel>
-                </Expander>
-
-                <!-- Services Action Buttons -->
-                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,10,0,0">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="btnApplyServiceOptimizations" Grid.Column="0" Content="🔧 Apply Service Optimizations" 
-                            Style="{StaticResource SuccessButton}" Height="36" FontSize="12" Margin="0,0,8,0"/>
-                    <Button x:Name="btnViewRunningServices" Grid.Column="1" Content="📋 View Services" Width="120" Height="36" 
-                            Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,8,0"/>
-                    <Button x:Name="btnResetServiceSettings" Grid.Column="2" Content="🔄 Reset" Width="80" Height="36" 
-                            Style="{StaticResource WarningButton}" FontSize="10"/>
-                  </Grid>
-                </Border>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3902,7 +3866,7 @@ function Remove-Reg {
           <StackPanel x:Name="panelGames" Visibility="Collapsed">
             <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
-                <TextBlock Text="[Games] Installed Games Management" Style="{StaticResource HeaderText}" Margin="0,0,0,15"/>
+                <TextBlock Text="🎮 Installed Games Management" Style="{StaticResource HeaderText}" Margin="0,0,0,15"/>
                 
                 <!-- Game Search Controls -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
@@ -3946,12 +3910,12 @@ function Remove-Reg {
           <StackPanel x:Name="panelOptions" Visibility="Collapsed">
             <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
-                <TextBlock Text="[Themes] Options and Settings" Style="{StaticResource HeaderText}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                <TextBlock Text="🎨 Theme Options &amp; Settings" Style="{StaticResource HeaderText}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 
                 <!-- Theme Settings -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="[Themes] Theme Settings" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock Text="🎨 Theme Settings" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -3983,7 +3947,7 @@ function Remove-Reg {
                     <Border x:Name="themeColorPreview" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
                             CornerRadius="4" Padding="12" Margin="0,8,0,0">
                       <StackPanel>
-                        <TextBlock Text="[Themes] Color Preview" Foreground="#00FF88" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock Text="🎨 Color Preview" Foreground="#00FF88" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
                         <Grid>
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -4017,7 +3981,7 @@ function Remove-Reg {
                 <Border x:Name="customThemePanel" Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" 
                         CornerRadius="6" Padding="16" Margin="0,0,0,12" Visibility="Collapsed">
                   <StackPanel>
-                    <TextBlock Text="[Themes] Custom Theme Colors" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock Text="🎨 Custom Theme Colors" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -4044,7 +4008,7 @@ function Remove-Reg {
                 <!-- UI Scaling -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="[Settings] UI Scaling" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock Text="🖥️ UI Scaling" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -4066,7 +4030,7 @@ function Remove-Reg {
                 <!-- Settings Management -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16">
                   <StackPanel>
-                    <TextBlock Text="[Save] Settings Management" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock Text="💾 Settings Management" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -4090,13 +4054,13 @@ function Remove-Reg {
           <StackPanel x:Name="panelBackup" Visibility="Collapsed">
             <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
               <StackPanel>
-                <TextBlock Text="[Save] Backup and Restore Center" FontSize="24" FontWeight="Bold" Foreground="#00FF88" 
+                <TextBlock Text="💾 Backup and Restore Center" FontSize="24" FontWeight="Bold" Foreground="#00FF88"
                            HorizontalAlignment="Center" Margin="0,0,0,20"/>
                 
                 <!-- Backup Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                   <StackPanel>
-                    <TextBlock Text="[Export] Create Backup" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="📤 Create Backup" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Create a complete backup of your optimizations and settings with user-selectable file location." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4115,7 +4079,7 @@ function Remove-Reg {
                 <!-- Restore Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                   <StackPanel>
-                    <TextBlock Text="[Import] Restore Settings" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="📥 Restore Settings" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Import previously exported configurations or restore from backup files." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4134,7 +4098,7 @@ function Remove-Reg {
                 <!-- Activity Log Section -->
                 <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="15">
                   <StackPanel>
-                    <TextBlock Text="[List] Activity Log Management" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
+                    <TextBlock Text="📝 Activity Log Management" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Save your optimization activity log for troubleshooting and record keeping." 
                                Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     <Grid>
@@ -4202,7 +4166,7 @@ function Remove-Reg {
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="[Save] Activity Log - Real-Time User Action Tracking" 
+            <TextBlock Grid.Column="0" Text="📝 Activity Log - Real-Time User Action Tracking"
                        Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
               <Button x:Name="btnToggleLogView" Content="🔍 Detailed" Width="70" Height="24" 
@@ -4271,9 +4235,6 @@ $btnNavDashboard = $form.FindName('btnNavDashboard')
 $btnNavBasicOpt = $form.FindName('btnNavBasicOpt')
 $btnNavAdvanced = $form.FindName('btnNavAdvanced')
 $btnNavGames = $form.FindName('btnNavGames')
-$btnNavNetwork = $form.FindName('btnNavNetwork')
-$btnNavSystem = $form.FindName('btnNavSystem')
-$btnNavServices = $form.FindName('btnNavServices')
 $btnNavOptions = $form.FindName('btnNavOptions')
 $btnNavBackup = $form.FindName('btnNavBackup')
 
@@ -4281,12 +4242,12 @@ $btnNavBackup = $form.FindName('btnNavBackup')
 $panelDashboard = $form.FindName('panelDashboard')
 $panelBasicOpt = $form.FindName('panelBasicOpt')
 $panelAdvanced = $form.FindName('panelAdvanced')
-$panelNetwork = $form.FindName('panelNetwork')
-$panelSystem = $form.FindName('panelSystem')
-$panelServices = $form.FindName('panelServices')
 $panelGames = $form.FindName('panelGames')
 $panelOptions = $form.FindName('panelOptions')
 $panelBackup = $form.FindName('panelBackup')
+$btnAdvancedNetwork = $form.FindName('btnAdvancedNetwork')
+$btnAdvancedSystem = $form.FindName('btnAdvancedSystem')
+$btnAdvancedServices = $form.FindName('btnAdvancedServices')
 
 # Header controls
 $lblMainTitle = $form.FindName('lblMainTitle')
@@ -4347,6 +4308,21 @@ $chkGPUScheduling = $form.FindName('chkGPUScheduling')
 $chkTimerResolution = $form.FindName('chkTimerResolution')
 $chkGameMode = $form.FindName('chkGameMode')
 $chkMPO = $form.FindName('chkMPO')
+
+# Advanced system checkbox aliases (new Advanced panel naming)
+$chkGameDVRSystem = $form.FindName('chkGameDVRSystem')
+$chkFullscreenOptimizationsSystem = $form.FindName('chkFullscreenOptimizationsSystem')
+$chkGPUSchedulingSystem = $form.FindName('chkGPUSchedulingSystem')
+$chkTimerResolutionSystem = $form.FindName('chkTimerResolutionSystem')
+$chkGameModeSystem = $form.FindName('chkGameModeSystem')
+$chkMPOSystem = $form.FindName('chkMPOSystem')
+
+if (-not $chkGameDVR) { $chkGameDVR = $chkGameDVRSystem }
+if (-not $chkFullscreenOptimizations) { $chkFullscreenOptimizations = $chkFullscreenOptimizationsSystem }
+if (-not $chkGPUScheduling) { $chkGPUScheduling = $chkGPUSchedulingSystem }
+if (-not $chkTimerResolution) { $chkTimerResolution = $chkTimerResolutionSystem }
+if (-not $chkGameMode) { $chkGameMode = $chkGameModeSystem }
+if (-not $chkMPO) { $chkMPO = $chkMPOSystem }
 
 # Enhanced gaming and system optimization checkboxes
 $chkDynamicResolution = $form.FindName('chkDynamicResolution')
@@ -4496,7 +4472,7 @@ function Set-ActiveNavigationButton {
         $colors = Get-ThemeColors -ThemeName $CurrentTheme
         
         # Alle Navigation Buttons
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
         
@@ -4551,9 +4527,6 @@ function Switch-Panel {
         if ($panelDashboard) { $panelDashboard.Visibility = "Collapsed" }
         if ($panelBasicOpt) { $panelBasicOpt.Visibility = "Collapsed" }
         if ($panelAdvanced) { $panelAdvanced.Visibility = "Collapsed" }
-        if ($panelNetwork) { $panelNetwork.Visibility = "Collapsed" }
-        if ($panelSystem) { $panelSystem.Visibility = "Collapsed" }
-        if ($panelServices) { $panelServices.Visibility = "Collapsed" }
         if ($panelGames) { $panelGames.Visibility = "Collapsed" }
         if ($panelOptions) { $panelOptions.Visibility = "Collapsed" }
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
@@ -4611,33 +4584,6 @@ function Switch-Panel {
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Customize appearance, themes, and application settings" }
                 $global:CurrentPanel = "Options"
                 $global:MenuMode = "Options"
-            }
-            "Network" {
-                if ($panelNetwork) { $panelNetwork.Visibility = "Visible" }
-                Set-ActiveNavigationButton -ActiveButtonName 'btnNavNetwork' -CurrentTheme $currentTheme
-                
-                if ($lblMainTitle) { $lblMainTitle.Text = "Network Tweaks" }
-                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Advanced network optimization settings for reduced latency and improved performance" }
-                $global:CurrentPanel = "Network"
-                $global:MenuMode = "Network"
-            }
-            "System" {
-                if ($panelSystem) { $panelSystem.Visibility = "Visible" }
-                Set-ActiveNavigationButton -ActiveButtonName 'btnNavSystem' -CurrentTheme $currentTheme
-                
-                if ($lblMainTitle) { $lblMainTitle.Text = "System Optimization" }
-                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Advanced performance and hardware optimizations for maximum system efficiency" }
-                $global:CurrentPanel = "System"
-                $global:MenuMode = "System"
-            }
-            "Services" {
-                if ($panelServices) { $panelServices.Visibility = "Visible" }
-                Set-ActiveNavigationButton -ActiveButtonName 'btnNavServices' -CurrentTheme $currentTheme
-                
-                if ($lblMainTitle) { $lblMainTitle.Text = "Services Management" }
-                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Windows services optimization and management for improved system performance" }
-                $global:CurrentPanel = "Services"
-                $global:MenuMode = "Services"
             }
             "Backup" {
                 if ($panelBackup) { $panelBackup.Visibility = "Visible" }
@@ -4849,6 +4795,32 @@ if ($btnNavSystem) {
 
 if ($btnNavServices) {
     $btnNavServices.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedNetwork) {
+    $btnAdvancedNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedSystem) {
+    $btnAdvancedSystem.Add_Click({
+
     Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
@@ -4863,6 +4835,14 @@ if ($btnNavSystem) {
         }
 
 
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedServices) {
+    $btnAdvancedServices.Add_Click({
+
+
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
         Switch-Panel "System"
@@ -4873,6 +4853,7 @@ if ($btnNavSystem) {
 
 if ($btnNavServices) {
     $btnNavServices.Add_Click({
+
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
@@ -5013,7 +4994,7 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
-            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -5118,7 +5099,7 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # Navigation nochmal explizit setzen
-            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -6034,7 +6015,7 @@ function Search-GamesForPanel {
         
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
-        try { $loadingText.Text = "[Search] Searching for installed games with advanced detection..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
+        try { $loadingText.Text = "🔍 Searching for installed games with advanced detection..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
         try { $loadingText.Foreground = "#00FF88" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
@@ -6158,7 +6139,7 @@ function Search-GamesForPanel {
         if ($foundGames.Count -gt 0) {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
-            $headerText.Text = "[OK] Found $($foundGames.Count) installed games:"
+            $headerText.Text = "✅ Found $($foundGames.Count) installed games:"
             $headerText.Foreground = "#00FF88"
             $headerText.FontWeight = "Bold"
             $headerText.Margin = "0,0,0,10"
@@ -6256,7 +6237,7 @@ function Search-CustomFoldersForExecutables {
         
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
-        try { $loadingText.Text = "[Search] Scanning custom folders for .exe files..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
+        try { $loadingText.Text = "🔍 Scanning custom folders for .exe files..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
         try { $loadingText.Foreground = "#FFD700" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
@@ -6327,7 +6308,7 @@ function Search-CustomFoldersForExecutables {
             
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
-            $headerText.Text = "[Search] Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
+            $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
             $headerText.Foreground = "#FFD700"
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 12
@@ -6363,14 +6344,14 @@ function Search-CustomFoldersForExecutables {
                 
                 # Add details
                 $detailsText = New-Object System.Windows.Controls.TextBlock
-                $detailsText.Text = "[Search] $($executable.Details)"
+                $detailsText.Text = "🔍 $($executable.Details)"
                 $detailsText.Foreground = "#B8B8B8"
                 $detailsText.FontSize = 10
                 $detailsText.Margin = "20,2,0,0"
                 $stackPanel.Children.Add($detailsText)
                 
                 $fileDetailsText = New-Object System.Windows.Controls.TextBlock
-                $fileDetailsText.Text = "[Save] File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
+                $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
                 $fileDetailsText.Foreground = "#888888"
                 $fileDetailsText.FontSize = 9
                 $fileDetailsText.Margin = "20,1,0,0"
@@ -6886,7 +6867,7 @@ function Apply-ThemeColors {
         }
         
         # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
         foreach ($btnName in $navButtons) {
             $navBtn = $form.FindName($btnName)
             if ($navBtn) {
@@ -7041,7 +7022,11 @@ function Apply-ThemeColors {
         # Globale Theme-Variable speichern
         $global:CurrentTheme = $ThemeName
 
+
+        $successMessage = "🎨 Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
         $successMessage = "[Themes] Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
         Log $successMessage 'Success'
         
     } catch {
@@ -7569,6 +7554,90 @@ function Apply-NetworkOptimizations {
     return $count
 }
 
+# ---------- Targeted Gaming Optimization Helpers ----------
+function Disable-GameDVR {
+    $allOperationsSucceeded = $true
+
+    try {
+        Log "Disabling Game DVR background recording and overlays..." 'Info'
+
+        $operations = @(
+            { Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 'DWord' 0 },
+            { Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 'DWord' 2 },
+            { Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehavior" 'DWord' 2 },
+            { Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "AppCaptureEnabled" 'DWord' 0 },
+            { Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "GameDVR_Enabled" 'DWord' 0 },
+            { Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AllowAutoGameMode" 'DWord' 0 },
+            { Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AutoGameModeEnabled" 'DWord' 0 },
+            { Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 'DWord' 0 -RequiresAdmin $true },
+            { Set-Reg "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" "value" 'DWord' 0 -RequiresAdmin $true }
+        )
+
+        foreach ($operation in $operations) {
+            if (-not (& $operation)) {
+                $allOperationsSucceeded = $false
+            }
+        }
+
+        try {
+            $presenceWriter = Get-Service -Name 'GameBarPresenceWriter' -ErrorAction Stop
+            if ($presenceWriter.Status -ne 'Stopped') {
+                Stop-Service -Name 'GameBarPresenceWriter' -Force -ErrorAction Stop
+            }
+            Set-Service -Name 'GameBarPresenceWriter' -StartupType Disabled -ErrorAction Stop
+            Log "Game Bar presence writer service disabled" 'Info'
+        } catch {
+            Write-Verbose "Game Bar Presence Writer service update skipped: $($_.Exception.Message)"
+            $allOperationsSucceeded = $false
+        }
+
+        if ($allOperationsSucceeded) {
+            Log "Game DVR disabled globally" 'Success'
+        } else {
+            Log "Game DVR registry updates applied with warnings (administrator rights may be required)" 'Warning'
+        }
+
+        return $allOperationsSucceeded
+    } catch {
+        Log "Failed to disable Game DVR: $($_.Exception.Message)" 'Warning'
+        return $false
+    }
+}
+
+function Enable-GPUScheduling {
+    $gpuRegistryPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
+
+    try {
+        $osVersion = [Environment]::OSVersion.Version
+        if ($osVersion.Major -lt 10 -or ($osVersion.Major -eq 10 -and $osVersion.Build -lt 19041)) {
+            Log "Hardware GPU scheduling requires Windows 10 version 2004 or newer - skipping" 'Warning'
+            return $false
+        }
+
+        if (-not (Test-Path $gpuRegistryPath -ErrorAction SilentlyContinue)) {
+            Log "GPU scheduling registry path not found - hardware may not support this feature" 'Warning'
+            return $false
+        }
+
+        $results = @(
+            Set-Reg $gpuRegistryPath 'HwSchMode' 'DWord' 2 -RequiresAdmin $true,
+            Set-Reg "$gpuRegistryPath\Scheduler" 'EnablePreemption' 'DWord' 1 -RequiresAdmin $true,
+            Set-Reg $gpuRegistryPath 'PlatformSupportMiracast' 'DWord' 0 -RequiresAdmin $true
+        )
+
+        if ($results -contains $false) {
+            Log "Hardware GPU scheduling applied with warnings (administrator rights may be required)" 'Warning'
+            return $false
+        }
+
+        Log "Hardware GPU scheduling enabled" 'Success'
+        return $true
+    } catch {
+        Log "Failed to enable hardware GPU scheduling: $($_.Exception.Message)" 'Warning'
+        return $false
+    }
+}
+
 # ---------- FPS Optimization Functions ----------
 function Apply-FPSOptimizations {
     param([string[]]$OptimizationList)
@@ -7608,10 +7677,7 @@ function Apply-FPSOptimizations {
             }
             
             'GPUSchedulingOptimization' {
-                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
-                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" "EnablePreemption" 'DWord' 1 -RequiresAdmin $true | Out-Null
-                Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "PlatformSupportMiracast" 'DWord' 0 -RequiresAdmin $true | Out-Null
-                Log "GPU scheduling optimization applied" 'Success'
+                [void](Enable-GPUScheduling)
             }
             
             'MemoryCompressionDisable' {
@@ -9671,7 +9737,7 @@ if ($btnToggleLogView) {
                     } | Select-Object -Last 20
                     
                     $global:LogBox.Text = ($compactLines -join "`n")
-                    $btnToggleLogView.Content = "[File] Compact"
+                    $btnToggleLogView.Content = "📁 Compact"
                     $global:LogViewDetailed = $false
                     Log "Switched to compact log view (showing key actions only)" 'Info'
                 } else {
@@ -9680,7 +9746,7 @@ if ($btnToggleLogView) {
                     if ($global:DetailedLogBackup) {
                         $global:LogBox.Text = $global:DetailedLogBackup
                     }
-                    $btnToggleLogView.Content = "[Detailed] Detailed"
+                    $btnToggleLogView.Content = "📄 Detailed"
                     $global:LogViewDetailed = $true
                     Log "Switched to detailed log view (showing all entries)" 'Info'
                 }
@@ -10148,7 +10214,7 @@ function Start-CustomFolderOnlySearch {
         
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
-        $loadingText.Text = "[Search] Searching '$FolderPath' for all executables (.exe)..."
+        $loadingText.Text = "🔍 Searching '$FolderPath' for all executables (.exe)..."
         $loadingText.Foreground = "#FFD700"
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
@@ -10229,7 +10295,7 @@ function Start-CustomFolderOnlySearch {
                 $gameInfo.Children.Add($gameName)
                 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
-                $gameDetails.Text = "[Folder] $($executable.Path)`n[Chart] Size: $($executable.Size) MB | [Date] Modified: $($executable.LastModified)"
+                $gameDetails.Text = "📁 $($executable.Path)`n📊 Size: $($executable.Size) MB | 📅 Modified: $($executable.LastModified)"
                 $gameDetails.Foreground = "#B8B3E6"
                 $gameDetails.FontSize = 10
                 $gameDetails.TextWrapping = "Wrap"
@@ -10336,7 +10402,7 @@ function Start-AllCustomFoldersSearch {
         
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
-        $loadingText.Text = "[Search] Searching all custom folders for executables..."
+        $loadingText.Text = "🔍 Searching all custom folders for executables..."
         $loadingText.Foreground = "#FFD700"
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
@@ -10407,7 +10473,7 @@ function Start-AllCustomFoldersSearch {
                 $gameInfo.Children.Add($gameName)
                 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
-                $gameDetails.Text = "[Folder] From: $($exe.Folder) | [Chart] $($exe.Size) MB | [Date] $($exe.LastModified)"
+                $gameDetails.Text = "📁 From: $($exe.Folder) | 📊 $($exe.Size) MB | 📅 $($exe.LastModified)"
                 $gameDetails.Foreground = "#B8B3E6"
                 $gameDetails.FontSize = 10
                 $gameInfo.Children.Add($gameDetails)
@@ -10701,28 +10767,26 @@ if ($btnApply) {
             $optimizationCount++
         }
         
-        if ($chkGameDVR.IsChecked) {
-            Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 'DWord' 0 | Out-Null
-            Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "AppCaptureEnabled" 'DWord' 0 | Out-Null
-            Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AllowAutoGameMode" 'DWord' 0 | Out-Null
-            Log "Game DVR disabled" 'Success'
-            $optimizationCount++
+        if ($chkGameDVR -and $chkGameDVR.IsChecked) {
+            if (Disable-GameDVR) {
+                $optimizationCount++
+            }
         }
-        
-        if ($chkFSE.IsChecked) {
+
+        if ($chkFSE -and $chkFSE.IsChecked) {
             Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 'DWord' 2 | Out-Null
             Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehavior" 'DWord' 2 | Out-Null
             Log "Fullscreen optimizations disabled" 'Success'
             $optimizationCount++
         }
-        
-        if ($chkGpuScheduler.IsChecked) {
-            Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
-            Log "Hardware GPU scheduling enabled" 'Success'
-            $optimizationCount++
+
+        if ($chkGpuScheduler -and $chkGpuScheduler.IsChecked) {
+            if (Enable-GPUScheduling) {
+                $optimizationCount++
+            }
         }
-        
-        if ($chkTimerRes.IsChecked) {
+
+        if ($chkTimerRes -and $chkTimerRes.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 -RequiresAdmin $true | Out-Null
             try { [WinMM]::timeBeginPeriod(1) | Out-Null } catch {}
             Log "High precision timer enabled" 'Success'
@@ -11588,6 +11652,9 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 
 
 function Invoke-NetworkPanelOptimizations {
+
+
+function Invoke-NetworkPanelOptimizations {
 function Invoke-NetworkPanelOptimizations {
 
 # Start real-time performance monitoring for dashboard
@@ -11619,7 +11686,7 @@ try {
 function Apply-NetworkOptimizations {
 
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
-    
+
     # Apply network optimizations based on checked items in network panel
     if ($chkAckNetwork -and $chkAckNetwork.IsChecked) {
         Apply-TcpAck
@@ -11898,6 +11965,7 @@ try {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     # Cleanup
+
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
