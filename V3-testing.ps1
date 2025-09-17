@@ -4127,7 +4127,7 @@ function Remove-Reg {
           <StackPanel Grid.Column="1" Orientation="Horizontal">
             <Button x:Name="btnApplyMain" Content="⚡️ Apply All" Width="120" Height="42" 
                     Style="{StaticResource SuccessButton}" FontSize="16" Margin="0,0,8,0"/>
-            <Button x:Name="btnRevertMain" Content="â†©ï¸ Revert All" Width="120" Height="42" 
+            <Button x:Name="btnRevertMain" Content="↩️ Revert All" Width="120" Height="42" 
                     Style="{StaticResource DangerButton}" FontSize="16"/>
             <!-- Hidden alias buttons for backward compatibility -->
             <Button x:Name="btnApply" Visibility="Collapsed" Width="0" Height="0"/>
@@ -4157,7 +4157,7 @@ function Remove-Reg {
               <Button x:Name="btnToggleLogView" Content="🔍 Detailed" Width="70" Height="24" 
                       Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,4,0" 
                       ToolTip="Toggle between compact and detailed log view"/>
-              <Button x:Name="btnExtendLog" Content="â†* Extend" Width="60" Height="24" 
+              <Button x:Name="btnExtendLog" Content="⤢ Extend" Width="60" Height="24" 
                       Style="{StaticResource ModernButton}" FontSize="10" Margin="0,0,4,0" 
                       ToolTip="Toggle Activity Log height"/>
               <Button x:Name="btnClearLog" Content="Clear" Width="60" Height="24" 
@@ -4415,13 +4415,6 @@ $chkTcpTimestamps = $chkNagle  # Fallback mapping
 $chkTcpECN = $chkRSS  # Fallback mapping  
 $chkTcpAutoTune = $chkChimney  # Fallback mapping
 
-# For advanced settings that don't exist in basic mode, create null checks
-$expanderNetwork = $null
-$expanderGaming = $null
-$expanderSystem = $null
-$expanderServices = $null
-$expanderAdvanced = $null
-
 $basicModePanel = $panelBasicOpt
 $advancedModeWelcome = $panelAdvanced
 $installedGamesPanel = $panelGames
@@ -4437,18 +4430,6 @@ $chkAutoOptimize = $chkDashAutoOptimize
 # Set global navigation state
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
-
-# ---------- STARTUP CONTROL VALIDATION (moved after form creation) ----------
-# Perform startup control validation after form and controls are created
-Log "Running startup control validation..." 'Info'
-$controlsValid = Test-StartupControls
-
-if (-not $controlsValid) {
-    Log "CRITICAL: Some controls are missing - application may have reduced functionality" 'Warning'
-    Log "The application will continue to run, but some features may not work properly" 'Warning'
-} else {
-    Log "[OK] All startup control validation checks passed - application ready" 'Success'
-}
 
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
@@ -4513,7 +4494,7 @@ function Set-ActiveNavigationButton {
 
 function Switch-Panel {
     param([string]$PanelName)
-    
+
     try {
         # Hide all panels with null checks
         if ($panelDashboard) { $panelDashboard.Visibility = "Collapsed" }
@@ -4635,6 +4616,57 @@ function Switch-Panel {
     }
 }
 
+function Show-AdvancedSection {
+    param(
+        [ValidateSet('Network', 'System', 'Services')]
+        [string]$Section,
+        [string]$CurrentTheme = 'DarkPurple'
+    )
+
+    try {
+        Switch-Panel "Advanced"
+        Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $CurrentTheme
+
+        switch ($Section) {
+            'Network' {
+                if ($lblMainTitle) { $lblMainTitle.Text = "Advanced Settings - Network Tweaks" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Configure advanced TCP and latency optimizations" }
+                if ($expanderNetworkTweaks) { $expanderNetworkTweaks.IsExpanded = $true }
+                if ($expanderSystemOptimizations) { $expanderSystemOptimizations.IsExpanded = $false }
+                if ($expanderServiceManagement) { $expanderServiceManagement.IsExpanded = $false }
+                if ($expanderNetworkTweaks) {
+                    $form.Dispatcher.BeginInvoke([action]{ $expanderNetworkTweaks.BringIntoView() }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+                }
+            }
+            'System' {
+                if ($lblMainTitle) { $lblMainTitle.Text = "Advanced Settings - System Optimization" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Tune high-impact performance options for your PC" }
+                if ($expanderNetworkTweaks) { $expanderNetworkTweaks.IsExpanded = $false }
+                if ($expanderSystemOptimizations) { $expanderSystemOptimizations.IsExpanded = $true }
+                if ($expanderServiceManagement) { $expanderServiceManagement.IsExpanded = $false }
+                if ($expanderSystemOptimizations) {
+                    $form.Dispatcher.BeginInvoke([action]{ $expanderSystemOptimizations.BringIntoView() }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+                }
+            }
+            'Services' {
+                if ($lblMainTitle) { $lblMainTitle.Text = "Advanced Settings - Services Management" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Review and tweak service startup and background tasks" }
+                if ($expanderNetworkTweaks) { $expanderNetworkTweaks.IsExpanded = $false }
+                if ($expanderSystemOptimizations) { $expanderSystemOptimizations.IsExpanded = $false }
+                if ($expanderServiceManagement) { $expanderServiceManagement.IsExpanded = $true }
+                if ($expanderServiceManagement) {
+                    $form.Dispatcher.BeginInvoke([action]{ $expanderServiceManagement.BringIntoView() }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+                }
+            }
+        }
+
+        Switch-Theme -ThemeName $CurrentTheme
+    } catch {
+        $warningMessage = "Failed to navigate to advanced section {0}: {1}" -f $Section, $_.Exception.Message
+        Log $warningMessage 'Warning'
+    }
+}
+
 
 # Additional legacy control aliases for compatibility with existing functions
 $chkResponsiveness = $chkGameMode  # Map to new gaming optimizations
@@ -4747,9 +4779,7 @@ if ($btnNavNetwork) {
         } else {
             'DarkPurple'
         }
-
-        Switch-Panel "Network"
-        Switch-Theme -ThemeName $currentTheme
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
 
@@ -4761,8 +4791,10 @@ if ($btnNavSystem) {
             'DarkPurple'
         }
 
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
         Switch-Panel "System"
         Switch-Theme -ThemeName $currentTheme
+
     })
 }
 
@@ -4773,6 +4805,8 @@ if ($btnNavServices) {
         } else {
             'DarkPurple'
         }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
 
         Switch-Panel "Services"
         Switch-Theme -ThemeName $currentTheme
@@ -4983,7 +5017,18 @@ function Switch-Theme {
                 $global:LogBox.InvalidateVisual()
                 $global:LogBox.UpdateLayout()
             }
-            
+
+            if ($activityLogBorder) {
+                try {
+                    $activityLogBorder.Background = $themeColors.LogBg
+                    Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '2'
+                    $activityLogBorder.InvalidateVisual()
+                    $activityLogBorder.UpdateLayout()
+                } catch {
+                    Write-Verbose "Activity log border update skipped: $($_.Exception.Message)"
+                }
+            }
+
             # 6. FINALER KOMPLETTER REFRESH
             $form.InvalidateVisual()
             $form.UpdateLayout()
@@ -5039,7 +5084,7 @@ function Switch-Theme {
         }
         
     } catch {
-        Log "âŒ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
+        Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
         
         # Fallback auf Standard-Theme
         try {
@@ -5179,6 +5224,18 @@ if ($global:LogBoxAvailable) {
 } else {
     Write-Host "Warning: Activity log UI element not found, using console and file logging only" -ForegroundColor Yellow
     Log "LogBox UI element not found - using fallback logging methods" 'Warning'
+}
+
+# ---------- STARTUP CONTROL VALIDATION (moved after form creation) ----------
+# Perform startup control validation after form and controls are created
+Log "Running startup control validation..." 'Info'
+$controlsValid = Test-StartupControls
+
+if (-not $controlsValid) {
+    Log "CRITICAL: Some controls are missing - application may have reduced functionality" 'Warning'
+    Log "The application will continue to run, but some features may not work properly" 'Warning'
+} else {
+    Log "[OK] All startup control validation checks passed - application ready" 'Success'
 }
 
 # ---------- Populate Game Profiles Dropdown ----------
@@ -6089,7 +6146,7 @@ function Search-GamesForPanel {
         } else {
             # No games found
             $noGamesText = New-Object System.Windows.Controls.TextBlock
-            $noGamesText.Text = "âŒ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
+            $noGamesText.Text = "❌ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
             $noGamesText.Foreground = "#FFB86C"
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
@@ -6105,7 +6162,7 @@ function Search-GamesForPanel {
         # Clear panel and show error
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
-        $errorText.Text = "âŒ Error searching for games: $($_.Exception.Message)"
+        $errorText.Text = "❌ Error searching for games: $($_.Exception.Message)"
         $errorText.Foreground = "#FF6B6B"
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
@@ -6255,7 +6312,7 @@ function Search-CustomFoldersForExecutables {
             
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
-            $noExecutablesText.Text = "âŒ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
+            $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
             $noExecutablesText.Foreground = "#FF6B6B"
             $noExecutablesText.HorizontalAlignment = "Center"
             $noExecutablesText.Margin = "0,20"
@@ -6269,7 +6326,7 @@ function Search-CustomFoldersForExecutables {
         # Clear panel and show error
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
-        $errorText.Text = "âŒ Error searching custom folders: $($_.Exception.Message)"
+        $errorText.Text = "❌ Error searching custom folders: $($_.Exception.Message)"
         $errorText.Foreground = "#FF6B6B"
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
@@ -9504,13 +9561,13 @@ if ($btnExtendLog) {
                 if (-not $global:LogExtended) {
                     # Extend the log to full size
                     $activityLogBorder.MinHeight = 120
-                    $btnExtendLog.Content = "â†* Collapse"
+                    $btnExtendLog.Content = "⤡ Collapse"
                     $global:LogExtended = $true
                     Log "Activity Log extended to full size" 'Info'
                 } else {
                     # Collapse the log to 25% size
                     $activityLogBorder.MinHeight = 30
-                    $btnExtendLog.Content = "â†* Extend"
+                    $btnExtendLog.Content = "⤢ Extend"
                     $global:LogExtended = $false
                     Log "Activity Log collapsed to compact size" 'Info'
                 }
@@ -9805,7 +9862,7 @@ if ($btnApplyNetworkTweaks) {
         try {
             Log "Applying network optimizations..." 'Info'
             # Apply selected network optimizations
-            Apply-NetworkOptimizations
+            Invoke-NetworkPanelOptimizations
             Log "Network optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("Network optimizations applied successfully!", "Network Optimization", 'OK', 'Information')
         } catch {
@@ -9849,7 +9906,7 @@ if ($btnApplySystemOptimizations) {
     $btnApplySystemOptimizations.Add_Click({
         try {
             Log "Applying system optimizations..." 'Info'
-            Apply-SystemOptimizations
+            Invoke-SystemPanelOptimizations
             Log "System optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("System optimizations applied successfully!", "System Optimization", 'OK', 'Information')
         } catch {
@@ -9893,7 +9950,7 @@ if ($btnApplyServiceOptimizations) {
     $btnApplyServiceOptimizations.Add_Click({
         try {
             Log "Applying service optimizations..." 'Info'
-            Apply-ServiceOptimizations
+            Invoke-ServicePanelOptimizations
             Log "Service optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("Service optimizations applied successfully!", "Service Optimization", 'OK', 'Information')
         } catch {
@@ -11456,6 +11513,9 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
+
+function Invoke-NetworkPanelOptimizations {
+
 # Start real-time performance monitoring for dashboard
 Log "Starting real-time performance monitoring..." 'Info'
 Start-PerformanceMonitoring
@@ -11483,6 +11543,7 @@ try {
 }
 
 function Apply-NetworkOptimizations {
+
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
     
     # Apply network optimizations based on checked items in network panel
@@ -11542,7 +11603,7 @@ function Reset-NetworkSettings {
     }
 }
 
-function Apply-SystemOptimizations {
+function Invoke-SystemPanelOptimizations {
     Log "Applying system optimizations from dedicated System panel..." 'Info'
     
     # Apply system optimizations based on checked items in system panel
@@ -11696,7 +11757,7 @@ function Reset-SystemSettings {
     }
 }
 
-function Apply-ServiceOptimizations {
+function Invoke-ServicePanelOptimizations {
     Log "Applying service optimizations from dedicated Services panel..." 'Info'
     
     # Apply service optimizations based on checked items in services panel
@@ -11748,6 +11809,32 @@ function Reset-ServiceSettings {
 # ============================================================================
 # END OF SCRIPT - Enhanced Gaming Optimizer with Dedicated Advanced Settings Panels
 # ============================================================================
+
+# Start real-time performance monitoring for dashboard
+Log "Starting real-time performance monitoring..." 'Info'
+Start-PerformanceMonitoring
+
+# Inform user that game detection monitoring is on-demand
+Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
+
+# Show the form
+try {
+    $form.ShowDialog() | Out-Null
+} catch {
+    Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
+} finally {
+    # Cleanup
+    try {
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
+        
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
+        
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
+}
 
 function Test-ScriptSyntax {
     <#
