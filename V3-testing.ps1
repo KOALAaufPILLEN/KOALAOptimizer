@@ -49,6 +49,19 @@ function Test-ScriptSyntax {
     try {
         $content = Get-Content $ScriptPath -Raw
 
+        # Detect unresolved Git merge markers before invoking the parser so
+        # contributors get a clear error message instead of a generic syntax
+        # failure.
+        $markerPattern = '^(<{7}|={7}|>{7})'
+        $conflicts = Get-Content -Path $ScriptPath | Select-String -Pattern $markerPattern
+        if ($conflicts) {
+            Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
+            foreach ($match in $conflicts) {
+                Write-Host ("  Line {0}: {1}" -f $match.LineNumber, $match.Line.Trim()) -ForegroundColor Red
+            }
+            return $false
+        }
+
         # Test with AST parser
         $parseErrors = @()
         $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
