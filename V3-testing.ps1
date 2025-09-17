@@ -25,6 +25,57 @@
 # Build Date: 2024
 # Author: KOALA Team
 
+# Enable advanced parameter handling and expose a syntax validation switch so
+# contributors can lint the script without launching the heavy WPF UI.
+[CmdletBinding()]
+param(
+    [switch]$SyntaxCheckOnly
+)
+
+function Test-ScriptSyntax {
+    <#
+    .SYNOPSIS
+    Tests the PowerShell syntax of this script for validation
+    .DESCRIPTION
+    Validates the script syntax using multiple PowerShell parsers
+    #>
+    param(
+        [string]$ScriptPath = $PSCommandPath
+    )
+
+    Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
+
+    try {
+        $content = Get-Content $ScriptPath -Raw
+
+        # Test with AST parser
+        $parseErrors = @()
+        $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
+
+        if ($parseErrors.Count -eq 0) {
+            Write-Host "✅ Syntax validation passed" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "❌ Found $($parseErrors.Count) syntax errors:" -ForegroundColor Red
+            $parseErrors | ForEach-Object {
+                Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red
+            }
+            return $false
+        }
+    } catch {
+        Write-Host "❌ Syntax validation failed: $($_.Exception.Message)" -ForegroundColor Red
+        return $false
+    }
+}
+
+if ($SyntaxCheckOnly) {
+    if (Test-ScriptSyntax -ScriptPath $PSCommandPath) {
+        return
+    }
+
+    exit 1
+}
+
 # ---------- Check PowerShell Version ----------
 if ($PSVersionTable.PSVersion.Major -lt 5) {
     Write-Host "This script requires PowerShell 5.0 or higher" -ForegroundColor Red
@@ -4779,6 +4830,7 @@ if ($btnNavNetwork) {
         } else {
             'DarkPurple'
         }
+
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
@@ -4791,6 +4843,27 @@ if ($btnNavSystem) {
             'DarkPurple'
         }
 
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
         Switch-Panel "System"
         Switch-Theme -ThemeName $currentTheme
@@ -11515,6 +11588,7 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 
 
 function Invoke-NetworkPanelOptimizations {
+function Invoke-NetworkPanelOptimizations {
 
 # Start real-time performance monitoring for dashboard
 Log "Starting real-time performance monitoring..." 'Info'
@@ -11850,28 +11924,16 @@ function Test-ScriptSyntax {
     Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
     
     try {
-        $content = Get-Content $ScriptPath -Raw
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
         
-        # Test with AST parser
-        $parseErrors = @()
-        $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
         
-        if ($parseErrors.Count -eq 0) {
-            Write-Host "✅ Syntax validation passed" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "❌ Found $($parseErrors.Count) syntax errors:" -ForegroundColor Red
-            $parseErrors | ForEach-Object {
-                Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red
-            }
-            return $false
-        }
-    } catch {
-        Write-Host "❌ Syntax validation failed: $($_.Exception.Message)" -ForegroundColor Red
-        return $false
-    }
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
 }
-
 # - Service Management (Xbox, Telemetry, Search, Print Spooler, Superfetch)
 # - Engine-specific optimizations (Unreal, Unity, Source, Frostbite, RED Engine, Creation Engine)
 # - Special optimizations (DLSS, RTX, Vulkan, OpenGL, Physics, Frame Pacing)
