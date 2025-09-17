@@ -4662,7 +4662,8 @@ function Show-AdvancedSection {
 
         Switch-Theme -ThemeName $CurrentTheme
     } catch {
-        Log "Failed to navigate to advanced section $Section: $($_.Exception.Message)" 'Warning'
+        $warningMessage = "Failed to navigate to advanced section {0}: {1}" -f $Section, $_.Exception.Message
+        Log $warningMessage 'Warning'
     }
 }
 
