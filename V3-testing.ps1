@@ -4779,7 +4779,6 @@ if ($btnNavNetwork) {
         } else {
             'DarkPurple'
         }
-
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
@@ -4793,6 +4792,9 @@ if ($btnNavSystem) {
         }
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+        Switch-Panel "System"
+        Switch-Theme -ThemeName $currentTheme
+
     })
 }
 
@@ -4805,6 +4807,9 @@ if ($btnNavServices) {
         }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
+        Switch-Panel "Services"
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
@@ -11508,7 +11513,37 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
+
 function Invoke-NetworkPanelOptimizations {
+
+# Start real-time performance monitoring for dashboard
+Log "Starting real-time performance monitoring..." 'Info'
+Start-PerformanceMonitoring
+
+# Inform user that game detection monitoring is on-demand
+Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
+
+# Show the form
+try {
+    $form.ShowDialog() | Out-Null
+} catch {
+    Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
+} finally {
+    # Cleanup
+    try {
+        # Stop performance monitoring
+        Stop-PerformanceMonitoring
+        
+        # Stop game detection monitoring
+        Stop-GameDetectionMonitoring
+        
+        # Cleanup timer precision
+        [WinMM]::timeEndPeriod(1) | Out-Null
+    } catch {}
+}
+
+function Apply-NetworkOptimizations {
+
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
     
     # Apply network optimizations based on checked items in network panel
