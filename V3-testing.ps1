@@ -1,4 +1,5 @@
-# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
 # Run as Administrator for best results
@@ -47,6 +48,19 @@ function Test-ScriptSyntax {
 
     try {
         $content = Get-Content $ScriptPath -Raw
+
+        # Detect unresolved Git merge markers before invoking the parser so
+        # contributors get a clear error message instead of a generic syntax
+        # failure.
+        $markerPattern = '^(<{7}|={7}|>{7})'
+        $conflicts = Get-Content -Path $ScriptPath | Select-String -Pattern $markerPattern
+        if ($conflicts) {
+            Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
+            foreach ($match in $conflicts) {
+                Write-Host ("  Line {0}: {1}" -f $match.LineNumber, $match.Line.Trim()) -ForegroundColor Red
+            }
+            return $false
+        }
 
         # Test with AST parser
         $parseErrors = @()
@@ -891,10 +905,8 @@ function Test-StartupControls {
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
         'btnNavNetwork' = $btnNavNetwork
-
         'btnNavSystem' = $btnNavSystem
         'btnNavServices' = $btnNavServices
-
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
 
@@ -1281,6 +1293,7 @@ function Update-SystemHealthSummary {
                 $text = '{0} ({1}% @ {2})' -f $status, [int]$roundedScore, $timeStamp
             } else {
                 $text = '{0} (Last: {1})' -f $status, $timeStamp
+
             }
 
             switch ($status) {
@@ -1500,7 +1513,6 @@ function Show-SystemHealthDialog {
         $updateDisplay = {
             param([bool]$RunCheck = $false)
 
-<
             $data = Update-SystemHealthDisplay -RunCheck:$RunCheck
 
             if ($RunCheck) {
@@ -1508,7 +1520,6 @@ function Show-SystemHealthDialog {
             }
 
             $data = $global:SystemHealthData
-
 
             if (-not $data.LastHealthCheck) {
                 $lblHealthStatus.Text = 'Status: Not Run'
@@ -1528,7 +1539,7 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
-            
+
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -4781,6 +4792,78 @@ if ($btnNavNetwork) {
     })
 }
 
+if ($btnNavBasicOpt) {
+    $btnNavBasicOpt.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavAdvanced) {
+    $btnNavAdvanced.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavGames) {
+    $btnNavGames.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
 if ($btnNavSystem) {
     $btnNavSystem.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4821,12 +4904,14 @@ if ($btnAdvancedNetwork) {
 if ($btnAdvancedSystem) {
     $btnAdvancedSystem.Add_Click({
 
+
     Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
 
 if ($btnNavSystem) {
     $btnNavSystem.Add_Click({
+
 
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
@@ -11651,10 +11736,6 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 }
 
 
-function Invoke-NetworkPanelOptimizations {
-
-
-function Invoke-NetworkPanelOptimizations {
 function Invoke-NetworkPanelOptimizations {
 
 # Start real-time performance monitoring for dashboard
