@@ -4584,27 +4584,12 @@ function Set-ActiveNavigationButton {
 
 function Set-ActiveAdvancedSectionButton {
     param(
+        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
 
     try {
-        $validSections = @('Network', 'System', 'Services')
-        $effectiveSection = if ([string]::IsNullOrWhiteSpace($Section)) {
-            'Network'
-        } elseif ($Section -notin $validSections) {
-            'Network'
-        } else {
-            $Section
-        }
-
-        if ($effectiveSection -ne $Section) {
-            $requested = if ([string]::IsNullOrWhiteSpace($Section)) { '<empty>' } else { $Section }
-            Log ("Received unsupported advanced section '{0}' - defaulting to '{1}'" -f $requested, $effectiveSection) 'Warning'
-        }
-
-        $Section = $effectiveSection
-
         $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
             $global:CustomThemeColors
         } else {
@@ -4740,29 +4725,12 @@ function Switch-Panel {
 
 function Show-AdvancedSection {
     param(
-        [AllowNull()]
-        [AllowEmptyString()]
-        [ValidateSet('Network', 'System', 'Services', '')]
+        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
 
     try {
-        $validSections = @('Network', 'System', 'Services')
-        $requestedSection = $Section
-        $Section = if ([string]::IsNullOrWhiteSpace($Section)) {
-            'Network'
-        } elseif ($Section -notin $validSections) {
-            'Network'
-        } else {
-            $Section
-        }
-
-        if ($Section -ne $requestedSection) {
-            $displayRequested = if ([string]::IsNullOrWhiteSpace($requestedSection)) { '<empty>' } else { $requestedSection }
-            Log ("Advanced section '{0}' is not available - defaulting to '{1}'" -f $displayRequested, $Section) 'Warning'
-        }
-
         Switch-Panel "Advanced"
         $global:CurrentAdvancedSection = $Section
 
@@ -4809,7 +4777,6 @@ function Show-AdvancedSection {
         Log $warningMessage 'Warning'
     }
 }
-
 
 # Additional legacy control aliases for compatibility with existing functions
 $chkResponsiveness = $chkGameMode  # Map to new gaming optimizations
@@ -5257,9 +5224,17 @@ function Switch-Theme {
             
         }, [System.Windows.Threading.DispatcherPriority]::Background)
         
-        if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
-            $currentSection = $global:CurrentAdvancedSection
+        if ($global:CurrentPanel -eq 'Advanced') {
             $themeForHighlight = if ($appliedThemeName) { $appliedThemeName } else { $ThemeName }
+            $currentSection = $global:CurrentAdvancedSection
+            $validSections = @('Network', 'System', 'Services')
+
+            if ([string]::IsNullOrWhiteSpace($currentSection) -or $currentSection -notin $validSections) {
+                $requested = if ([string]::IsNullOrWhiteSpace($currentSection)) { '<empty>' } else { $currentSection }
+                Log ("Received unsupported advanced section '{0}' - defaulting to 'Network'" -f $requested) 'Warning'
+                $currentSection = 'Network'
+                $global:CurrentAdvancedSection = $currentSection
+            }
 
             try {
                 $form.Dispatcher.BeginInvoke([action]{
