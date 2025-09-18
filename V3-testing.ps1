@@ -47,6 +47,7 @@ function Test-ScriptSyntax {
     Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
 
     try {
+
         $content = Get-Content -Path $ScriptPath -Raw
         $lines = Get-Content -Path $ScriptPath
 
@@ -55,6 +56,7 @@ function Test-ScriptSyntax {
         # failure.
         $markerPattern = '^(<{7}|={7}|>{7})'
         $conflicts = $lines | Select-String -Pattern $markerPattern
+
         if ($conflicts) {
             Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
             foreach ($match in $conflicts) {
@@ -62,6 +64,7 @@ function Test-ScriptSyntax {
             }
             return $false
         }
+
 
         # Parse entire script once to gather syntax diagnostics for each section
         $allParseErrors = @()
@@ -124,6 +127,7 @@ function Test-ScriptSyntax {
 
         # Test with AST parser
         $parseErrors = $allParseErrors
+
 
         if ($parseErrors.Count -eq 0) {
             Write-Host "✅ Syntax validation passed" -ForegroundColor Green
@@ -1591,6 +1595,7 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
+
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -4531,6 +4536,7 @@ $global:NavigationButtonNames = @(
 )
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
+
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
 # ---------- SAUBERE NAVIGATION MIT THEME-FARBEN ----------
@@ -4545,6 +4551,7 @@ function Set-ActiveNavigationButton {
         $colors = Get-ThemeColors -ThemeName $CurrentTheme
         
         # Alle Navigation Buttons
+
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
@@ -4699,6 +4706,7 @@ function Show-AdvancedSection {
 
     try {
         Switch-Panel "Advanced"
+
         $targetButton = switch ($Section) {
             'Network' { 'btnNavNetwork' }
             'System' { 'btnNavSystem' }
@@ -4706,6 +4714,7 @@ function Show-AdvancedSection {
             default { 'btnNavAdvanced' }
         }
         Set-ActiveNavigationButton -ActiveButtonName $targetButton -CurrentTheme $CurrentTheme
+
 
         switch ($Section) {
             'Network' {
@@ -4814,9 +4823,9 @@ if ($btnNavAdvanced) {
         } else {
             'DarkPurple'
         }
-
+        
         Switch-Panel "Advanced"
-
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4829,9 +4838,81 @@ if ($btnNavGames) {
         } else {
             'DarkPurple'
         }
-
+        
         Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
 
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavBasicOpt) {
+    $btnNavBasicOpt.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavAdvanced) {
+    $btnNavAdvanced.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavGames) {
+    $btnNavGames.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Games"
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4871,6 +4952,96 @@ if ($btnNavSystem) {
         } else {
             'DarkPurple'
         }
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Advanced"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+if ($btnAdvancedNetwork) {
+    $btnAdvancedNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Games"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+if ($btnAdvancedSystem) {
+    $btnAdvancedSystem.Add_Click({
+
+
+    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
@@ -4921,6 +5092,7 @@ if ($btnAdvancedServices) {
         }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
     })
 }
 
@@ -5055,11 +5227,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
+
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
                 @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -5179,11 +5353,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # Navigation nochmal explizit setzen
+
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
                 @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -7008,11 +7184,13 @@ function Apply-ThemeColors {
         }
         
         # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
+
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
             @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         }
+
         foreach ($btnName in $navButtons) {
             $navBtn = $form.FindName($btnName)
             if ($navBtn) {
@@ -7167,7 +7345,9 @@ function Apply-ThemeColors {
         # Globale Theme-Variable speichern
         $global:CurrentTheme = $appliedThemeName
 
+
         $successMessage = "🎨 Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
         Log $successMessage 'Success'
         
     } catch {
@@ -11791,6 +11971,7 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
+
 function Invoke-PanelActions {
     param(
         [Parameter(Mandatory)]
@@ -11799,6 +11980,7 @@ function Invoke-PanelActions {
         [Parameter(Mandatory)]
         [System.Collections.IEnumerable]$Actions
     )
+
 
     $applied = [System.Collections.Generic.List[string]]::new()
 
@@ -11830,6 +12012,7 @@ function Invoke-PanelActions {
     return $applied
 }
 
+
 function Invoke-NetworkPanelOptimizations {
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
 
@@ -11858,6 +12041,7 @@ function Invoke-NetworkPanelOptimizations {
         Log "Network optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No network optimizations were selected in the dedicated Network panel' 'Info'
+
     }
 }
 
@@ -12181,12 +12365,14 @@ try {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     # Cleanup
+
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
 
         # Stop game detection monitoring
         Stop-GameDetectionMonitoring
+
 
         # Cleanup timer precision
         [WinMM]::timeEndPeriod(1) | Out-Null
