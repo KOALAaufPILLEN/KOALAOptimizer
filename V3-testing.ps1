@@ -695,7 +695,6 @@ function Ensure-NavigationVisibility {
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
             'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
-            'btnNavNetwork', 'btnNavSystem', 'btnNavServices',
             'btnNavOptions', 'btnNavBackup'
         )
         
@@ -970,9 +969,6 @@ function Test-StartupControls {
         'btnNavBasicOpt' = $btnNavBasicOpt
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
-        'btnNavNetwork' = $btnNavNetwork
-        'btnNavSystem' = $btnNavSystem
-        'btnNavServices' = $btnNavServices
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
 
@@ -3530,24 +3526,6 @@ function Remove-Reg {
                 <TextBlock Text="Game Profiles" FontSize="14"/>
               </StackPanel>
             </Button>
-            <Button x:Name="btnNavNetwork" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🌐" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
-                <TextBlock Text="Network Tweaks" FontSize="14"/>
-              </StackPanel>
-            </Button>
-            <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="💻" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
-                <TextBlock Text="System Optimization" FontSize="14"/>
-              </StackPanel>
-            </Button>
-            <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="⚙️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
-                <TextBlock Text="Services Management" FontSize="14"/>
-              </StackPanel>
-            </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
@@ -4528,9 +4506,6 @@ $global:NavigationButtonNames = @(
     'btnNavBasicOpt',
     'btnNavAdvanced',
     'btnNavGames',
-    'btnNavNetwork',
-    'btnNavSystem',
-    'btnNavServices',
     'btnNavOptions',
     'btnNavBackup'
 )
@@ -4548,14 +4523,18 @@ function Set-ActiveNavigationButton {
     
     try {
         # Theme-Farben holen
-        $colors = Get-ThemeColors -ThemeName $CurrentTheme
+        $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
+            $global:CustomThemeColors
+        } else {
+            Get-ThemeColors -ThemeName $CurrentTheme
+        }
         
         # Alle Navigation Buttons
 
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
         }
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
@@ -4603,39 +4582,50 @@ function Set-ActiveNavigationButton {
 }
 
 
-function Set-AdvancedQuickButtonState {
+function Set-ActiveAdvancedSectionButton {
     param(
         [ValidateSet('Network', 'System', 'Services')]
-        [string]$ActiveSection,
+        [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
 
-    $buttonMap = @{
-        'Network'  = $btnAdvancedNetwork
-        'System'   = $btnAdvancedSystem
-        'Services' = $btnAdvancedServices
-    }
-
     try {
-        $colors = Get-ThemeColors -ThemeName $CurrentTheme
+        $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
+            $global:CustomThemeColors
+        } else {
+            Get-ThemeColors -ThemeName $CurrentTheme
+        }
 
-        foreach ($entry in $buttonMap.GetEnumerator()) {
-            $button = $entry.Value
-            if (-not $button) { continue }
+        $buttonMap = @{
+            'Network'  = $btnAdvancedNetwork
+            'System'   = $btnAdvancedSystem
+            'Services' = $btnAdvancedServices
+        }
 
-            $isActive = ($entry.Key -eq $ActiveSection)
-            $button.Tag = if ($isActive) { 'Selected' } else { '' }
-            $button.Background = if ($isActive) { $colors.SelectedBackground } else { $colors.UnselectedBackground }
-            $button.Foreground = if ($isActive) { $colors.SelectedForeground } else { $colors.UnselectedForeground }
+        foreach ($key in $buttonMap.Keys) {
+            $button = $buttonMap[$key]
+            if (-not $button) {
+                continue
+            }
+
+            if ($key -eq $Section) {
+                $button.Tag = 'Selected'
+                $button.Background = $colors.SelectedBackground
+                $button.Foreground = $colors.SelectedForeground
+            } else {
+                $button.Tag = $null
+                $button.Background = $colors.UnselectedBackground
+                $button.Foreground = $colors.UnselectedForeground
+            }
 
             $button.InvalidateVisual()
             $button.UpdateLayout()
         }
     } catch {
-        $warningMessage = "Failed to highlight advanced section button {0}: {1}" -f $ActiveSection, $_.Exception.Message
-        Log $warningMessage 'Warning'
+        Log "Failed to highlight advanced section button $Section: $($_.Exception.Message)" 'Warning'
     }
 }
+
 
 function Switch-Panel {
     param([string]$PanelName)
@@ -4648,13 +4638,15 @@ function Switch-Panel {
         if ($panelGames) { $panelGames.Visibility = "Collapsed" }
         if ($panelOptions) { $panelOptions.Visibility = "Collapsed" }
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
-        
+
         # Get current theme
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
             'DarkPurple'
         }
+
+        $global:CurrentAdvancedSection = $null
         
         # Show selected panel and update navigation
         switch ($PanelName) {
@@ -4727,8 +4719,7 @@ function Switch-Panel {
         Log "Switched to $PanelName panel with correct navigation highlighting" 'Info'
         
     } catch {
-        $errorMessage = "Error switching to panel {0}: {1}" -f $PanelName, $_.Exception.Message
-        Log $errorMessage 'Error'
+        Log "Error switching to panel $PanelName`: $($_.Exception.Message)" 'Error'
     }
 }
 
@@ -4741,17 +4732,9 @@ function Show-AdvancedSection {
 
     try {
         Switch-Panel "Advanced"
+        $global:CurrentAdvancedSection = $Section
 
-        $targetButton = switch ($Section) {
-            'Network' { 'btnNavNetwork' }
-            'System' { 'btnNavSystem' }
-            'Services' { 'btnNavServices' }
-            default { 'btnNavAdvanced' }
-        }
-        Set-ActiveNavigationButton -ActiveButtonName $targetButton -CurrentTheme $CurrentTheme
-        if ($Section -in @('Network', 'System', 'Services')) {
-            Set-AdvancedQuickButtonState -ActiveSection $Section -CurrentTheme $CurrentTheme
-        }
+        Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $CurrentTheme
 
 
         switch ($Section) {
@@ -4788,6 +4771,7 @@ function Show-AdvancedSection {
         }
 
         Switch-Theme -ThemeName $CurrentTheme
+        Set-ActiveAdvancedSectionButton -Section $Section -CurrentTheme $CurrentTheme
     } catch {
         $warningMessage = "Failed to navigate to advanced section {0}: {1}" -f $Section, $_.Exception.Message
         Log $warningMessage 'Warning'
@@ -4824,6 +4808,10 @@ $chkDefenderOptimize = $null
 $chkDirectStorage = $null
 
 # Navigation Event Handlers
+if (-not $script:NavigationClickHandlers) {
+    $script:NavigationClickHandlers = @{}
+}
+
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4831,42 +4819,48 @@ if ($btnNavDashboard) {
         } else {
             'DarkPurple'
         }
-        
+
         Switch-Panel "Dashboard"
-        
-        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavBasicOpt) {
-    $btnNavBasicOpt.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('BasicOpt') -and $script:NavigationClickHandlers['BasicOpt'])) {
+        $script:NavigationClickHandlers['BasicOpt'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "BasicOpt"
+            Switch-Theme -ThemeName $currentTheme
         }
-        
-        Switch-Panel "BasicOpt"
-        
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-    })
+
+        $btnNavBasicOpt.Add_Click($script:NavigationClickHandlers['BasicOpt'])
+    }
 }
 
 if ($btnNavAdvanced) {
-    $btnNavAdvanced.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('Advanced') -and $script:NavigationClickHandlers['Advanced'])) {
+        $script:NavigationClickHandlers['Advanced'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "Advanced"
+            Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
         }
-        
-        Switch-Panel "Advanced"
-        
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-    })
+
+        $btnNavAdvanced.Add_Click($script:NavigationClickHandlers['Advanced'])
+    }
 }
 
 if ($btnNavGames) {
@@ -4876,10 +4870,8 @@ if ($btnNavGames) {
         } else {
             'DarkPurple'
         }
-        
+
         Switch-Panel "Games"
-        
-        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
@@ -4893,210 +4885,24 @@ if ($btnNavOptions) {
         }
 
         Switch-Panel "Options"
-
-        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
-if ($btnNavNetwork) {
-    $btnNavNetwork.Add_Click({
+if ($btnNavBackup) {
+    $btnNavBackup.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
             'DarkPurple'
         }
 
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavBasicOpt) {
-    $btnNavBasicOpt.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-        
-        Switch-Panel "BasicOpt"
-        
-        # Theme nach Navigation nochmal anwenden
+        Switch-Panel "Backup"
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
-if ($btnNavAdvanced) {
-    $btnNavAdvanced.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-        
-        Switch-Panel "Advanced"
-        
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-    })
-}
-
-if ($btnNavGames) {
-    $btnNavGames.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-        
-        Switch-Panel "Games"
-        
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-    })
-}
-
-if ($btnNavOptions) {
-    $btnNavOptions.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-        Switch-Panel "Options"
-
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-    })
-}
-
-if ($btnNavNetwork) {
-    $btnNavNetwork.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavSystem) {
-    $btnNavSystem.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavServices) {
-    $btnNavServices.Add_Click({
-
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-
-        Switch-Panel "Advanced"
-
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-
-    })
-}
-
-if ($btnAdvancedNetwork) {
-    $btnAdvancedNetwork.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-
-        Switch-Panel "Games"
-
-        # Theme nach Navigation nochmal anwenden
-        Switch-Theme -ThemeName $currentTheme
-
-    })
-}
-
-if ($btnAdvancedSystem) {
-    $btnAdvancedSystem.Add_Click({
-
-
-    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavSystem) {
-    $btnNavSystem.Add_Click({
-
-
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-
-        Switch-Panel "Options"
-
-        # Theme nach Navigation nochmal anwenden
-
-        Switch-Theme -ThemeName $currentTheme
-
-    })
-}
-
-
-if ($btnNavNetwork) {
-    $btnNavNetwork.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavSystem) {
-    $btnNavSystem.Add_Click({
-
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-
-        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
-    })
-}
-
-if ($btnNavServices) {
-    $btnNavServices.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
-        }
-
-        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
-    })
-}
-
+# Advanced section shortcuts remain available via the panel buttons
 if ($btnAdvancedNetwork) {
     $btnAdvancedNetwork.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -5130,17 +4936,8 @@ if ($btnAdvancedServices) {
         }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
-
     })
 }
-
-if ($btnNavBackup) {
-    $btnNavBackup.Add_Click({
-        Switch-Panel "Backup"
-    })
-}
-
-
 
 # Header theme selector removed - theme switching now only available in Options panel
 # if ($cmbHeaderTheme) {
@@ -5269,7 +5066,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
             }
 
             
@@ -5395,7 +5192,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
             }
 
             
@@ -5428,6 +5225,19 @@ function Switch-Theme {
             
         }, [System.Windows.Threading.DispatcherPriority]::Background)
         
+        if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
+            $currentSection = $global:CurrentAdvancedSection
+            $themeForHighlight = if ($appliedThemeName) { $appliedThemeName } else { $ThemeName }
+
+            try {
+                $form.Dispatcher.BeginInvoke([action]{
+                    Set-ActiveAdvancedSectionButton -Section $currentSection -CurrentTheme $themeForHighlight
+                }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+            } catch {
+                Log "Could not refresh advanced section highlight: $($_.Exception.Message)" 'Warning'
+            }
+        }
+
         Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
         
         # Theme-Vorschau auch aktualisieren
@@ -7226,7 +7036,7 @@ function Apply-ThemeColors {
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
         }
 
         foreach ($btnName in $navButtons) {
