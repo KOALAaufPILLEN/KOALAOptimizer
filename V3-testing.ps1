@@ -5236,6 +5236,7 @@ function Switch-Theme {
                 $global:CurrentAdvancedSection = $currentSection
             }
 
+
             try {
                 $form.Dispatcher.BeginInvoke([action]{
                     Set-ActiveAdvancedSectionButton -Section $currentSection -CurrentTheme $themeForHighlight
