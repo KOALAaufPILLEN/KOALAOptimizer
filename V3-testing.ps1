@@ -698,6 +698,9 @@ function Ensure-NavigationVisibility {
             'btnNavBasicOpt',
             'btnNavAdvanced',
             'btnNavGames',
+            'btnNavNetwork',
+            'btnNavSystem',
+            'btnNavServices',
             'btnNavOptions',
             'btnNavBackup'
         )
@@ -973,6 +976,9 @@ function Test-StartupControls {
         'btnNavBasicOpt' = $btnNavBasicOpt
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
+        'btnNavNetwork' = $btnNavNetwork
+        'btnNavSystem' = $btnNavSystem
+        'btnNavServices' = $btnNavServices
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
 
@@ -3530,6 +3536,24 @@ function Remove-Reg {
                 <TextBlock Text="Game Profiles" FontSize="14"/>
               </StackPanel>
             </Button>
+            <Button x:Name="btnNavNetwork" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🌐" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Network Tweaks" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🖥️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="System Boost" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🧰" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Service Control" FontSize="14"/>
+              </StackPanel>
+            </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
@@ -4284,6 +4308,9 @@ $btnNavDashboard = $form.FindName('btnNavDashboard')
 $btnNavBasicOpt = $form.FindName('btnNavBasicOpt')
 $btnNavAdvanced = $form.FindName('btnNavAdvanced')
 $btnNavGames = $form.FindName('btnNavGames')
+$btnNavNetwork = $form.FindName('btnNavNetwork')
+$btnNavSystem = $form.FindName('btnNavSystem')
+$btnNavServices = $form.FindName('btnNavServices')
 $btnNavOptions = $form.FindName('btnNavOptions')
 $btnNavBackup = $form.FindName('btnNavBackup')
 
@@ -4510,6 +4537,9 @@ $global:NavigationButtonNames = @(
     'btnNavBasicOpt',
     'btnNavAdvanced',
     'btnNavGames',
+    'btnNavNetwork',
+    'btnNavSystem',
+    'btnNavServices',
     'btnNavOptions',
     'btnNavBackup'
 )
@@ -4535,7 +4565,7 @@ function Set-ActiveNavigationButton {
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         }
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
@@ -4647,16 +4677,31 @@ function Switch-Panel {
             "Options" {
                 if ($panelOptions) { $panelOptions.Visibility = "Visible" }
                 Set-ActiveNavigationButton -ActiveButtonName 'btnNavOptions' -CurrentTheme $currentTheme
-                
+
                 if ($lblMainTitle) { $lblMainTitle.Text = "Options & Themes" }
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Customize appearance, themes, and application settings" }
                 $global:CurrentPanel = "Options"
                 $global:MenuMode = "Options"
             }
+            "Network" {
+                Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavNetwork'
+                $global:CurrentPanel = "Network"
+                $global:MenuMode = "Advanced"
+            }
+            "System" {
+                Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavSystem'
+                $global:CurrentPanel = "System"
+                $global:MenuMode = "Advanced"
+            }
+            "Services" {
+                Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavServices'
+                $global:CurrentPanel = "Services"
+                $global:MenuMode = "Advanced"
+            }
             "Backup" {
                 if ($panelBackup) { $panelBackup.Visibility = "Visible" }
                 Set-ActiveNavigationButton -ActiveButtonName 'btnNavBackup' -CurrentTheme $currentTheme
-                
+
                 if ($lblMainTitle) { $lblMainTitle.Text = "Backup & Restore" }
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Create backups and restore your optimization settings" }
                 $global:CurrentPanel = "Backup"
@@ -4685,13 +4730,18 @@ function Show-AdvancedSection {
     param(
         [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
-        [string]$CurrentTheme = 'DarkPurple'
+        [string]$CurrentTheme = 'DarkPurple',
+        [string]$NavigationButtonName = 'btnNavAdvanced'
     )
 
     try {
         Switch-Panel "Advanced"
 
-        Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $CurrentTheme
+        if (-not $NavigationButtonName) {
+            $NavigationButtonName = 'btnNavAdvanced'
+        }
+
+        Set-ActiveNavigationButton -ActiveButtonName $NavigationButtonName -CurrentTheme $CurrentTheme
 
         try {
             $themeColors = Get-ThemeColors -ThemeName $CurrentTheme
@@ -4727,7 +4777,8 @@ function Show-AdvancedSection {
         }
 
         $global:ActiveAdvancedSection = $Section
-
+        $global:CurrentPanel = $Section
+        $global:MenuMode = 'Advanced'
 
         switch ($Section) {
             'Network' {
@@ -4836,6 +4887,27 @@ if ($btnNavGames) {
         $currentTheme = Get-ActiveThemeName
         Switch-Panel "Games"
         Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = Get-ActiveThemeName
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavNetwork'
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+        $currentTheme = Get-ActiveThemeName
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavSystem'
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = Get-ActiveThemeName
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavServices'
     })
 }
 
@@ -5005,7 +5077,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
 
             
@@ -5161,7 +5233,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
 
             
@@ -7031,7 +7103,7 @@ function Apply-ThemeColors {
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         }
 
         foreach ($btnName in $navButtons) {
