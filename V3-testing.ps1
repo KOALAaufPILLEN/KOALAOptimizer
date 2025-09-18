@@ -694,15 +694,9 @@ function Ensure-NavigationVisibility {
         
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
-            'btnNavDashboard',
-            'btnNavBasicOpt',
-            'btnNavAdvanced',
-            'btnNavGames',
-            'btnNavNetwork',
-            'btnNavSystem',
-            'btnNavServices',
-            'btnNavOptions',
-            'btnNavBackup'
+            'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
+            'btnNavNetwork', 'btnNavSystem', 'btnNavServices',
+            'btnNavOptions', 'btnNavBackup'
         )
         
         foreach ($buttonName in $navigationButtons) {
@@ -3544,14 +3538,14 @@ function Remove-Reg {
             </Button>
             <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🖥️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
-                <TextBlock Text="System Boost" FontSize="14"/>
+                <TextBlock Text="💻" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="System Optimization" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🧰" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
-                <TextBlock Text="Service Control" FontSize="14"/>
+                <TextBlock Text="⚙️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Services Management" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
@@ -4308,9 +4302,6 @@ $btnNavDashboard = $form.FindName('btnNavDashboard')
 $btnNavBasicOpt = $form.FindName('btnNavBasicOpt')
 $btnNavAdvanced = $form.FindName('btnNavAdvanced')
 $btnNavGames = $form.FindName('btnNavGames')
-$btnNavNetwork = $form.FindName('btnNavNetwork')
-$btnNavSystem = $form.FindName('btnNavSystem')
-$btnNavServices = $form.FindName('btnNavServices')
 $btnNavOptions = $form.FindName('btnNavOptions')
 $btnNavBackup = $form.FindName('btnNavBackup')
 
@@ -4545,7 +4536,6 @@ $global:NavigationButtonNames = @(
 )
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
-$global:ActiveAdvancedSection = $null
 
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
@@ -4631,11 +4621,7 @@ function Switch-Panel {
         } else {
             'DarkPurple'
         }
-
-        if ($PanelName -ne 'Advanced') {
-            $global:ActiveAdvancedSection = $null
-        }
-
+        
         # Show selected panel and update navigation
         switch ($PanelName) {
             "Dashboard" {
@@ -4677,31 +4663,16 @@ function Switch-Panel {
             "Options" {
                 if ($panelOptions) { $panelOptions.Visibility = "Visible" }
                 Set-ActiveNavigationButton -ActiveButtonName 'btnNavOptions' -CurrentTheme $currentTheme
-
+                
                 if ($lblMainTitle) { $lblMainTitle.Text = "Options & Themes" }
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Customize appearance, themes, and application settings" }
                 $global:CurrentPanel = "Options"
                 $global:MenuMode = "Options"
             }
-            "Network" {
-                Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavNetwork'
-                $global:CurrentPanel = "Network"
-                $global:MenuMode = "Advanced"
-            }
-            "System" {
-                Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavSystem'
-                $global:CurrentPanel = "System"
-                $global:MenuMode = "Advanced"
-            }
-            "Services" {
-                Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavServices'
-                $global:CurrentPanel = "Services"
-                $global:MenuMode = "Advanced"
-            }
             "Backup" {
                 if ($panelBackup) { $panelBackup.Visibility = "Visible" }
                 Set-ActiveNavigationButton -ActiveButtonName 'btnNavBackup' -CurrentTheme $currentTheme
-
+                
                 if ($lblMainTitle) { $lblMainTitle.Text = "Backup & Restore" }
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Create backups and restore your optimization settings" }
                 $global:CurrentPanel = "Backup"
@@ -4730,55 +4701,20 @@ function Show-AdvancedSection {
     param(
         [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
-        [string]$CurrentTheme = 'DarkPurple',
-        [string]$NavigationButtonName = 'btnNavAdvanced'
+        [string]$CurrentTheme = 'DarkPurple'
     )
 
     try {
         Switch-Panel "Advanced"
 
-        if (-not $NavigationButtonName) {
-            $NavigationButtonName = 'btnNavAdvanced'
+        $targetButton = switch ($Section) {
+            'Network' { 'btnNavNetwork' }
+            'System' { 'btnNavSystem' }
+            'Services' { 'btnNavServices' }
+            default { 'btnNavAdvanced' }
         }
+        Set-ActiveNavigationButton -ActiveButtonName $targetButton -CurrentTheme $CurrentTheme
 
-        Set-ActiveNavigationButton -ActiveButtonName $NavigationButtonName -CurrentTheme $CurrentTheme
-
-        try {
-            $themeColors = Get-ThemeColors -ThemeName $CurrentTheme
-        } catch {
-            $themeColors = $null
-        }
-
-        $quickButtons = @($btnAdvancedNetwork, $btnAdvancedSystem, $btnAdvancedServices)
-        foreach ($button in $quickButtons) {
-            if ($button -and $themeColors) {
-                $button.Background = $themeColors.Secondary
-                $button.Foreground = $themeColors.Text
-            } elseif ($button) {
-                $button.ClearValue([System.Windows.Controls.Primitives.ButtonBase]::BackgroundProperty)
-                $button.ClearValue([System.Windows.Controls.ContentControl]::ForegroundProperty)
-            }
-        }
-
-        $activeQuickButton = switch ($Section) {
-            'Network' { $btnAdvancedNetwork }
-            'System' { $btnAdvancedSystem }
-            'Services' { $btnAdvancedServices }
-        }
-
-        if ($activeQuickButton) {
-            if ($themeColors) {
-                $activeQuickButton.Background = $themeColors.Primary
-                $activeQuickButton.Foreground = $themeColors.SelectedForeground
-            } else {
-                $activeQuickButton.Background = '#6B46C1'
-                $activeQuickButton.Foreground = 'White'
-            }
-        }
-
-        $global:ActiveAdvancedSection = $Section
-        $global:CurrentPanel = $Section
-        $global:MenuMode = 'Advanced'
 
         switch ($Section) {
             'Network' {
@@ -4850,101 +4786,319 @@ $chkDefenderOptimize = $null
 $chkDirectStorage = $null
 
 # Navigation Event Handlers
-function Get-ActiveThemeName {
-    if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-        return $cmbOptionsTheme.SelectedItem.Tag
-    }
-
-    return 'DarkPurple'
-}
-
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Dashboard"
+        
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavBasicOpt) {
     $btnNavBasicOpt.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavAdvanced) {
     $btnNavAdvanced.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavGames) {
     $btnNavGames.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavNetwork) {
     $btnNavNetwork.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavNetwork'
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
 
-if ($btnNavSystem) {
-    $btnNavSystem.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavSystem'
+if ($btnNavBasicOpt) {
+    $btnNavBasicOpt.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
-if ($btnNavServices) {
-    $btnNavServices.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme -NavigationButtonName 'btnNavServices'
+if ($btnNavAdvanced) {
+    $btnNavAdvanced.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavGames) {
+    $btnNavGames.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
     })
 }
 
 if ($btnNavOptions) {
     $btnNavOptions.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
         Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
 }
 
-if ($btnNavBackup) {
-    $btnNavBackup.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-        Switch-Panel "Backup"
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Advanced"
+
+        # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
+
     })
 }
 
 if ($btnAdvancedNetwork) {
     $btnAdvancedNetwork.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Games"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+if ($btnAdvancedSystem) {
+    $btnAdvancedSystem.Add_Click({
+
+
+    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedNetwork) {
+    $btnAdvancedNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
 }
 
 if ($btnAdvancedSystem) {
     $btnAdvancedSystem.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
 }
 
 if ($btnAdvancedServices) {
     $btnAdvancedServices.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
+    })
+}
+
+if ($btnNavBackup) {
+    $btnNavBackup.Add_Click({
+        Switch-Panel "Backup"
     })
 }
 
@@ -5092,41 +5246,11 @@ function Switch-Theme {
                         $btn.Background = $themeColors.UnselectedBackground
                         $btn.Foreground = $themeColors.UnselectedForeground
                     }
-
+                    
                     # Button komplett neu zeichnen
                     $btn.InvalidateVisual()
                     $btn.InvalidateMeasure()
                     $btn.UpdateLayout()
-                }
-            }
-
-            $quickButtons = @($btnAdvancedNetwork, $btnAdvancedSystem, $btnAdvancedServices) | Where-Object { $_ }
-            if ($quickButtons.Count -gt 0) {
-                foreach ($quick in $quickButtons) {
-                    try {
-                        $quick.Background = $themeColors.Secondary
-                        $quick.Foreground = $themeColors.Text
-                    } catch {
-                        Write-Verbose 'Advanced quick button styling skipped for compatibility'
-                    }
-                }
-
-                if ($global:ActiveAdvancedSection) {
-                    $activeQuick = switch ($global:ActiveAdvancedSection) {
-                        'Network' { $btnAdvancedNetwork }
-                        'System' { $btnAdvancedSystem }
-                        'Services' { $btnAdvancedServices }
-                        default { $null }
-                    }
-
-                    if ($activeQuick) {
-                        try {
-                            $activeQuick.Background = $themeColors.Primary
-                            $activeQuick.Foreground = $themeColors.SelectedForeground
-                        } catch {
-                            Write-Verbose 'Active advanced button styling skipped for compatibility'
-                        }
-                    }
                 }
             }
             
@@ -6849,57 +6973,18 @@ function Update-AllUIElementsRecursively {
 function Find-AllControlsOfType {
     param(
         $Parent,
-        [Parameter(Mandatory)]
-        [object]$ControlType,
+        [Type]$ControlType,
         [ref]$Collection
     )
-
+    
     if (-not $Parent) { return }
-
+    
     try {
-        if ($ControlType -isnot [Type]) {
-            $resolvedType = $null
-
-            if ($ControlType -is [string]) {
-                $typeName = $ControlType.Trim().Trim('[', ']')
-                $candidateNames = @(
-                    $typeName,
-                    "System.Windows.Controls.{0}" -f $typeName,
-                    "System.Windows.Controls.Primitives.{0}" -f $typeName
-                )
-
-                foreach ($candidate in $candidateNames) {
-                    $resolvedType = [Type]::GetType($candidate, $false)
-                    if ($resolvedType) { break }
-
-                    foreach ($assembly in [AppDomain]::CurrentDomain.GetAssemblies()) {
-                        $resolvedType = $assembly.GetType($candidate, $false)
-                        if ($resolvedType) { break }
-                    }
-
-                    if ($resolvedType) { break }
-                }
-            } else {
-                try {
-                    $resolvedType = [Type]$ControlType
-                } catch {
-                    $resolvedType = $null
-                }
-            }
-
-            if (-not $resolvedType) {
-                Log "Unable to resolve control type '$ControlType' for recursive search." 'Warning'
-                return
-            }
-
-            $ControlType = $resolvedType
-        }
-
         # Check if current element is of the target type
         if ($Parent -is $ControlType) {
             $Collection.Value += $Parent
         }
-
+        
         # Recursively search children
         if ($Parent.Children) {
             foreach ($child in $Parent.Children) {
