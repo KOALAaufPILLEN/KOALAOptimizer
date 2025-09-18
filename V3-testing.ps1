@@ -4517,9 +4517,6 @@ $lblOptimizationStatus = $lblDashLastOptimization
 $chkAutoOptimize = $chkDashAutoOptimize
 
 # Set global navigation state
-$global:CurrentPanel = "Dashboard"
-$global:MenuMode = "Dashboard"  # For legacy compatibility
-
 # Central navigation button registry so theming and navigation stay synchronized
 $global:NavigationButtonNames = @(
     'btnNavDashboard',
@@ -4532,7 +4529,8 @@ $global:NavigationButtonNames = @(
     'btnNavOptions',
     'btnNavBackup'
 )
-
+$global:CurrentPanel = "Dashboard"
+$global:MenuMode = "Dashboard"  # For legacy compatibility
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
 # ---------- SAUBERE NAVIGATION MIT THEME-FARBEN ----------
@@ -4816,9 +4814,9 @@ if ($btnNavAdvanced) {
         } else {
             'DarkPurple'
         }
-        
+
         Switch-Panel "Advanced"
-        
+
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4831,9 +4829,9 @@ if ($btnNavGames) {
         } else {
             'DarkPurple'
         }
-        
+
         Switch-Panel "Games"
-        
+
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -12186,10 +12184,10 @@ try {
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
-        
+
         # Stop game detection monitoring
         Stop-GameDetectionMonitoring
-        
+
         # Cleanup timer precision
         [WinMM]::timeEndPeriod(1) | Out-Null
     } catch {}
