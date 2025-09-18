@@ -47,13 +47,16 @@ function Test-ScriptSyntax {
     Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
 
     try {
-        $content = Get-Content $ScriptPath -Raw
+
+        $content = Get-Content -Path $ScriptPath -Raw
+        $lines = Get-Content -Path $ScriptPath
 
         # Detect unresolved Git merge markers before invoking the parser so
         # contributors get a clear error message instead of a generic syntax
         # failure.
         $markerPattern = '^(<{7}|={7}|>{7})'
-        $conflicts = Get-Content -Path $ScriptPath | Select-String -Pattern $markerPattern
+        $conflicts = $lines | Select-String -Pattern $markerPattern
+
         if ($conflicts) {
             Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
             foreach ($match in $conflicts) {
@@ -62,9 +65,69 @@ function Test-ScriptSyntax {
             return $false
         }
 
+
+        # Parse entire script once to gather syntax diagnostics for each section
+        $allParseErrors = @()
+        [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$allParseErrors) | Out-Null
+
+        $chunkSize = 1000
+        $hasSectionErrors = $false
+        for ($offset = 0; $offset -lt $lines.Count; $offset += $chunkSize) {
+            $endIndex = [Math]::Min($offset + $chunkSize - 1, $lines.Count - 1)
+            $rangeLabel = "Lines {0}-{1}" -f ($offset + 1), ($endIndex + 1)
+            $chunkErrors = $allParseErrors | Where-Object {
+                $_.Extent.StartLineNumber -ge ($offset + 1) -and $_.Extent.StartLineNumber -le ($endIndex + 1)
+            }
+
+            if ($chunkErrors.Count -gt 0) {
+                if (-not $hasSectionErrors) {
+                    Write-Host "❌ Section parser errors detected:" -ForegroundColor Red
+                }
+
+                $hasSectionErrors = $true
+                foreach ($err in $chunkErrors) {
+                    Write-Host ("  {0} → Line {1}: {2}" -f $rangeLabel, $err.Extent.StartLineNumber, $err.Message) -ForegroundColor Red
+                }
+            } else {
+                Write-Host "$rangeLabel ✔️ no syntax errors" -ForegroundColor Green
+            }
+        }
+
+        if ($hasSectionErrors) {
+            return $false
+        }
+
+        # Identify consecutive duplicate commands that may have been introduced accidentally
+        $duplicateCommands = @()
+        for ($i = 1; $i -lt $lines.Count; $i++) {
+            $current = $lines[$i].Trim()
+            $previous = $lines[$i - 1].Trim()
+
+            if ([string]::IsNullOrWhiteSpace($current)) { continue }
+            if ($current -eq '{' -or $current -eq '}' -or $current.StartsWith('#')) { continue }
+            if ($current.StartsWith('<')) { continue }
+            if ($current -cne $previous) { continue }
+
+            $duplicateCommands += [pscustomobject]@{
+                Line = $i + 1
+                Text = $lines[$i].Trim()
+            }
+        }
+
+        if ($duplicateCommands.Count -gt 0) {
+            Write-Host "⚠️ Potential duplicate commands detected:" -ForegroundColor Yellow
+            foreach ($dup in $duplicateCommands | Select-Object -First 10) {
+                Write-Host ("  Line {0}: {1}" -f $dup.Line, $dup.Text) -ForegroundColor Yellow
+            }
+            if ($duplicateCommands.Count -gt 10) {
+                $remaining = $duplicateCommands.Count - 10
+                Write-Host "  ...and $remaining more" -ForegroundColor Yellow
+            }
+        }
+
         # Test with AST parser
-        $parseErrors = @()
-        $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
+        $parseErrors = $allParseErrors
+
 
         if ($parseErrors.Count -eq 0) {
             Write-Host "✅ Syntax validation passed" -ForegroundColor Green
@@ -482,6 +545,9 @@ $global:ThemeDefinitions = @{
         HoverBackground = '#CC0000'
     }
 }
+
+# Storage for the last applied custom theme so navigation refreshes reuse the same colors
+$global:CustomThemeColors = $null
 
 
 # Einfache Funktion zum Abrufen eines Themes
@@ -1293,7 +1359,6 @@ function Update-SystemHealthSummary {
                 $text = '{0} ({1}% @ {2})' -f $status, [int]$roundedScore, $timeStamp
             } else {
                 $text = '{0} (Last: {1})' -f $status, $timeStamp
-
             }
 
             switch ($status) {
@@ -1321,10 +1386,7 @@ function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
 
     try {
-
         $shouldRun = [bool]$RunCheck
-
-        $shouldRun = $RunCheck -or -not $global:SystemHealthData.LastHealthCheck
 
         if ($shouldRun) {
             $healthData = Get-SystemHealthStatus
@@ -1514,12 +1576,6 @@ function Show-SystemHealthDialog {
             param([bool]$RunCheck = $false)
 
             $data = Update-SystemHealthDisplay -RunCheck:$RunCheck
-
-            if ($RunCheck) {
-                Update-SystemHealthDisplay -RunCheck | Out-Null
-            }
-
-            $data = $global:SystemHealthData
 
             if (-not $data.LastHealthCheck) {
                 $lblHealthStatus.Text = 'Status: Not Run'
@@ -4466,6 +4522,18 @@ $lblOptimizationStatus = $lblDashLastOptimization
 $chkAutoOptimize = $chkDashAutoOptimize
 
 # Set global navigation state
+# Central navigation button registry so theming and navigation stay synchronized
+$global:NavigationButtonNames = @(
+    'btnNavDashboard',
+    'btnNavBasicOpt',
+    'btnNavAdvanced',
+    'btnNavGames',
+    'btnNavNetwork',
+    'btnNavSystem',
+    'btnNavServices',
+    'btnNavOptions',
+    'btnNavBackup'
+)
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
 
@@ -4483,7 +4551,12 @@ function Set-ActiveNavigationButton {
         $colors = Get-ThemeColors -ThemeName $CurrentTheme
         
         # Alle Navigation Buttons
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+
+        $navButtons = if ($global:NavigationButtonNames) {
+            $global:NavigationButtonNames
+        } else {
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+        }
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
         
@@ -4633,7 +4706,15 @@ function Show-AdvancedSection {
 
     try {
         Switch-Panel "Advanced"
-        Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $CurrentTheme
+
+        $targetButton = switch ($Section) {
+            'Network' { 'btnNavNetwork' }
+            'System' { 'btnNavSystem' }
+            'Services' { 'btnNavServices' }
+            default { 'btnNavAdvanced' }
+        }
+        Set-ActiveNavigationButton -ActiveButtonName $targetButton -CurrentTheme $CurrentTheme
+
 
         switch ($Section) {
             'Network' {
@@ -4885,7 +4966,12 @@ if ($btnNavServices) {
             'DarkPurple'
         }
 
-        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
+        Switch-Panel "Advanced"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
     })
 }
 
@@ -4897,7 +4983,12 @@ if ($btnAdvancedNetwork) {
             'DarkPurple'
         }
 
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+
+        Switch-Panel "Games"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
     })
 }
 
@@ -4920,25 +5011,80 @@ if ($btnNavSystem) {
         }
 
 
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedNetwork) {
+    $btnAdvancedNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedSystem) {
+    $btnAdvancedSystem.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
 }
 
 if ($btnAdvancedServices) {
     $btnAdvancedServices.Add_Click({
-
-
-        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
-        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
-        Switch-Panel "System"
-        Switch-Theme -ThemeName $currentTheme
-
-    })
-}
-
-if ($btnNavServices) {
-    $btnNavServices.Add_Click({
-
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
@@ -4947,8 +5093,6 @@ if ($btnNavServices) {
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
 
-        Switch-Panel "Services"
-        Switch-Theme -ThemeName $currentTheme
     })
 }
 
@@ -5055,13 +5199,17 @@ function Switch-Theme {
         }
         
         # Prüfen ob Theme existiert
-        if (-not $global:ThemeDefinitions.ContainsKey($ThemeName)) {
-            Log "Theme '$ThemeName' nicht gefunden, wechsle zu DarkPurple" 'Warning'
-            $ThemeName = "DarkPurple"
+        if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+            $themeColors = $global:CustomThemeColors.Clone()
+        } else {
+            if (-not $global:ThemeDefinitions.ContainsKey($ThemeName)) {
+                Log "Theme '$ThemeName' nicht gefunden, wechsle zu DarkPurple" 'Warning'
+                $ThemeName = "DarkPurple"
+            }
+
+            # Theme-Farben aus zentralem Array holen
+            $themeColors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
         }
-        
-        # Theme-Farben aus zentralem Array holen
-        $themeColors = Get-ThemeColors -ThemeName $ThemeName
         
         Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
         
@@ -5079,7 +5227,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
-            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+
+            $navButtons = if ($global:NavigationButtonNames) {
+                $global:NavigationButtonNames
+            } else {
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -5108,6 +5262,21 @@ function Switch-Theme {
                     if ($sidebar) {
                         $sidebar.Background = $themeColors.SidebarBg
                         try { $sidebar.BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+
+                        if ($sidebar.Child -is [System.Windows.Controls.Grid]) {
+                            $sidebarGrid = $sidebar.Child
+                            if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
+                                $sidebarGrid.Children[0].Background = $themeColors.SidebarBg
+                            }
+                            if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
+                                try { $sidebarGrid.Children[1].Background = $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
+                            }
+                            if ($sidebarGrid.Children.Count -gt 2) {
+                                $sidebarGrid.Children[2].Background = $themeColors.SidebarBg
+                                try { $sidebarGrid.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            }
+                        }
+
                         $sidebar.InvalidateVisual()
                         $sidebar.UpdateLayout()
                     }
@@ -5184,7 +5353,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # Navigation nochmal explizit setzen
-            $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+
+            $navButtons = if ($global:NavigationButtonNames) {
+                $global:NavigationButtonNames
+            } else {
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+            }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -6878,17 +7053,70 @@ function Apply-FallbackThemeColors {
 
 # ---------- Theme Color Application Function ----------
 function Apply-ThemeColors {
-    param([string]$ThemeName = 'DarkPurple')
-    
+    [CmdletBinding(DefaultParameterSetName='ByTheme')]
+    param(
+        [Parameter(ParameterSetName='ByTheme')]
+        [string]$ThemeName = 'DarkPurple',
+        [Parameter(ParameterSetName='ByCustom')]
+        [string]$Background,
+        [Parameter(ParameterSetName='ByCustom')]
+        [string]$Primary,
+        [Parameter(ParameterSetName='ByCustom')]
+        [string]$Hover,
+        [Parameter(ParameterSetName='ByCustom')]
+        [string]$Foreground
+    )
+
     try {
-        # Theme-Farben aus zentralem Array holen
-        $colors = Get-ThemeColors -ThemeName $ThemeName
-        
+        # Theme-Farben aus zentralem Array holen oder benutzerdefiniert zusammenstellen
+        if ($PSCmdlet.ParameterSetName -eq 'ByCustom') {
+            $colors = (Get-ThemeColors -ThemeName 'DarkPurple').Clone()
+            $colors['Name'] = 'Custom Theme'
+
+            if ($PSBoundParameters.ContainsKey('Background') -and -not [string]::IsNullOrWhiteSpace($Background)) {
+                $colors['Background'] = $Background
+                $colors['Secondary'] = $Background
+                $colors['SidebarBg'] = $Background
+                $colors['HeaderBg'] = $Background
+                $colors['LogBg'] = $Background
+            }
+
+            if ($PSBoundParameters.ContainsKey('Primary') -and -not [string]::IsNullOrWhiteSpace($Primary)) {
+                $colors['Primary'] = $Primary
+                $colors['Accent'] = $Primary
+                $colors['SelectedBackground'] = $Primary
+            }
+
+            if ($PSBoundParameters.ContainsKey('Hover') -and -not [string]::IsNullOrWhiteSpace($Hover)) {
+                $colors['Hover'] = $Hover
+                $colors['HoverBackground'] = $Hover
+            } elseif ($PSBoundParameters.ContainsKey('Primary') -and -not [string]::IsNullOrWhiteSpace($Primary)) {
+                $colors['HoverBackground'] = $Primary
+            }
+
+            if ($PSBoundParameters.ContainsKey('Foreground') -and -not [string]::IsNullOrWhiteSpace($Foreground)) {
+                $colors['Text'] = $Foreground
+                $colors['SelectedForeground'] = $Foreground
+                $colors['UnselectedForeground'] = $Foreground
+                $colors['TextSecondary'] = $Foreground
+            }
+
+            $global:CustomThemeColors = $colors.Clone()
+            $appliedThemeName = 'Custom'
+        } else {
+            if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+                $colors = $global:CustomThemeColors.Clone()
+            } else {
+                $colors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
+            }
+            $appliedThemeName = $ThemeName
+        }
+
         if (-not $form) {
             Log "Window form nicht verfügbar für Theme-Anwendung" 'Error'
             return
         }
-        
+
         Log "Wende Theme '$($colors.Name)' an..." 'Info'
         
         # 1. HAUPT-FENSTER
@@ -6902,21 +7130,25 @@ function Apply-ThemeColors {
                 if ($sidebar -is [System.Windows.Controls.Border]) {
                     $sidebar.Background = $colors.SidebarBg
                     try { $sidebar.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                    
+
                     $sidebarGrid = $sidebar.Child
                     if ($sidebarGrid -is [System.Windows.Controls.Grid]) {
                         # Sidebar Header with bounds checking
                         if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
-                            $sidebarGrid.Children[0].Background = $colors.Background
+                            $sidebarGrid.Children[0].Background = $colors.SidebarBg
                         }
-                        # Sidebar Footer with bounds checking  
+                        # Sidebar Content ScrollViewer
+                        if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
+                            try { $sidebarGrid.Children[1].Background = $colors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
+                        }
+                        # Sidebar Footer with bounds checking
                         if ($sidebarGrid.Children.Count -gt 2) {
-                            $sidebarGrid.Children[2].Background = $colors.Background
+                            $sidebarGrid.Children[2].Background = $colors.SidebarBg
                             try { $sidebarGrid.Children[2].BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
                         }
                     }
                 }
-                
+
                 # 3. MAIN CONTENT AREA - with bounds checking
                 if ($firstChild.Children.Count -gt 1) {
                     $mainContent = $firstChild.Children[1]
@@ -6952,7 +7184,13 @@ function Apply-ThemeColors {
         }
         
         # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
-        $navButtons = @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+
+        $navButtons = if ($global:NavigationButtonNames) {
+            $global:NavigationButtonNames
+        } else {
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
+        }
+
         foreach ($btnName in $navButtons) {
             $navBtn = $form.FindName($btnName)
             if ($navBtn) {
@@ -7105,12 +7343,10 @@ function Apply-ThemeColors {
         }
 
         # Globale Theme-Variable speichern
-        $global:CurrentTheme = $ThemeName
+        $global:CurrentTheme = $appliedThemeName
 
 
         $successMessage = "🎨 Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
-
-        $successMessage = "[Themes] Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
 
         Log $successMessage 'Success'
         
@@ -11736,50 +11972,77 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
 }
 
 
-function Invoke-NetworkPanelOptimizations {
+function Invoke-PanelActions {
+    param(
+        [Parameter(Mandatory)]
+        [string]$PanelName,
 
-# Start real-time performance monitoring for dashboard
-Log "Starting real-time performance monitoring..." 'Info'
-Start-PerformanceMonitoring
+        [Parameter(Mandatory)]
+        [System.Collections.IEnumerable]$Actions
+    )
 
-# Inform user that game detection monitoring is on-demand
-Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
 
-# Show the form
-try {
-    $form.ShowDialog() | Out-Null
-} catch {
-    Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
-} finally {
-    # Cleanup
-    try {
-        # Stop performance monitoring
-        Stop-PerformanceMonitoring
-        
-        # Stop game detection monitoring
-        Stop-GameDetectionMonitoring
-        
-        # Cleanup timer precision
-        [WinMM]::timeEndPeriod(1) | Out-Null
-    } catch {}
+    $applied = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($action in $Actions) {
+        $checkbox = $action.Checkbox
+        $callback = $action.Action
+        $description = $action.Description
+
+        if (-not $checkbox -or -not $callback) {
+            continue
+        }
+
+        if (-not $checkbox.IsChecked) {
+            continue
+        }
+
+        try {
+            & $callback
+            if ($description) {
+                [void]$applied.Add($description)
+            }
+        } catch {
+            $detail = if ($description) { $description } else { 'panel action' }
+            $message = "Warning: Failed to apply $PanelName action '$detail': $($_.Exception.Message)"
+            Log $message 'Warning'
+        }
+    }
+
+    return $applied
 }
 
-function Apply-NetworkOptimizations {
 
+function Invoke-NetworkPanelOptimizations {
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
 
-    # Apply network optimizations based on checked items in network panel
-    if ($chkAckNetwork -and $chkAckNetwork.IsChecked) {
-        Apply-TcpAck
+    $networkActions = @(
+        [pscustomobject]@{
+            Checkbox    = $chkAckNetwork
+            Action      = { Apply-TcpAck }
+            Description = 'TCP ACK frequency tweak'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkNagleNetwork
+            Action      = { Apply-NagleDisable }
+            Description = 'Disable Nagle algorithm'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkNetworkThrottlingNetwork
+            Action      = { Apply-NetworkThrottling }
+            Description = 'Network throttling adjustments'
+        }
+    )
+
+    $applied = Invoke-PanelActions -PanelName 'Network' -Actions $networkActions
+
+    if ($applied.Count -gt 0) {
+        $details = $applied -join ', '
+        Log "Network optimizations applied successfully ($details)" 'Success'
+    } else {
+        Log 'No network optimizations were selected in the dedicated Network panel' 'Info'
+
     }
-    if ($chkNagleNetwork -and $chkNagleNetwork.IsChecked) {
-        Apply-NagleDisable
-    }
-    if ($chkNetworkThrottlingNetwork -and $chkNetworkThrottlingNetwork.IsChecked) {
-        Apply-NetworkThrottling
-    }
-    
-    Log "Network optimizations applied successfully" 'Success'
 }
 
 function Test-NetworkLatency {
@@ -11827,18 +12090,105 @@ function Reset-NetworkSettings {
 
 function Invoke-SystemPanelOptimizations {
     Log "Applying system optimizations from dedicated System panel..." 'Info'
-    
-    # Apply system optimizations based on checked items in system panel
-    if ($chkPowerPlanSystem -and $chkPowerPlanSystem.IsChecked) {
-        Apply-PowerPlan
-    }
-    if ($chkGameDVRSystem -and $chkGameDVRSystem.IsChecked) {
-        Disable-GameDVR
-    }
-    if ($chkGPUSchedulingSystem -and $chkGPUSchedulingSystem.IsChecked) {
-        Enable-GPUScheduling
-    }
-    
+
+    $systemActions = Invoke-PanelActions -PanelName 'System' -Actions @(
+        [pscustomobject]@{
+            Checkbox    = $chkPowerPlanSystem
+            Action      = { Apply-PowerPlan }
+            Description = 'High performance power plan'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkGameDVRSystem
+            Action      = { Disable-GameDVR }
+            Description = 'Disable Game DVR'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkGPUSchedulingSystem
+            Action      = { Enable-GPUScheduling }
+            Description = 'Enable GPU scheduling'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkAdvancedTelemetryDisable
+            Action      = { Disable-AdvancedTelemetry }
+            Description = 'Advanced telemetry reduction'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkMemoryDefragmentation
+            Action      = { Enable-MemoryDefragmentation }
+            Description = 'Memory defragmentation'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkServiceOptimization
+            Action      = { Apply-ServiceOptimization }
+            Description = 'Service optimization suite'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDiskTweaksAdvanced
+            Action      = { Apply-DiskTweaksAdvanced }
+            Description = 'Disk tweaks (advanced)'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkNetworkLatencyOptimization
+            Action      = { Enable-NetworkLatencyOptimization }
+            Description = 'Network latency optimization'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkFPSSmoothness
+            Action      = { Enable-FPSSmoothness }
+            Description = 'FPS smoothness tuning'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkCPUMicrocode
+            Action      = { Optimize-CPUMicrocode }
+            Description = 'CPU microcode optimization'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkRAMTimings
+            Action      = { Optimize-RAMTimings }
+            Description = 'RAM timings optimization'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableCortana
+            Action      = { Disable-Cortana }
+            Description = 'Disable Cortana'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableWindowsUpdate
+            Action      = { Optimize-WindowsUpdate }
+            Description = 'Optimize Windows Update'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableBackgroundApps
+            Action      = { Disable-BackgroundApps }
+            Description = 'Disable background apps'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableLocationTracking
+            Action      = { Disable-LocationTracking }
+            Description = 'Disable location tracking'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableAdvertisingID
+            Action      = { Disable-AdvertisingID }
+            Description = 'Disable advertising ID'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableErrorReporting
+            Action      = { Disable-ErrorReporting }
+            Description = 'Disable error reporting'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableCompatTelemetry
+            Action      = { Disable-CompatibilityTelemetry }
+            Description = 'Disable compatibility telemetry'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableWSH
+            Action      = { Disable-WSH }
+            Description = 'Disable Windows Script Host'
+        }
+    )
+
     # Enhanced Gaming Optimizations
     $enhancedGameOptimizations = @()
     if ($chkDynamicResolution -and $chkDynamicResolution.IsChecked) {
@@ -11853,11 +12203,13 @@ function Invoke-SystemPanelOptimizations {
     if ($chkCompetitiveLatency -and $chkCompetitiveLatency.IsChecked) {
         $enhancedGameOptimizations += 'CompetitiveLatencyReduction'
     }
-    
+
     if ($enhancedGameOptimizations.Count -gt 0) {
         Apply-FPSOptimizations -OptimizationList $enhancedGameOptimizations
+        $summary = 'Enhanced gaming optimizations: ' + ($enhancedGameOptimizations -join ', ')
+        [void]$systemActions.Add($summary)
     }
-    
+
     # Enhanced System Optimizations
     $enhancedSystemSettings = @{}
     if ($chkAutoDiskOptimization -and $chkAutoDiskOptimization.IsChecked) {
@@ -11872,64 +12224,19 @@ function Invoke-SystemPanelOptimizations {
     if ($chkDirectStorageEnhanced -and $chkDirectStorageEnhanced.IsChecked) {
         $enhancedSystemSettings.DirectStorageEnhanced = $true
     }
-    
+
     if ($enhancedSystemSettings.Count -gt 0) {
         Apply-EnhancedSystemOptimizations -Settings $enhancedSystemSettings
+        $systemSettingsSummary = 'Enhanced system settings: ' + (($enhancedSystemSettings.Keys) -join ', ')
+        [void]$systemActions.Add($systemSettingsSummary)
     }
-    
-    # Razer Booster-inspired Advanced Optimizations
-    if ($chkAdvancedTelemetryDisable -and $chkAdvancedTelemetryDisable.IsChecked) {
-        Disable-AdvancedTelemetry
+
+    if ($systemActions.Count -gt 0) {
+        $details = $systemActions -join ', '
+        Log "System optimizations applied successfully ($details)" 'Success'
+    } else {
+        Log 'No system optimizations were selected in the dedicated System panel' 'Info'
     }
-    if ($chkMemoryDefragmentation -and $chkMemoryDefragmentation.IsChecked) {
-        Enable-MemoryDefragmentation
-    }
-    if ($chkServiceOptimization -and $chkServiceOptimization.IsChecked) {
-        Apply-ServiceOptimization
-    }
-    if ($chkDiskTweaksAdvanced -and $chkDiskTweaksAdvanced.IsChecked) {
-        Apply-DiskTweaksAdvanced
-    }
-    if ($chkNetworkLatencyOptimization -and $chkNetworkLatencyOptimization.IsChecked) {
-        Enable-NetworkLatencyOptimization
-    }
-    if ($chkFPSSmoothness -and $chkFPSSmoothness.IsChecked) {
-        Enable-FPSSmoothness
-    }
-    if ($chkCPUMicrocode -and $chkCPUMicrocode.IsChecked) {
-        Optimize-CPUMicrocode
-    }
-    if ($chkRAMTimings -and $chkRAMTimings.IsChecked) {
-        Optimize-RAMTimings
-    }
-    
-    # Enhanced Service Management
-    if ($chkDisableCortana -and $chkDisableCortana.IsChecked) {
-        Disable-Cortana
-    }
-    if ($chkDisableWindowsUpdate -and $chkDisableWindowsUpdate.IsChecked) {
-        Optimize-WindowsUpdate
-    }
-    if ($chkDisableBackgroundApps -and $chkDisableBackgroundApps.IsChecked) {
-        Disable-BackgroundApps
-    }
-    if ($chkDisableLocationTracking -and $chkDisableLocationTracking.IsChecked) {
-        Disable-LocationTracking
-    }
-    if ($chkDisableAdvertisingID -and $chkDisableAdvertisingID.IsChecked) {
-        Disable-AdvertisingID
-    }
-    if ($chkDisableErrorReporting -and $chkDisableErrorReporting.IsChecked) {
-        Disable-ErrorReporting
-    }
-    if ($chkDisableCompatTelemetry -and $chkDisableCompatTelemetry.IsChecked) {
-        Disable-CompatibilityTelemetry
-    }
-    if ($chkDisableWSH -and $chkDisableWSH.IsChecked) {
-        Disable-WSH
-    }
-    
-    Log "System optimizations applied successfully" 'Success'
 }
 
 function Start-SystemBenchmark {
@@ -11981,19 +12288,31 @@ function Reset-SystemSettings {
 
 function Invoke-ServicePanelOptimizations {
     Log "Applying service optimizations from dedicated Services panel..." 'Info'
-    
-    # Apply service optimizations based on checked items in services panel
-    if ($chkDisableXboxServicesServices -and $chkDisableXboxServicesServices.IsChecked) {
-        Disable-XboxServices
+
+    $serviceActions = Invoke-PanelActions -PanelName 'Services' -Actions @(
+        [pscustomobject]@{
+            Checkbox    = $chkDisableXboxServicesServices
+            Action      = { Disable-XboxServices }
+            Description = 'Disable Xbox services'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableTelemetryServices
+            Action      = { Disable-Telemetry }
+            Description = 'Disable telemetry services'
+        }
+        [pscustomobject]@{
+            Checkbox    = $chkDisableSearchServices
+            Action      = { Disable-WindowsSearch }
+            Description = 'Disable Windows Search service'
+        }
+    )
+
+    if ($serviceActions.Count -gt 0) {
+        $details = $serviceActions -join ', '
+        Log "Service optimizations applied successfully ($details)" 'Success'
+    } else {
+        Log 'No service optimizations were selected in the dedicated Services panel' 'Info'
     }
-    if ($chkDisableTelemetryServices -and $chkDisableTelemetryServices.IsChecked) {
-        Disable-Telemetry
-    }
-    if ($chkDisableSearchServices -and $chkDisableSearchServices.IsChecked) {
-        Disable-WindowsSearch
-    }
-    
-    Log "Service optimizations applied successfully" 'Success'
 }
 
 function Show-RunningServices {
@@ -12050,35 +12369,11 @@ try {
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
-        
-        # Stop game detection monitoring
-        Stop-GameDetectionMonitoring
-        
-        # Cleanup timer precision
-        [WinMM]::timeEndPeriod(1) | Out-Null
-    } catch {}
-}
 
-function Test-ScriptSyntax {
-    <#
-    .SYNOPSIS
-    Tests the PowerShell syntax of this script for validation
-    .DESCRIPTION
-    Validates the script syntax using multiple PowerShell parsers
-    #>
-    param(
-        [string]$ScriptPath = $PSCommandPath
-    )
-    
-    Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
-    
-    try {
-        # Stop performance monitoring
-        Stop-PerformanceMonitoring
-        
         # Stop game detection monitoring
         Stop-GameDetectionMonitoring
-        
+
+
         # Cleanup timer precision
         [WinMM]::timeEndPeriod(1) | Out-Null
     } catch {}
