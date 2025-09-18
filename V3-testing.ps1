@@ -4808,6 +4808,10 @@ $chkDefenderOptimize = $null
 $chkDirectStorage = $null
 
 # Navigation Event Handlers
+if (-not $script:NavigationClickHandlers) {
+    $script:NavigationClickHandlers = @{}
+}
+
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4822,29 +4826,41 @@ if ($btnNavDashboard) {
 }
 
 if ($btnNavBasicOpt) {
-    $btnNavBasicOpt.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('BasicOpt') -and $script:NavigationClickHandlers['BasicOpt'])) {
+        $script:NavigationClickHandlers['BasicOpt'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "BasicOpt"
+            Switch-Theme -ThemeName $currentTheme
         }
 
-        Switch-Panel "BasicOpt"
-        Switch-Theme -ThemeName $currentTheme
-    })
+        $btnNavBasicOpt.Add_Click($script:NavigationClickHandlers['BasicOpt'])
+    }
 }
 
 if ($btnNavAdvanced) {
-    $btnNavAdvanced.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('Advanced') -and $script:NavigationClickHandlers['Advanced'])) {
+        $script:NavigationClickHandlers['Advanced'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "Advanced"
+            Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
         }
 
-        Switch-Panel "Advanced"
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
+        $btnNavAdvanced.Add_Click($script:NavigationClickHandlers['Advanced'])
+    }
 }
 
 if ($btnNavGames) {
