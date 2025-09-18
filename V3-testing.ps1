@@ -47,6 +47,7 @@ function Test-ScriptSyntax {
     Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
 
     try {
+
         $content = Get-Content -Path $ScriptPath -Raw
         $lines = Get-Content -Path $ScriptPath
 
@@ -55,6 +56,7 @@ function Test-ScriptSyntax {
         # failure.
         $markerPattern = '^(<{7}|={7}|>{7})'
         $conflicts = $lines | Select-String -Pattern $markerPattern
+
         if ($conflicts) {
             Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
             foreach ($match in $conflicts) {
@@ -63,13 +65,13 @@ function Test-ScriptSyntax {
             return $false
         }
 
+
         # Parse entire script once to gather syntax diagnostics for each section
         $allParseErrors = @()
         [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$allParseErrors) | Out-Null
 
         $chunkSize = 1000
         $hasSectionErrors = $false
-        $sectionCount = 0
         for ($offset = 0; $offset -lt $lines.Count; $offset += $chunkSize) {
             $endIndex = [Math]::Min($offset + $chunkSize - 1, $lines.Count - 1)
             $rangeLabel = "Lines {0}-{1}" -f ($offset + 1), ($endIndex + 1)
@@ -87,7 +89,7 @@ function Test-ScriptSyntax {
                     Write-Host ("  {0} → Line {1}: {2}" -f $rangeLabel, $err.Extent.StartLineNumber, $err.Message) -ForegroundColor Red
                 }
             } else {
-                $sectionCount++
+                Write-Host "$rangeLabel ✔️ no syntax errors" -ForegroundColor Green
             }
         }
 
@@ -126,13 +128,9 @@ function Test-ScriptSyntax {
         # Test with AST parser
         $parseErrors = $allParseErrors
 
+
         if ($parseErrors.Count -eq 0) {
-            if ($sectionCount -gt 0) {
-                $summaryMessage = "✅ Syntax validation passed ({0} sections, {1} total lines)" -f $sectionCount, $lines.Count
-                Write-Host $summaryMessage -ForegroundColor Green
-            } else {
-                Write-Host "✅ Syntax validation passed" -ForegroundColor Green
-            }
+            Write-Host "✅ Syntax validation passed" -ForegroundColor Green
             return $true
         } else {
             Write-Host "❌ Found $($parseErrors.Count) syntax errors:" -ForegroundColor Red
@@ -697,6 +695,7 @@ function Ensure-NavigationVisibility {
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
             'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
+            'btnNavNetwork', 'btnNavSystem', 'btnNavServices',
             'btnNavOptions', 'btnNavBackup'
         )
         
@@ -955,21 +954,6 @@ function Get-SafeConfigPath {
 }
 
 # Initialize paths after function definition
-function Get-ConfigurationDirectory {
-    param([string]$FileName = 'koala-settings.cfg')
-
-    try {
-        $resolvedPath = Get-SafeConfigPath $FileName
-        if ($resolvedPath) {
-            return Split-Path $resolvedPath -Parent
-        }
-    } catch {
-        Log "Could not resolve configuration directory: $($_.Exception.Message)" 'Warning'
-    }
-
-    return (Get-Location).Path
-}
-
 $BackupPath = Get-SafeConfigPath 'Koala-Backup.json'
 $ConfigPath = Get-SafeConfigPath 'Koala-Config.json'
 
@@ -986,6 +970,9 @@ function Test-StartupControls {
         'btnNavBasicOpt' = $btnNavBasicOpt
         'btnNavAdvanced' = $btnNavAdvanced
         'btnNavGames' = $btnNavGames
+        'btnNavNetwork' = $btnNavNetwork
+        'btnNavSystem' = $btnNavSystem
+        'btnNavServices' = $btnNavServices
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
 
@@ -1097,47 +1084,6 @@ function Test-StartupControls {
     } else {
         Log "[OK] All critical controls found and bound successfully" 'Success'
         return $true
-    }
-}
-
-function Ensure-InitialBackup {
-    try {
-        $configDir = Get-ConfigurationDirectory
-        if (-not $configDir -or -not (Test-Path $configDir)) {
-            return
-        }
-
-        $existingBackups = @()
-        $defaultJson = Join-Path $configDir 'Koala-Backup.json'
-        if (Test-Path $defaultJson) { $existingBackups += $defaultJson }
-
-        $existingBackups += Get-ChildItem -Path $configDir -Filter 'KOALA_Backup_*.json' -ErrorAction SilentlyContinue
-        $existingBackups += Get-ChildItem -Path $configDir -Filter 'KOALA_Backup_*.reg' -ErrorAction SilentlyContinue
-
-        if ($existingBackups.Count -eq 0) {
-            Log "No backup files detected in $configDir" 'Warning'
-
-            if ([System.Windows.MessageBox] -and $form) {
-                $message = "No backup files were found in the current KOALA directory.`n`nCreating a backup now lets you restore your registry and optimization settings if anything behaves unexpectedly. Would you like to create a backup before proceeding?"
-                $choice = [System.Windows.MessageBox]::Show($message, "Create Backup", 'YesNo', 'Question')
-                if ($choice -eq 'Yes') {
-                    Create-Backup
-                } else {
-                    Log "User skipped initial backup prompt" 'Info'
-                }
-            }
-            return
-        }
-
-        $resolved = $existingBackups | ForEach-Object {
-            if ($_ -is [System.IO.FileSystemInfo]) { $_.FullName } else { $_ }
-        } | Sort-Object -Unique
-
-        if ($resolved.Count -gt 0) {
-            Log "Detected existing backups: $($resolved -join ', ')" 'Info'
-        }
-    } catch {
-        Log "Backup availability check failed: $($_.Exception.Message)" 'Warning'
     }
 }
 $SettingsPath = Get-SafeConfigPath 'koala-settings.cfg'
@@ -1649,6 +1595,7 @@ function Show-SystemHealthDialog {
             } else {
                 $lblHealthScore.Text = 'Health Score: N/A'
             }
+
             if ($data.Metrics.ContainsKey('CpuUsage') -and $data.Metrics.CpuUsage -ne $null) {
                 $lblCpuMetric.Text = "$($data.Metrics.CpuUsage)%"
             } else {
@@ -3481,19 +3428,18 @@ function Remove-Reg {
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Height" Value="46"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Height" Value="50"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Padding" Value="15,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border Background="{TemplateBinding Background}" CornerRadius="8" Margin="5">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Margin="{TemplateBinding Padding}"/>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                        VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -3561,40 +3507,57 @@ function Remove-Reg {
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10">
           <StackPanel>
             <Button x:Name="btnNavDashboard" Style="{StaticResource SidebarButton}" Tag="Selected">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="🏠" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Home Dashboard" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🏠" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Home Dashboard" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavBasicOpt" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="⚡" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Quick Optimize" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚡" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Quick Optimize" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavAdvanced" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="🛠️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Advanced Settings" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛠️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Advanced Settings" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavGames" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="🎮" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Game Profiles" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎮" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Game Profiles" FontSize="14"/>
               </StackPanel>
             </Button>
-            <!-- Advanced section shortcuts are available inside Advanced Settings -->
+            <Button x:Name="btnNavNetwork" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🌐" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Network Tweaks" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavSystem" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💻" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="System Optimization" FontSize="14"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavServices" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚙️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Services Management" FontSize="14"/>
+              </StackPanel>
+            </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Options &amp; Themes" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🎨" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Options &amp; Themes" FontSize="14"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavBackup" Style="{StaticResource SidebarButton}">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="🛡️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Backup &amp; Restore" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🛡️" FontFamily="Segoe UI Emoji" FontSize="16" Margin="0,0,8,0"/>
+                <TextBlock Text="Backup &amp; Restore" FontSize="14"/>
               </StackPanel>
             </Button>
           </StackPanel>
@@ -4565,11 +4528,15 @@ $global:NavigationButtonNames = @(
     'btnNavBasicOpt',
     'btnNavAdvanced',
     'btnNavGames',
+    'btnNavNetwork',
+    'btnNavSystem',
+    'btnNavServices',
     'btnNavOptions',
     'btnNavBackup'
 )
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
+
 # ---------- Navigation Functions ----------
 # ---------- ZENTRALE NAVIGATION STATE VERWALTUNG ----------
 # ---------- SAUBERE NAVIGATION MIT THEME-FARBEN ----------
@@ -4584,10 +4551,11 @@ function Set-ActiveNavigationButton {
         $colors = Get-ThemeColors -ThemeName $CurrentTheme
         
         # Alle Navigation Buttons
+
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         }
         
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
@@ -4635,19 +4603,6 @@ function Set-ActiveNavigationButton {
 }
 
 
-function Get-ActiveThemeName {
-    if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-        return $cmbOptionsTheme.SelectedItem.Tag
-    }
-
-    if ($global:CurrentTheme) {
-        return $global:CurrentTheme
-    }
-
-    return 'DarkPurple'
-}
-
-
 function Switch-Panel {
     param([string]$PanelName)
 
@@ -4661,7 +4616,11 @@ function Switch-Panel {
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
         
         # Get current theme
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
         
         # Show selected panel and update navigation
         switch ($PanelName) {
@@ -4746,12 +4705,16 @@ function Show-AdvancedSection {
     )
 
     try {
-        if (-not $PSBoundParameters.ContainsKey('CurrentTheme') -or [string]::IsNullOrWhiteSpace($CurrentTheme)) {
-            $CurrentTheme = Get-ActiveThemeName
-        }
-
         Switch-Panel "Advanced"
-        Set-ActiveNavigationButton -ActiveButtonName 'btnNavAdvanced' -CurrentTheme $CurrentTheme
+
+        $targetButton = switch ($Section) {
+            'Network' { 'btnNavNetwork' }
+            'System' { 'btnNavSystem' }
+            'Services' { 'btnNavServices' }
+            default { 'btnNavAdvanced' }
+        }
+        Set-ActiveNavigationButton -ActiveButtonName $targetButton -CurrentTheme $CurrentTheme
+
 
         switch ($Section) {
             'Network' {
@@ -4825,10 +4788,14 @@ $chkDirectStorage = $null
 # Navigation Event Handlers
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Dashboard"
-
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4836,10 +4803,14 @@ if ($btnNavDashboard) {
 
 if ($btnNavBasicOpt) {
     $btnNavBasicOpt.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "BasicOpt"
-
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4847,10 +4818,14 @@ if ($btnNavBasicOpt) {
 
 if ($btnNavAdvanced) {
     $btnNavAdvanced.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Advanced"
-
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4858,10 +4833,14 @@ if ($btnNavAdvanced) {
 
 if ($btnNavGames) {
     $btnNavGames.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
         Switch-Panel "Games"
-
+        
         # Theme nach Navigation nochmal anwenden
         Switch-Theme -ThemeName $currentTheme
     })
@@ -4869,7 +4848,11 @@ if ($btnNavGames) {
 
 if ($btnNavOptions) {
     $btnNavOptions.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
 
         Switch-Panel "Options"
 
@@ -4878,9 +4861,211 @@ if ($btnNavOptions) {
     })
 }
 
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavBasicOpt) {
+    $btnNavBasicOpt.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "BasicOpt"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavAdvanced) {
+    $btnNavAdvanced.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Advanced"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavGames) {
+    $btnNavGames.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+        
+        Switch-Panel "Games"
+        
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavOptions) {
+    $btnNavOptions.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Advanced"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
 if ($btnAdvancedNetwork) {
     $btnAdvancedNetwork.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Games"
+
+        # Theme nach Navigation nochmal anwenden
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+if ($btnAdvancedSystem) {
+    $btnAdvancedSystem.Add_Click({
+
+
+    Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Switch-Panel "Options"
+
+        # Theme nach Navigation nochmal anwenden
+
+        Switch-Theme -ThemeName $currentTheme
+
+    })
+}
+
+
+if ($btnNavNetwork) {
+    $btnNavNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavSystem) {
+    $btnNavSystem.Add_Click({
+
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+
+        Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnNavServices) {
+    $btnNavServices.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
+
+        Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+    })
+}
+
+if ($btnAdvancedNetwork) {
+    $btnAdvancedNetwork.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
 
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
@@ -4888,7 +5073,11 @@ if ($btnAdvancedNetwork) {
 
 if ($btnAdvancedSystem) {
     $btnAdvancedSystem.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
@@ -4896,18 +5085,20 @@ if ($btnAdvancedSystem) {
 
 if ($btnAdvancedServices) {
     $btnAdvancedServices.Add_Click({
-        $currentTheme = Get-ActiveThemeName
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'DarkPurple'
+        }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
+
     })
 }
 
 if ($btnNavBackup) {
     $btnNavBackup.Add_Click({
-        $currentTheme = Get-ActiveThemeName
-
         Switch-Panel "Backup"
-        Switch-Theme -ThemeName $currentTheme
     })
 }
 
@@ -5036,11 +5227,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # 2. ALLE NAVIGATION BUTTONS EXPLIZIT AKTUALISIEREN
+
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -5160,11 +5353,13 @@ function Switch-Theme {
             $form.UpdateLayout()
             
             # Navigation nochmal explizit setzen
+
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
             }
+
             
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -5180,7 +5375,7 @@ function Switch-Theme {
                 }
             }
             
-        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
         
         # Finale Theme-Persistenz Sicherstellung
         Start-Sleep -Milliseconds 150
@@ -5193,7 +5388,7 @@ function Switch-Theme {
             $form.InvalidateVisual()
             $form.UpdateLayout()
             
-        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
         
         Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
         
@@ -6989,11 +7184,13 @@ function Apply-ThemeColors {
         }
         
         # 5. NAVIGATION BUTTONS (mit Theme-spezifischen Farben)
+
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavNetwork', 'btnNavSystem', 'btnNavServices', 'btnNavOptions', 'btnNavBackup')
         }
+
         foreach ($btnName in $navButtons) {
             $navBtn = $form.FindName($btnName)
             if ($navBtn) {
@@ -7127,7 +7324,7 @@ function Apply-ThemeColors {
                 $form.Background = $colors.Background  # Nochmal explizit setzen
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+            }, [System.Windows.Threading.DispatcherPriority]::Background)
             
             Log '[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
             
@@ -7148,7 +7345,9 @@ function Apply-ThemeColors {
         # Globale Theme-Variable speichern
         $global:CurrentTheme = $appliedThemeName
 
+
         $successMessage = "🎨 Theme '{0}' erfolgreich angewendet und UI vollständig aktualisiert!" -f $colors.Name
+
         Log $successMessage 'Success'
         
     } catch {
@@ -7164,7 +7363,7 @@ function Ensure-ThemePersistence {
     try {
         $form.Dispatcher.BeginInvoke([action]{
             Switch-Theme -ThemeName $ThemeName
-        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
     } catch {
         $errorMessage = 'Fehler bei Theme-Persistenz: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
@@ -9629,13 +9828,8 @@ if ($btnApplyScale) {
 if ($btnSaveSettings) {
     $btnSaveSettings.Add_Click({
         try {
-            $configPath = $SettingsPath
-
-            $settingsDirectory = Split-Path $configPath -Parent
-            if (-not (Test-Path $settingsDirectory)) {
-                New-Item -ItemType Directory -Path $settingsDirectory -Force | Out-Null
-            }
-
+            $configPath = Join-Path (Get-Location) "koala-settings.cfg"
+            
             # Gather current settings
             $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
@@ -9649,8 +9843,8 @@ MenuMode=$global:MenuMode
 "@
             
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
-            Log "Settings saved to $configPath (Theme: $currentTheme, Scale: $currentScale)" 'Success'
-            [System.Windows.MessageBox]::Show("Settings have been saved successfully!`n`nLocation: $configPath", "Settings Saved", 'OK', 'Information')
+            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale)" 'Success'
+            [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error saving settings: $($_.Exception.Message)", "Save Failed", 'OK', 'Error')
@@ -9663,8 +9857,8 @@ MenuMode=$global:MenuMode
 if ($btnLoadSettings) {
     $btnLoadSettings.Add_Click({
         try {
-            $configPath = $SettingsPath
-
+            $configPath = Join-Path (Get-Location) "koala-settings.cfg"
+            
             if (Test-Path $configPath) {
                 $content = Get-Content $configPath -Raw
                 $settings = @{}
@@ -9698,11 +9892,11 @@ if ($btnLoadSettings) {
                         }
                     }
                 }
-
-                Log "Settings loaded from $configPath successfully" 'Success'
+                
+                Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
             } else {
-                Log "No settings file found at $configPath" 'Warning'
+                Log "No settings file found at koala-settings.cfg" 'Warning'
                 [System.Windows.MessageBox]::Show("No settings file found. Please save settings first.", "No Settings File", 'OK', 'Warning')
             }
         } catch {
@@ -11584,10 +11778,10 @@ try {
 
 # Load settings from cfg file if it exists
 try {
-    $configPath = $SettingsPath
+    $configPath = Join-Path (Get-Location) "koala-settings.cfg"
     if (Test-Path $configPath) {
-        Log "Loading settings from $configPath..." 'Info'
-
+        Log "Loading settings from koala-settings.cfg..." 'Info'
+        
         $content = Get-Content $configPath -Raw
         $settings = @{}
         
@@ -11640,15 +11834,13 @@ try {
             Log "Loaded menu mode: $($settings.MenuMode)" 'Info'
         }
         
-        Log "Settings loaded successfully from $configPath" 'Success'
+        Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
         Log "No settings file found - using defaults" 'Info'
     }
 } catch {
     Log "Warning: Could not load settings from cfg file: $($_.Exception.Message)" 'Warning'
 }
-
-Ensure-InitialBackup
 
 # ---------- Responsive UI Scaling ----------
 function Update-UIScaling {
@@ -11779,6 +11971,7 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
 }
 
+
 function Invoke-PanelActions {
     param(
         [Parameter(Mandatory)]
@@ -11787,6 +11980,7 @@ function Invoke-PanelActions {
         [Parameter(Mandatory)]
         [System.Collections.IEnumerable]$Actions
     )
+
 
     $applied = [System.Collections.Generic.List[string]]::new()
 
@@ -11818,6 +12012,7 @@ function Invoke-PanelActions {
     return $applied
 }
 
+
 function Invoke-NetworkPanelOptimizations {
     Log "Applying network optimizations from dedicated Network panel..." 'Info'
 
@@ -11846,6 +12041,7 @@ function Invoke-NetworkPanelOptimizations {
         Log "Network optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No network optimizations were selected in the dedicated Network panel' 'Info'
+
     }
 }
 
@@ -12169,12 +12365,14 @@ try {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     # Cleanup
+
     try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
 
         # Stop game detection monitoring
         Stop-GameDetectionMonitoring
+
 
         # Cleanup timer precision
         [WinMM]::timeEndPeriod(1) | Out-Null
