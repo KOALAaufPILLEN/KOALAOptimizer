@@ -257,6 +257,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D1117'
         SidebarBg = '#1A1625'
         HeaderBg = '#1A1625'
+        CardBackgroundStart = '#23124A'
+        CardBackgroundEnd = '#120A24'
+        SummaryBackgroundStart = '#281559'
+        SummaryBackgroundEnd = '#150A31'
+        CardBorder = '#8B5CF6'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#140A29'
+        GaugeStroke = '#8B5CF6'
         # Navigation Farben
         SelectedBackground = '#8B5CF6'
         UnselectedBackground = 'Transparent'
@@ -276,6 +284,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D1117'
         SidebarBg = '#21262D'
         HeaderBg = '#21262D'
+        CardBackgroundStart = '#1C2129'
+        CardBackgroundEnd = '#0D1117'
+        SummaryBackgroundStart = '#222933'
+        SummaryBackgroundEnd = '#11151B'
+        CardBorder = '#8B5CF6'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#161B22'
+        GaugeStroke = '#8B5CF6'
         # Navigation Farben
         SelectedBackground = '#A78BFA'
         UnselectedBackground = 'Transparent'
@@ -295,6 +311,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#E9ECEF'
         HeaderBg = '#F1F3F4'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#E9ECEF'
+        SummaryBackgroundStart = '#F8F9FA'
+        SummaryBackgroundEnd = '#DEE2E6'
+        CardBorder = '#0066CC'
+        GlowAccent = '#198754'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#0066CC'
         # Navigation Farben
         SelectedBackground = '#0066CC'
         UnselectedBackground = 'Transparent'
@@ -314,6 +338,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#F9F9F9'
         HeaderBg = '#F1F1F1'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#F1F1F1'
+        SummaryBackgroundStart = '#FFECEC'
+        SummaryBackgroundEnd = '#FFFFFF'
+        CardBorder = '#FF0000'
+        GlowAccent = '#FF0000'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#FF0000'
         # Navigation Farben
         SelectedBackground = '#FF0000'
         UnselectedBackground = 'Transparent'
@@ -333,6 +365,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FFFFFF'
         SidebarBg = '#E4E6EA'
         HeaderBg = '#FFFFFF'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#E4E6EA'
+        SummaryBackgroundStart = '#F3F4F7'
+        SummaryBackgroundEnd = '#E0E3E8'
+        CardBorder = '#1877F2'
+        GlowAccent = '#42B883'
+        GaugeBackground = '#F0F2F5'
+        GaugeStroke = '#1877F2'
         # Navigation Farben
         SelectedBackground = '#1877F2'
         UnselectedBackground = 'Transparent'
@@ -352,6 +392,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#F6F7F8'
         HeaderBg = '#F6F7F8'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#F6F7F8'
+        SummaryBackgroundStart = '#FFEFE6'
+        SummaryBackgroundEnd = '#FFFFFF'
+        CardBorder = '#FF4500'
+        GlowAccent = '#FF4500'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#FF4500'
         # Navigation Farben
         SelectedBackground = '#FF4500'
         UnselectedBackground = 'Transparent'
@@ -371,6 +419,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#2F3136'
         SidebarBg = '#2F3136'
         HeaderBg = '#40444B'
+        CardBackgroundStart = '#3A3D45'
+        CardBackgroundEnd = '#2F3136'
+        SummaryBackgroundStart = '#41444D'
+        SummaryBackgroundEnd = '#252730'
+        CardBorder = '#5865F2'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#2B2D31'
+        GaugeStroke = '#5865F2'
         # Navigation Farben
         SelectedBackground = '#5865F2'
         UnselectedBackground = 'Transparent'
@@ -390,6 +446,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#18181B'
         SidebarBg = '#18181B'
         HeaderBg = '#1F1F23'
+        CardBackgroundStart = '#211933'
+        CardBackgroundEnd = '#14101F'
+        SummaryBackgroundStart = '#2B2143'
+        SummaryBackgroundEnd = '#1A132D'
+        CardBorder = '#9146FF'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#191321'
+        GaugeStroke = '#9146FF'
         # Navigation Farben
         SelectedBackground = '#9146FF'
         UnselectedBackground = 'Transparent'
@@ -409,6 +473,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1B2838'
         SidebarBg = '#2A3F54'
         HeaderBg = '#2A3F54'
+        CardBackgroundStart = '#30485F'
+        CardBackgroundEnd = '#1B2838'
+        SummaryBackgroundStart = '#355066'
+        SummaryBackgroundEnd = '#1F3042'
+        CardBorder = '#4CAF50'
+        GlowAccent = '#4CAF50'
+        GaugeBackground = '#23394D'
+        GaugeStroke = '#4CAF50'
         # Navigation Farben
         SelectedBackground = '#4CAF50'
         UnselectedBackground = 'Transparent'
@@ -428,6 +500,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0F1419'
         SidebarBg = '#1E2A3A'
         HeaderBg = '#1E2A3A'
+        CardBackgroundStart = '#253446'
+        CardBackgroundEnd = '#0F1419'
+        SummaryBackgroundStart = '#2B3E53'
+        SummaryBackgroundEnd = '#141C24'
+        CardBorder = '#00BCD4'
+        GlowAccent = '#00BCD4'
+        GaugeBackground = '#1B2836'
+        GaugeStroke = '#00BCD4'
         # Navigation Farben
         SelectedBackground = '#00BCD4'
         UnselectedBackground = 'Transparent'
@@ -447,6 +527,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#000000'
         SidebarBg = '#1A1A1A'
         HeaderBg = '#1A1A1A'
+        CardBackgroundStart = '#262626'
+        CardBackgroundEnd = '#050505'
+        SummaryBackgroundStart = '#2F2210'
+        SummaryBackgroundEnd = '#070302'
+        CardBorder = '#FF9000'
+        GlowAccent = '#FFD700'
+        GaugeBackground = '#141414'
+        GaugeStroke = '#FF9000'
         # Navigation Farben
         SelectedBackground = '#FF9000'
         UnselectedBackground = 'Transparent'
@@ -466,6 +554,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0A0A0A'
         SidebarBg = '#1A1A2E'
         HeaderBg = '#16213E'
+        CardBackgroundStart = '#212143'
+        CardBackgroundEnd = '#0A0A0A'
+        SummaryBackgroundStart = '#2B2B57'
+        SummaryBackgroundEnd = '#111122'
+        CardBorder = '#00FFFF'
+        GlowAccent = '#FF00FF'
+        GaugeBackground = '#141432'
+        GaugeStroke = '#00FFFF'
         # Navigation Farben
         SelectedBackground = '#00FFFF'
         UnselectedBackground = 'Transparent'
@@ -485,6 +581,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D0D0D'
         SidebarBg = '#1A1A1A'
         HeaderBg = '#262626'
+        CardBackgroundStart = '#242424'
+        CardBackgroundEnd = '#0D0D0D'
+        SummaryBackgroundStart = '#2F1630'
+        SummaryBackgroundEnd = '#111011'
+        CardBorder = '#39FF14'
+        GlowAccent = '#FF1493'
+        GaugeBackground = '#181818'
+        GaugeStroke = '#39FF14'
         # Navigation Farben
         SelectedBackground = '#39FF14'
         UnselectedBackground = 'Transparent'
@@ -504,6 +608,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#000000'
         SidebarBg = '#001100'
         HeaderBg = '#002200'
+        CardBackgroundStart = '#001800'
+        CardBackgroundEnd = '#000000'
+        SummaryBackgroundStart = '#002400'
+        SummaryBackgroundEnd = '#000800'
+        CardBorder = '#00FF41'
+        GlowAccent = '#00FF41'
+        GaugeBackground = '#001400'
+        GaugeStroke = '#00FF41'
         # Navigation Farben
         SelectedBackground = '#00FF41'
         UnselectedBackground = 'Transparent'
@@ -523,6 +635,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1A0D2E'
         SidebarBg = '#2E1A4A'
         HeaderBg = '#3E2459'
+        CardBackgroundStart = '#38225C'
+        CardBackgroundEnd = '#1A0D2E'
+        SummaryBackgroundStart = '#432B70'
+        SummaryBackgroundEnd = '#23103E'
+        CardBorder = '#9966CC'
+        GlowAccent = '#9966CC'
+        GaugeBackground = '#27163F'
+        GaugeStroke = '#9966CC'
         # Navigation Farben
         SelectedBackground = '#663399'
         UnselectedBackground = 'Transparent'
@@ -542,6 +662,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1A0000'
         SidebarBg = '#330000'
         HeaderBg = '#4D0000'
+        CardBackgroundStart = '#3F0000'
+        CardBackgroundEnd = '#1A0000'
+        SummaryBackgroundStart = '#520000'
+        SummaryBackgroundEnd = '#250000'
+        CardBorder = '#FF0000'
+        GlowAccent = '#FF3333'
+        GaugeBackground = '#260000'
+        GaugeStroke = '#FF0000'
         # Navigation Farben
         SelectedBackground = '#FF0000'
         UnselectedBackground = 'Transparent'
@@ -3593,8 +3721,9 @@ function Remove-Reg {
           
           <!-- Dashboard Panel -->
           <StackPanel x:Name="panelDashboard" Visibility="Visible">
-            <!-- Performance Metrics Dashboard -->
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Neon Performance Overview -->
+            <Border x:Name="dashboardSummaryPanel" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
@@ -3602,82 +3731,168 @@ function Remove-Reg {
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <!-- System Status -->
-                <StackPanel Grid.Column="0">
-                  <TextBlock Text="System Status" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="CPU Usage:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashCpuUsage" Text="--%" Foreground="#FFD700" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <TextBlock Text="Memory:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashMemoryUsage" Text="-- MB" Foreground="#00BFFF" FontSize="14" FontWeight="Bold"/>
-                </StackPanel>
-                
-                <!-- Optimization Status -->
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="Optimization Status" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="Active Games:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashActiveGames" Text="None" Foreground="#00FF88" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <TextBlock Text="Last Optimization:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashLastOptimization" Text="Never" Foreground="#B8B3E6" FontSize="14" FontWeight="Bold"/>
-                </StackPanel>
-                
-                <!-- System Health Status -->
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="System Health" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="Health Status:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashSystemHealth" Text="Not Run" Foreground="#B8B3E6" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <Button x:Name="btnSystemHealth" Content="📊 View Details" Style="{StaticResource ModernButton}" Height="30" FontSize="11"/>
-                  <Button x:Name="btnSystemHealthRunCheck" Content="🩺 Run Check" Style="{StaticResource ModernButton}" Height="30" FontSize="11" Margin="0,4,0,0"/>
-                </StackPanel>
-                
-                <!-- Quick Actions -->
-                <StackPanel Grid.Column="3">
-                  <TextBlock Text="Quick Actions" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick Optimize" Style="{StaticResource SuccessButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-Detect Games" Style="{StaticResource ModernButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnBenchmark" Content="⏱️ Quick Benchmark" Style="{StaticResource WarningButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <CheckBox x:Name="chkDashAutoOptimize" Content="Auto-Optimize" Style="{StaticResource ModernCheckBox}" Margin="0,3,0,0"/>
-                </StackPanel>
+
+                <!-- CPU Gauge -->
+                <Border x:Name="dashboardCpuCard" Grid.Column="0" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="0,0,12,0">
+                  <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="CPU Load" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               HorizontalAlignment="Center"/>
+                    <Grid Width="96" Height="96" Margin="0,12,0,12">
+                      <Ellipse x:Name="ellipseCpuRing" Stroke="#8B5CF6" StrokeThickness="4" Fill="#140A29"/>
+                      <Ellipse x:Name="ellipseCpuInner" Width="72" Height="72" Fill="#0A0E27" StrokeThickness="0"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      <TextBlock x:Name="lblDashCpuUsage" Text="--%" Foreground="White" FontSize="22" FontWeight="Bold"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="Realtime usage of every processor core." Foreground="#B8B3E6" FontSize="11"
+                               TextAlignment="Center" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Memory Gauge -->
+                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,12,0">
+                  <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Memory Usage" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               HorizontalAlignment="Center"/>
+                    <Grid Width="96" Height="96" Margin="0,12,0,12">
+                      <Ellipse x:Name="ellipseMemoryRing" Stroke="#8B5CF6" StrokeThickness="4" Fill="#140A29"/>
+                      <Ellipse x:Name="ellipseMemoryInner" Width="72" Height="72" Fill="#0A0E27" StrokeThickness="0"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      <TextBlock x:Name="lblDashMemoryUsage" Text="-- MB" Foreground="#00BFFF" FontSize="18"
+                                 FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </Grid>
+                    <TextBlock Text="Tracks total memory load so you can spot hungry apps." Foreground="#B8B3E6"
+                               FontSize="11" TextAlignment="Center" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Activity Snapshot -->
+                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,12,0">
+                  <StackPanel>
+                    <TextBlock Text="Session Activity" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="Active Games" Foreground="White" FontSize="12"/>
+                    <TextBlock x:Name="lblDashActiveGames" Text="None" Foreground="#00FF88" FontSize="16"
+                               FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Separator Margin="0,4" Background="#6B46C1" Height="1"/>
+                    <TextBlock Text="Last Optimization" Foreground="White" FontSize="12" Margin="0,4,0,0"/>
+                    <TextBlock x:Name="lblDashLastOptimization" Text="Never" Foreground="#B8B3E6"
+                               FontSize="14" FontWeight="Bold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Health Overview -->
+                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,0,0">
+                  <StackPanel>
+                    <TextBlock Text="System Health" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="Health Status" Foreground="White" FontSize="12"/>
+                    <TextBlock x:Name="lblDashSystemHealth" Text="Not Run" Foreground="#B8B3E6" FontSize="16"
+                               FontWeight="Bold" Margin="0,4,0,12"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                      <Button x:Name="btnSystemHealth" Content="📊 Details" Style="{StaticResource ModernButton}"
+                              Height="32" Width="90" FontSize="11" Margin="0,0,6,0"
+                              ToolTip="Open the detailed system health dashboard"/>
+                      <Button x:Name="btnSystemHealthRunCheck" Content="🩺 Run" Style="{StaticResource SuccessButton}"
+                              Height="32" Width="80" FontSize="11" ToolTip="Start a fresh health scan"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
               </Grid>
             </Border>
 
-            <!-- Game Profile Section -->
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Quick Actions -->
+            <Border x:Name="dashboardQuickActionsCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
               <StackPanel>
-                <TextBlock Text="Game Profile Selection" Style="{StaticResource HeaderText}" Margin="0,0,0,15"/>
+                <TextBlock Text="Optimization Controls" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+                <TextBlock Text="Launch KOALA's automation, detection, and benchmarking tools with a single tap."
+                           Foreground="#B8B3E6" FontSize="12" Margin="0,6,0,12" TextWrapping="Wrap"/>
+                <WrapPanel Margin="0,0,0,12" HorizontalAlignment="Stretch" Background="Transparent">
+                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick Optimize" Style="{StaticResource SuccessButton}"
+                          Width="160" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Apply the recommended KOALA optimizations immediately"/>
+                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-Detect Games" Style="{StaticResource ModernButton}"
+                          Width="170" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Scan your drives for installed games and build profiles automatically"/>
+                  <Button x:Name="btnBenchmark" Content="⏱️ Quick Benchmark" Style="{StaticResource WarningButton}"
+                          Width="160" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Run a fast system benchmark to compare recent performance"/>
+                </WrapPanel>
+                <CheckBox x:Name="chkDashAutoOptimize" Content="Keep auto-optimization enabled" Margin="0,0,0,8"
+                          Style="{StaticResource ModernCheckBox}" ToolTip="Automatically re-apply optimizations on startup"/>
+                <TextBlock Text="Tip: Enable auto-optimization so KOALA refreshes your tweaks whenever Windows starts."
+                           Foreground="#B8B3E6" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+
+            <!-- Game Profile Section -->
+            <Border x:Name="dashboardGameProfileCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
+              <StackPanel>
+                <TextBlock Text="🎮 Game Profile Launcher" Foreground="#00FF88" FontWeight="Bold" FontSize="16"
+                           Margin="0,0,0,12"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
-                  
-                  <StackPanel Grid.Column="0">
-                    <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}" Margin="0,0,10,10"/>
+
+                  <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}" Margin="0,0,0,12"
+                              ToolTip="Select an optimization preset for the highlighted game"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
-                      <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}" 
-                               Height="32" Margin="0,0,5,0" 
-                               ToolTip="Enter executable name (e.g., mygame.exe) for custom optimizations"/>
-                      <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="60" Height="32" 
-                              Style="{StaticResource ModernButton}" Margin="0,0,5,0"/>
-                      <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="80" Height="32" 
-                              Style="{StaticResource SuccessButton}"/>
+                      <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}"
+                               Height="32" Margin="0,0,6,0"
+                               ToolTip="Enter an executable name (for example mygame.exe) to create a custom profile"/>
+                      <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="60" Height="32"
+                              Style="{StaticResource ModernButton}" Margin="0,0,6,0"
+                              ToolTip="Browse for a game executable"/>
+                      <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="90" Height="32"
+                              Style="{StaticResource SuccessButton}"
+                              ToolTip="Apply the selected optimization profile to this game"/>
                     </Grid>
                   </StackPanel>
-                  
+
                   <StackPanel Grid.Column="1">
-                    <Button x:Name="btnInstalledGamesDash" Content="🎮 Installed Games" Width="150" Height="32" 
-                            Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="150" Height="32" 
-                            Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnCustomSearchDash" Content="🔍 Custom Search" Width="150" Height="32" 
-                            Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
+                    <Button x:Name="btnInstalledGamesDash" Content="🎮 Installed Games" Width="170" Height="34"
+                            Style="{StaticResource ModernButton}" Margin="0,0,0,12"
+                            ToolTip="Show every detected game on this PC"/>
+                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="170" Height="34"
+                            Style="{StaticResource ModernButton}" Margin="0,0,0,12"
+                            ToolTip="Point KOALA at a custom folder that stores your games"/>
+                    <Button x:Name="btnCustomSearchDash" Content="🔍 Custom Search" Width="170" Height="34"
+                            Style="{StaticResource WarningButton}" Visibility="Collapsed"
+                            ToolTip="Manually trigger a custom search routine"/>
                   </StackPanel>
                 </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Game Library -->
+            <Border x:Name="dashboardGameListCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20">
+              <StackPanel>
+                <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,0,0,12"/>
+                <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto" Background="Transparent">
+                  <StackPanel x:Name="gameListPanelMain">
+                    <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..."
+                               Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
+                  </StackPanel>
+                </ScrollViewer>
+                <Button x:Name="btnOptimizeSelectedMain" Content="⚡ Optimize Selected Games" Height="38"
+                        Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,12,0,0" IsEnabled="False"
+                        ToolTip="Apply optimizations to the highlighted titles"/>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -4612,10 +4827,19 @@ function Set-ActiveNavigationButton {
 
 function Set-ActiveAdvancedSectionButton {
     param(
-        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
+
+    if ([string]::IsNullOrWhiteSpace($Section)) {
+        return
+    }
+
+    $validSections = 'Network', 'System', 'Services'
+    if ($Section -notin $validSections) {
+        Log "Ignoring advanced button highlight request for unsupported section '$Section'" 'Warning'
+        return
+    }
 
     try {
         $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
@@ -4754,10 +4978,19 @@ function Switch-Panel {
 
 function Show-AdvancedSection {
     param(
-        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
+
+    if ([string]::IsNullOrWhiteSpace($Section)) {
+        $Section = 'Network'
+    }
+
+    $validSections = 'Network', 'System', 'Services'
+    if ($Section -notin $validSections) {
+        Log "Requested advanced section '$Section' is unknown. Falling back to 'Network'." 'Warning'
+        $Section = 'Network'
+    }
 
     try {
         Switch-Panel "Advanced"
@@ -5017,7 +5250,6 @@ if ($cmbOptionsLanguage) {
 }
 
 Set-UILanguage -LanguageCode $script:CurrentLanguage
-
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5207,7 +5439,7 @@ function Switch-Theme {
             if ($activityLogBorder) {
                 try {
                     $activityLogBorder.Background = $themeColors.LogBg
-                    Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '2'
+                    Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
                 } catch {
@@ -5253,7 +5485,7 @@ function Switch-Theme {
                 }
             }
             
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
         
         # Finale Theme-Persistenz Sicherstellung
         Start-Sleep -Milliseconds 150
@@ -5261,12 +5493,12 @@ function Switch-Theme {
         $form.Dispatcher.BeginInvoke([action]{
             # Nochmalige rekursive Aktualisierung aller Elemente
             Update-AllUIElementsRecursively -element $form -colors $themeColors
-            
+
             # Finaler kompletter Refresh
             $form.InvalidateVisual()
             $form.UpdateLayout()
-            
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
         
         if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
             $currentSection = $global:CurrentAdvancedSection
@@ -5527,8 +5759,31 @@ function Set-UILanguage {
         $script:IsLanguageInitializing = $false
     }
 
+
+    $activeTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+        $cmbOptionsTheme.SelectedItem.Tag
+    } elseif ($global:CurrentTheme) {
+        $global:CurrentTheme
+    } else {
+        'DarkPurple'
+    }
+
+    try {
+        Switch-Theme -ThemeName $activeTheme
+
+        if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
+            Set-ActiveAdvancedSectionButton -Section $global:CurrentAdvancedSection -CurrentTheme $activeTheme
+        }
+    } catch {
+        Log "Failed to refresh theme after language change: $($_.Exception.Message)" 'Warning'
+    }
+
     Log "UI language switched to $($languageResources.DisplayName)" 'Info'
 }
+
+# Apply the initial language selection after localization helpers are defined
+Set-UILanguage -LanguageCode $script:CurrentLanguage
+
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -7238,6 +7493,102 @@ function Apply-ThemeColors {
         }
 
         Log "Wende Theme '$($colors.Name)' an..." 'Info'
+
+        # Prepare neon dashboard brushes and effects
+        try {
+            $cardStartValue = if ($colors.ContainsKey('CardBackgroundStart') -and $colors['CardBackgroundStart']) { $colors['CardBackgroundStart'] } else { $colors.Secondary }
+            $cardEndValue = if ($colors.ContainsKey('CardBackgroundEnd') -and $colors['CardBackgroundEnd']) { $colors['CardBackgroundEnd'] } else { $colors.Background }
+            $summaryStartValue = if ($colors.ContainsKey('SummaryBackgroundStart') -and $colors['SummaryBackgroundStart']) { $colors['SummaryBackgroundStart'] } else { $cardStartValue }
+            $summaryEndValue = if ($colors.ContainsKey('SummaryBackgroundEnd') -and $colors['SummaryBackgroundEnd']) { $colors['SummaryBackgroundEnd'] } else { $cardEndValue }
+            $cardBorderValue = if ($colors.ContainsKey('CardBorder') -and $colors['CardBorder']) { $colors['CardBorder'] } else { $colors.Primary }
+            $glowAccentValue = if ($colors.ContainsKey('GlowAccent') -and $colors['GlowAccent']) { $colors['GlowAccent'] } else { $colors.Accent }
+            $gaugeBackgroundValue = if ($colors.ContainsKey('GaugeBackground') -and $colors['GaugeBackground']) { $colors['GaugeBackground'] } else { $colors.Secondary }
+            $gaugeStrokeValue = if ($colors.ContainsKey('GaugeStroke') -and $colors['GaugeStroke']) { $colors['GaugeStroke'] } else { $colors.Primary }
+
+            $cardStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardStartValue)
+            $cardEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardEndValue)
+            $summaryStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryStartValue)
+            $summaryEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryEndValue)
+            $cardBorderColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardBorderValue)
+            $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentValue)
+            $gaugeBackgroundColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeBackgroundValue)
+            $gaugeStrokeColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeStrokeValue)
+
+            $cardGradient = New-Object System.Windows.Media.LinearGradientBrush
+            $cardGradient.StartPoint = [System.Windows.Point]::new(0, 0)
+            $cardGradient.EndPoint = [System.Windows.Point]::new(1, 1)
+            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardStartColor, 0))
+            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardEndColor, 1))
+            $cardGradient.Freeze()
+
+            $summaryGradient = New-Object System.Windows.Media.LinearGradientBrush
+            $summaryGradient.StartPoint = [System.Windows.Point]::new(0, 0)
+            $summaryGradient.EndPoint = [System.Windows.Point]::new(1, 1)
+            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryStartColor, 0))
+            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryEndColor, 1))
+            $summaryGradient.Freeze()
+
+            $cardBorderBrush = New-Object System.Windows.Media.SolidColorBrush $cardBorderColor
+            $cardBorderBrush.Freeze()
+
+            $gaugeBackgroundBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeBackgroundColor
+            $gaugeBackgroundBrush.Freeze()
+
+            $gaugeStrokeBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeStrokeColor
+            $gaugeStrokeBrush.Freeze()
+
+            $innerGaugeBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($colors.Background))
+            $innerGaugeBrush.Freeze()
+
+            $glowEffect = New-Object System.Windows.Media.Effects.DropShadowEffect
+            $glowEffect.Color = $glowAccentColor
+            $glowEffect.BlurRadius = 32
+            $glowEffect.Opacity = if ($colors.Name -match 'Light|YouTube|Facebook') { 0.35 } else { 0.55 }
+            $glowEffect.ShadowDepth = 0
+
+            $summaryPanel = $form.FindName('dashboardSummaryPanel')
+            if ($summaryPanel -is [System.Windows.Controls.Border]) {
+                $summaryPanel.Background = $summaryGradient.Clone()
+                $summaryPanel.BorderBrush = $cardBorderBrush.Clone()
+                $summaryPanel.Effect = $glowEffect.Clone()
+            }
+
+            $dashboardCards = @(
+                'dashboardCpuCard',
+                'dashboardMemoryCard',
+                'dashboardActivityCard',
+                'dashboardHealthCard',
+                'dashboardQuickActionsCard',
+                'dashboardGameProfileCard',
+                'dashboardGameListCard'
+            )
+
+            foreach ($cardName in $dashboardCards) {
+                $card = $form.FindName($cardName)
+                if ($card -is [System.Windows.Controls.Border]) {
+                    $card.Background = $cardGradient.Clone()
+                    $card.BorderBrush = $cardBorderBrush.Clone()
+                    $card.Effect = $glowEffect.Clone()
+                }
+            }
+
+            foreach ($ellipseName in 'ellipseCpuRing', 'ellipseMemoryRing') {
+                $ellipse = $form.FindName($ellipseName)
+                if ($ellipse) {
+                    $ellipse.Fill = $gaugeBackgroundBrush.Clone()
+                    $ellipse.Stroke = $gaugeStrokeBrush.Clone()
+                }
+            }
+
+            foreach ($innerEllipseName in 'ellipseCpuInner', 'ellipseMemoryInner') {
+                $innerEllipse = $form.FindName($innerEllipseName)
+                if ($innerEllipse) {
+                    $innerEllipse.Fill = $innerGaugeBrush.Clone()
+                }
+            }
+        } catch {
+            Log "Fehler beim Aktualisieren der Dashboard-Hintergründe: $($_.Exception.Message)" 'Warning'
+        }
         
         # 1. HAUPT-FENSTER
         $form.Background = $colors.Background
@@ -7444,7 +7795,7 @@ function Apply-ThemeColors {
                 $form.Background = $colors.Background  # Nochmal explizit setzen
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Background)
+            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
             
             Log '[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
             
@@ -7483,7 +7834,7 @@ function Ensure-ThemePersistence {
     try {
         $form.Dispatcher.BeginInvoke([action]{
             Switch-Theme -ThemeName $ThemeName
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
     } catch {
         $errorMessage = 'Fehler bei Theme-Persistenz: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
@@ -10132,13 +10483,11 @@ Theme=$currentTheme
 UIScale=$currentScale
 MenuMode=$global:MenuMode
 Language=$currentLanguage
-
 AdvancedSelections=$advancedSelectionsValue
 "@
 
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
             Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
-
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
@@ -10192,7 +10541,6 @@ if ($btnLoadSettings) {
                     Set-UILanguage -LanguageCode $settings.Language
                 }
 
-
                 if ($settings.ContainsKey('AdvancedSelections')) {
                     $advancedChecked = @()
                     if ($settings.AdvancedSelections) {
@@ -10204,7 +10552,6 @@ if ($btnLoadSettings) {
                     $advancedLoadSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
                     Log "Advanced selections restored from koala-settings.cfg: $advancedLoadSummary" 'Info'
                 }
-
 
                 Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
@@ -12154,7 +12501,7 @@ try {
             Set-UILanguage -LanguageCode $settings.Language
             Log "Loaded language: $($settings.Language)" 'Info'
         }
-        
+
         if ($settings.ContainsKey('AdvancedSelections')) {
             $advancedChecked = @()
             if ($settings.AdvancedSelections) {
@@ -12166,7 +12513,6 @@ try {
             $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
             Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
         }
-
 
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
