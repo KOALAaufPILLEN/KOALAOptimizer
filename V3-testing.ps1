@@ -10124,6 +10124,7 @@ if ($btnSaveSettings) {
             $advancedSelectionsValue = $advancedSelections -join ','
             $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
 
+
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
 # Generated on $(Get-Date)
@@ -10131,11 +10132,13 @@ Theme=$currentTheme
 UIScale=$currentScale
 MenuMode=$global:MenuMode
 Language=$currentLanguage
+
 AdvancedSelections=$advancedSelectionsValue
 "@
 
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
             Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
+
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
@@ -10189,6 +10192,7 @@ if ($btnLoadSettings) {
                     Set-UILanguage -LanguageCode $settings.Language
                 }
 
+
                 if ($settings.ContainsKey('AdvancedSelections')) {
                     $advancedChecked = @()
                     if ($settings.AdvancedSelections) {
@@ -10200,6 +10204,7 @@ if ($btnLoadSettings) {
                     $advancedLoadSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
                     Log "Advanced selections restored from koala-settings.cfg: $advancedLoadSummary" 'Info'
                 }
+
 
                 Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
@@ -12149,7 +12154,7 @@ try {
             Set-UILanguage -LanguageCode $settings.Language
             Log "Loaded language: $($settings.Language)" 'Info'
         }
-
+        
         if ($settings.ContainsKey('AdvancedSelections')) {
             $advancedChecked = @()
             if ($settings.AdvancedSelections) {
@@ -12161,6 +12166,7 @@ try {
             $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
             Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
         }
+
 
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
