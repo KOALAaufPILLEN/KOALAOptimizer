@@ -4650,7 +4650,8 @@ function Set-ActiveAdvancedSectionButton {
             $button.UpdateLayout()
         }
     } catch {
-        Log "Failed to highlight advanced section button $Section: $($_.Exception.Message)" 'Warning'
+        $message = "Failed to highlight advanced section button {0}: {1}" -f $Section, $_.Exception.Message
+        Log $message 'Warning'
     }
 }
 
@@ -9944,6 +9945,172 @@ if ($btnApplyScale) {
     })
 }
 
+function Get-AdvancedCheckboxControls {
+    if (-not $panelAdvanced) {
+        return @()
+    }
+
+    $results = @()
+    $stack = [System.Collections.Stack]::new()
+    $stack.Push($panelAdvanced)
+
+    while ($stack.Count -gt 0) {
+        $current = $stack.Pop()
+
+        if ($current -is [System.Windows.Controls.CheckBox]) {
+            $results += $current
+        }
+
+        if ($current -is [System.Windows.DependencyObject]) {
+            $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
+            for ($i = 0; $i -lt $childCount; $i++) {
+                $child = [System.Windows.Media.VisualTreeHelper]::GetChild($current, $i)
+                if ($child) {
+                    $stack.Push($child)
+                }
+            }
+        }
+    }
+
+    return $results
+}
+
+function Get-AdvancedCheckboxNames {
+    $dynamicControls = Get-AdvancedCheckboxControls | Where-Object { $_ -and $_.Name }
+
+    if ($dynamicControls -and $dynamicControls.Count -gt 0) {
+        $uniqueNames = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($checkbox in $dynamicControls) {
+            [void]$uniqueNames.Add($checkbox.Name)
+        }
+
+        if ($uniqueNames.Count -gt 0) {
+            return $uniqueNames.ToArray()
+        }
+    }
+
+    return @(
+        'chkAckNetwork'
+        'chkDelAckTicksNetwork'
+        'chkNagleNetwork'
+        'chkNetworkThrottlingNetwork'
+        'chkRSSNetwork'
+        'chkRSCNetwork'
+        'chkChimneyNetwork'
+        'chkNetDMANetwork'
+        'chkTcpTimestampsNetwork'
+        'chkTcpWindowAutoTuningNetwork'
+        'chkMemoryCompressionSystem'
+        'chkPowerPlanSystem'
+        'chkCPUSchedulingSystem'
+        'chkPageFileSystem'
+        'chkVisualEffectsSystem'
+        'chkCoreParkingSystem'
+        'chkGameDVRSystem'
+        'chkFullscreenOptimizationsSystem'
+        'chkGPUSchedulingSystem'
+        'chkTimerResolutionSystem'
+        'chkGameModeSystem'
+        'chkMPOSystem'
+        'chkDynamicResolution'
+        'chkEnhancedFramePacing'
+        'chkGPUOverclocking'
+        'chkCompetitiveLatency'
+        'chkAutoDiskOptimization'
+        'chkAdaptivePowerManagement'
+        'chkEnhancedPagingFile'
+        'chkDirectStorageEnhanced'
+        'chkAdvancedTelemetryDisable'
+        'chkMemoryDefragmentation'
+        'chkServiceOptimization'
+        'chkDiskTweaksAdvanced'
+        'chkNetworkLatencyOptimization'
+        'chkFPSSmoothness'
+        'chkCPUMicrocode'
+        'chkRAMTimings'
+        'chkDisableXboxServicesServices'
+        'chkDisableTelemetryServices'
+        'chkDisableSearchServices'
+        'chkDisablePrintSpoolerServices'
+        'chkDisableSuperfetchServices'
+        'chkDisableFaxServices'
+        'chkDisableRemoteRegistryServices'
+        'chkDisableThemesServices'
+        'chkDisableCortana'
+        'chkDisableWindowsUpdate'
+        'chkDisableBackgroundApps'
+        'chkDisableLocationTracking'
+        'chkDisableAdvertisingID'
+        'chkDisableErrorReporting'
+        'chkDisableCompatTelemetry'
+        'chkDisableWSH'
+    )
+}
+
+function Get-AdvancedCheckedSelections {
+    $checked = @()
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.IsChecked) {
+            $checked += $name
+        }
+    }
+
+    return $checked
+}
+
+function Set-AdvancedSelections {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    $lookup = @{}
+
+    if ($CheckedNames) {
+        foreach ($entry in $CheckedNames) {
+            $trimmed = $entry.Trim()
+            if ($trimmed) {
+                $lookup[$trimmed] = $true
+            }
+        }
+    }
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox) {
+            $checkbox.IsChecked = $lookup.ContainsKey($name)
+        }
+    }
+}
+
+function Get-AdvancedSelectionSummary {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    if (-not $CheckedNames -or $CheckedNames.Count -eq 0) {
+        return 'None'
+    }
+
+    $labels = @()
+
+    foreach ($name in $CheckedNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.PSObject.Properties['Content'] -and $checkbox.Content) {
+            $labels += [string]$checkbox.Content
+        } else {
+            $labels += $name
+        }
+    }
+
+    if ($labels.Count -eq 0) {
+        return 'None'
+    }
+
+    return ($labels -join ', ')
+}
+
 if ($btnSaveSettings) {
     $btnSaveSettings.Add_Click({
         try {
@@ -9953,6 +10120,10 @@ if ($btnSaveSettings) {
             $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
             $currentLanguage = if ($script:CurrentLanguage) { $script:CurrentLanguage } else { 'en' }
+            $advancedSelections = Get-AdvancedCheckedSelections
+            $advancedSelectionsValue = $advancedSelections -join ','
+            $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
+
 
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
@@ -9961,10 +10132,13 @@ Theme=$currentTheme
 UIScale=$currentScale
 MenuMode=$global:MenuMode
 Language=$currentLanguage
+
+AdvancedSelections=$advancedSelectionsValue
 "@
 
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
-            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage)" 'Success'
+            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
+
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
@@ -9985,7 +10159,7 @@ if ($btnLoadSettings) {
                 $settings = @{}
                 
                 $content -split "`n" | ForEach-Object {
-                    if ($_ -match "^([^#=]+)=(.+)$") {
+                    if ($_ -match "^([^#=]+)=(.*)$") {
                         $settings[$matches[1].Trim()] = $matches[2].Trim()
                     }
                 }
@@ -10017,6 +10191,20 @@ if ($btnLoadSettings) {
                 if ($settings.Language) {
                     Set-UILanguage -LanguageCode $settings.Language
                 }
+
+
+                if ($settings.ContainsKey('AdvancedSelections')) {
+                    $advancedChecked = @()
+                    if ($settings.AdvancedSelections) {
+                        $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+                    }
+
+                    Set-AdvancedSelections -CheckedNames $advancedChecked
+
+                    $advancedLoadSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+                    Log "Advanced selections restored from koala-settings.cfg: $advancedLoadSummary" 'Info'
+                }
+
 
                 Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
@@ -10072,7 +10260,10 @@ if ($btnResetSettings) {
                 #     }
                 # }
                 Switch-MenuMode -Mode "Basic"  # Direct call without UI control
-                
+
+                # Reset advanced selections
+                Set-AdvancedSelections -CheckedNames @()
+
                 Log "All settings reset to default values" 'Success'
                 [System.Windows.MessageBox]::Show("All settings have been reset to default values!", "Settings Reset", 'OK', 'Information')
             }
@@ -11911,7 +12102,7 @@ try {
         $settings = @{}
         
         $content -split "`n" | ForEach-Object {
-            if ($_ -match "^([^#=]+)=(.+)`$") {
+            if ($_ -match "^([^#=]+)=(.*)`$") {
                 $settings[$matches[1].Trim()] = $matches[2].Trim()
             }
         }
@@ -11963,6 +12154,19 @@ try {
             Set-UILanguage -LanguageCode $settings.Language
             Log "Loaded language: $($settings.Language)" 'Info'
         }
+        
+        if ($settings.ContainsKey('AdvancedSelections')) {
+            $advancedChecked = @()
+            if ($settings.AdvancedSelections) {
+                $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            }
+
+            Set-AdvancedSelections -CheckedNames $advancedChecked
+
+            $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+            Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
+        }
+
 
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
