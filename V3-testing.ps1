@@ -5249,6 +5249,7 @@ if ($cmbOptionsLanguage) {
     })
 }
 
+Set-UILanguage -LanguageCode $script:CurrentLanguage
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5758,6 +5759,7 @@ function Set-UILanguage {
         $script:IsLanguageInitializing = $false
     }
 
+
     $activeTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
         $cmbOptionsTheme.SelectedItem.Tag
     } elseif ($global:CurrentTheme) {
@@ -5781,6 +5783,7 @@ function Set-UILanguage {
 
 # Apply the initial language selection after localization helpers are defined
 Set-UILanguage -LanguageCode $script:CurrentLanguage
+
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -10471,6 +10474,7 @@ if ($btnSaveSettings) {
             $advancedSelections = Get-AdvancedCheckedSelections
             $advancedSelectionsValue = $advancedSelections -join ','
             $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
+
 
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
