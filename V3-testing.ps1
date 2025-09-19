@@ -9945,8 +9945,51 @@ if ($btnApplyScale) {
     })
 }
 
+function Get-AdvancedCheckboxControls {
+    if (-not $panelAdvanced) {
+        return @()
+    }
+
+    $results = @()
+    $stack = [System.Collections.Stack]::new()
+    $stack.Push($panelAdvanced)
+
+    while ($stack.Count -gt 0) {
+        $current = $stack.Pop()
+
+        if ($current -is [System.Windows.Controls.CheckBox]) {
+            $results += $current
+        }
+
+        if ($current -is [System.Windows.DependencyObject]) {
+            $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
+            for ($i = 0; $i -lt $childCount; $i++) {
+                $child = [System.Windows.Media.VisualTreeHelper]::GetChild($current, $i)
+                if ($child) {
+                    $stack.Push($child)
+                }
+            }
+        }
+    }
+
+    return $results
+}
+
 function Get-AdvancedCheckboxNames {
-    @(
+    $dynamicControls = Get-AdvancedCheckboxControls | Where-Object { $_ -and $_.Name }
+
+    if ($dynamicControls -and $dynamicControls.Count -gt 0) {
+        $uniqueNames = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($checkbox in $dynamicControls) {
+            [void]$uniqueNames.Add($checkbox.Name)
+        }
+
+        if ($uniqueNames.Count -gt 0) {
+            return $uniqueNames.ToArray()
+        }
+    }
+
+    return @(
         'chkAckNetwork'
         'chkDelAckTicksNetwork'
         'chkNagleNetwork'
