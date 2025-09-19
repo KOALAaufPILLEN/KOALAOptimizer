@@ -198,6 +198,11 @@ try {
 
 # ---------- Global Performance Variables ----------
 $global:PerformanceCounters = @{}
+$script:LocalizationResources = $null
+if (-not $script:CurrentLanguage) {
+    $script:CurrentLanguage = 'en'
+}
+$script:IsLanguageInitializing = $false
 $global:OptimizationCache = @{}
 $global:ActiveGames = @()
 $global:MenuMode = "Basic"  # Basic or Advanced
@@ -994,7 +999,8 @@ function Test-StartupControls {
         'btnOptimizeSelected' = $btnOptimizeSelected
         'btnImportOptions' = $btnImportOptions
         'btnChooseBackupFolder' = $btnChooseBackupFolder
-        
+        'cmbOptionsLanguage' = $cmbOptionsLanguage
+
         # System optimization and service management controls
         'btnOptimizeGame' = $btnOptimizeGame
         'btnDashQuickOptimize' = $btnDashQuickOptimize
@@ -3805,7 +3811,7 @@ function Remove-Reg {
                         </WrapPanel>
                       </StackPanel>
                     </Expander>
-                    <Expander Header="🚀 Advanced Performance Enhancements"
+                    <Expander x:Name="expanderAdvancedPerformance" Header="🚀 Advanced Performance Enhancements"
                               Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                               Margin="0,0,0,10" Padding="10">
                       <StackPanel Margin="10">
@@ -3870,7 +3876,7 @@ function Remove-Reg {
                         </WrapPanel>
                       </StackPanel>
                     </Expander>
-                    <Expander Header="🔒 Privacy &amp; Background Services"
+                    <Expander x:Name="expanderPrivacyServices" Header="🔒 Privacy &amp; Background Services"
                               Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                               Margin="0,0,0,10" Padding="10">
                       <StackPanel Margin="10">
@@ -4019,6 +4025,25 @@ function Remove-Reg {
                         </Grid>
                       </StackPanel>
                     </Border>
+                  </StackPanel>
+                </Border>
+
+                <!-- Language Selection -->
+                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock x:Name="lblLanguageSectionTitle" Text="🌐 Language" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="lblLanguageDescription" Text="Choose how KOALA should talk to you." Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBlock x:Name="lblLanguageLabel" Grid.Column="0" Text="Language:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <ComboBox x:Name="cmbOptionsLanguage" Grid.Column="1" Style="{StaticResource ModernComboBox}" SelectedIndex="0">
+                        <ComboBoxItem x:Name="cmbOptionsLanguageEnglish" Content="English" Tag="en"/>
+                        <ComboBoxItem x:Name="cmbOptionsLanguageGerman" Content="German" Tag="de"/>
+                      </ComboBox>
+                    </Grid>
                   </StackPanel>
                 </Border>
 
@@ -4411,6 +4436,9 @@ $cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
 $btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
 $btnApplyTheme = $form.FindName('btnApplyTheme')  # Alias for test compatibility
 $customThemePanel = $form.FindName('customThemePanel')
+$cmbOptionsLanguage = $form.FindName('cmbOptionsLanguage')
+$cmbOptionsLanguageEnglish = $form.FindName('cmbOptionsLanguageEnglish')
+$cmbOptionsLanguageGerman = $form.FindName('cmbOptionsLanguageGerman')
 $txtCustomBg = $form.FindName('txtCustomBg')
 $txtCustomPrimary = $form.FindName('txtCustomPrimary')
 $txtCustomHover = $form.FindName('txtCustomHover')
@@ -4622,7 +4650,8 @@ function Set-ActiveAdvancedSectionButton {
             $button.UpdateLayout()
         }
     } catch {
-        Log "Failed to highlight advanced section button $Section: $($_.Exception.Message)" 'Warning'
+        $message = "Failed to highlight advanced section button {0}: {1}" -f $Section, $_.Exception.Message
+        Log $message 'Warning'
     }
 }
 
@@ -4808,6 +4837,10 @@ $chkDefenderOptimize = $null
 $chkDirectStorage = $null
 
 # Navigation Event Handlers
+if (-not $script:NavigationClickHandlers) {
+    $script:NavigationClickHandlers = @{}
+}
+
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4822,29 +4855,41 @@ if ($btnNavDashboard) {
 }
 
 if ($btnNavBasicOpt) {
-    $btnNavBasicOpt.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('BasicOpt') -and $script:NavigationClickHandlers['BasicOpt'])) {
+        $script:NavigationClickHandlers['BasicOpt'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "BasicOpt"
+            Switch-Theme -ThemeName $currentTheme
         }
 
-        Switch-Panel "BasicOpt"
-        Switch-Theme -ThemeName $currentTheme
-    })
+        $btnNavBasicOpt.Add_Click($script:NavigationClickHandlers['BasicOpt'])
+    }
 }
 
 if ($btnNavAdvanced) {
-    $btnNavAdvanced.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('Advanced') -and $script:NavigationClickHandlers['Advanced'])) {
+        $script:NavigationClickHandlers['Advanced'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "Advanced"
+            Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
         }
 
-        Switch-Panel "Advanced"
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
+        $btnNavAdvanced.Add_Click($script:NavigationClickHandlers['Advanced'])
+    }
 }
 
 if ($btnNavGames) {
@@ -4959,6 +5004,20 @@ if ($cmbOptionsTheme) {
     })
 }
 
+if ($cmbOptionsLanguage) {
+    $cmbOptionsLanguage.Add_SelectionChanged({
+        if ($script:IsLanguageInitializing) {
+            return
+        }
+
+        if ($cmbOptionsLanguage.SelectedItem -and $cmbOptionsLanguage.SelectedItem.Tag) {
+            Set-UILanguage -LanguageCode $cmbOptionsLanguage.SelectedItem.Tag -SkipSelectionUpdate
+        }
+    })
+}
+
+Set-UILanguage -LanguageCode $script:CurrentLanguage
+
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5004,7 +5063,7 @@ function Update-ThemeColorPreview {
 # Enhanced Theme System with Additional Themes
 function Switch-Theme {
     param([string]$ThemeName)
-    
+
     try {
         # Eingabe validieren
         if (-not $ThemeName) {
@@ -5240,6 +5299,235 @@ function Switch-Theme {
             Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
         }
     }
+}
+
+# ---------- Localization Support ----------
+function Initialize-LocalizationResources {
+    if ($script:LocalizationResources) {
+        return
+    }
+
+    $script:LocalizationResources = @{
+        'en' = @{
+            DisplayName = 'English'
+            Controls    = @{
+                'lblLanguageSectionTitle' = @{ Text = '🌐 Language' }
+                'lblLanguageDescription'  = @{ Text = 'Choose how KOALA should talk to you.' }
+                'lblLanguageLabel'        = @{ Text = 'Language:' }
+                'cmbOptionsLanguage'      = @{ ToolTip = 'Switch between English and German wording in the interface.' }
+                'expanderNetworkTweaks'   = @{ Header = '🌐 Network Optimizations' }
+                'expanderNetworkOptimizations' = @{ Header = '🌐 Core Network Tweaks' }
+                'expanderSystemOptimizations'  = @{ Header = '💻 System Optimizations' }
+                'expanderPerformanceOptimizations' = @{ Header = '⚡ Performance Optimizations' }
+                'expanderAdvancedPerformance' = @{ Header = '🚀 Advanced Performance Enhancements' }
+                'expanderServiceManagement' = @{ Header = '🛠️ Service Optimizations' }
+                'expanderServiceOptimizations' = @{ Header = '🧰 Service Tweaks' }
+                'expanderPrivacyServices'  = @{ Header = '🔒 Privacy & Background Services' }
+                'chkAckNetwork'            = @{ Content = 'TCP ACK Frequency'; ToolTip = 'Lets your PC confirm incoming data faster to reduce online lag.' }
+                'chkDelAckTicksNetwork'    = @{ Content = 'Delayed ACK Ticks'; ToolTip = 'Cuts the waiting time before Windows confirms data packets, lowering delay.' }
+                'chkNagleNetwork'          = @{ Content = 'Disable Nagle Algorithm'; ToolTip = 'Stops Windows from bundling small messages together so actions happen right away.' }
+                'chkNetworkThrottlingNetwork' = @{ Content = 'Network Throttling Index'; ToolTip = 'Removes Windows built-in speed limiter for background network tasks.' }
+                'chkRSSNetwork'            = @{ Content = 'Receive Side Scaling'; ToolTip = 'Lets Windows use multiple CPU cores to handle incoming internet traffic.' }
+                'chkRSCNetwork'            = @{ Content = 'Receive Segment Coalescing'; ToolTip = 'Allows Windows to combine related network packets to lighten the workload.' }
+                'chkChimneyNetwork'        = @{ Content = 'TCP Chimney Offload'; ToolTip = 'Moves some network work to your network card so the CPU stays free.' }
+                'chkNetDMANetwork'         = @{ Content = 'NetDMA State'; ToolTip = 'Enables direct memory access for network cards to speed up transfers.' }
+                'chkTcpTimestampsNetwork'  = @{ Content = 'TCP Timestamps'; ToolTip = 'Turns off extra timing stamps that can slow down gaming connections.' }
+                'chkTcpWindowAutoTuningNetwork' = @{ Content = 'TCP Window Auto-Tuning'; ToolTip = 'Optimizes how Windows sizes network data windows for faster downloads.' }
+                'chkMemoryCompressionSystem' = @{ Content = 'Memory Compression'; ToolTip = 'Compresses rarely used data in memory to keep more RAM free for games.' }
+                'chkPowerPlanSystem'       = @{ Content = 'High Performance Power Plan'; ToolTip = 'Forces Windows to use the high-performance power plan for best speed.' }
+                'chkCPUSchedulingSystem'   = @{ Content = 'CPU Scheduling'; ToolTip = 'Gives background services less priority so games get more CPU time.' }
+                'chkPageFileSystem'        = @{ Content = 'Page File Optimization'; ToolTip = 'Fine-tunes the Windows page file to avoid slow downs when memory fills.' }
+                'chkVisualEffectsSystem'   = @{ Content = 'Disable Visual Effects'; ToolTip = 'Turns off eye-candy animations to free resources for performance.' }
+                'chkCoreParkingSystem'     = @{ Content = 'Core Parking'; ToolTip = 'Keeps CPU cores awake so games can use them instantly.' }
+                'chkGameDVRSystem'         = @{ Content = 'Disable Game DVR'; ToolTip = 'Disables Windows background recording to prevent FPS drops.' }
+                'chkFullscreenOptimizationsSystem' = @{ Content = 'Fullscreen Exclusive'; ToolTip = 'Uses classic full screen mode to reduce input lag.' }
+                'chkGPUSchedulingSystem'   = @{ Content = 'Hardware GPU Scheduling'; ToolTip = 'Lets the graphics card schedule its own work for smoother frames.' }
+                'chkTimerResolutionSystem' = @{ Content = 'Timer Resolution'; ToolTip = 'Sets Windows timers to 1 ms for faster input response.' }
+                'chkGameModeSystem'        = @{ Content = 'Game Mode'; ToolTip = 'Activates Windows Game Mode to focus resources on games.' }
+                'chkMPOSystem'             = @{ Content = 'MPO (Multi-Plane Overlay)'; ToolTip = 'Turns off a display feature that can cause flickering or stutter.' }
+                'chkDynamicResolution'     = @{ Content = 'Dynamic Resolution Scaling'; ToolTip = 'Automatically lowers resolution during busy scenes to keep frames steady.' }
+                'chkEnhancedFramePacing'   = @{ Content = 'Enhanced Frame Pacing'; ToolTip = 'Balances frame delivery so motion looks smoother.' }
+                'chkGPUOverclocking'       = @{ Content = 'Profile-based GPU Overclocking'; ToolTip = 'Applies a safe GPU tuning profile tailored for gaming.' }
+                'chkCompetitiveLatency'    = @{ Content = 'Competitive Latency Reduction'; ToolTip = 'Cuts extra buffering to keep controls feeling instant.' }
+                'chkAutoDiskOptimization'  = @{ Content = 'Auto Disk Defrag/SSD Trim'; ToolTip = 'Runs the right disk cleanup (defrag or TRIM) on a schedule.' }
+                'chkAdaptivePowerManagement' = @{ Content = 'Adaptive Power Management'; ToolTip = 'Adjusts power settings on the fly to balance speed and heat.' }
+                'chkEnhancedPagingFile'    = @{ Content = 'Enhanced Paging File Management'; ToolTip = 'Sets page file size based on RAM to prevent sudden slowdowns.' }
+                'chkDirectStorageEnhanced' = @{ Content = 'DirectStorage API Enhancement'; ToolTip = 'Prepares Windows for faster loading with DirectStorage-ready tweaks.' }
+                'chkAdvancedTelemetryDisable' = @{ Content = 'Advanced Telemetry & Tracking Disable'; ToolTip = 'Limits background data sharing to free system resources.' }
+                'chkMemoryDefragmentation' = @{ Content = 'Memory Defragmentation & Cleanup'; ToolTip = 'Reorganizes memory so large games get big uninterrupted blocks.' }
+                'chkServiceOptimization'   = @{ Content = 'Advanced Service Optimization'; ToolTip = 'Optimizes background services to focus on performance.' }
+                'chkDiskTweaksAdvanced'    = @{ Content = 'Advanced Disk I/O Tweaks'; ToolTip = 'Improves how Windows reads and writes data for gaming drives.' }
+                'chkNetworkLatencyOptimization' = @{ Content = 'Ultra-Low Network Latency Mode'; ToolTip = 'Applies extra network tweaks aimed at the lowest possible ping.' }
+                'chkFPSSmoothness'         = @{ Content = 'FPS Smoothness & Frame Time Optimization'; ToolTip = 'Applies timing tweaks to keep frame times even.' }
+                'chkCPUMicrocode'          = @{ Content = 'CPU Microcode & Cache Optimization'; ToolTip = 'Loads optimized CPU microcode settings for stability under load.' }
+                'chkRAMTimings'            = @{ Content = 'RAM Timing & Frequency Optimization'; ToolTip = 'Applies safe memory timing adjustments for better throughput.' }
+                'chkDisableXboxServicesServices' = @{ Content = 'Disable Xbox Services'; ToolTip = 'Stops Xbox helper services that consume memory when not gaming.' }
+                'chkDisableTelemetryServices' = @{ Content = 'Disable Telemetry'; ToolTip = 'Turns off Windows data reporting services to free bandwidth.' }
+                'chkDisableSearchServices' = @{ Content = 'Disable Windows Search'; ToolTip = 'Pauses Windows Search indexing to save disk activity.' }
+                'chkDisablePrintSpoolerServices' = @{ Content = 'Disable Print Spooler'; ToolTip = 'Stops print services if you do not use a printer.' }
+                'chkDisableSuperfetchServices' = @{ Content = 'Disable Superfetch'; ToolTip = 'Disables the preloading service that can cause drive activity.' }
+                'chkDisableFaxServices'    = @{ Content = 'Disable Fax Service'; ToolTip = 'Turns off the unused fax service.' }
+                'chkDisableRemoteRegistryServices' = @{ Content = 'Disable Remote Registry'; ToolTip = 'Blocks remote registry access for security and less background work.' }
+                'chkDisableThemesServices' = @{ Content = 'Optimize Themes Service'; ToolTip = 'Optimizes the themes service to reduce visual overhead.' }
+                'chkDisableCortana'        = @{ Content = 'Disable Cortana & Voice Assistant'; ToolTip = 'Disables Cortana to save memory and network use.' }
+                'chkDisableWindowsUpdate'  = @{ Content = 'Optimize Windows Update Service'; ToolTip = 'Limits automatic updates so games are not interrupted.' }
+                'chkDisableBackgroundApps' = @{ Content = 'Disable Background App Refresh'; ToolTip = 'Stops background apps from running when you do not need them.' }
+                'chkDisableLocationTracking' = @{ Content = 'Disable Location Tracking Services'; ToolTip = 'Prevents Windows from tracking your location in the background.' }
+                'chkDisableAdvertisingID'  = @{ Content = 'Disable Advertising ID Services'; ToolTip = 'Clears and stops the ad ID so apps cannot build ad profiles.' }
+                'chkDisableErrorReporting' = @{ Content = 'Disable Error Reporting Services'; ToolTip = 'Stops error reports from sending data online automatically.' }
+                'chkDisableCompatTelemetry' = @{ Content = 'Disable Compatibility Telemetry'; ToolTip = 'Blocks compatibility telemetry that collects app usage.' }
+                'chkDisableWSH'            = @{ Content = 'Disable Windows Script Host'; ToolTip = 'Disables Windows Script Host to avoid unwanted scripts.' }
+            }
+            ComboItems = @{
+                'cmbOptionsLanguageEnglish' = 'English'
+                'cmbOptionsLanguageGerman'  = 'German'
+            }
+        }
+        'de' = @{
+            DisplayName = 'Deutsch'
+            Controls    = @{
+                'lblLanguageSectionTitle' = @{ Text = '🌐 Sprache' }
+                'lblLanguageDescription'  = @{ Text = 'Wähle, wie KOALA mit dir sprechen soll.' }
+                'lblLanguageLabel'        = @{ Text = 'Sprache:' }
+                'cmbOptionsLanguage'      = @{ ToolTip = 'Wechsle zwischen englischen und deutschen Texten im Programm.' }
+                'expanderNetworkTweaks'   = @{ Header = '🌐 Netzwerk-Optimierungen' }
+                'expanderNetworkOptimizations' = @{ Header = '🌐 Zentrale Netzwerk-Feinabstimmung' }
+                'expanderSystemOptimizations'  = @{ Header = '💻 System-Optimierungen' }
+                'expanderPerformanceOptimizations' = @{ Header = '⚡ Leistungs-Optimierungen' }
+                'expanderAdvancedPerformance' = @{ Header = '🚀 Erweiterte Leistungssteigerungen' }
+                'expanderServiceManagement' = @{ Header = '🛠️ Dienstoptimierungen' }
+                'expanderServiceOptimizations' = @{ Header = '🧰 Dienst-Anpassungen' }
+                'expanderPrivacyServices'  = @{ Header = '🔒 Datenschutz & Hintergrunddienste' }
+                'chkAckNetwork'            = @{ Content = 'TCP-ACK beschleunigen'; ToolTip = 'Lässt deinen PC eingehende Daten schneller bestätigen und senkt so Verzögerungen im Online-Spiel.' }
+                'chkDelAckTicksNetwork'    = @{ Content = 'Verzögerte ACK-Zeit verkürzen'; ToolTip = 'Verkürzt die Wartezeit, bevor Windows Datenpakete bestätigt, und senkt damit die Latenz.' }
+                'chkNagleNetwork'          = @{ Content = 'Nagle-Algorithmus deaktivieren'; ToolTip = 'Verhindert, dass Windows kleine Nachrichten sammelt, damit deine Aktionen sofort ausgeführt werden.' }
+                'chkNetworkThrottlingNetwork' = @{ Content = 'Netzwerk-Drosselung ausschalten'; ToolTip = 'Hebt die in Windows eingebaute Geschwindigkeitsbremse für Netzwerkaufgaben auf.' }
+                'chkRSSNetwork'            = @{ Content = 'Receive Side Scaling aktivieren'; ToolTip = 'Erlaubt Windows, mehrere CPU-Kerne für eingehenden Internetverkehr zu nutzen.' }
+                'chkRSCNetwork'            = @{ Content = 'Receive Segment Coalescing aktivieren'; ToolTip = 'Ermöglicht Windows, zusammengehörige Pakete zu bündeln und so den Aufwand zu senken.' }
+                'chkChimneyNetwork'        = @{ Content = 'TCP-Chimney-Offload nutzen'; ToolTip = 'Verlagert Netzwerkarbeit auf die Netzwerkkarte, damit der Prozessor entlastet wird.' }
+                'chkNetDMANetwork'         = @{ Content = 'NetDMA aktivieren'; ToolTip = 'Aktiviert direkten Speicherzugriff für Netzwerkkarten und beschleunigt Übertragungen.' }
+                'chkTcpTimestampsNetwork'  = @{ Content = 'TCP-Zeitstempel deaktivieren'; ToolTip = 'Schaltet zusätzliche Zeitstempel aus, die Gaming-Verbindungen ausbremsen können.' }
+                'chkTcpWindowAutoTuningNetwork' = @{ Content = 'TCP-Fenster automatisch abstimmen'; ToolTip = 'Optimiert, wie Windows Datenfenster festlegt, damit Downloads schneller laufen.' }
+                'chkMemoryCompressionSystem' = @{ Content = 'Speicherkompression verwalten'; ToolTip = 'Komprimiert selten genutzte Daten im Speicher, damit mehr RAM für Spiele frei bleibt.' }
+                'chkPowerPlanSystem'       = @{ Content = 'Höchstleistung Energieplan erzwingen'; ToolTip = 'Erzwingt den Höchstleistungs-Energieplan von Windows für maximale Geschwindigkeit.' }
+                'chkCPUSchedulingSystem'   = @{ Content = 'CPU-Zeitplanung optimieren'; ToolTip = 'Gibt Hintergrunddiensten weniger Priorität, damit Spiele mehr CPU-Zeit erhalten.' }
+                'chkPageFileSystem'        = @{ Content = 'Auslagerungsdatei optimieren'; ToolTip = 'Stimmt die Auslagerungsdatei ab, damit es bei vollem RAM nicht zu Bremsen kommt.' }
+                'chkVisualEffectsSystem'   = @{ Content = 'Visuelle Effekte reduzieren'; ToolTip = 'Schaltet Effekte ab, um Ressourcen für Leistung freizumachen.' }
+                'chkCoreParkingSystem'     = @{ Content = 'Core Parking deaktivieren'; ToolTip = 'Hält CPU-Kerne wach, damit Spiele sie sofort nutzen können.' }
+                'chkGameDVRSystem'         = @{ Content = 'Game DVR deaktivieren'; ToolTip = 'Deaktiviert die Hintergrundaufzeichnung von Windows und verhindert FPS-Einbrüche.' }
+                'chkFullscreenOptimizationsSystem' = @{ Content = 'Exklusiven Vollbildmodus erzwingen'; ToolTip = 'Erzwingt den klassischen Vollbildmodus und senkt die Eingabeverzögerung.' }
+                'chkGPUSchedulingSystem'   = @{ Content = 'Hardware-GPU-Planung aktivieren'; ToolTip = 'Erlaubt der Grafikkarte, ihre Arbeit selbst zu planen, wodurch Bilder flüssiger laufen.' }
+                'chkTimerResolutionSystem' = @{ Content = 'Timerauflösung auf 1 ms setzen'; ToolTip = 'Setzt Windows-Timer auf 1 Millisekunde für schnellere Reaktionen.' }
+                'chkGameModeSystem'        = @{ Content = 'Windows-Spielmodus aktivieren'; ToolTip = 'Aktiviert den Windows-Spielmodus, damit Ressourcen auf Spiele fokussiert werden.' }
+                'chkMPOSystem'             = @{ Content = 'MPO (Multi-Plane Overlay) deaktivieren'; ToolTip = 'Schaltet eine Darstellungsfunktion ab, die Flackern oder Ruckeln verursachen kann.' }
+                'chkDynamicResolution'     = @{ Content = 'Dynamische Auflösung nutzen'; ToolTip = 'Senkt die Auflösung in hektischen Szenen automatisch, damit die Bildrate stabil bleibt.' }
+                'chkEnhancedFramePacing'   = @{ Content = 'Bildtaktung glätten'; ToolTip = 'Gleicht die Bildausgabe aus, damit Bewegungen ruhiger wirken.' }
+                'chkGPUOverclocking'       = @{ Content = 'GPU-Profiloptimierung anwenden'; ToolTip = 'Wendet ein sicheres GPU-Tuning-Profil speziell für Spiele an.' }
+                'chkCompetitiveLatency'    = @{ Content = 'Wettkampf-Latenz reduzieren'; ToolTip = 'Reduziert zusätzliche Puffer, damit die Steuerung sofort reagiert.' }
+                'chkAutoDiskOptimization'  = @{ Content = 'Automatische Laufwerksoptimierung'; ToolTip = 'Startet je nach Laufwerk automatisch Defrag oder TRIM, um es sauber zu halten.' }
+                'chkAdaptivePowerManagement' = @{ Content = 'Adaptive Energieverwaltung'; ToolTip = 'Passt die Energieeinstellungen dynamisch an, um Leistung und Temperatur auszugleichen.' }
+                'chkEnhancedPagingFile'    = @{ Content = 'Auslagerungsdatei anpassen'; ToolTip = 'Stimmt die Größe der Auslagerungsdatei auf deinen RAM ab, um plötzliche Bremsen zu vermeiden.' }
+                'chkDirectStorageEnhanced' = @{ Content = 'DirectStorage optimieren'; ToolTip = 'Bereitet Windows mit DirectStorage-Anpassungen auf schnellere Ladezeiten vor.' }
+                'chkAdvancedTelemetryDisable' = @{ Content = 'Erweiterte Telemetrie abschalten'; ToolTip = 'Begrenzt das Senden von Hintergrunddaten und spart Ressourcen.' }
+                'chkMemoryDefragmentation' = @{ Content = 'Arbeitsspeicher defragmentieren'; ToolTip = 'Ordnet den Speicher neu, damit große Spiele zusammenhängenden RAM erhalten.' }
+                'chkServiceOptimization'   = @{ Content = 'Dienste für Spiele optimieren'; ToolTip = 'Optimiert Hintergrunddienste, damit mehr Leistung für Spiele bleibt.' }
+                'chkDiskTweaksAdvanced'    = @{ Content = 'Fortgeschrittene Datenträgeroptimierung'; ToolTip = 'Verbessert Lese- und Schreibzugriffe von Windows auf deine Gaming-Laufwerke.' }
+                'chkNetworkLatencyOptimization' = @{ Content = 'Ultra-niedrige Netzwerklatenz'; ToolTip = 'Setzt zusätzliche Netzwerkoptimierungen für den niedrigsten möglichen Ping um.' }
+                'chkFPSSmoothness'         = @{ Content = 'FPS-Glättung aktivieren'; ToolTip = 'Nimmt Zeitanpassungen vor, damit Bildzeiten gleichmäßig bleiben.' }
+                'chkCPUMicrocode'          = @{ Content = 'CPU-Mikrocode optimieren'; ToolTip = 'Lädt optimierte CPU-Mikrocode-Einstellungen für Stabilität unter Last.' }
+                'chkRAMTimings'            = @{ Content = 'RAM-Timings abstimmen'; ToolTip = 'Nimmt sichere RAM-Timing-Anpassungen für mehr Durchsatz vor.' }
+                'chkDisableXboxServicesServices' = @{ Content = 'Xbox-Dienste deaktivieren'; ToolTip = 'Beendet Xbox-Hilfsdienste, die auch ohne Spiel Speicher belegen.' }
+                'chkDisableTelemetryServices' = @{ Content = 'Telemetry-Dienste deaktivieren'; ToolTip = 'Schaltet Datenerfassungsdienste von Windows aus und spart Bandbreite.' }
+                'chkDisableSearchServices' = @{ Content = 'Windows-Suche pausieren'; ToolTip = 'Pausiert die Windows-Suche, um Laufwerksaktivität zu sparen.' }
+                'chkDisablePrintSpoolerServices' = @{ Content = 'Druckwarteschlange deaktivieren'; ToolTip = 'Beendet Druckdienste, wenn kein Drucker verwendet wird.' }
+                'chkDisableSuperfetchServices' = @{ Content = 'Superfetch deaktivieren'; ToolTip = 'Deaktiviert den Vorlade-Dienst, der Laufwerke beschäftigen kann.' }
+                'chkDisableFaxServices'    = @{ Content = 'Faxdienst deaktivieren'; ToolTip = 'Schaltet den ungenutzten Faxdienst ab.' }
+                'chkDisableRemoteRegistryServices' = @{ Content = 'Remote-Registry sperren'; ToolTip = 'Sperrt den Remotezugriff auf die Registry für mehr Sicherheit und weniger Hintergrundarbeit.' }
+                'chkDisableThemesServices' = @{ Content = 'Design-Dienst optimieren'; ToolTip = 'Optimiert den Design-Dienst, um visuelle Last zu reduzieren.' }
+                'chkDisableCortana'        = @{ Content = 'Cortana & Sprachassistent deaktivieren'; ToolTip = 'Deaktiviert Cortana, um Speicher und Datenverkehr zu sparen.' }
+                'chkDisableWindowsUpdate'  = @{ Content = 'Windows Update optimieren'; ToolTip = 'Begrenzt automatische Updates, damit Spiele nicht unterbrochen werden.' }
+                'chkDisableBackgroundApps' = @{ Content = 'Hintergrund-Apps stoppen'; ToolTip = 'Verhindert, dass Hintergrund-Apps laufen, wenn du sie nicht brauchst.' }
+                'chkDisableLocationTracking' = @{ Content = 'Standortverfolgung stoppen'; ToolTip = 'Verhindert, dass Windows deinen Standort im Hintergrund verfolgt.' }
+                'chkDisableAdvertisingID'  = @{ Content = 'Werbe-ID deaktivieren'; ToolTip = 'Setzt die Werbe-ID zurück und verhindert, dass Apps Werbeprofile erstellen.' }
+                'chkDisableErrorReporting' = @{ Content = 'Fehlerberichterstattung deaktivieren'; ToolTip = 'Verhindert, dass Fehlerberichte automatisch Daten senden.' }
+                'chkDisableCompatTelemetry' = @{ Content = 'Kompatibilitäts-Telemetrie blockieren'; ToolTip = 'Blockiert Kompatibilitäts-Telemetrie, die App-Nutzung sammelt.' }
+                'chkDisableWSH'            = @{ Content = 'Windows Script Host deaktivieren'; ToolTip = 'Deaktiviert den Windows Script Host, um unerwünschte Skripte zu vermeiden.' }
+            }
+            ComboItems = @{
+                'cmbOptionsLanguageEnglish' = 'Englisch'
+                'cmbOptionsLanguageGerman'  = 'Deutsch'
+            }
+        }
+    }
+}
+
+function Set-UILanguage {
+    param(
+        [string]$LanguageCode,
+        [switch]$SkipSelectionUpdate
+    )
+
+    Initialize-LocalizationResources
+
+    if (-not $LanguageCode) {
+        $LanguageCode = 'en'
+    }
+
+    if (-not $script:LocalizationResources.ContainsKey($LanguageCode)) {
+        Log "Requested language '$LanguageCode' is not available. Falling back to English." 'Warning'
+        $LanguageCode = 'en'
+    }
+
+    $script:CurrentLanguage = $LanguageCode
+    $languageResources = $script:LocalizationResources[$LanguageCode]
+
+    foreach ($entry in $languageResources.Controls.GetEnumerator()) {
+        $controlName = $entry.Key
+        $control = $form.FindName($controlName)
+        if (-not $control) {
+            continue
+        }
+
+        $controlConfig = $entry.Value
+
+        if ($controlConfig.ContainsKey('Content') -and $control.PSObject.Properties['Content']) {
+            $control.Content = $controlConfig.Content
+        }
+
+        if ($controlConfig.ContainsKey('Header') -and $control.PSObject.Properties['Header']) {
+            $control.Header = $controlConfig.Header
+        }
+
+        if ($controlConfig.ContainsKey('Text') -and $control.PSObject.Properties['Text']) {
+            $control.Text = $controlConfig.Text
+        }
+
+        if ($controlConfig.ContainsKey('ToolTip')) {
+            $control.ToolTip = $controlConfig.ToolTip
+        }
+    }
+
+    if ($languageResources.ContainsKey('ComboItems')) {
+        foreach ($itemEntry in $languageResources.ComboItems.GetEnumerator()) {
+            $comboItem = $form.FindName($itemEntry.Key)
+            if ($comboItem -and $comboItem.PSObject.Properties['Content']) {
+                $comboItem.Content = $itemEntry.Value
+            }
+        }
+    }
+
+    if (-not $SkipSelectionUpdate -and $cmbOptionsLanguage -and $cmbOptionsLanguage.Items.Count -gt 0) {
+        $script:IsLanguageInitializing = $true
+        foreach ($item in $cmbOptionsLanguage.Items) {
+            if ($item.Tag -eq $LanguageCode) {
+                $cmbOptionsLanguage.SelectedItem = $item
+                break
+            }
+        }
+        $script:IsLanguageInitializing = $false
+    }
+
+    Log "UI language switched to $($languageResources.DisplayName)" 'Info'
 }
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
@@ -9657,25 +9945,154 @@ if ($btnApplyScale) {
     })
 }
 
+function Get-AdvancedCheckboxNames {
+    @(
+        'chkAckNetwork'
+        'chkDelAckTicksNetwork'
+        'chkNagleNetwork'
+        'chkNetworkThrottlingNetwork'
+        'chkRSSNetwork'
+        'chkRSCNetwork'
+        'chkChimneyNetwork'
+        'chkNetDMANetwork'
+        'chkTcpTimestampsNetwork'
+        'chkTcpWindowAutoTuningNetwork'
+        'chkMemoryCompressionSystem'
+        'chkPowerPlanSystem'
+        'chkCPUSchedulingSystem'
+        'chkPageFileSystem'
+        'chkVisualEffectsSystem'
+        'chkCoreParkingSystem'
+        'chkGameDVRSystem'
+        'chkFullscreenOptimizationsSystem'
+        'chkGPUSchedulingSystem'
+        'chkTimerResolutionSystem'
+        'chkGameModeSystem'
+        'chkMPOSystem'
+        'chkDynamicResolution'
+        'chkEnhancedFramePacing'
+        'chkGPUOverclocking'
+        'chkCompetitiveLatency'
+        'chkAutoDiskOptimization'
+        'chkAdaptivePowerManagement'
+        'chkEnhancedPagingFile'
+        'chkDirectStorageEnhanced'
+        'chkAdvancedTelemetryDisable'
+        'chkMemoryDefragmentation'
+        'chkServiceOptimization'
+        'chkDiskTweaksAdvanced'
+        'chkNetworkLatencyOptimization'
+        'chkFPSSmoothness'
+        'chkCPUMicrocode'
+        'chkRAMTimings'
+        'chkDisableXboxServicesServices'
+        'chkDisableTelemetryServices'
+        'chkDisableSearchServices'
+        'chkDisablePrintSpoolerServices'
+        'chkDisableSuperfetchServices'
+        'chkDisableFaxServices'
+        'chkDisableRemoteRegistryServices'
+        'chkDisableThemesServices'
+        'chkDisableCortana'
+        'chkDisableWindowsUpdate'
+        'chkDisableBackgroundApps'
+        'chkDisableLocationTracking'
+        'chkDisableAdvertisingID'
+        'chkDisableErrorReporting'
+        'chkDisableCompatTelemetry'
+        'chkDisableWSH'
+    )
+}
+
+function Get-AdvancedCheckedSelections {
+    $checked = @()
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.IsChecked) {
+            $checked += $name
+        }
+    }
+
+    return $checked
+}
+
+function Set-AdvancedSelections {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    $lookup = @{}
+
+    if ($CheckedNames) {
+        foreach ($entry in $CheckedNames) {
+            $trimmed = $entry.Trim()
+            if ($trimmed) {
+                $lookup[$trimmed] = $true
+            }
+        }
+    }
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox) {
+            $checkbox.IsChecked = $lookup.ContainsKey($name)
+        }
+    }
+}
+
+function Get-AdvancedSelectionSummary {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    if (-not $CheckedNames -or $CheckedNames.Count -eq 0) {
+        return 'None'
+    }
+
+    $labels = @()
+
+    foreach ($name in $CheckedNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.PSObject.Properties['Content'] -and $checkbox.Content) {
+            $labels += [string]$checkbox.Content
+        } else {
+            $labels += $name
+        }
+    }
+
+    if ($labels.Count -eq 0) {
+        return 'None'
+    }
+
+    return ($labels -join ', ')
+}
+
 if ($btnSaveSettings) {
     $btnSaveSettings.Add_Click({
         try {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
-            
+
             # Gather current settings
             $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
-            
+            $currentLanguage = if ($script:CurrentLanguage) { $script:CurrentLanguage } else { 'en' }
+            $advancedSelections = Get-AdvancedCheckedSelections
+            $advancedSelectionsValue = $advancedSelections -join ','
+            $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
+
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
 # Generated on $(Get-Date)
 Theme=$currentTheme
 UIScale=$currentScale
 MenuMode=$global:MenuMode
+Language=$currentLanguage
+AdvancedSelections=$advancedSelectionsValue
 "@
-            
+
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
-            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale)" 'Success'
+            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
@@ -9696,7 +10113,7 @@ if ($btnLoadSettings) {
                 $settings = @{}
                 
                 $content -split "`n" | ForEach-Object {
-                    if ($_ -match "^([^#=]+)=(.+)$") {
+                    if ($_ -match "^([^#=]+)=(.*)$") {
                         $settings[$matches[1].Trim()] = $matches[2].Trim()
                     }
                 }
@@ -9724,7 +10141,23 @@ if ($btnLoadSettings) {
                         }
                     }
                 }
-                
+
+                if ($settings.Language) {
+                    Set-UILanguage -LanguageCode $settings.Language
+                }
+
+                if ($settings.ContainsKey('AdvancedSelections')) {
+                    $advancedChecked = @()
+                    if ($settings.AdvancedSelections) {
+                        $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+                    }
+
+                    Set-AdvancedSelections -CheckedNames $advancedChecked
+
+                    $advancedLoadSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+                    Log "Advanced selections restored from koala-settings.cfg: $advancedLoadSummary" 'Info'
+                }
+
                 Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
             } else {
@@ -9779,7 +10212,10 @@ if ($btnResetSettings) {
                 #     }
                 # }
                 Switch-MenuMode -Mode "Basic"  # Direct call without UI control
-                
+
+                # Reset advanced selections
+                Set-AdvancedSelections -CheckedNames @()
+
                 Log "All settings reset to default values" 'Success'
                 [System.Windows.MessageBox]::Show("All settings have been reset to default values!", "Settings Reset", 'OK', 'Information')
             }
@@ -11618,7 +12054,7 @@ try {
         $settings = @{}
         
         $content -split "`n" | ForEach-Object {
-            if ($_ -match "^([^#=]+)=(.+)`$") {
+            if ($_ -match "^([^#=]+)=(.*)`$") {
                 $settings[$matches[1].Trim()] = $matches[2].Trim()
             }
         }
@@ -11665,7 +12101,24 @@ try {
             Switch-MenuMode -Mode $settings.MenuMode  # Direct call without UI control
             Log "Loaded menu mode: $($settings.MenuMode)" 'Info'
         }
-        
+
+        if ($settings.Language) {
+            Set-UILanguage -LanguageCode $settings.Language
+            Log "Loaded language: $($settings.Language)" 'Info'
+        }
+
+        if ($settings.ContainsKey('AdvancedSelections')) {
+            $advancedChecked = @()
+            if ($settings.AdvancedSelections) {
+                $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            }
+
+            Set-AdvancedSelections -CheckedNames $advancedChecked
+
+            $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+            Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
+        }
+
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
         Log "No settings file found - using defaults" 'Info'
