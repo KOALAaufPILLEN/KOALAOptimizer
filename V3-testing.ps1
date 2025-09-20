@@ -3658,11 +3658,11 @@ $xamlContent = @'
                 <TextBlock Text="Detected Games" Tag="AccentText" Foreground="{DynamicResource AccentBrush}" FontSize="18" FontWeight="Bold"/>
                 <TextBlock Text="Your library updates automatically when detection runs." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,6,0,18"/>
                 <ScrollViewer Height="320" VerticalScrollBarVisibility="Auto" Background="Transparent">
-                  <StackPanel x:Name="gameListPanelDashboard">
-                    <TextBlock Text="Click 'Detect Games' to populate your library." Foreground="#5A639C" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,32"/>
+                  <StackPanel x:Name="dashboardGameListPanel">
+                    <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..." Foreground="#5A639C" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,32"/>
                   </StackPanel>
                 </ScrollViewer>
-                <Button x:Name="btnOptimizeSelectedDashboard" Content="Optimize Selected" Style="{StaticResource SuccessButton}" Height="40" Margin="0,24,0,0" IsEnabled="False"/>
+                <Button x:Name="btnOptimizeSelectedDashboard" Content="⚡ Optimize Selected Games" Style="{StaticResource SuccessButton}" Height="40" Margin="0,24,0,0" FontSize="12" IsEnabled="False" ToolTip="Apply optimizations to the highlighted titles"/>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3826,12 +3826,13 @@ $xamlContent = @'
                 </Grid>
                 <Border Background="#0F1835" CornerRadius="16" Padding="18" BorderBrush="#243065" BorderThickness="1">
                   <StackPanel>
+                    <TextBlock Text="Detected Games" Tag="AccentText" Foreground="{DynamicResource AccentBrush}" FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
                     <ScrollViewer Height="320" VerticalScrollBarVisibility="Auto">
                       <StackPanel x:Name="gameListPanel">
-                        <TextBlock Text="Run detection to build your library." Foreground="#5A639C" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,32"/>
+                        <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..." Foreground="#5A639C" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,32"/>
                       </StackPanel>
                     </ScrollViewer>
-                    <Button x:Name="btnOptimizeSelectedMain" Content="Optimize Selected" Style="{StaticResource SuccessButton}" Height="38" Margin="0,18,0,0" IsEnabled="False"/>
+                    <Button x:Name="btnOptimizeSelectedMain" Content="⚡ Optimize Selected Games" Style="{StaticResource SuccessButton}" Height="38" Margin="0,18,0,0" FontSize="12" IsEnabled="False" ToolTip="Apply optimizations to the highlighted titles"/>
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -4223,6 +4224,7 @@ $chkTcpTimestamps = $form.FindName('chkTcpTimestamps')
 $chkTcpWindowAutoTuning = $form.FindName('chkTcpWindowAutoTuning')
 
 # Game list and search controls
+$dashboardGameListPanel = $form.FindName('dashboardGameListPanel')
 $gameListPanel = $form.FindName('gameListPanel')
 $btnSearchGames = $form.FindName('btnSearchGames')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
