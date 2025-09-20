@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -3938,19 +3938,21 @@ $xamlContent = @'
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,12,6,0">
                         <TextBlock Text="Background Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Text="#070A1A"/>
+
+                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,12,6,0">
                         <TextBlock Text="Primary Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Text="#6C63FF"/>
+                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="2" Margin="6,12,6,0">
                         <TextBlock Text="Hover Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Text="#4338CA"/>
+                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="3" Margin="6,12,0,0">
                         <TextBlock Text="Text Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Text="#F5F6FF"/>
+                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}"/>
+
                       </StackPanel>
                     </Grid>
                     <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,12,0,0"/>
@@ -4154,6 +4156,12 @@ try {
     $form = [Windows.Markup.XamlReader]::Load($reader)
 } catch {
     Write-Host "Failed to load XAML: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.Exception.InnerException) {
+        Write-Host "Inner exception: $($_.Exception.InnerException.Message)" -ForegroundColor Red
+        if ($_.Exception.InnerException.InnerException) {
+            Write-Host "Root cause: $($_.Exception.InnerException.InnerException.Message)" -ForegroundColor Red
+        }
+    }
     exit 1
 }
 
@@ -4347,6 +4355,56 @@ $previewBgCustom = $form.FindName('previewBgCustom')
 $previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
 $previewHoverCustom = $form.FindName('previewHoverCustom')
 $previewTextCustom = $form.FindName('previewTextCustom')
+
+
+# Default color palette for the custom theme inputs so XAML loading does not rely on
+# inline TextBox values that can trigger initialization failures on some hosts.
+$customThemeDefaults = [ordered]@{
+    Background = '#070A1A'
+    Primary    = '#6C63FF'
+    Hover      = '#4338CA'
+    Text       = '#F5F6FF'
+}
+
+# Ensure the global custom theme cache is initialized before any preview updates so
+# other functions can safely clone the values.
+if (-not $global:CustomThemeColors) {
+    $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+    $global:CustomThemeColors['Name'] = 'Custom Theme'
+}
+
+foreach ($key in $customThemeDefaults.Keys) {
+    if (-not $global:CustomThemeColors.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($global:CustomThemeColors[$key])) {
+        $global:CustomThemeColors[$key] = $customThemeDefaults[$key]
+    }
+}
+
+$customThemeInputs = @{
+    Background = $txtCustomBg
+    Primary    = $txtCustomPrimary
+    Hover      = $txtCustomHover
+    Text       = $txtCustomText
+}
+
+foreach ($entry in $customThemeInputs.GetEnumerator()) {
+    $target = $entry.Value
+    $value  = $global:CustomThemeColors[$entry.Key]
+
+    if ($target -and [string]::IsNullOrWhiteSpace($target.Text)) {
+        $target.Text = $value
+    }
+}
+
+if ($previewBgCustom) { $previewBgCustom.Fill = $global:CustomThemeColors['Background'] }
+if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $global:CustomThemeColors['Primary'] }
+if ($previewHoverCustom) { $previewHoverCustom.Fill = $global:CustomThemeColors['Hover'] }
+if ($previewTextCustom) { $previewTextCustom.Fill = $global:CustomThemeColors['Text'] }
+
+if ($cmbOptionsTheme -and $customThemePanel) {
+    $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
+    $customThemePanel.Visibility = if ($initialTheme -eq 'Custom') { 'Visible' } else { 'Collapsed' }
+}
+
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -4906,16 +4964,8 @@ if ($btnAdvancedServices) {
 # })
 # }
 
-# Custom theme panel visibility handler
-if ($cmbOptionsTheme) {
-    $cmbOptionsTheme.Add_SelectionChanged({
-        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag -eq "Custom") {
-            $customThemePanel.Visibility = "Visible"
-        } else {
-            $customThemePanel.Visibility = "Collapsed"
-        }
-    })
-}
+# Custom theme panel visibility is managed alongside the live preview handler that
+# runs later in the script (see Options panel event handlers section).
 
 if ($cmbOptionsLanguage) {
     $cmbOptionsLanguage.Add_SelectionChanged({
@@ -4932,22 +4982,53 @@ if ($cmbOptionsLanguage) {
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
-    try {
-        $bg = $txtCustomBg.Text
-        $primary = $txtCustomPrimary.Text  
-        $hover = $txtCustomHover.Text
-        $text = $txtCustomText.Text
-        
-        Log "Applying custom theme: BG=$bg, Primary=$primary, Hover=$hover, Text=$text" 'Info'
-        Apply-ThemeColors -Background $bg -Primary $primary -Hover $hover -Foreground $text
-        Update-ThemeColorPreview -ThemeName 'Custom'
+        try {
+            $inputMap = [ordered]@{
+                Background = $txtCustomBg
+                Primary    = $txtCustomPrimary
+                Hover      = $txtCustomHover
+                Text       = $txtCustomText
+            }
 
-        [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
-    } catch {
-        Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-    }
-})
+            $validated = @{}
+            foreach ($entry in $inputMap.GetEnumerator()) {
+                $box = $entry.Value
+                $rawValue = if ($box) { $box.Text } else { $null }
+                $trimmed = if ($rawValue) { $rawValue.Trim() } else { '' }
+
+                if ([string]::IsNullOrWhiteSpace($trimmed)) {
+                    [System.Windows.MessageBox]::Show("Please enter a $($entry.Key.ToLower()) color in HEX format (e.g. #1A2B3C).", "Custom Theme", 'OK', 'Warning')
+                    return
+                }
+
+                if ($trimmed -notmatch '^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$') {
+                    [System.Windows.MessageBox]::Show("Invalid $($entry.Key.ToLower()) color '$trimmed'. Use #RRGGBB or #AARRGGBB values.", "Custom Theme", 'OK', 'Warning')
+                    return
+                }
+
+                $normalized = $trimmed.ToUpperInvariant()
+                $validated[$entry.Key] = $normalized
+
+                if ($box) { $box.Text = $normalized }
+            }
+
+            Log "Applying custom theme: BG=$($validated.Background), Primary=$($validated.Primary), Hover=$($validated.Hover), Text=$($validated.Text)" 'Info'
+            Apply-ThemeColors -Background $validated.Background -Primary $validated.Primary -Hover $validated.Hover -Foreground $validated.Text
+            Update-ThemeColorPreview -ThemeName 'Custom'
+
+            if ($global:CustomThemeColors) {
+                foreach ($key in $validated.Keys) {
+                    $global:CustomThemeColors[$key] = $validated[$key]
+                }
+            }
+
+            [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
+        } catch {
+            Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
+        }
+    })
+
 }
 
 # Function to update color preview panel
@@ -10171,10 +10252,16 @@ if ($cmbOptionsTheme) {
                 
                 # Update color preview panel only - no instant theme application
                 Update-ThemeColorPreview -ThemeName $selectedTheme
-                
+
                 # Show/hide custom theme panel
                 if ($selectedTheme -eq "Custom" -and $customThemePanel) {
                     $customThemePanel.Visibility = "Visible"
+                    if ($global:CustomThemeColors) {
+                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
+                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
+                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
+                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
+                    }
                 } elseif ($customThemePanel) {
                     $customThemePanel.Visibility = "Collapsed"
                 }
