@@ -198,6 +198,11 @@ try {
 
 # ---------- Global Performance Variables ----------
 $global:PerformanceCounters = @{}
+$script:LocalizationResources = $null
+if (-not $script:CurrentLanguage) {
+    $script:CurrentLanguage = 'en'
+}
+$script:IsLanguageInitializing = $false
 $global:OptimizationCache = @{}
 $global:ActiveGames = @()
 $global:MenuMode = "Basic"  # Basic or Advanced
@@ -252,6 +257,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D1117'
         SidebarBg = '#1A1625'
         HeaderBg = '#1A1625'
+        CardBackgroundStart = '#23124A'
+        CardBackgroundEnd = '#120A24'
+        SummaryBackgroundStart = '#281559'
+        SummaryBackgroundEnd = '#150A31'
+        CardBorder = '#8B5CF6'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#140A29'
+        GaugeStroke = '#8B5CF6'
         # Navigation Farben
         SelectedBackground = '#8B5CF6'
         UnselectedBackground = 'Transparent'
@@ -271,6 +284,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D1117'
         SidebarBg = '#21262D'
         HeaderBg = '#21262D'
+        CardBackgroundStart = '#1C2129'
+        CardBackgroundEnd = '#0D1117'
+        SummaryBackgroundStart = '#222933'
+        SummaryBackgroundEnd = '#11151B'
+        CardBorder = '#8B5CF6'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#161B22'
+        GaugeStroke = '#8B5CF6'
         # Navigation Farben
         SelectedBackground = '#A78BFA'
         UnselectedBackground = 'Transparent'
@@ -290,6 +311,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#E9ECEF'
         HeaderBg = '#F1F3F4'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#E9ECEF'
+        SummaryBackgroundStart = '#F8F9FA'
+        SummaryBackgroundEnd = '#DEE2E6'
+        CardBorder = '#0066CC'
+        GlowAccent = '#198754'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#0066CC'
         # Navigation Farben
         SelectedBackground = '#0066CC'
         UnselectedBackground = 'Transparent'
@@ -309,6 +338,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#F9F9F9'
         HeaderBg = '#F1F1F1'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#F1F1F1'
+        SummaryBackgroundStart = '#FFECEC'
+        SummaryBackgroundEnd = '#FFFFFF'
+        CardBorder = '#FF0000'
+        GlowAccent = '#FF0000'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#FF0000'
         # Navigation Farben
         SelectedBackground = '#FF0000'
         UnselectedBackground = 'Transparent'
@@ -328,6 +365,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FFFFFF'
         SidebarBg = '#E4E6EA'
         HeaderBg = '#FFFFFF'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#E4E6EA'
+        SummaryBackgroundStart = '#F3F4F7'
+        SummaryBackgroundEnd = '#E0E3E8'
+        CardBorder = '#1877F2'
+        GlowAccent = '#42B883'
+        GaugeBackground = '#F0F2F5'
+        GaugeStroke = '#1877F2'
         # Navigation Farben
         SelectedBackground = '#1877F2'
         UnselectedBackground = 'Transparent'
@@ -347,6 +392,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#FAFAFA'
         SidebarBg = '#F6F7F8'
         HeaderBg = '#F6F7F8'
+        CardBackgroundStart = '#FFFFFF'
+        CardBackgroundEnd = '#F6F7F8'
+        SummaryBackgroundStart = '#FFEFE6'
+        SummaryBackgroundEnd = '#FFFFFF'
+        CardBorder = '#FF4500'
+        GlowAccent = '#FF4500'
+        GaugeBackground = '#FFFFFF'
+        GaugeStroke = '#FF4500'
         # Navigation Farben
         SelectedBackground = '#FF4500'
         UnselectedBackground = 'Transparent'
@@ -366,6 +419,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#2F3136'
         SidebarBg = '#2F3136'
         HeaderBg = '#40444B'
+        CardBackgroundStart = '#3A3D45'
+        CardBackgroundEnd = '#2F3136'
+        SummaryBackgroundStart = '#41444D'
+        SummaryBackgroundEnd = '#252730'
+        CardBorder = '#5865F2'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#2B2D31'
+        GaugeStroke = '#5865F2'
         # Navigation Farben
         SelectedBackground = '#5865F2'
         UnselectedBackground = 'Transparent'
@@ -385,6 +446,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#18181B'
         SidebarBg = '#18181B'
         HeaderBg = '#1F1F23'
+        CardBackgroundStart = '#211933'
+        CardBackgroundEnd = '#14101F'
+        SummaryBackgroundStart = '#2B2143'
+        SummaryBackgroundEnd = '#1A132D'
+        CardBorder = '#9146FF'
+        GlowAccent = '#00FF88'
+        GaugeBackground = '#191321'
+        GaugeStroke = '#9146FF'
         # Navigation Farben
         SelectedBackground = '#9146FF'
         UnselectedBackground = 'Transparent'
@@ -404,6 +473,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1B2838'
         SidebarBg = '#2A3F54'
         HeaderBg = '#2A3F54'
+        CardBackgroundStart = '#30485F'
+        CardBackgroundEnd = '#1B2838'
+        SummaryBackgroundStart = '#355066'
+        SummaryBackgroundEnd = '#1F3042'
+        CardBorder = '#4CAF50'
+        GlowAccent = '#4CAF50'
+        GaugeBackground = '#23394D'
+        GaugeStroke = '#4CAF50'
         # Navigation Farben
         SelectedBackground = '#4CAF50'
         UnselectedBackground = 'Transparent'
@@ -423,6 +500,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0F1419'
         SidebarBg = '#1E2A3A'
         HeaderBg = '#1E2A3A'
+        CardBackgroundStart = '#253446'
+        CardBackgroundEnd = '#0F1419'
+        SummaryBackgroundStart = '#2B3E53'
+        SummaryBackgroundEnd = '#141C24'
+        CardBorder = '#00BCD4'
+        GlowAccent = '#00BCD4'
+        GaugeBackground = '#1B2836'
+        GaugeStroke = '#00BCD4'
         # Navigation Farben
         SelectedBackground = '#00BCD4'
         UnselectedBackground = 'Transparent'
@@ -442,6 +527,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#000000'
         SidebarBg = '#1A1A1A'
         HeaderBg = '#1A1A1A'
+        CardBackgroundStart = '#262626'
+        CardBackgroundEnd = '#050505'
+        SummaryBackgroundStart = '#2F2210'
+        SummaryBackgroundEnd = '#070302'
+        CardBorder = '#FF9000'
+        GlowAccent = '#FFD700'
+        GaugeBackground = '#141414'
+        GaugeStroke = '#FF9000'
         # Navigation Farben
         SelectedBackground = '#FF9000'
         UnselectedBackground = 'Transparent'
@@ -461,6 +554,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0A0A0A'
         SidebarBg = '#1A1A2E'
         HeaderBg = '#16213E'
+        CardBackgroundStart = '#212143'
+        CardBackgroundEnd = '#0A0A0A'
+        SummaryBackgroundStart = '#2B2B57'
+        SummaryBackgroundEnd = '#111122'
+        CardBorder = '#00FFFF'
+        GlowAccent = '#FF00FF'
+        GaugeBackground = '#141432'
+        GaugeStroke = '#00FFFF'
         # Navigation Farben
         SelectedBackground = '#00FFFF'
         UnselectedBackground = 'Transparent'
@@ -480,6 +581,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#0D0D0D'
         SidebarBg = '#1A1A1A'
         HeaderBg = '#262626'
+        CardBackgroundStart = '#242424'
+        CardBackgroundEnd = '#0D0D0D'
+        SummaryBackgroundStart = '#2F1630'
+        SummaryBackgroundEnd = '#111011'
+        CardBorder = '#39FF14'
+        GlowAccent = '#FF1493'
+        GaugeBackground = '#181818'
+        GaugeStroke = '#39FF14'
         # Navigation Farben
         SelectedBackground = '#39FF14'
         UnselectedBackground = 'Transparent'
@@ -499,6 +608,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#000000'
         SidebarBg = '#001100'
         HeaderBg = '#002200'
+        CardBackgroundStart = '#001800'
+        CardBackgroundEnd = '#000000'
+        SummaryBackgroundStart = '#002400'
+        SummaryBackgroundEnd = '#000800'
+        CardBorder = '#00FF41'
+        GlowAccent = '#00FF41'
+        GaugeBackground = '#001400'
+        GaugeStroke = '#00FF41'
         # Navigation Farben
         SelectedBackground = '#00FF41'
         UnselectedBackground = 'Transparent'
@@ -518,6 +635,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1A0D2E'
         SidebarBg = '#2E1A4A'
         HeaderBg = '#3E2459'
+        CardBackgroundStart = '#38225C'
+        CardBackgroundEnd = '#1A0D2E'
+        SummaryBackgroundStart = '#432B70'
+        SummaryBackgroundEnd = '#23103E'
+        CardBorder = '#9966CC'
+        GlowAccent = '#9966CC'
+        GaugeBackground = '#27163F'
+        GaugeStroke = '#9966CC'
         # Navigation Farben
         SelectedBackground = '#663399'
         UnselectedBackground = 'Transparent'
@@ -537,6 +662,14 @@ $global:ThemeDefinitions = @{
         LogBg = '#1A0000'
         SidebarBg = '#330000'
         HeaderBg = '#4D0000'
+        CardBackgroundStart = '#3F0000'
+        CardBackgroundEnd = '#1A0000'
+        SummaryBackgroundStart = '#520000'
+        SummaryBackgroundEnd = '#250000'
+        CardBorder = '#FF0000'
+        GlowAccent = '#FF3333'
+        GaugeBackground = '#260000'
+        GaugeStroke = '#FF0000'
         # Navigation Farben
         SelectedBackground = '#FF0000'
         UnselectedBackground = 'Transparent'
@@ -994,7 +1127,8 @@ function Test-StartupControls {
         'btnOptimizeSelected' = $btnOptimizeSelected
         'btnImportOptions' = $btnImportOptions
         'btnChooseBackupFolder' = $btnChooseBackupFolder
-        
+        'cmbOptionsLanguage' = $cmbOptionsLanguage
+
         # System optimization and service management controls
         'btnOptimizeGame' = $btnOptimizeGame
         'btnDashQuickOptimize' = $btnDashQuickOptimize
@@ -3587,8 +3721,9 @@ function Remove-Reg {
           
           <!-- Dashboard Panel -->
           <StackPanel x:Name="panelDashboard" Visibility="Visible">
-            <!-- Performance Metrics Dashboard -->
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Neon Performance Overview -->
+            <Border x:Name="dashboardSummaryPanel" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
@@ -3596,82 +3731,168 @@ function Remove-Reg {
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <!-- System Status -->
-                <StackPanel Grid.Column="0">
-                  <TextBlock Text="System Status" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="CPU Usage:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashCpuUsage" Text="--%" Foreground="#FFD700" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <TextBlock Text="Memory:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashMemoryUsage" Text="-- MB" Foreground="#00BFFF" FontSize="14" FontWeight="Bold"/>
-                </StackPanel>
-                
-                <!-- Optimization Status -->
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="Optimization Status" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="Active Games:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashActiveGames" Text="None" Foreground="#00FF88" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <TextBlock Text="Last Optimization:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashLastOptimization" Text="Never" Foreground="#B8B3E6" FontSize="14" FontWeight="Bold"/>
-                </StackPanel>
-                
-                <!-- System Health Status -->
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="System Health" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <TextBlock Text="Health Status:" Foreground="White" FontSize="12"/>
-                  <TextBlock x:Name="lblDashSystemHealth" Text="Not Run" Foreground="#B8B3E6" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                  <Button x:Name="btnSystemHealth" Content="📊 View Details" Style="{StaticResource ModernButton}" Height="30" FontSize="11"/>
-                  <Button x:Name="btnSystemHealthRunCheck" Content="🩺 Run Check" Style="{StaticResource ModernButton}" Height="30" FontSize="11" Margin="0,4,0,0"/>
-                </StackPanel>
-                
-                <!-- Quick Actions -->
-                <StackPanel Grid.Column="3">
-                  <TextBlock Text="Quick Actions" Style="{StaticResource HeaderText}" Margin="0,0,0,10"/>
-                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick Optimize" Style="{StaticResource SuccessButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-Detect Games" Style="{StaticResource ModernButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <Button x:Name="btnBenchmark" Content="⏱️ Quick Benchmark" Style="{StaticResource WarningButton}" Height="32" Margin="0,0,0,4" FontSize="11"/>
-                  <CheckBox x:Name="chkDashAutoOptimize" Content="Auto-Optimize" Style="{StaticResource ModernCheckBox}" Margin="0,3,0,0"/>
-                </StackPanel>
+
+                <!-- CPU Gauge -->
+                <Border x:Name="dashboardCpuCard" Grid.Column="0" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="0,0,12,0">
+                  <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="CPU Load" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               HorizontalAlignment="Center"/>
+                    <Grid Width="96" Height="96" Margin="0,12,0,12">
+                      <Ellipse x:Name="ellipseCpuRing" Stroke="#8B5CF6" StrokeThickness="4" Fill="#140A29"/>
+                      <Ellipse x:Name="ellipseCpuInner" Width="72" Height="72" Fill="#0A0E27" StrokeThickness="0"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      <TextBlock x:Name="lblDashCpuUsage" Text="--%" Foreground="White" FontSize="22" FontWeight="Bold"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="Realtime usage of every processor core." Foreground="#B8B3E6" FontSize="11"
+                               TextAlignment="Center" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Memory Gauge -->
+                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,12,0">
+                  <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Memory Usage" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               HorizontalAlignment="Center"/>
+                    <Grid Width="96" Height="96" Margin="0,12,0,12">
+                      <Ellipse x:Name="ellipseMemoryRing" Stroke="#8B5CF6" StrokeThickness="4" Fill="#140A29"/>
+                      <Ellipse x:Name="ellipseMemoryInner" Width="72" Height="72" Fill="#0A0E27" StrokeThickness="0"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      <TextBlock x:Name="lblDashMemoryUsage" Text="-- MB" Foreground="#00BFFF" FontSize="18"
+                                 FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </Grid>
+                    <TextBlock Text="Tracks total memory load so you can spot hungry apps." Foreground="#B8B3E6"
+                               FontSize="11" TextAlignment="Center" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Activity Snapshot -->
+                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,12,0">
+                  <StackPanel>
+                    <TextBlock Text="Session Activity" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="Active Games" Foreground="White" FontSize="12"/>
+                    <TextBlock x:Name="lblDashActiveGames" Text="None" Foreground="#00FF88" FontSize="16"
+                               FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Separator Margin="0,4" Background="#6B46C1" Height="1"/>
+                    <TextBlock Text="Last Optimization" Foreground="White" FontSize="12" Margin="0,4,0,0"/>
+                    <TextBlock x:Name="lblDashLastOptimization" Text="Never" Foreground="#B8B3E6"
+                               FontSize="14" FontWeight="Bold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- Health Overview -->
+                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="#1F153F" BorderBrush="#6B46C1"
+                        BorderThickness="1.2" CornerRadius="14" Padding="16" Margin="12,0,0,0">
+                  <StackPanel>
+                    <TextBlock Text="System Health" Foreground="#00FF88" FontWeight="Bold" FontSize="14"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="Health Status" Foreground="White" FontSize="12"/>
+                    <TextBlock x:Name="lblDashSystemHealth" Text="Not Run" Foreground="#B8B3E6" FontSize="16"
+                               FontWeight="Bold" Margin="0,4,0,12"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                      <Button x:Name="btnSystemHealth" Content="📊 Details" Style="{StaticResource ModernButton}"
+                              Height="32" Width="90" FontSize="11" Margin="0,0,6,0"
+                              ToolTip="Open the detailed system health dashboard"/>
+                      <Button x:Name="btnSystemHealthRunCheck" Content="🩺 Run" Style="{StaticResource SuccessButton}"
+                              Height="32" Width="80" FontSize="11" ToolTip="Start a fresh health scan"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
               </Grid>
             </Border>
 
-            <!-- Game Profile Section -->
-            <Border Background="#1A1625" BorderBrush="#6B46C1" BorderThickness="2" CornerRadius="8" Padding="20" Margin="0,0,0,15">
+            <!-- Quick Actions -->
+            <Border x:Name="dashboardQuickActionsCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
               <StackPanel>
-                <TextBlock Text="Game Profile Selection" Style="{StaticResource HeaderText}" Margin="0,0,0,15"/>
+                <TextBlock Text="Optimization Controls" Foreground="#00FF88" FontWeight="Bold" FontSize="16"/>
+                <TextBlock Text="Launch KOALA's automation, detection, and benchmarking tools with a single tap."
+                           Foreground="#B8B3E6" FontSize="12" Margin="0,6,0,12" TextWrapping="Wrap"/>
+                <WrapPanel Margin="0,0,0,12" HorizontalAlignment="Stretch" Background="Transparent">
+                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick Optimize" Style="{StaticResource SuccessButton}"
+                          Width="160" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Apply the recommended KOALA optimizations immediately"/>
+                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-Detect Games" Style="{StaticResource ModernButton}"
+                          Width="170" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Scan your drives for installed games and build profiles automatically"/>
+                  <Button x:Name="btnBenchmark" Content="⏱️ Quick Benchmark" Style="{StaticResource WarningButton}"
+                          Width="160" Height="36" Margin="0,0,12,12" FontSize="12"
+                          ToolTip="Run a fast system benchmark to compare recent performance"/>
+                </WrapPanel>
+                <CheckBox x:Name="chkDashAutoOptimize" Content="Keep auto-optimization enabled" Margin="0,0,0,8"
+                          Style="{StaticResource ModernCheckBox}" ToolTip="Automatically re-apply optimizations on startup"/>
+                <TextBlock Text="Tip: Enable auto-optimization so KOALA refreshes your tweaks whenever Windows starts."
+                           Foreground="#B8B3E6" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+
+            <!-- Game Profile Section -->
+            <Border x:Name="dashboardGameProfileCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20" Margin="0,0,0,20">
+              <StackPanel>
+                <TextBlock Text="🎮 Game Profile Launcher" Foreground="#00FF88" FontWeight="Bold" FontSize="16"
+                           Margin="0,0,0,12"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
-                  
-                  <StackPanel Grid.Column="0">
-                    <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}" Margin="0,0,10,10"/>
+
+                  <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}" Margin="0,0,0,12"
+                              ToolTip="Select an optimization preset for the highlighted game"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
-                      <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}" 
-                               Height="32" Margin="0,0,5,0" 
-                               ToolTip="Enter executable name (e.g., mygame.exe) for custom optimizations"/>
-                      <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="60" Height="32" 
-                              Style="{StaticResource ModernButton}" Margin="0,0,5,0"/>
-                      <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="80" Height="32" 
-                              Style="{StaticResource SuccessButton}"/>
+                      <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}"
+                               Height="32" Margin="0,0,6,0"
+                               ToolTip="Enter an executable name (for example mygame.exe) to create a custom profile"/>
+                      <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="60" Height="32"
+                              Style="{StaticResource ModernButton}" Margin="0,0,6,0"
+                              ToolTip="Browse for a game executable"/>
+                      <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="90" Height="32"
+                              Style="{StaticResource SuccessButton}"
+                              ToolTip="Apply the selected optimization profile to this game"/>
                     </Grid>
                   </StackPanel>
-                  
+
                   <StackPanel Grid.Column="1">
-                    <Button x:Name="btnInstalledGamesDash" Content="🎮 Installed Games" Width="150" Height="32" 
-                            Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="150" Height="32" 
-                            Style="{StaticResource ModernButton}" Margin="0,0,0,10"/>
-                    <Button x:Name="btnCustomSearchDash" Content="🔍 Custom Search" Width="150" Height="32" 
-                            Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
+                    <Button x:Name="btnInstalledGamesDash" Content="🎮 Installed Games" Width="170" Height="34"
+                            Style="{StaticResource ModernButton}" Margin="0,0,0,12"
+                            ToolTip="Show every detected game on this PC"/>
+                    <Button x:Name="btnAddGameFolderDash" Content="📁 Add Game Folder" Width="170" Height="34"
+                            Style="{StaticResource ModernButton}" Margin="0,0,0,12"
+                            ToolTip="Point KOALA at a custom folder that stores your games"/>
+                    <Button x:Name="btnCustomSearchDash" Content="🔍 Custom Search" Width="170" Height="34"
+                            Style="{StaticResource WarningButton}" Visibility="Collapsed"
+                            ToolTip="Manually trigger a custom search routine"/>
                   </StackPanel>
                 </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Game Library -->
+            <Border x:Name="dashboardGameListCard" Background="#171030" BorderBrush="#6B46C1" BorderThickness="2"
+                    CornerRadius="18" Padding="20">
+              <StackPanel>
+                <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,0,0,12"/>
+                <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto" Background="Transparent">
+                  <StackPanel x:Name="gameListPanelDashboard">
+                    <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..."
+                               Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
+                  </StackPanel>
+                </ScrollViewer>
+                <Button x:Name="btnOptimizeSelectedDashboard" Content="⚡ Optimize Selected Games" Height="38"
+                        Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,12,0,0" IsEnabled="False"
+                        ToolTip="Apply optimizations to the highlighted titles"/>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3805,7 +4026,7 @@ function Remove-Reg {
                         </WrapPanel>
                       </StackPanel>
                     </Expander>
-                    <Expander Header="🚀 Advanced Performance Enhancements"
+                    <Expander x:Name="expanderAdvancedPerformance" Header="🚀 Advanced Performance Enhancements"
                               Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                               Margin="0,0,0,10" Padding="10">
                       <StackPanel Margin="10">
@@ -3870,7 +4091,7 @@ function Remove-Reg {
                         </WrapPanel>
                       </StackPanel>
                     </Expander>
-                    <Expander Header="🔒 Privacy &amp; Background Services"
+                    <Expander x:Name="expanderPrivacyServices" Header="🔒 Privacy &amp; Background Services"
                               Background="#2D2438" Foreground="White" BorderBrush="#6B46C1" BorderThickness="1"
                               Margin="0,0,0,10" Padding="10">
                       <StackPanel Margin="10">
@@ -3938,7 +4159,7 @@ function Remove-Reg {
                   <StackPanel>
                     <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto">
-                      <StackPanel x:Name="gameListPanelMain">
+                      <StackPanel x:Name="gameListPanel">
                         <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..." 
                                    Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
                       </StackPanel>
@@ -4019,6 +4240,25 @@ function Remove-Reg {
                         </Grid>
                       </StackPanel>
                     </Border>
+                  </StackPanel>
+                </Border>
+
+                <!-- Language Selection -->
+                <Border Background="#2D2438" BorderBrush="#6B46C1" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock x:Name="lblLanguageSectionTitle" Text="🌐 Language" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="lblLanguageDescription" Text="Choose how KOALA should talk to you." Foreground="#B8B3E6" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBlock x:Name="lblLanguageLabel" Grid.Column="0" Text="Language:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <ComboBox x:Name="cmbOptionsLanguage" Grid.Column="1" Style="{StaticResource ModernComboBox}" SelectedIndex="0">
+                        <ComboBoxItem x:Name="cmbOptionsLanguageEnglish" Content="English" Tag="en"/>
+                        <ComboBoxItem x:Name="cmbOptionsLanguageGerman" Content="German" Tag="de"/>
+                      </ComboBox>
+                    </Grid>
                   </StackPanel>
                 </Border>
 
@@ -4403,14 +4643,43 @@ $chkTcpWindowAutoTuning = $form.FindName('chkTcpWindowAutoTuning')
 
 # Game list and search controls
 $gameListPanel = $form.FindName('gameListPanel')
+$gameListPanelDashboard = $form.FindName('gameListPanelDashboard')
 $btnSearchGames = $form.FindName('btnSearchGames')
+$btnOptimizeSelectedMain = $form.FindName('btnOptimizeSelectedMain')
+$btnOptimizeSelectedDashboard = $form.FindName('btnOptimizeSelectedDashboard')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
+
+$script:PrimaryGameListPanel = $gameListPanel
+$script:DashboardGameListPanel = $gameListPanelDashboard
+$script:OptimizeSelectedButtons = @()
+if ($btnOptimizeSelected) { $script:OptimizeSelectedButtons += $btnOptimizeSelected }
+if ($btnOptimizeSelectedMain) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedMain }
+if ($btnOptimizeSelectedDashboard) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedDashboard }
+
+if (-not $script:PrimaryGameListPanel -and $gameListPanelDashboard) {
+    $script:PrimaryGameListPanel = $gameListPanelDashboard
+}
+
+if (-not $gameListPanel -and $script:PrimaryGameListPanel) {
+    $gameListPanel = $script:PrimaryGameListPanel
+}
+
+if ($script:PrimaryGameListPanel -and $script:DashboardGameListPanel -and -not $script:GameListMirrorAttached) {
+    Update-GameListMirrors
+    $script:PrimaryGameListPanel.add_LayoutUpdated({
+            Update-GameListMirrors
+        })
+    $script:GameListMirrorAttached = $true
+}
 
 # Options and theme controls - cmbOptionsTheme cmbUIScale btnApplyScale pattern for validation
 $cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
 $btnOptionsApplyTheme = $form.FindName('btnOptionsApplyThemeMain')  # Fixed control name
 $btnApplyTheme = $form.FindName('btnApplyTheme')  # Alias for test compatibility
 $customThemePanel = $form.FindName('customThemePanel')
+$cmbOptionsLanguage = $form.FindName('cmbOptionsLanguage')
+$cmbOptionsLanguageEnglish = $form.FindName('cmbOptionsLanguageEnglish')
+$cmbOptionsLanguageGerman = $form.FindName('cmbOptionsLanguageGerman')
 $txtCustomBg = $form.FindName('txtCustomBg')
 $txtCustomPrimary = $form.FindName('txtCustomPrimary')
 $txtCustomHover = $form.FindName('txtCustomHover')
@@ -4584,10 +4853,19 @@ function Set-ActiveNavigationButton {
 
 function Set-ActiveAdvancedSectionButton {
     param(
-        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
+
+    if ([string]::IsNullOrWhiteSpace($Section)) {
+        return
+    }
+
+    $validSections = 'Network', 'System', 'Services'
+    if ($Section -notin $validSections) {
+        Log "Ignoring advanced button highlight request for unsupported section '$Section'" 'Warning'
+        return
+    }
 
     try {
         $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
@@ -4622,7 +4900,8 @@ function Set-ActiveAdvancedSectionButton {
             $button.UpdateLayout()
         }
     } catch {
-        Log "Failed to highlight advanced section button $Section: $($_.Exception.Message)" 'Warning'
+        $message = "Failed to highlight advanced section button {0}: {1}" -f $Section, $_.Exception.Message
+        Log $message 'Warning'
     }
 }
 
@@ -4725,10 +5004,19 @@ function Switch-Panel {
 
 function Show-AdvancedSection {
     param(
-        [ValidateSet('Network', 'System', 'Services')]
         [string]$Section,
         [string]$CurrentTheme = 'DarkPurple'
     )
+
+    if ([string]::IsNullOrWhiteSpace($Section)) {
+        $Section = 'Network'
+    }
+
+    $validSections = 'Network', 'System', 'Services'
+    if ($Section -notin $validSections) {
+        Log "Requested advanced section '$Section' is unknown. Falling back to 'Network'." 'Warning'
+        $Section = 'Network'
+    }
 
     try {
         Switch-Panel "Advanced"
@@ -4808,6 +5096,10 @@ $chkDefenderOptimize = $null
 $chkDirectStorage = $null
 
 # Navigation Event Handlers
+if (-not $script:NavigationClickHandlers) {
+    $script:NavigationClickHandlers = @{}
+}
+
 if ($btnNavDashboard) {
     $btnNavDashboard.Add_Click({
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -4822,29 +5114,41 @@ if ($btnNavDashboard) {
 }
 
 if ($btnNavBasicOpt) {
-    $btnNavBasicOpt.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('BasicOpt') -and $script:NavigationClickHandlers['BasicOpt'])) {
+        $script:NavigationClickHandlers['BasicOpt'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "BasicOpt"
+            Switch-Theme -ThemeName $currentTheme
         }
 
-        Switch-Panel "BasicOpt"
-        Switch-Theme -ThemeName $currentTheme
-    })
+        $btnNavBasicOpt.Add_Click($script:NavigationClickHandlers['BasicOpt'])
+    }
 }
 
 if ($btnNavAdvanced) {
-    $btnNavAdvanced.Add_Click({
-        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
-            $cmbOptionsTheme.SelectedItem.Tag
-        } else {
-            'DarkPurple'
+    if (-not ($script:NavigationClickHandlers.ContainsKey('Advanced') -and $script:NavigationClickHandlers['Advanced'])) {
+        $script:NavigationClickHandlers['Advanced'] = [System.Windows.RoutedEventHandler]{
+            param($sender, $args)
+
+            $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+                $cmbOptionsTheme.SelectedItem.Tag
+            } else {
+                'DarkPurple'
+            }
+
+            Switch-Panel "Advanced"
+            Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
         }
 
-        Switch-Panel "Advanced"
-        Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
-    })
+        $btnNavAdvanced.Add_Click($script:NavigationClickHandlers['Advanced'])
+    }
 }
 
 if ($btnNavGames) {
@@ -4959,6 +5263,18 @@ if ($cmbOptionsTheme) {
     })
 }
 
+if ($cmbOptionsLanguage) {
+    $cmbOptionsLanguage.Add_SelectionChanged({
+        if ($script:IsLanguageInitializing) {
+            return
+        }
+
+        if ($cmbOptionsLanguage.SelectedItem -and $cmbOptionsLanguage.SelectedItem.Tag) {
+            Set-UILanguage -LanguageCode $cmbOptionsLanguage.SelectedItem.Tag -SkipSelectionUpdate
+        }
+    })
+}
+
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5004,7 +5320,7 @@ function Update-ThemeColorPreview {
 # Enhanced Theme System with Additional Themes
 function Switch-Theme {
     param([string]$ThemeName)
-    
+
     try {
         # Eingabe validieren
         if (-not $ThemeName) {
@@ -5148,7 +5464,7 @@ function Switch-Theme {
             if ($activityLogBorder) {
                 try {
                     $activityLogBorder.Background = $themeColors.LogBg
-                    Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '2'
+                    Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
                 } catch {
@@ -5194,7 +5510,7 @@ function Switch-Theme {
                 }
             }
             
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
         
         # Finale Theme-Persistenz Sicherstellung
         Start-Sleep -Milliseconds 150
@@ -5202,12 +5518,12 @@ function Switch-Theme {
         $form.Dispatcher.BeginInvoke([action]{
             # Nochmalige rekursive Aktualisierung aller Elemente
             Update-AllUIElementsRecursively -element $form -colors $themeColors
-            
+
             # Finaler kompletter Refresh
             $form.InvalidateVisual()
             $form.UpdateLayout()
-            
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
         
         if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
             $currentSection = $global:CurrentAdvancedSection
@@ -5241,6 +5557,256 @@ function Switch-Theme {
         }
     }
 }
+
+# ---------- Localization Support ----------
+function Initialize-LocalizationResources {
+    if ($script:LocalizationResources) {
+        return
+    }
+
+    $script:LocalizationResources = @{
+        'en' = @{
+            DisplayName = 'English'
+            Controls    = @{
+                'lblLanguageSectionTitle' = @{ Text = '🌐 Language' }
+                'lblLanguageDescription'  = @{ Text = 'Choose how KOALA should talk to you.' }
+                'lblLanguageLabel'        = @{ Text = 'Language:' }
+                'cmbOptionsLanguage'      = @{ ToolTip = 'Switch between English and German wording in the interface.' }
+                'expanderNetworkTweaks'   = @{ Header = '🌐 Network Optimizations' }
+                'expanderNetworkOptimizations' = @{ Header = '🌐 Core Network Tweaks' }
+                'expanderSystemOptimizations'  = @{ Header = '💻 System Optimizations' }
+                'expanderPerformanceOptimizations' = @{ Header = '⚡ Performance Optimizations' }
+                'expanderAdvancedPerformance' = @{ Header = '🚀 Advanced Performance Enhancements' }
+                'expanderServiceManagement' = @{ Header = '🛠️ Service Optimizations' }
+                'expanderServiceOptimizations' = @{ Header = '🧰 Service Tweaks' }
+                'expanderPrivacyServices'  = @{ Header = '🔒 Privacy & Background Services' }
+                'chkAckNetwork'            = @{ Content = 'TCP ACK Frequency'; ToolTip = 'Lets your PC confirm incoming data faster to reduce online lag.' }
+                'chkDelAckTicksNetwork'    = @{ Content = 'Delayed ACK Ticks'; ToolTip = 'Cuts the waiting time before Windows confirms data packets, lowering delay.' }
+                'chkNagleNetwork'          = @{ Content = 'Disable Nagle Algorithm'; ToolTip = 'Stops Windows from bundling small messages together so actions happen right away.' }
+                'chkNetworkThrottlingNetwork' = @{ Content = 'Network Throttling Index'; ToolTip = 'Removes Windows built-in speed limiter for background network tasks.' }
+                'chkRSSNetwork'            = @{ Content = 'Receive Side Scaling'; ToolTip = 'Lets Windows use multiple CPU cores to handle incoming internet traffic.' }
+                'chkRSCNetwork'            = @{ Content = 'Receive Segment Coalescing'; ToolTip = 'Allows Windows to combine related network packets to lighten the workload.' }
+                'chkChimneyNetwork'        = @{ Content = 'TCP Chimney Offload'; ToolTip = 'Moves some network work to your network card so the CPU stays free.' }
+                'chkNetDMANetwork'         = @{ Content = 'NetDMA State'; ToolTip = 'Enables direct memory access for network cards to speed up transfers.' }
+                'chkTcpTimestampsNetwork'  = @{ Content = 'TCP Timestamps'; ToolTip = 'Turns off extra timing stamps that can slow down gaming connections.' }
+                'chkTcpWindowAutoTuningNetwork' = @{ Content = 'TCP Window Auto-Tuning'; ToolTip = 'Optimizes how Windows sizes network data windows for faster downloads.' }
+                'chkMemoryCompressionSystem' = @{ Content = 'Memory Compression'; ToolTip = 'Compresses rarely used data in memory to keep more RAM free for games.' }
+                'chkPowerPlanSystem'       = @{ Content = 'High Performance Power Plan'; ToolTip = 'Forces Windows to use the high-performance power plan for best speed.' }
+                'chkCPUSchedulingSystem'   = @{ Content = 'CPU Scheduling'; ToolTip = 'Gives background services less priority so games get more CPU time.' }
+                'chkPageFileSystem'        = @{ Content = 'Page File Optimization'; ToolTip = 'Fine-tunes the Windows page file to avoid slow downs when memory fills.' }
+                'chkVisualEffectsSystem'   = @{ Content = 'Disable Visual Effects'; ToolTip = 'Turns off eye-candy animations to free resources for performance.' }
+                'chkCoreParkingSystem'     = @{ Content = 'Core Parking'; ToolTip = 'Keeps CPU cores awake so games can use them instantly.' }
+                'chkGameDVRSystem'         = @{ Content = 'Disable Game DVR'; ToolTip = 'Disables Windows background recording to prevent FPS drops.' }
+                'chkFullscreenOptimizationsSystem' = @{ Content = 'Fullscreen Exclusive'; ToolTip = 'Uses classic full screen mode to reduce input lag.' }
+                'chkGPUSchedulingSystem'   = @{ Content = 'Hardware GPU Scheduling'; ToolTip = 'Lets the graphics card schedule its own work for smoother frames.' }
+                'chkTimerResolutionSystem' = @{ Content = 'Timer Resolution'; ToolTip = 'Sets Windows timers to 1 ms for faster input response.' }
+                'chkGameModeSystem'        = @{ Content = 'Game Mode'; ToolTip = 'Activates Windows Game Mode to focus resources on games.' }
+                'chkMPOSystem'             = @{ Content = 'MPO (Multi-Plane Overlay)'; ToolTip = 'Turns off a display feature that can cause flickering or stutter.' }
+                'chkDynamicResolution'     = @{ Content = 'Dynamic Resolution Scaling'; ToolTip = 'Automatically lowers resolution during busy scenes to keep frames steady.' }
+                'chkEnhancedFramePacing'   = @{ Content = 'Enhanced Frame Pacing'; ToolTip = 'Balances frame delivery so motion looks smoother.' }
+                'chkGPUOverclocking'       = @{ Content = 'Profile-based GPU Overclocking'; ToolTip = 'Applies a safe GPU tuning profile tailored for gaming.' }
+                'chkCompetitiveLatency'    = @{ Content = 'Competitive Latency Reduction'; ToolTip = 'Cuts extra buffering to keep controls feeling instant.' }
+                'chkAutoDiskOptimization'  = @{ Content = 'Auto Disk Defrag/SSD Trim'; ToolTip = 'Runs the right disk cleanup (defrag or TRIM) on a schedule.' }
+                'chkAdaptivePowerManagement' = @{ Content = 'Adaptive Power Management'; ToolTip = 'Adjusts power settings on the fly to balance speed and heat.' }
+                'chkEnhancedPagingFile'    = @{ Content = 'Enhanced Paging File Management'; ToolTip = 'Sets page file size based on RAM to prevent sudden slowdowns.' }
+                'chkDirectStorageEnhanced' = @{ Content = 'DirectStorage API Enhancement'; ToolTip = 'Prepares Windows for faster loading with DirectStorage-ready tweaks.' }
+                'chkAdvancedTelemetryDisable' = @{ Content = 'Advanced Telemetry & Tracking Disable'; ToolTip = 'Limits background data sharing to free system resources.' }
+                'chkMemoryDefragmentation' = @{ Content = 'Memory Defragmentation & Cleanup'; ToolTip = 'Reorganizes memory so large games get big uninterrupted blocks.' }
+                'chkServiceOptimization'   = @{ Content = 'Advanced Service Optimization'; ToolTip = 'Optimizes background services to focus on performance.' }
+                'chkDiskTweaksAdvanced'    = @{ Content = 'Advanced Disk I/O Tweaks'; ToolTip = 'Improves how Windows reads and writes data for gaming drives.' }
+                'chkNetworkLatencyOptimization' = @{ Content = 'Ultra-Low Network Latency Mode'; ToolTip = 'Applies extra network tweaks aimed at the lowest possible ping.' }
+                'chkFPSSmoothness'         = @{ Content = 'FPS Smoothness & Frame Time Optimization'; ToolTip = 'Applies timing tweaks to keep frame times even.' }
+                'chkCPUMicrocode'          = @{ Content = 'CPU Microcode & Cache Optimization'; ToolTip = 'Loads optimized CPU microcode settings for stability under load.' }
+                'chkRAMTimings'            = @{ Content = 'RAM Timing & Frequency Optimization'; ToolTip = 'Applies safe memory timing adjustments for better throughput.' }
+                'chkDisableXboxServicesServices' = @{ Content = 'Disable Xbox Services'; ToolTip = 'Stops Xbox helper services that consume memory when not gaming.' }
+                'chkDisableTelemetryServices' = @{ Content = 'Disable Telemetry'; ToolTip = 'Turns off Windows data reporting services to free bandwidth.' }
+                'chkDisableSearchServices' = @{ Content = 'Disable Windows Search'; ToolTip = 'Pauses Windows Search indexing to save disk activity.' }
+                'chkDisablePrintSpoolerServices' = @{ Content = 'Disable Print Spooler'; ToolTip = 'Stops print services if you do not use a printer.' }
+                'chkDisableSuperfetchServices' = @{ Content = 'Disable Superfetch'; ToolTip = 'Disables the preloading service that can cause drive activity.' }
+                'chkDisableFaxServices'    = @{ Content = 'Disable Fax Service'; ToolTip = 'Turns off the unused fax service.' }
+                'chkDisableRemoteRegistryServices' = @{ Content = 'Disable Remote Registry'; ToolTip = 'Blocks remote registry access for security and less background work.' }
+                'chkDisableThemesServices' = @{ Content = 'Optimize Themes Service'; ToolTip = 'Optimizes the themes service to reduce visual overhead.' }
+                'chkDisableCortana'        = @{ Content = 'Disable Cortana & Voice Assistant'; ToolTip = 'Disables Cortana to save memory and network use.' }
+                'chkDisableWindowsUpdate'  = @{ Content = 'Optimize Windows Update Service'; ToolTip = 'Limits automatic updates so games are not interrupted.' }
+                'chkDisableBackgroundApps' = @{ Content = 'Disable Background App Refresh'; ToolTip = 'Stops background apps from running when you do not need them.' }
+                'chkDisableLocationTracking' = @{ Content = 'Disable Location Tracking Services'; ToolTip = 'Prevents Windows from tracking your location in the background.' }
+                'chkDisableAdvertisingID'  = @{ Content = 'Disable Advertising ID Services'; ToolTip = 'Clears and stops the ad ID so apps cannot build ad profiles.' }
+                'chkDisableErrorReporting' = @{ Content = 'Disable Error Reporting Services'; ToolTip = 'Stops error reports from sending data online automatically.' }
+                'chkDisableCompatTelemetry' = @{ Content = 'Disable Compatibility Telemetry'; ToolTip = 'Blocks compatibility telemetry that collects app usage.' }
+                'chkDisableWSH'            = @{ Content = 'Disable Windows Script Host'; ToolTip = 'Disables Windows Script Host to avoid unwanted scripts.' }
+            }
+            ComboItems = @{
+                'cmbOptionsLanguageEnglish' = 'English'
+                'cmbOptionsLanguageGerman'  = 'German'
+            }
+        }
+        'de' = @{
+            DisplayName = 'Deutsch'
+            Controls    = @{
+                'lblLanguageSectionTitle' = @{ Text = '🌐 Sprache' }
+                'lblLanguageDescription'  = @{ Text = 'Wähle, wie KOALA mit dir sprechen soll.' }
+                'lblLanguageLabel'        = @{ Text = 'Sprache:' }
+                'cmbOptionsLanguage'      = @{ ToolTip = 'Wechsle zwischen englischen und deutschen Texten im Programm.' }
+                'expanderNetworkTweaks'   = @{ Header = '🌐 Netzwerk-Optimierungen' }
+                'expanderNetworkOptimizations' = @{ Header = '🌐 Zentrale Netzwerk-Feinabstimmung' }
+                'expanderSystemOptimizations'  = @{ Header = '💻 System-Optimierungen' }
+                'expanderPerformanceOptimizations' = @{ Header = '⚡ Leistungs-Optimierungen' }
+                'expanderAdvancedPerformance' = @{ Header = '🚀 Erweiterte Leistungssteigerungen' }
+                'expanderServiceManagement' = @{ Header = '🛠️ Dienstoptimierungen' }
+                'expanderServiceOptimizations' = @{ Header = '🧰 Dienst-Anpassungen' }
+                'expanderPrivacyServices'  = @{ Header = '🔒 Datenschutz & Hintergrunddienste' }
+                'chkAckNetwork'            = @{ Content = 'TCP-ACK beschleunigen'; ToolTip = 'Lässt deinen PC eingehende Daten schneller bestätigen und senkt so Verzögerungen im Online-Spiel.' }
+                'chkDelAckTicksNetwork'    = @{ Content = 'Verzögerte ACK-Zeit verkürzen'; ToolTip = 'Verkürzt die Wartezeit, bevor Windows Datenpakete bestätigt, und senkt damit die Latenz.' }
+                'chkNagleNetwork'          = @{ Content = 'Nagle-Algorithmus deaktivieren'; ToolTip = 'Verhindert, dass Windows kleine Nachrichten sammelt, damit deine Aktionen sofort ausgeführt werden.' }
+                'chkNetworkThrottlingNetwork' = @{ Content = 'Netzwerk-Drosselung ausschalten'; ToolTip = 'Hebt die in Windows eingebaute Geschwindigkeitsbremse für Netzwerkaufgaben auf.' }
+                'chkRSSNetwork'            = @{ Content = 'Receive Side Scaling aktivieren'; ToolTip = 'Erlaubt Windows, mehrere CPU-Kerne für eingehenden Internetverkehr zu nutzen.' }
+                'chkRSCNetwork'            = @{ Content = 'Receive Segment Coalescing aktivieren'; ToolTip = 'Ermöglicht Windows, zusammengehörige Pakete zu bündeln und so den Aufwand zu senken.' }
+                'chkChimneyNetwork'        = @{ Content = 'TCP-Chimney-Offload nutzen'; ToolTip = 'Verlagert Netzwerkarbeit auf die Netzwerkkarte, damit der Prozessor entlastet wird.' }
+                'chkNetDMANetwork'         = @{ Content = 'NetDMA aktivieren'; ToolTip = 'Aktiviert direkten Speicherzugriff für Netzwerkkarten und beschleunigt Übertragungen.' }
+                'chkTcpTimestampsNetwork'  = @{ Content = 'TCP-Zeitstempel deaktivieren'; ToolTip = 'Schaltet zusätzliche Zeitstempel aus, die Gaming-Verbindungen ausbremsen können.' }
+                'chkTcpWindowAutoTuningNetwork' = @{ Content = 'TCP-Fenster automatisch abstimmen'; ToolTip = 'Optimiert, wie Windows Datenfenster festlegt, damit Downloads schneller laufen.' }
+                'chkMemoryCompressionSystem' = @{ Content = 'Speicherkompression verwalten'; ToolTip = 'Komprimiert selten genutzte Daten im Speicher, damit mehr RAM für Spiele frei bleibt.' }
+                'chkPowerPlanSystem'       = @{ Content = 'Höchstleistung Energieplan erzwingen'; ToolTip = 'Erzwingt den Höchstleistungs-Energieplan von Windows für maximale Geschwindigkeit.' }
+                'chkCPUSchedulingSystem'   = @{ Content = 'CPU-Zeitplanung optimieren'; ToolTip = 'Gibt Hintergrunddiensten weniger Priorität, damit Spiele mehr CPU-Zeit erhalten.' }
+                'chkPageFileSystem'        = @{ Content = 'Auslagerungsdatei optimieren'; ToolTip = 'Stimmt die Auslagerungsdatei ab, damit es bei vollem RAM nicht zu Bremsen kommt.' }
+                'chkVisualEffectsSystem'   = @{ Content = 'Visuelle Effekte reduzieren'; ToolTip = 'Schaltet Effekte ab, um Ressourcen für Leistung freizumachen.' }
+                'chkCoreParkingSystem'     = @{ Content = 'Core Parking deaktivieren'; ToolTip = 'Hält CPU-Kerne wach, damit Spiele sie sofort nutzen können.' }
+                'chkGameDVRSystem'         = @{ Content = 'Game DVR deaktivieren'; ToolTip = 'Deaktiviert die Hintergrundaufzeichnung von Windows und verhindert FPS-Einbrüche.' }
+                'chkFullscreenOptimizationsSystem' = @{ Content = 'Exklusiven Vollbildmodus erzwingen'; ToolTip = 'Erzwingt den klassischen Vollbildmodus und senkt die Eingabeverzögerung.' }
+                'chkGPUSchedulingSystem'   = @{ Content = 'Hardware-GPU-Planung aktivieren'; ToolTip = 'Erlaubt der Grafikkarte, ihre Arbeit selbst zu planen, wodurch Bilder flüssiger laufen.' }
+                'chkTimerResolutionSystem' = @{ Content = 'Timerauflösung auf 1 ms setzen'; ToolTip = 'Setzt Windows-Timer auf 1 Millisekunde für schnellere Reaktionen.' }
+                'chkGameModeSystem'        = @{ Content = 'Windows-Spielmodus aktivieren'; ToolTip = 'Aktiviert den Windows-Spielmodus, damit Ressourcen auf Spiele fokussiert werden.' }
+                'chkMPOSystem'             = @{ Content = 'MPO (Multi-Plane Overlay) deaktivieren'; ToolTip = 'Schaltet eine Darstellungsfunktion ab, die Flackern oder Ruckeln verursachen kann.' }
+                'chkDynamicResolution'     = @{ Content = 'Dynamische Auflösung nutzen'; ToolTip = 'Senkt die Auflösung in hektischen Szenen automatisch, damit die Bildrate stabil bleibt.' }
+                'chkEnhancedFramePacing'   = @{ Content = 'Bildtaktung glätten'; ToolTip = 'Gleicht die Bildausgabe aus, damit Bewegungen ruhiger wirken.' }
+                'chkGPUOverclocking'       = @{ Content = 'GPU-Profiloptimierung anwenden'; ToolTip = 'Wendet ein sicheres GPU-Tuning-Profil speziell für Spiele an.' }
+                'chkCompetitiveLatency'    = @{ Content = 'Wettkampf-Latenz reduzieren'; ToolTip = 'Reduziert zusätzliche Puffer, damit die Steuerung sofort reagiert.' }
+                'chkAutoDiskOptimization'  = @{ Content = 'Automatische Laufwerksoptimierung'; ToolTip = 'Startet je nach Laufwerk automatisch Defrag oder TRIM, um es sauber zu halten.' }
+                'chkAdaptivePowerManagement' = @{ Content = 'Adaptive Energieverwaltung'; ToolTip = 'Passt die Energieeinstellungen dynamisch an, um Leistung und Temperatur auszugleichen.' }
+                'chkEnhancedPagingFile'    = @{ Content = 'Auslagerungsdatei anpassen'; ToolTip = 'Stimmt die Größe der Auslagerungsdatei auf deinen RAM ab, um plötzliche Bremsen zu vermeiden.' }
+                'chkDirectStorageEnhanced' = @{ Content = 'DirectStorage optimieren'; ToolTip = 'Bereitet Windows mit DirectStorage-Anpassungen auf schnellere Ladezeiten vor.' }
+                'chkAdvancedTelemetryDisable' = @{ Content = 'Erweiterte Telemetrie abschalten'; ToolTip = 'Begrenzt das Senden von Hintergrunddaten und spart Ressourcen.' }
+                'chkMemoryDefragmentation' = @{ Content = 'Arbeitsspeicher defragmentieren'; ToolTip = 'Ordnet den Speicher neu, damit große Spiele zusammenhängenden RAM erhalten.' }
+                'chkServiceOptimization'   = @{ Content = 'Dienste für Spiele optimieren'; ToolTip = 'Optimiert Hintergrunddienste, damit mehr Leistung für Spiele bleibt.' }
+                'chkDiskTweaksAdvanced'    = @{ Content = 'Fortgeschrittene Datenträgeroptimierung'; ToolTip = 'Verbessert Lese- und Schreibzugriffe von Windows auf deine Gaming-Laufwerke.' }
+                'chkNetworkLatencyOptimization' = @{ Content = 'Ultra-niedrige Netzwerklatenz'; ToolTip = 'Setzt zusätzliche Netzwerkoptimierungen für den niedrigsten möglichen Ping um.' }
+                'chkFPSSmoothness'         = @{ Content = 'FPS-Glättung aktivieren'; ToolTip = 'Nimmt Zeitanpassungen vor, damit Bildzeiten gleichmäßig bleiben.' }
+                'chkCPUMicrocode'          = @{ Content = 'CPU-Mikrocode optimieren'; ToolTip = 'Lädt optimierte CPU-Mikrocode-Einstellungen für Stabilität unter Last.' }
+                'chkRAMTimings'            = @{ Content = 'RAM-Timings abstimmen'; ToolTip = 'Nimmt sichere RAM-Timing-Anpassungen für mehr Durchsatz vor.' }
+                'chkDisableXboxServicesServices' = @{ Content = 'Xbox-Dienste deaktivieren'; ToolTip = 'Beendet Xbox-Hilfsdienste, die auch ohne Spiel Speicher belegen.' }
+                'chkDisableTelemetryServices' = @{ Content = 'Telemetry-Dienste deaktivieren'; ToolTip = 'Schaltet Datenerfassungsdienste von Windows aus und spart Bandbreite.' }
+                'chkDisableSearchServices' = @{ Content = 'Windows-Suche pausieren'; ToolTip = 'Pausiert die Windows-Suche, um Laufwerksaktivität zu sparen.' }
+                'chkDisablePrintSpoolerServices' = @{ Content = 'Druckwarteschlange deaktivieren'; ToolTip = 'Beendet Druckdienste, wenn kein Drucker verwendet wird.' }
+                'chkDisableSuperfetchServices' = @{ Content = 'Superfetch deaktivieren'; ToolTip = 'Deaktiviert den Vorlade-Dienst, der Laufwerke beschäftigen kann.' }
+                'chkDisableFaxServices'    = @{ Content = 'Faxdienst deaktivieren'; ToolTip = 'Schaltet den ungenutzten Faxdienst ab.' }
+                'chkDisableRemoteRegistryServices' = @{ Content = 'Remote-Registry sperren'; ToolTip = 'Sperrt den Remotezugriff auf die Registry für mehr Sicherheit und weniger Hintergrundarbeit.' }
+                'chkDisableThemesServices' = @{ Content = 'Design-Dienst optimieren'; ToolTip = 'Optimiert den Design-Dienst, um visuelle Last zu reduzieren.' }
+                'chkDisableCortana'        = @{ Content = 'Cortana & Sprachassistent deaktivieren'; ToolTip = 'Deaktiviert Cortana, um Speicher und Datenverkehr zu sparen.' }
+                'chkDisableWindowsUpdate'  = @{ Content = 'Windows Update optimieren'; ToolTip = 'Begrenzt automatische Updates, damit Spiele nicht unterbrochen werden.' }
+                'chkDisableBackgroundApps' = @{ Content = 'Hintergrund-Apps stoppen'; ToolTip = 'Verhindert, dass Hintergrund-Apps laufen, wenn du sie nicht brauchst.' }
+                'chkDisableLocationTracking' = @{ Content = 'Standortverfolgung stoppen'; ToolTip = 'Verhindert, dass Windows deinen Standort im Hintergrund verfolgt.' }
+                'chkDisableAdvertisingID'  = @{ Content = 'Werbe-ID deaktivieren'; ToolTip = 'Setzt die Werbe-ID zurück und verhindert, dass Apps Werbeprofile erstellen.' }
+                'chkDisableErrorReporting' = @{ Content = 'Fehlerberichterstattung deaktivieren'; ToolTip = 'Verhindert, dass Fehlerberichte automatisch Daten senden.' }
+                'chkDisableCompatTelemetry' = @{ Content = 'Kompatibilitäts-Telemetrie blockieren'; ToolTip = 'Blockiert Kompatibilitäts-Telemetrie, die App-Nutzung sammelt.' }
+                'chkDisableWSH'            = @{ Content = 'Windows Script Host deaktivieren'; ToolTip = 'Deaktiviert den Windows Script Host, um unerwünschte Skripte zu vermeiden.' }
+            }
+            ComboItems = @{
+                'cmbOptionsLanguageEnglish' = 'Englisch'
+                'cmbOptionsLanguageGerman'  = 'Deutsch'
+            }
+        }
+    }
+}
+
+function Set-UILanguage {
+    param(
+        [string]$LanguageCode,
+        [switch]$SkipSelectionUpdate
+    )
+
+    Initialize-LocalizationResources
+
+    if (-not $LanguageCode) {
+        $LanguageCode = 'en'
+    }
+
+    if (-not $script:LocalizationResources.ContainsKey($LanguageCode)) {
+        Log "Requested language '$LanguageCode' is not available. Falling back to English." 'Warning'
+        $LanguageCode = 'en'
+    }
+
+    $script:CurrentLanguage = $LanguageCode
+    $languageResources = $script:LocalizationResources[$LanguageCode]
+
+    foreach ($entry in $languageResources.Controls.GetEnumerator()) {
+        $controlName = $entry.Key
+        $control = $form.FindName($controlName)
+        if (-not $control) {
+            continue
+        }
+
+        $controlConfig = $entry.Value
+
+        if ($controlConfig.ContainsKey('Content') -and $control.PSObject.Properties['Content']) {
+            $control.Content = $controlConfig.Content
+        }
+
+        if ($controlConfig.ContainsKey('Header') -and $control.PSObject.Properties['Header']) {
+            $control.Header = $controlConfig.Header
+        }
+
+        if ($controlConfig.ContainsKey('Text') -and $control.PSObject.Properties['Text']) {
+            $control.Text = $controlConfig.Text
+        }
+
+        if ($controlConfig.ContainsKey('ToolTip')) {
+            $control.ToolTip = $controlConfig.ToolTip
+        }
+    }
+
+    if ($languageResources.ContainsKey('ComboItems')) {
+        foreach ($itemEntry in $languageResources.ComboItems.GetEnumerator()) {
+            $comboItem = $form.FindName($itemEntry.Key)
+            if ($comboItem -and $comboItem.PSObject.Properties['Content']) {
+                $comboItem.Content = $itemEntry.Value
+            }
+        }
+    }
+
+    if (-not $SkipSelectionUpdate -and $cmbOptionsLanguage -and $cmbOptionsLanguage.Items.Count -gt 0) {
+        $script:IsLanguageInitializing = $true
+        foreach ($item in $cmbOptionsLanguage.Items) {
+            if ($item.Tag -eq $LanguageCode) {
+                $cmbOptionsLanguage.SelectedItem = $item
+                break
+            }
+        }
+        $script:IsLanguageInitializing = $false
+    }
+
+    $activeTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+        $cmbOptionsTheme.SelectedItem.Tag
+    } elseif ($global:CurrentTheme) {
+        $global:CurrentTheme
+    } else {
+        'DarkPurple'
+    }
+
+    try {
+        Switch-Theme -ThemeName $activeTheme
+
+        if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
+            Set-ActiveAdvancedSectionButton -Section $global:CurrentAdvancedSection -CurrentTheme $activeTheme
+        }
+    } catch {
+        Log "Failed to refresh theme after language change: $($_.Exception.Message)" 'Warning'
+    }
+
+    Log "UI language switched to $($languageResources.DisplayName)" 'Info'
+}
+
+# Apply the initial language selection after localization helpers are defined
+Set-UILanguage -LanguageCode $script:CurrentLanguage
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -6097,6 +6663,167 @@ function Show-InstalledGames {
     }
 }
 
+# Helper functions for synchronizing game list UI across multiple panels
+function Set-OptimizeButtonsEnabled {
+    param([bool]$Enabled)
+
+    foreach ($button in $script:OptimizeSelectedButtons) {
+        try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
+    }
+}
+
+function Get-GameListPanels {
+    $panels = @()
+    if ($script:PrimaryGameListPanel) { $panels += $script:PrimaryGameListPanel }
+    if ($script:DashboardGameListPanel -and ($script:PrimaryGameListPanel -ne $script:DashboardGameListPanel)) { $panels += $script:DashboardGameListPanel }
+    return $panels
+}
+
+function Clone-UIElement {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Windows.UIElement]
+        $Element
+    )
+
+    try {
+        $xaml = [System.Windows.Markup.XamlWriter]::Save($Element)
+        $stringReader = New-Object System.IO.StringReader $xaml
+        $xmlReader = [System.Xml.XmlReader]::Create($stringReader)
+        $clone = [Windows.Markup.XamlReader]::Load($xmlReader)
+        $xmlReader.Close()
+        $stringReader.Close()
+        return $clone
+    } catch {
+        Write-Verbose "Clone-UIElement failed: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Copy-TagValue {
+    param($Value)
+
+    if (-not $Value) { return $Value }
+
+    if ($Value -is [System.Management.Automation.PSObject]) {
+        $hashtable = [ordered]@{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $hashtable[$property.Name] = $property.Value
+        }
+        return [PSCustomObject]$hashtable
+    }
+
+    return $Value
+}
+
+function New-ClonedTextBlock {
+    param([System.Windows.Controls.TextBlock]$Source)
+
+    $clone = New-Object System.Windows.Controls.TextBlock
+    try { $clone.Text = $Source.Text } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontStyle = $Source.FontStyle } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.TextWrapping = $Source.TextWrapping } catch { }
+    try { $clone.FontFamily = $Source.FontFamily } catch { }
+    try { $clone.TextAlignment = $Source.TextAlignment } catch { }
+    return $clone
+}
+
+function New-ClonedCheckBox {
+    param([System.Windows.Controls.CheckBox]$Source)
+
+    $clone = New-Object System.Windows.Controls.CheckBox
+    try { $clone.Content = $Source.Content } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.Padding = $Source.Padding } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.IsChecked = $Source.IsChecked } catch { }
+    try { $clone.ToolTip = $Source.ToolTip } catch { }
+
+    try {
+        $clone.Tag = Copy-TagValue -Value $Source.Tag
+    } catch {
+        Write-Verbose "Failed to copy checkbox Tag value: $($_.Exception.Message)"
+    }
+
+    return $clone
+}
+
+function Copy-ChildElement {
+    param([System.Windows.UIElement]$Source)
+
+    if (-not $Source) { return $null }
+
+    $typeName = $Source.GetType().Name
+
+    switch ($typeName) {
+        'TextBlock' { return New-ClonedTextBlock -Source $Source }
+        'CheckBox'  { return New-ClonedCheckBox -Source $Source }
+        'StackPanel' {
+            $stackClone = New-Object System.Windows.Controls.StackPanel
+            try { $stackClone.Orientation = $Source.Orientation } catch { }
+            try { $stackClone.Margin = $Source.Margin } catch { }
+
+            foreach ($child in $Source.Children) {
+                $clonedChild = Copy-ChildElement -Source $child
+                if ($clonedChild) {
+                    $stackClone.Children.Add($clonedChild)
+                }
+            }
+
+            return $stackClone
+        }
+        default { return Clone-UIElement -Element $Source }
+    }
+}
+
+function Update-GameListMirrors {
+    if (-not $script:PrimaryGameListPanel -or -not $script:DashboardGameListPanel) { return }
+
+    try {
+        $script:DashboardGameListPanel.Children.Clear()
+        foreach ($child in $script:PrimaryGameListPanel.Children) {
+            if ($child -is [System.Windows.Controls.TextBlock]) {
+                $clonedText = New-ClonedTextBlock -Source $child
+                if ($clonedText) { $script:DashboardGameListPanel.Children.Add($clonedText) }
+                continue
+            }
+
+            if ($child -is [System.Windows.Controls.Border]) {
+                $borderClone = New-Object System.Windows.Controls.Border
+                try { $borderClone.Background = if ($child.Background) { $child.Background.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderBrush = if ($child.BorderBrush) { $child.BorderBrush.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderThickness = $child.BorderThickness } catch { }
+                try { $borderClone.CornerRadius = $child.CornerRadius } catch { }
+                try { $borderClone.Margin = $child.Margin } catch { }
+                try { $borderClone.Padding = $child.Padding } catch { }
+
+                if ($child.Child) {
+                    $clonedChild = Copy-ChildElement -Source $child.Child
+                    if ($clonedChild) { $borderClone.Child = $clonedChild }
+                }
+
+                $script:DashboardGameListPanel.Children.Add($borderClone)
+                continue
+            }
+
+            $fallback = Clone-UIElement -Element $child
+            if ($fallback) {
+                $script:DashboardGameListPanel.Children.Add($fallback)
+            }
+        }
+    } catch {
+        Write-Verbose "Update-GameListMirrors failed: $($_.Exception.Message)"
+    }
+}
+
 # ---------- Search Games for Panel Function ----------
 function Search-GamesForPanel {
     try {
@@ -6285,7 +7012,7 @@ function Search-GamesForPanel {
             }
             
             # Enable optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
             Log "Game search complete: Found $($foundGames.Count) games" 'Success'
             
@@ -6454,7 +7181,7 @@ function Search-CustomFoldersForExecutables {
             }
             
             # Enable the optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
@@ -6950,6 +7677,102 @@ function Apply-ThemeColors {
         }
 
         Log "Wende Theme '$($colors.Name)' an..." 'Info'
+
+        # Prepare neon dashboard brushes and effects
+        try {
+            $cardStartValue = if ($colors.ContainsKey('CardBackgroundStart') -and $colors['CardBackgroundStart']) { $colors['CardBackgroundStart'] } else { $colors.Secondary }
+            $cardEndValue = if ($colors.ContainsKey('CardBackgroundEnd') -and $colors['CardBackgroundEnd']) { $colors['CardBackgroundEnd'] } else { $colors.Background }
+            $summaryStartValue = if ($colors.ContainsKey('SummaryBackgroundStart') -and $colors['SummaryBackgroundStart']) { $colors['SummaryBackgroundStart'] } else { $cardStartValue }
+            $summaryEndValue = if ($colors.ContainsKey('SummaryBackgroundEnd') -and $colors['SummaryBackgroundEnd']) { $colors['SummaryBackgroundEnd'] } else { $cardEndValue }
+            $cardBorderValue = if ($colors.ContainsKey('CardBorder') -and $colors['CardBorder']) { $colors['CardBorder'] } else { $colors.Primary }
+            $glowAccentValue = if ($colors.ContainsKey('GlowAccent') -and $colors['GlowAccent']) { $colors['GlowAccent'] } else { $colors.Accent }
+            $gaugeBackgroundValue = if ($colors.ContainsKey('GaugeBackground') -and $colors['GaugeBackground']) { $colors['GaugeBackground'] } else { $colors.Secondary }
+            $gaugeStrokeValue = if ($colors.ContainsKey('GaugeStroke') -and $colors['GaugeStroke']) { $colors['GaugeStroke'] } else { $colors.Primary }
+
+            $cardStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardStartValue)
+            $cardEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardEndValue)
+            $summaryStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryStartValue)
+            $summaryEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryEndValue)
+            $cardBorderColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardBorderValue)
+            $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentValue)
+            $gaugeBackgroundColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeBackgroundValue)
+            $gaugeStrokeColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeStrokeValue)
+
+            $cardGradient = New-Object System.Windows.Media.LinearGradientBrush
+            $cardGradient.StartPoint = [System.Windows.Point]::new(0, 0)
+            $cardGradient.EndPoint = [System.Windows.Point]::new(1, 1)
+            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardStartColor, 0))
+            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardEndColor, 1))
+            $cardGradient.Freeze()
+
+            $summaryGradient = New-Object System.Windows.Media.LinearGradientBrush
+            $summaryGradient.StartPoint = [System.Windows.Point]::new(0, 0)
+            $summaryGradient.EndPoint = [System.Windows.Point]::new(1, 1)
+            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryStartColor, 0))
+            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryEndColor, 1))
+            $summaryGradient.Freeze()
+
+            $cardBorderBrush = New-Object System.Windows.Media.SolidColorBrush $cardBorderColor
+            $cardBorderBrush.Freeze()
+
+            $gaugeBackgroundBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeBackgroundColor
+            $gaugeBackgroundBrush.Freeze()
+
+            $gaugeStrokeBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeStrokeColor
+            $gaugeStrokeBrush.Freeze()
+
+            $innerGaugeBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($colors.Background))
+            $innerGaugeBrush.Freeze()
+
+            $glowEffect = New-Object System.Windows.Media.Effects.DropShadowEffect
+            $glowEffect.Color = $glowAccentColor
+            $glowEffect.BlurRadius = 32
+            $glowEffect.Opacity = if ($colors.Name -match 'Light|YouTube|Facebook') { 0.35 } else { 0.55 }
+            $glowEffect.ShadowDepth = 0
+
+            $summaryPanel = $form.FindName('dashboardSummaryPanel')
+            if ($summaryPanel -is [System.Windows.Controls.Border]) {
+                $summaryPanel.Background = $summaryGradient.Clone()
+                $summaryPanel.BorderBrush = $cardBorderBrush.Clone()
+                $summaryPanel.Effect = $glowEffect.Clone()
+            }
+
+            $dashboardCards = @(
+                'dashboardCpuCard',
+                'dashboardMemoryCard',
+                'dashboardActivityCard',
+                'dashboardHealthCard',
+                'dashboardQuickActionsCard',
+                'dashboardGameProfileCard',
+                'dashboardGameListCard'
+            )
+
+            foreach ($cardName in $dashboardCards) {
+                $card = $form.FindName($cardName)
+                if ($card -is [System.Windows.Controls.Border]) {
+                    $card.Background = $cardGradient.Clone()
+                    $card.BorderBrush = $cardBorderBrush.Clone()
+                    $card.Effect = $glowEffect.Clone()
+                }
+            }
+
+            foreach ($ellipseName in 'ellipseCpuRing', 'ellipseMemoryRing') {
+                $ellipse = $form.FindName($ellipseName)
+                if ($ellipse) {
+                    $ellipse.Fill = $gaugeBackgroundBrush.Clone()
+                    $ellipse.Stroke = $gaugeStrokeBrush.Clone()
+                }
+            }
+
+            foreach ($innerEllipseName in 'ellipseCpuInner', 'ellipseMemoryInner') {
+                $innerEllipse = $form.FindName($innerEllipseName)
+                if ($innerEllipse) {
+                    $innerEllipse.Fill = $innerGaugeBrush.Clone()
+                }
+            }
+        } catch {
+            Log "Fehler beim Aktualisieren der Dashboard-Hintergründe: $($_.Exception.Message)" 'Warning'
+        }
         
         # 1. HAUPT-FENSTER
         $form.Background = $colors.Background
@@ -7156,7 +7979,7 @@ function Apply-ThemeColors {
                 $form.Background = $colors.Background  # Nochmal explizit setzen
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Background)
+            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
             
             Log '[OK] VollstÃ¤ndiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
             
@@ -7195,7 +8018,7 @@ function Ensure-ThemePersistence {
     try {
         $form.Dispatcher.BeginInvoke([action]{
             Switch-Theme -ThemeName $ThemeName
-        }, [System.Windows.Threading.DispatcherPriority]::Background)
+        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
     } catch {
         $errorMessage = 'Fehler bei Theme-Persistenz: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
@@ -9657,25 +10480,197 @@ if ($btnApplyScale) {
     })
 }
 
+function Get-AdvancedCheckboxControls {
+    if (-not $panelAdvanced) {
+        return @()
+    }
+
+    $results = @()
+    $stack = [System.Collections.Stack]::new()
+    $stack.Push($panelAdvanced)
+
+    while ($stack.Count -gt 0) {
+        $current = $stack.Pop()
+
+        if ($current -is [System.Windows.Controls.CheckBox]) {
+            $results += $current
+        }
+
+        if ($current -is [System.Windows.DependencyObject]) {
+            $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
+            for ($i = 0; $i -lt $childCount; $i++) {
+                $child = [System.Windows.Media.VisualTreeHelper]::GetChild($current, $i)
+                if ($child) {
+                    $stack.Push($child)
+                }
+            }
+        }
+    }
+
+    return $results
+}
+
+function Get-AdvancedCheckboxNames {
+    $dynamicControls = Get-AdvancedCheckboxControls | Where-Object { $_ -and $_.Name }
+
+    if ($dynamicControls -and $dynamicControls.Count -gt 0) {
+        $uniqueNames = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($checkbox in $dynamicControls) {
+            [void]$uniqueNames.Add($checkbox.Name)
+        }
+
+        if ($uniqueNames.Count -gt 0) {
+            return $uniqueNames.ToArray()
+        }
+    }
+
+    return @(
+        'chkAckNetwork'
+        'chkDelAckTicksNetwork'
+        'chkNagleNetwork'
+        'chkNetworkThrottlingNetwork'
+        'chkRSSNetwork'
+        'chkRSCNetwork'
+        'chkChimneyNetwork'
+        'chkNetDMANetwork'
+        'chkTcpTimestampsNetwork'
+        'chkTcpWindowAutoTuningNetwork'
+        'chkMemoryCompressionSystem'
+        'chkPowerPlanSystem'
+        'chkCPUSchedulingSystem'
+        'chkPageFileSystem'
+        'chkVisualEffectsSystem'
+        'chkCoreParkingSystem'
+        'chkGameDVRSystem'
+        'chkFullscreenOptimizationsSystem'
+        'chkGPUSchedulingSystem'
+        'chkTimerResolutionSystem'
+        'chkGameModeSystem'
+        'chkMPOSystem'
+        'chkDynamicResolution'
+        'chkEnhancedFramePacing'
+        'chkGPUOverclocking'
+        'chkCompetitiveLatency'
+        'chkAutoDiskOptimization'
+        'chkAdaptivePowerManagement'
+        'chkEnhancedPagingFile'
+        'chkDirectStorageEnhanced'
+        'chkAdvancedTelemetryDisable'
+        'chkMemoryDefragmentation'
+        'chkServiceOptimization'
+        'chkDiskTweaksAdvanced'
+        'chkNetworkLatencyOptimization'
+        'chkFPSSmoothness'
+        'chkCPUMicrocode'
+        'chkRAMTimings'
+        'chkDisableXboxServicesServices'
+        'chkDisableTelemetryServices'
+        'chkDisableSearchServices'
+        'chkDisablePrintSpoolerServices'
+        'chkDisableSuperfetchServices'
+        'chkDisableFaxServices'
+        'chkDisableRemoteRegistryServices'
+        'chkDisableThemesServices'
+        'chkDisableCortana'
+        'chkDisableWindowsUpdate'
+        'chkDisableBackgroundApps'
+        'chkDisableLocationTracking'
+        'chkDisableAdvertisingID'
+        'chkDisableErrorReporting'
+        'chkDisableCompatTelemetry'
+        'chkDisableWSH'
+    )
+}
+
+function Get-AdvancedCheckedSelections {
+    $checked = @()
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.IsChecked) {
+            $checked += $name
+        }
+    }
+
+    return $checked
+}
+
+function Set-AdvancedSelections {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    $lookup = @{}
+
+    if ($CheckedNames) {
+        foreach ($entry in $CheckedNames) {
+            $trimmed = $entry.Trim()
+            if ($trimmed) {
+                $lookup[$trimmed] = $true
+            }
+        }
+    }
+
+    foreach ($name in Get-AdvancedCheckboxNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox) {
+            $checkbox.IsChecked = $lookup.ContainsKey($name)
+        }
+    }
+}
+
+function Get-AdvancedSelectionSummary {
+    param(
+        [string[]]$CheckedNames
+    )
+
+    if (-not $CheckedNames -or $CheckedNames.Count -eq 0) {
+        return 'None'
+    }
+
+    $labels = @()
+
+    foreach ($name in $CheckedNames) {
+        $checkbox = $form.FindName($name)
+        if ($checkbox -and $checkbox.PSObject.Properties['Content'] -and $checkbox.Content) {
+            $labels += [string]$checkbox.Content
+        } else {
+            $labels += $name
+        }
+    }
+
+    if ($labels.Count -eq 0) {
+        return 'None'
+    }
+
+    return ($labels -join ', ')
+}
+
 if ($btnSaveSettings) {
     $btnSaveSettings.Add_Click({
         try {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
-            
+
             # Gather current settings
             $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "DarkPurple" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
-            
+            $currentLanguage = if ($script:CurrentLanguage) { $script:CurrentLanguage } else { 'en' }
+            $advancedSelections = Get-AdvancedCheckedSelections
+            $advancedSelectionsValue = $advancedSelections -join ','
+            $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
+
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
 # Generated on $(Get-Date)
 Theme=$currentTheme
 UIScale=$currentScale
 MenuMode=$global:MenuMode
+Language=$currentLanguage
+AdvancedSelections=$advancedSelectionsValue
 "@
-            
+
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
-            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale)" 'Success'
+            Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
         } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
@@ -9696,7 +10691,7 @@ if ($btnLoadSettings) {
                 $settings = @{}
                 
                 $content -split "`n" | ForEach-Object {
-                    if ($_ -match "^([^#=]+)=(.+)$") {
+                    if ($_ -match "^([^#=]+)=(.*)$") {
                         $settings[$matches[1].Trim()] = $matches[2].Trim()
                     }
                 }
@@ -9724,7 +10719,23 @@ if ($btnLoadSettings) {
                         }
                     }
                 }
-                
+
+                if ($settings.Language) {
+                    Set-UILanguage -LanguageCode $settings.Language
+                }
+
+                if ($settings.ContainsKey('AdvancedSelections')) {
+                    $advancedChecked = @()
+                    if ($settings.AdvancedSelections) {
+                        $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+                    }
+
+                    Set-AdvancedSelections -CheckedNames $advancedChecked
+
+                    $advancedLoadSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+                    Log "Advanced selections restored from koala-settings.cfg: $advancedLoadSummary" 'Info'
+                }
+
                 Log "Settings loaded from koala-settings.cfg successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Settings have been loaded and applied successfully!", "Settings Loaded", 'OK', 'Information')
             } else {
@@ -9779,7 +10790,10 @@ if ($btnResetSettings) {
                 #     }
                 # }
                 Switch-MenuMode -Mode "Basic"  # Direct call without UI control
-                
+
+                # Reset advanced selections
+                Set-AdvancedSelections -CheckedNames @()
+
                 Log "All settings reset to default values" 'Success'
                 [System.Windows.MessageBox]::Show("All settings have been reset to default values!", "Settings Reset", 'OK', 'Information')
             }
@@ -10488,7 +11502,7 @@ function Start-CustomFolderOnlySearch {
             
             # Enable the optimize selected button
             if ($btnOptimizeSelected) {
-                $btnOptimizeSelected.IsEnabled = $true
+                Set-OptimizeButtonsEnabled -Enabled $true
             }
             
         } else {
@@ -10674,36 +11688,60 @@ function Start-AllCustomFoldersSearch {
     }
 }
 
-if ($btnOptimizeSelected) {
-    $btnOptimizeSelected.Add_Click({
+if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDashboard) {
+    $optimizeSelectedHandler = {
+        param($sender, $eventArgs)
+
         try {
             Log "Optimize selected games requested" 'Info'
-            
-            # Find selected games
-            $selectedGames = @()
-            foreach ($child in $gameListPanel.Children) {
-                if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
-                    $stackPanel = $child.Child
-                    $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
-                    if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
-                        $selectedGames += $checkbox.Tag
-                    }
-                }
+
+            $panelsToScan = @()
+            if ($sender -and $sender.Name -eq 'btnOptimizeSelectedDashboard' -and $script:DashboardGameListPanel) {
+                $panelsToScan += $script:DashboardGameListPanel
+            } elseif ($sender -and $sender.Name -eq 'btnOptimizeSelectedMain' -and $script:PrimaryGameListPanel) {
+                $panelsToScan += $script:PrimaryGameListPanel
             }
-            
-            if ($selectedGames.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning')
+
+            if ($panelsToScan.Count -eq 0) {
+                if ($script:PrimaryGameListPanel) { $panelsToScan += $script:PrimaryGameListPanel }
+                if ($script:DashboardGameListPanel) { $panelsToScan += $script:DashboardGameListPanel }
+            }
+
+            if ($panelsToScan.Count -eq 0) {
+                Log "Warning: No game list panels available when optimizing selections" 'Warning'
+                [System.Windows.MessageBox]::Show("No game list is available to process selections.", "No Games Found", 'OK', 'Warning') | Out-Null
                 return
             }
-            
+
+            # Find selected games
+            $selectedGames = @()
+            foreach ($panel in $panelsToScan) {
+                foreach ($child in $panel.Children) {
+                    if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
+                        $stackPanel = $child.Child
+                        $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
+                        if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
+                            $selectedGames += $checkbox.Tag
+                        }
+                    }
+                }
+
+                if ($selectedGames.Count -gt 0) { break }
+            }
+
+            if ($selectedGames.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning') | Out-Null
+                return
+            }
+
             Log "Optimizing $($selectedGames.Count) selected games..." 'Info'
-            
+
             # Apply game-specific optimizations
             $optimizedCount = 0
             foreach ($game in $selectedGames) {
                 try {
                     Log "Applying optimizations for: $($game.Name)" 'Info'
-                    
+
                     # Apply the game's specific optimization profile if available
                     $gameProfile = $null
                     foreach ($profile in $GameProfiles.Keys) {
@@ -10712,7 +11750,7 @@ if ($btnOptimizeSelected) {
                             break
                         }
                     }
-                    
+
                     if ($gameProfile) {
                         # Apply specific game profile optimizations
                         Log "Applying $gameProfile profile optimizations for $($game.Name)" 'Info'
@@ -10723,25 +11761,31 @@ if ($btnOptimizeSelected) {
                         Log "Applying general gaming optimizations for $($game.Name)" 'Info'
                         $optimizedCount++
                     }
-                    
+
                 } catch {
                     Log "Failed to optimize $($game.Name): $($_.Exception.Message)" 'Error'
                 }
             }
-            
+
             if ($optimizedCount -gt 0) {
                 Log "Successfully optimized $optimizedCount out of $($selectedGames.Count) games" 'Success'
-                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information')
+                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information') | Out-Null
             } else {
                 Log "No games were successfully optimized" 'Warning'
-                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning')
+                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning') | Out-Null
             }
-            
+
         } catch {
             Log "Error optimizing selected games: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error')
+            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error') | Out-Null
         }
-    })
+    }
+
+    foreach ($button in @($btnOptimizeSelected, $btnOptimizeSelectedMain, $btnOptimizeSelectedDashboard)) {
+        if ($button) {
+            $button.Add_Click($optimizeSelectedHandler)
+        }
+    }
 } else {
     Log "Warning: btnOptimizeSelected control not found - skipping event handler binding" 'Warning'
 }
@@ -11618,7 +12662,7 @@ try {
         $settings = @{}
         
         $content -split "`n" | ForEach-Object {
-            if ($_ -match "^([^#=]+)=(.+)`$") {
+            if ($_ -match "^([^#=]+)=(.*)`$") {
                 $settings[$matches[1].Trim()] = $matches[2].Trim()
             }
         }
@@ -11665,7 +12709,24 @@ try {
             Switch-MenuMode -Mode $settings.MenuMode  # Direct call without UI control
             Log "Loaded menu mode: $($settings.MenuMode)" 'Info'
         }
-        
+
+        if ($settings.Language) {
+            Set-UILanguage -LanguageCode $settings.Language
+            Log "Loaded language: $($settings.Language)" 'Info'
+        }
+
+        if ($settings.ContainsKey('AdvancedSelections')) {
+            $advancedChecked = @()
+            if ($settings.AdvancedSelections) {
+                $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            }
+
+            Set-AdvancedSelections -CheckedNames $advancedChecked
+
+            $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
+            Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
+        }
+
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
         Log "No settings file found - using defaults" 'Info'
