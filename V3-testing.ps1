@@ -4085,9 +4085,25 @@ $xamlContent = @'
 </Window>
 '@
 
-# Normalize whitespace issues (for example, stray '<' lines) that can appear after manual merges
-$xamlContent = $xamlContent -replace '<[^\S\r\n]*\r?\n\s*', '<'
-$xamlContent = $xamlContent -replace '<[^\S\r\n]+([/?A-Za-z])', '<$1'
+# Normalize merge artifacts such as orphan "<" lines or tags split across line breaks
+$xamlLines = @()
+foreach ($line in $xamlContent -split "`r?`n") {
+    $trimmed = $line.Trim()
+
+    if ($trimmed -eq '<') {
+        continue
+    }
+
+    $match = [regex]::Match($trimmed, '^<\s+([/?A-Za-z].*)$')
+    if ($match.Success) {
+        $leadingWhitespace = $line.Substring(0, $line.IndexOf('<'))
+        $line = '{0}<{1}' -f $leadingWhitespace, $match.Groups[1].Value
+    }
+
+    $xamlLines += $line
+}
+
+$xamlContent = $xamlLines -join [Environment]::NewLine
 [xml]$xaml = $xamlContent
 
 # ---------- Build WPF UI ----------
