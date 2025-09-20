@@ -3655,6 +3655,7 @@ $xamlContent = @'
 
             <Border x:Name="dashboardGameListCard" Style="{StaticResource GlassCard}">
               <StackPanel>
+
                 <TextBlock Text="Detected Games" Tag="AccentText" Foreground="{DynamicResource AccentBrush}" FontSize="18" FontWeight="Bold"/>
                 <TextBlock Text="Your library updates automatically when detection runs." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,6,0,18"/>
                 <ScrollViewer Height="320" VerticalScrollBarVisibility="Auto" Background="Transparent">
@@ -3663,6 +3664,7 @@ $xamlContent = @'
                   </StackPanel>
                 </ScrollViewer>
                 <Button x:Name="btnOptimizeSelectedDashboard" Content="⚡ Optimize Selected Games" Style="{StaticResource SuccessButton}" Height="40" Margin="0,24,0,0" FontSize="12" IsEnabled="False" ToolTip="Apply optimizations to the highlighted titles"/>
+
               </StackPanel>
             </Border>
           </StackPanel>
@@ -4226,8 +4228,34 @@ $chkTcpWindowAutoTuning = $form.FindName('chkTcpWindowAutoTuning')
 # Game list and search controls
 $dashboardGameListPanel = $form.FindName('dashboardGameListPanel')
 $gameListPanel = $form.FindName('gameListPanel')
+$gameListPanelDashboard = $form.FindName('gameListPanelDashboard')
 $btnSearchGames = $form.FindName('btnSearchGames')
+$btnOptimizeSelectedMain = $form.FindName('btnOptimizeSelectedMain')
+$btnOptimizeSelectedDashboard = $form.FindName('btnOptimizeSelectedDashboard')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
+
+$script:PrimaryGameListPanel = $gameListPanel
+$script:DashboardGameListPanel = $gameListPanelDashboard
+$script:OptimizeSelectedButtons = @()
+if ($btnOptimizeSelected) { $script:OptimizeSelectedButtons += $btnOptimizeSelected }
+if ($btnOptimizeSelectedMain) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedMain }
+if ($btnOptimizeSelectedDashboard) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedDashboard }
+
+if (-not $script:PrimaryGameListPanel -and $gameListPanelDashboard) {
+    $script:PrimaryGameListPanel = $gameListPanelDashboard
+}
+
+if (-not $gameListPanel -and $script:PrimaryGameListPanel) {
+    $gameListPanel = $script:PrimaryGameListPanel
+}
+
+if ($script:PrimaryGameListPanel -and $script:DashboardGameListPanel -and -not $script:GameListMirrorAttached) {
+    Update-GameListMirrors
+    $script:PrimaryGameListPanel.add_LayoutUpdated({
+            Update-GameListMirrors
+        })
+    $script:GameListMirrorAttached = $true
+}
 
 # Options and theme controls - cmbOptionsTheme cmbUIScale btnApplyScale pattern for validation
 $cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
@@ -4831,7 +4859,6 @@ if ($cmbOptionsLanguage) {
     })
 }
 
-Set-UILanguage -LanguageCode $script:CurrentLanguage
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5341,7 +5368,6 @@ function Set-UILanguage {
         $script:IsLanguageInitializing = $false
     }
 
-
     $activeTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
         $cmbOptionsTheme.SelectedItem.Tag
     } elseif ($global:CurrentTheme) {
@@ -5365,7 +5391,6 @@ function Set-UILanguage {
 
 # Apply the initial language selection after localization helpers are defined
 Set-UILanguage -LanguageCode $script:CurrentLanguage
-
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -6255,6 +6280,167 @@ function Show-InstalledGames {
     }
 }
 
+# Helper functions for synchronizing game list UI across multiple panels
+function Set-OptimizeButtonsEnabled {
+    param([bool]$Enabled)
+
+    foreach ($button in $script:OptimizeSelectedButtons) {
+        try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
+    }
+}
+
+function Get-GameListPanels {
+    $panels = @()
+    if ($script:PrimaryGameListPanel) { $panels += $script:PrimaryGameListPanel }
+    if ($script:DashboardGameListPanel -and ($script:PrimaryGameListPanel -ne $script:DashboardGameListPanel)) { $panels += $script:DashboardGameListPanel }
+    return $panels
+}
+
+function Clone-UIElement {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Windows.UIElement]
+        $Element
+    )
+
+    try {
+        $xaml = [System.Windows.Markup.XamlWriter]::Save($Element)
+        $stringReader = New-Object System.IO.StringReader $xaml
+        $xmlReader = [System.Xml.XmlReader]::Create($stringReader)
+        $clone = [Windows.Markup.XamlReader]::Load($xmlReader)
+        $xmlReader.Close()
+        $stringReader.Close()
+        return $clone
+    } catch {
+        Write-Verbose "Clone-UIElement failed: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Copy-TagValue {
+    param($Value)
+
+    if (-not $Value) { return $Value }
+
+    if ($Value -is [System.Management.Automation.PSObject]) {
+        $hashtable = [ordered]@{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $hashtable[$property.Name] = $property.Value
+        }
+        return [PSCustomObject]$hashtable
+    }
+
+    return $Value
+}
+
+function New-ClonedTextBlock {
+    param([System.Windows.Controls.TextBlock]$Source)
+
+    $clone = New-Object System.Windows.Controls.TextBlock
+    try { $clone.Text = $Source.Text } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontStyle = $Source.FontStyle } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.TextWrapping = $Source.TextWrapping } catch { }
+    try { $clone.FontFamily = $Source.FontFamily } catch { }
+    try { $clone.TextAlignment = $Source.TextAlignment } catch { }
+    return $clone
+}
+
+function New-ClonedCheckBox {
+    param([System.Windows.Controls.CheckBox]$Source)
+
+    $clone = New-Object System.Windows.Controls.CheckBox
+    try { $clone.Content = $Source.Content } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.Padding = $Source.Padding } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.IsChecked = $Source.IsChecked } catch { }
+    try { $clone.ToolTip = $Source.ToolTip } catch { }
+
+    try {
+        $clone.Tag = Copy-TagValue -Value $Source.Tag
+    } catch {
+        Write-Verbose "Failed to copy checkbox Tag value: $($_.Exception.Message)"
+    }
+
+    return $clone
+}
+
+function Copy-ChildElement {
+    param([System.Windows.UIElement]$Source)
+
+    if (-not $Source) { return $null }
+
+    $typeName = $Source.GetType().Name
+
+    switch ($typeName) {
+        'TextBlock' { return New-ClonedTextBlock -Source $Source }
+        'CheckBox'  { return New-ClonedCheckBox -Source $Source }
+        'StackPanel' {
+            $stackClone = New-Object System.Windows.Controls.StackPanel
+            try { $stackClone.Orientation = $Source.Orientation } catch { }
+            try { $stackClone.Margin = $Source.Margin } catch { }
+
+            foreach ($child in $Source.Children) {
+                $clonedChild = Copy-ChildElement -Source $child
+                if ($clonedChild) {
+                    $stackClone.Children.Add($clonedChild)
+                }
+            }
+
+            return $stackClone
+        }
+        default { return Clone-UIElement -Element $Source }
+    }
+}
+
+function Update-GameListMirrors {
+    if (-not $script:PrimaryGameListPanel -or -not $script:DashboardGameListPanel) { return }
+
+    try {
+        $script:DashboardGameListPanel.Children.Clear()
+        foreach ($child in $script:PrimaryGameListPanel.Children) {
+            if ($child -is [System.Windows.Controls.TextBlock]) {
+                $clonedText = New-ClonedTextBlock -Source $child
+                if ($clonedText) { $script:DashboardGameListPanel.Children.Add($clonedText) }
+                continue
+            }
+
+            if ($child -is [System.Windows.Controls.Border]) {
+                $borderClone = New-Object System.Windows.Controls.Border
+                try { $borderClone.Background = if ($child.Background) { $child.Background.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderBrush = if ($child.BorderBrush) { $child.BorderBrush.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderThickness = $child.BorderThickness } catch { }
+                try { $borderClone.CornerRadius = $child.CornerRadius } catch { }
+                try { $borderClone.Margin = $child.Margin } catch { }
+                try { $borderClone.Padding = $child.Padding } catch { }
+
+                if ($child.Child) {
+                    $clonedChild = Copy-ChildElement -Source $child.Child
+                    if ($clonedChild) { $borderClone.Child = $clonedChild }
+                }
+
+                $script:DashboardGameListPanel.Children.Add($borderClone)
+                continue
+            }
+
+            $fallback = Clone-UIElement -Element $child
+            if ($fallback) {
+                $script:DashboardGameListPanel.Children.Add($fallback)
+            }
+        }
+    } catch {
+        Write-Verbose "Update-GameListMirrors failed: $($_.Exception.Message)"
+    }
+}
+
 # ---------- Search Games for Panel Function ----------
 function Search-GamesForPanel {
     try {
@@ -6443,7 +6629,7 @@ function Search-GamesForPanel {
             }
             
             # Enable optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
             Log "Game search complete: Found $($foundGames.Count) games" 'Success'
             
@@ -6612,7 +6798,7 @@ function Search-CustomFoldersForExecutables {
             }
             
             # Enable the optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
@@ -10997,7 +11183,7 @@ function Start-CustomFolderOnlySearch {
             
             # Enable the optimize selected button
             if ($btnOptimizeSelected) {
-                $btnOptimizeSelected.IsEnabled = $true
+                Set-OptimizeButtonsEnabled -Enabled $true
             }
             
         } else {
@@ -11183,36 +11369,60 @@ function Start-AllCustomFoldersSearch {
     }
 }
 
-if ($btnOptimizeSelected) {
-    $btnOptimizeSelected.Add_Click({
+if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDashboard) {
+    $optimizeSelectedHandler = {
+        param($sender, $eventArgs)
+
         try {
             Log "Optimize selected games requested" 'Info'
-            
-            # Find selected games
-            $selectedGames = @()
-            foreach ($child in $gameListPanel.Children) {
-                if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
-                    $stackPanel = $child.Child
-                    $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
-                    if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
-                        $selectedGames += $checkbox.Tag
-                    }
-                }
+
+            $panelsToScan = @()
+            if ($sender -and $sender.Name -eq 'btnOptimizeSelectedDashboard' -and $script:DashboardGameListPanel) {
+                $panelsToScan += $script:DashboardGameListPanel
+            } elseif ($sender -and $sender.Name -eq 'btnOptimizeSelectedMain' -and $script:PrimaryGameListPanel) {
+                $panelsToScan += $script:PrimaryGameListPanel
             }
-            
-            if ($selectedGames.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning')
+
+            if ($panelsToScan.Count -eq 0) {
+                if ($script:PrimaryGameListPanel) { $panelsToScan += $script:PrimaryGameListPanel }
+                if ($script:DashboardGameListPanel) { $panelsToScan += $script:DashboardGameListPanel }
+            }
+
+            if ($panelsToScan.Count -eq 0) {
+                Log "Warning: No game list panels available when optimizing selections" 'Warning'
+                [System.Windows.MessageBox]::Show("No game list is available to process selections.", "No Games Found", 'OK', 'Warning') | Out-Null
                 return
             }
-            
+
+            # Find selected games
+            $selectedGames = @()
+            foreach ($panel in $panelsToScan) {
+                foreach ($child in $panel.Children) {
+                    if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
+                        $stackPanel = $child.Child
+                        $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
+                        if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
+                            $selectedGames += $checkbox.Tag
+                        }
+                    }
+                }
+
+                if ($selectedGames.Count -gt 0) { break }
+            }
+
+            if ($selectedGames.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning') | Out-Null
+                return
+            }
+
             Log "Optimizing $($selectedGames.Count) selected games..." 'Info'
-            
+
             # Apply game-specific optimizations
             $optimizedCount = 0
             foreach ($game in $selectedGames) {
                 try {
                     Log "Applying optimizations for: $($game.Name)" 'Info'
-                    
+
                     # Apply the game's specific optimization profile if available
                     $gameProfile = $null
                     foreach ($profile in $GameProfiles.Keys) {
@@ -11221,7 +11431,7 @@ if ($btnOptimizeSelected) {
                             break
                         }
                     }
-                    
+
                     if ($gameProfile) {
                         # Apply specific game profile optimizations
                         Log "Applying $gameProfile profile optimizations for $($game.Name)" 'Info'
@@ -11232,25 +11442,31 @@ if ($btnOptimizeSelected) {
                         Log "Applying general gaming optimizations for $($game.Name)" 'Info'
                         $optimizedCount++
                     }
-                    
+
                 } catch {
                     Log "Failed to optimize $($game.Name): $($_.Exception.Message)" 'Error'
                 }
             }
-            
+
             if ($optimizedCount -gt 0) {
                 Log "Successfully optimized $optimizedCount out of $($selectedGames.Count) games" 'Success'
-                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information')
+                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information') | Out-Null
             } else {
                 Log "No games were successfully optimized" 'Warning'
-                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning')
+                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning') | Out-Null
             }
-            
+
         } catch {
             Log "Error optimizing selected games: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error')
+            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error') | Out-Null
         }
-    })
+    }
+
+    foreach ($button in @($btnOptimizeSelected, $btnOptimizeSelectedMain, $btnOptimizeSelectedDashboard)) {
+        if ($button) {
+            $button.Add_Click($optimizeSelectedHandler)
+        }
+    }
 } else {
     Log "Warning: btnOptimizeSelected control not found - skipping event handler binding" 'Warning'
 }
