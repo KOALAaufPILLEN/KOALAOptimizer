@@ -1324,8 +1324,6 @@ function Show-SystemHealthDialog {
           <TextBlock Text="Memory Usage" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" FontWeight="Bold"/>
           <TextBlock x:Name="lblMemoryMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
-        
-
         <StackPanel Grid.Column="2" Visibility="Collapsed">
           <TextBlock Text="Disk Free Space" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" FontWeight="Bold"/>
           <TextBlock x:Name="lblDiskMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
@@ -3273,7 +3271,6 @@ $xamlContent = @'
         </Trigger>
       </Style.Triggers>
     </Style>
-
     <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
       <Setter Property="Foreground" Value="Black"/>
@@ -3283,7 +3280,6 @@ $xamlContent = @'
         </Trigger>
       </Style.Triggers>
     </Style>
-
     <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource BaseStyle}">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Foreground" Value="White"/>
@@ -3314,6 +3310,7 @@ $xamlContent = @'
       </Setter>
     </Style>
 
+
     <Style x:Key="ModernComboBox" TargetType="ComboBox" BasedOn="{StaticResource BaseStyle}">
       <Setter Property="Background" Value="#1F1B2E"/>
       <Setter Property="Foreground" Value="White"/>
@@ -3339,7 +3336,6 @@ $xamlContent = @'
           </Style.Triggers>
         </Style>
       </Style.Resources>
-
     </Style>
 
     <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseStyle}">
@@ -3354,6 +3350,17 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
+
+    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="FontSize" Value="16"/>
+    </Style>
+  </Window.Resources>
+    <Style x:Key="ModernCheckBox" TargetType="CheckBox" BasedOn="{StaticResource BaseStyle}">
+      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+      <Setter Property="Margin" Value="0,4,16,4"/>
+    </Style>
   </Window.Resources>
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
@@ -3361,8 +3368,6 @@ $xamlContent = @'
       <Setter Property="FontSize" Value="16"/>
     </Style>
   </Window.Resources>
-
-
   <Grid x:Name="RootLayout" Background="{DynamicResource AppBackgroundBrush}">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="290"/>
@@ -3469,7 +3474,6 @@ $xamlContent = @'
               </StackPanel>
             </Border>
             <Border Background="#1F1B2E" Padding="12" CornerRadius="10" Margin="0,0,12,0">
-
               <StackPanel>
                 <TextBlock Text="Optimizations" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 <TextBlock x:Name="lblHeroOptimizations" Text="--" FontWeight="Bold" FontSize="16"/>
@@ -3481,7 +3485,6 @@ $xamlContent = @'
                 <TextBlock x:Name="lblHeroAutoMode" Text="Off" FontWeight="Bold" FontSize="16"/>
               </StackPanel>
             </Border>
-
           </StackPanel>
         </Grid>
       </Border>
@@ -3502,7 +3505,6 @@ $xamlContent = @'
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right">
                   <Border Background="#251F35" Padding="12" CornerRadius="12" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" Margin="0,0,0,12">
-
                     <StackPanel>
                       <TextBlock Text="Last Run" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                       <TextBlock x:Name="lblHeaderLastRun" Text="Never" FontSize="16" FontWeight="Bold"/>
@@ -4107,6 +4109,7 @@ $xamlContent = @'
 
 # Normalize merge artifacts such as orphan "<" lines or tags split across line breaks
 $xamlLines = @()
+$resourceDepth = 0
 foreach ($line in $xamlContent -split "`r?`n") {
     $trimmed = $line.Trim()
 
@@ -4118,6 +4121,16 @@ foreach ($line in $xamlContent -split "`r?`n") {
     if ($match.Success) {
         $leadingWhitespace = $line.Substring(0, $line.IndexOf('<'))
         $line = '{0}<{1}' -f $leadingWhitespace, $match.Groups[1].Value
+    }
+
+    if ($trimmed -like '<Window.Resources*') {
+        $resourceDepth++
+    } elseif ($trimmed -eq '</Window.Resources>') {
+        if ($resourceDepth -le 0) {
+            continue
+        }
+
+        $resourceDepth--
     }
 
     $xamlLines += $line
