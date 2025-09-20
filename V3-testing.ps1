@@ -3357,17 +3357,6 @@ $xamlContent = @'
       <Setter Property="FontSize" Value="16"/>
     </Style>
   </Window.Resources>
-    <Style x:Key="ModernCheckBox" TargetType="CheckBox" BasedOn="{StaticResource BaseStyle}">
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-      <Setter Property="Margin" Value="0,4,16,4"/>
-    </Style>
-  </Window.Resources>
-    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-      <Setter Property="FontWeight" Value="Bold"/>
-      <Setter Property="FontSize" Value="16"/>
-    </Style>
-  </Window.Resources>
   <Grid x:Name="RootLayout" Background="{DynamicResource AppBackgroundBrush}">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="290"/>
@@ -3443,7 +3432,7 @@ $xamlContent = @'
             <Button x:Name="btnSidebarElevate" Content="Request Admin" Height="28" Style="{StaticResource WarningButton}" FontSize="10" Margin="0,4,0,0"/>
           </StackPanel>
         </Border>
-      </DockPanel>
+      </Grid>
     </Border>
 
     <Grid x:Name="MainStage" Grid.Column="1">
@@ -3651,7 +3640,7 @@ $xamlContent = @'
                       <TextBlock Text="FPS-focused tweaks" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
-                </UniformGrid>
+                </Grid>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3921,30 +3910,50 @@ $xamlContent = @'
                   <StackPanel>
                     <TextBlock Text="🎨 Custom Theme Colors" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center">
                         <TextBlock Text="Background" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewBg" Height="20" Width="60" Fill="#070A1A" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewBgCustom" Height="20" Width="60" Fill="#070A1A" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center">
                         <TextBlock Text="Primary" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewPrimary" Height="20" Width="60" Fill="#6C63FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewPrimaryCustom" Height="20" Width="60" Fill="#6C63FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center">
                         <TextBlock Text="Hover" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewHover" Height="20" Width="60" Fill="#4338CA" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewHoverCustom" Height="20" Width="60" Fill="#4338CA" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center">
                         <TextBlock Text="Text" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewText" Height="20" Width="60" Fill="#F5F6FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewTextCustom" Height="20" Width="60" Fill="#F5F6FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,12,6,0">
+                        <TextBlock Text="Background Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Text="#070A1A"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,12,6,0">
+                        <TextBlock Text="Primary Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Text="#6C63FF"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="2" Margin="6,12,6,0">
+                        <TextBlock Text="Hover Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Text="#4338CA"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="3" Margin="6,12,0,0">
+                        <TextBlock Text="Text Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Text="#F5F6FF"/>
                       </StackPanel>
                     </Grid>
-                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,8,0,0"/>
+                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,12,0,0"/>
                   </StackPanel>
                 </Border>
                 <Border Background="#2D2438" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
@@ -4334,6 +4343,10 @@ $previewBg = $form.FindName('previewBg')
 $previewPrimary = $form.FindName('previewPrimary')
 $previewHover = $form.FindName('previewHover')
 $previewText = $form.FindName('previewText')
+$previewBgCustom = $form.FindName('previewBgCustom')
+$previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
+$previewHoverCustom = $form.FindName('previewHoverCustom')
+$previewTextCustom = $form.FindName('previewTextCustom')
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -4927,7 +4940,8 @@ if ($btnApplyCustomTheme) {
         
         Log "Applying custom theme: BG=$bg, Primary=$primary, Hover=$hover, Text=$text" 'Info'
         Apply-ThemeColors -Background $bg -Primary $primary -Hover $hover -Foreground $text
-        
+        Update-ThemeColorPreview -ThemeName 'Custom'
+
         [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
     } catch {
         Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
@@ -4939,19 +4953,35 @@ if ($btnApplyCustomTheme) {
 # Function to update color preview panel
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
-    
+
     if (-not $previewBg -or -not $previewPrimary -or -not $previewHover -or -not $previewText) {
         return
     }
-    
+
     try {
-        $colors = Get-ThemeColors -ThemeName $ThemeName
-        
+        $colors = if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+            $global:CustomThemeColors
+        } else {
+            Get-ThemeColors -ThemeName $ThemeName
+        }
+
         $previewBg.Fill = $colors.Background
-        $previewPrimary.Fill = $colors.Primary  
+        $previewPrimary.Fill = $colors.Primary
         $previewHover.Fill = $colors.Hover
         $previewText.Fill = $colors.Text
-        
+
+        if ($previewBgCustom) { $previewBgCustom.Fill = $colors.Background }
+        if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $colors.Primary }
+        if ($previewHoverCustom) { $previewHoverCustom.Fill = $colors.Hover }
+        if ($previewTextCustom) { $previewTextCustom.Fill = $colors.Text }
+
+        if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+            if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors.Background }
+            if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors.Primary }
+            if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors.Hover }
+            if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors.Text }
+        }
+
         Log "Farb-Vorschau für '$($colors.Name)' aktualisiert" 'Info'
     } catch {
         Log "Fehler bei Farb-Vorschau: $($_.Exception.Message)" 'Warning'
