@@ -1325,6 +1325,7 @@ function Show-SystemHealthDialog {
           <TextBlock x:Name="lblMemoryMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
         
+
         <StackPanel Grid.Column="2" Visibility="Collapsed">
           <TextBlock Text="Disk Free Space" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" FontWeight="Bold"/>
           <TextBlock x:Name="lblDiskMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
@@ -3272,6 +3273,7 @@ $xamlContent = @'
         </Trigger>
       </Style.Triggers>
     </Style>
+
     <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
       <Setter Property="Foreground" Value="Black"/>
@@ -3337,6 +3339,7 @@ $xamlContent = @'
           </Style.Triggers>
         </Style>
       </Style.Resources>
+
     </Style>
 
     <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseStyle}">
@@ -3351,7 +3354,7 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
-
+  </Window.Resources>
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
@@ -3359,9 +3362,10 @@ $xamlContent = @'
     </Style>
   </Window.Resources>
 
+
   <Grid x:Name="RootLayout" Background="{DynamicResource AppBackgroundBrush}">
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="250"/>
+      <ColumnDefinition Width="290"/>
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
 
@@ -3383,6 +3387,7 @@ $xamlContent = @'
 
         <ScrollViewer x:Name="SidebarNavScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10">
           <StackPanel>
+            <TextBlock Text="OVERVIEW" Foreground="#5A639C" FontSize="11" Margin="12,0,0,8"/>
             <Button x:Name="btnNavDashboard" Style="{StaticResource SidebarButton}" Tag="Selected">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🏠" FontSize="16" Margin="0,0,8,0"/>
@@ -3393,24 +3398,28 @@ $xamlContent = @'
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0"/>
                 <TextBlock Text="Quick Optimize" FontSize="14"/>
+
               </StackPanel>
             </Button>
             <Button x:Name="btnNavAdvanced" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🛠️" FontSize="16" Margin="0,0,8,0"/>
                 <TextBlock Text="Advanced Settings" FontSize="14"/>
+
               </StackPanel>
             </Button>
             <Button x:Name="btnNavGames" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎮" FontSize="16" Margin="0,0,8,0"/>
                 <TextBlock Text="Game Profiles" FontSize="14"/>
+
               </StackPanel>
             </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎨" FontSize="16" Margin="0,0,8,0"/>
                 <TextBlock Text="Options &amp; Themes" FontSize="14"/>
+
               </StackPanel>
             </Button>
             <Button x:Name="btnNavBackup" Style="{StaticResource SidebarButton}">
@@ -3429,7 +3438,7 @@ $xamlContent = @'
             <Button x:Name="btnSidebarElevate" Content="Request Admin" Height="28" Style="{StaticResource WarningButton}" FontSize="10" Margin="0,4,0,0"/>
           </StackPanel>
         </Border>
-      </Grid>
+      </DockPanel>
     </Border>
 
     <Grid x:Name="MainStage" Grid.Column="1">
@@ -3453,12 +3462,14 @@ $xamlContent = @'
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
             <Border Background="#1F1B2E" Padding="12" CornerRadius="10" Margin="0,0,12,0">
+
               <StackPanel>
                 <TextBlock Text="Profiles" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 <TextBlock x:Name="lblHeroProfiles" Text="--" FontWeight="Bold" FontSize="16"/>
               </StackPanel>
             </Border>
             <Border Background="#1F1B2E" Padding="12" CornerRadius="10" Margin="0,0,12,0">
+
               <StackPanel>
                 <TextBlock Text="Optimizations" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 <TextBlock x:Name="lblHeroOptimizations" Text="--" FontWeight="Bold" FontSize="16"/>
@@ -3470,6 +3481,7 @@ $xamlContent = @'
                 <TextBlock x:Name="lblHeroAutoMode" Text="Off" FontWeight="Bold" FontSize="16"/>
               </StackPanel>
             </Border>
+
           </StackPanel>
         </Grid>
       </Border>
@@ -3490,6 +3502,7 @@ $xamlContent = @'
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right">
                   <Border Background="#251F35" Padding="12" CornerRadius="12" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" Margin="0,0,0,12">
+
                     <StackPanel>
                       <TextBlock Text="Last Run" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                       <TextBlock x:Name="lblHeaderLastRun" Text="Never" FontSize="16" FontWeight="Bold"/>
@@ -3616,27 +3629,27 @@ $xamlContent = @'
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
                   <Button x:Name="btnBasicNetwork" Grid.Column="0" Height="80" Style="{StaticResource ModernButton}" Margin="0,0,5,0">
+
                     <StackPanel>
-                      <TextBlock Text="🌐 Network" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Optimizations" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Reduce latency and improve connection" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                      <TextBlock Text="🌐 Network" FontSize="16" FontWeight="Bold" HorizontalAlignment="Left"/>
+                      <TextBlock Text="Latency optimizations" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="btnBasicSystem" Grid.Column="1" Height="80" Style="{StaticResource ModernButton}" Margin="5,0">
+
                     <StackPanel>
-                      <TextBlock Text="💻 System" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Performance" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Optimize memory, CPU, and power settings" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                      <TextBlock Text="💻 System" FontSize="16" FontWeight="Bold" HorizontalAlignment="Left"/>
+                      <TextBlock Text="Power &amp; memory tuning" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="btnBasicGaming" Grid.Column="2" Height="80" Style="{StaticResource ModernButton}" Margin="5,0,0,0">
+
                     <StackPanel>
-                      <TextBlock Text="🎮 Gaming" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Optimizations" FontSize="16" FontWeight="Bold"/>
-                      <TextBlock Text="Essential tweaks for better FPS" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                      <TextBlock Text="🎮 Gaming" FontSize="16" FontWeight="Bold" HorizontalAlignment="Left"/>
+                      <TextBlock Text="FPS-focused tweaks" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
-                </Grid>
+                </UniformGrid>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3909,18 +3922,24 @@ $xamlContent = @'
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <TextBlock Text="Background Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Text="#0A0E27" Margin="0,0,0,8"/>
-                        <TextBlock Text="Primary Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Text="#6B46C1" Margin="0,0,0,8"/>
+                      <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="Background" Foreground="#C0C6F5" FontSize="11"/>
+                        <Rectangle x:Name="previewBg" Height="20" Width="60" Fill="#070A1A" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="1">
-                        <TextBlock Text="Hover Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Text="#8B5CF6" Margin="0,0,0,8"/>
-                        <TextBlock Text="Text Color:" Foreground="White" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Text="White" Margin="0,0,0,8"/>
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="Primary" Foreground="#C0C6F5" FontSize="11"/>
+                        <Rectangle x:Name="previewPrimary" Height="20" Width="60" Fill="#6C63FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="Hover" Foreground="#C0C6F5" FontSize="11"/>
+                        <Rectangle x:Name="previewHover" Height="20" Width="60" Fill="#4338CA" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                        <TextBlock Text="Text" Foreground="#C0C6F5" FontSize="11"/>
+                        <Rectangle x:Name="previewText" Height="20" Width="60" Fill="#F5F6FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
                     </Grid>
                     <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,8,0,0"/>
@@ -4083,6 +4102,7 @@ $xamlContent = @'
     </StackPanel>
   </Grid>
 </Window>
+
 '@
 
 # Normalize merge artifacts such as orphan "<" lines or tags split across line breaks
@@ -4252,8 +4272,34 @@ $chkTcpWindowAutoTuning = $form.FindName('chkTcpWindowAutoTuning')
 # Game list and search controls
 $dashboardGameListPanel = $form.FindName('dashboardGameListPanel')
 $gameListPanel = $form.FindName('gameListPanel')
+$gameListPanelDashboard = $form.FindName('gameListPanelDashboard')
 $btnSearchGames = $form.FindName('btnSearchGames')
+$btnOptimizeSelectedMain = $form.FindName('btnOptimizeSelectedMain')
+$btnOptimizeSelectedDashboard = $form.FindName('btnOptimizeSelectedDashboard')
 $btnOptimizeSelected = $form.FindName('btnOptimizeSelected')
+
+$script:PrimaryGameListPanel = $gameListPanel
+$script:DashboardGameListPanel = $gameListPanelDashboard
+$script:OptimizeSelectedButtons = @()
+if ($btnOptimizeSelected) { $script:OptimizeSelectedButtons += $btnOptimizeSelected }
+if ($btnOptimizeSelectedMain) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedMain }
+if ($btnOptimizeSelectedDashboard) { $script:OptimizeSelectedButtons += $btnOptimizeSelectedDashboard }
+
+if (-not $script:PrimaryGameListPanel -and $gameListPanelDashboard) {
+    $script:PrimaryGameListPanel = $gameListPanelDashboard
+}
+
+if (-not $gameListPanel -and $script:PrimaryGameListPanel) {
+    $gameListPanel = $script:PrimaryGameListPanel
+}
+
+if ($script:PrimaryGameListPanel -and $script:DashboardGameListPanel -and -not $script:GameListMirrorAttached) {
+    Update-GameListMirrors
+    $script:PrimaryGameListPanel.add_LayoutUpdated({
+            Update-GameListMirrors
+        })
+    $script:GameListMirrorAttached = $true
+}
 
 # Options and theme controls - cmbOptionsTheme cmbUIScale btnApplyScale pattern for validation
 $cmbOptionsTheme = $form.FindName('cmbOptionsThemeMain')  # Fixed control name
@@ -4857,7 +4903,6 @@ if ($cmbOptionsLanguage) {
     })
 }
 
-Set-UILanguage -LanguageCode $script:CurrentLanguage
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
@@ -5367,7 +5412,6 @@ function Set-UILanguage {
         $script:IsLanguageInitializing = $false
     }
 
-
     $activeTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
         $cmbOptionsTheme.SelectedItem.Tag
     } elseif ($global:CurrentTheme) {
@@ -5391,7 +5435,6 @@ function Set-UILanguage {
 
 # Apply the initial language selection after localization helpers are defined
 Set-UILanguage -LanguageCode $script:CurrentLanguage
-
 
 # Remove old control bindings and set null fallbacks for missing advanced controls
 $chkGpuAutoTuning = $null
@@ -6281,6 +6324,167 @@ function Show-InstalledGames {
     }
 }
 
+# Helper functions for synchronizing game list UI across multiple panels
+function Set-OptimizeButtonsEnabled {
+    param([bool]$Enabled)
+
+    foreach ($button in $script:OptimizeSelectedButtons) {
+        try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
+    }
+}
+
+function Get-GameListPanels {
+    $panels = @()
+    if ($script:PrimaryGameListPanel) { $panels += $script:PrimaryGameListPanel }
+    if ($script:DashboardGameListPanel -and ($script:PrimaryGameListPanel -ne $script:DashboardGameListPanel)) { $panels += $script:DashboardGameListPanel }
+    return $panels
+}
+
+function Clone-UIElement {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Windows.UIElement]
+        $Element
+    )
+
+    try {
+        $xaml = [System.Windows.Markup.XamlWriter]::Save($Element)
+        $stringReader = New-Object System.IO.StringReader $xaml
+        $xmlReader = [System.Xml.XmlReader]::Create($stringReader)
+        $clone = [Windows.Markup.XamlReader]::Load($xmlReader)
+        $xmlReader.Close()
+        $stringReader.Close()
+        return $clone
+    } catch {
+        Write-Verbose "Clone-UIElement failed: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Copy-TagValue {
+    param($Value)
+
+    if (-not $Value) { return $Value }
+
+    if ($Value -is [System.Management.Automation.PSObject]) {
+        $hashtable = [ordered]@{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $hashtable[$property.Name] = $property.Value
+        }
+        return [PSCustomObject]$hashtable
+    }
+
+    return $Value
+}
+
+function New-ClonedTextBlock {
+    param([System.Windows.Controls.TextBlock]$Source)
+
+    $clone = New-Object System.Windows.Controls.TextBlock
+    try { $clone.Text = $Source.Text } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontStyle = $Source.FontStyle } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.TextWrapping = $Source.TextWrapping } catch { }
+    try { $clone.FontFamily = $Source.FontFamily } catch { }
+    try { $clone.TextAlignment = $Source.TextAlignment } catch { }
+    return $clone
+}
+
+function New-ClonedCheckBox {
+    param([System.Windows.Controls.CheckBox]$Source)
+
+    $clone = New-Object System.Windows.Controls.CheckBox
+    try { $clone.Content = $Source.Content } catch { }
+    try { if ($Source.Foreground) { $clone.Foreground = $Source.Foreground.Clone() } } catch { }
+    try { $clone.FontWeight = $Source.FontWeight } catch { }
+    try { $clone.FontSize = $Source.FontSize } catch { }
+    try { $clone.Margin = $Source.Margin } catch { }
+    try { $clone.Padding = $Source.Padding } catch { }
+    try { $clone.HorizontalAlignment = $Source.HorizontalAlignment } catch { }
+    try { $clone.IsChecked = $Source.IsChecked } catch { }
+    try { $clone.ToolTip = $Source.ToolTip } catch { }
+
+    try {
+        $clone.Tag = Copy-TagValue -Value $Source.Tag
+    } catch {
+        Write-Verbose "Failed to copy checkbox Tag value: $($_.Exception.Message)"
+    }
+
+    return $clone
+}
+
+function Copy-ChildElement {
+    param([System.Windows.UIElement]$Source)
+
+    if (-not $Source) { return $null }
+
+    $typeName = $Source.GetType().Name
+
+    switch ($typeName) {
+        'TextBlock' { return New-ClonedTextBlock -Source $Source }
+        'CheckBox'  { return New-ClonedCheckBox -Source $Source }
+        'StackPanel' {
+            $stackClone = New-Object System.Windows.Controls.StackPanel
+            try { $stackClone.Orientation = $Source.Orientation } catch { }
+            try { $stackClone.Margin = $Source.Margin } catch { }
+
+            foreach ($child in $Source.Children) {
+                $clonedChild = Copy-ChildElement -Source $child
+                if ($clonedChild) {
+                    $stackClone.Children.Add($clonedChild)
+                }
+            }
+
+            return $stackClone
+        }
+        default { return Clone-UIElement -Element $Source }
+    }
+}
+
+function Update-GameListMirrors {
+    if (-not $script:PrimaryGameListPanel -or -not $script:DashboardGameListPanel) { return }
+
+    try {
+        $script:DashboardGameListPanel.Children.Clear()
+        foreach ($child in $script:PrimaryGameListPanel.Children) {
+            if ($child -is [System.Windows.Controls.TextBlock]) {
+                $clonedText = New-ClonedTextBlock -Source $child
+                if ($clonedText) { $script:DashboardGameListPanel.Children.Add($clonedText) }
+                continue
+            }
+
+            if ($child -is [System.Windows.Controls.Border]) {
+                $borderClone = New-Object System.Windows.Controls.Border
+                try { $borderClone.Background = if ($child.Background) { $child.Background.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderBrush = if ($child.BorderBrush) { $child.BorderBrush.Clone() } else { $null } } catch { }
+                try { $borderClone.BorderThickness = $child.BorderThickness } catch { }
+                try { $borderClone.CornerRadius = $child.CornerRadius } catch { }
+                try { $borderClone.Margin = $child.Margin } catch { }
+                try { $borderClone.Padding = $child.Padding } catch { }
+
+                if ($child.Child) {
+                    $clonedChild = Copy-ChildElement -Source $child.Child
+                    if ($clonedChild) { $borderClone.Child = $clonedChild }
+                }
+
+                $script:DashboardGameListPanel.Children.Add($borderClone)
+                continue
+            }
+
+            $fallback = Clone-UIElement -Element $child
+            if ($fallback) {
+                $script:DashboardGameListPanel.Children.Add($fallback)
+            }
+        }
+    } catch {
+        Write-Verbose "Update-GameListMirrors failed: $($_.Exception.Message)"
+    }
+}
+
 # ---------- Search Games for Panel Function ----------
 function Search-GamesForPanel {
     try {
@@ -6469,7 +6673,7 @@ function Search-GamesForPanel {
             }
             
             # Enable optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
             Log "Game search complete: Found $($foundGames.Count) games" 'Success'
             
@@ -6638,7 +6842,7 @@ function Search-CustomFoldersForExecutables {
             }
             
             # Enable the optimize button
-            $btnOptimizeSelected.IsEnabled = $true
+            Set-OptimizeButtonsEnabled -Enabled $true
             
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
@@ -11026,7 +11230,7 @@ function Start-CustomFolderOnlySearch {
             
             # Enable the optimize selected button
             if ($btnOptimizeSelected) {
-                $btnOptimizeSelected.IsEnabled = $true
+                Set-OptimizeButtonsEnabled -Enabled $true
             }
             
         } else {
@@ -11212,36 +11416,60 @@ function Start-AllCustomFoldersSearch {
     }
 }
 
-if ($btnOptimizeSelected) {
-    $btnOptimizeSelected.Add_Click({
+if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDashboard) {
+    $optimizeSelectedHandler = {
+        param($sender, $eventArgs)
+
         try {
             Log "Optimize selected games requested" 'Info'
-            
-            # Find selected games
-            $selectedGames = @()
-            foreach ($child in $gameListPanel.Children) {
-                if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
-                    $stackPanel = $child.Child
-                    $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
-                    if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
-                        $selectedGames += $checkbox.Tag
-                    }
-                }
+
+            $panelsToScan = @()
+            if ($sender -and $sender.Name -eq 'btnOptimizeSelectedDashboard' -and $script:DashboardGameListPanel) {
+                $panelsToScan += $script:DashboardGameListPanel
+            } elseif ($sender -and $sender.Name -eq 'btnOptimizeSelectedMain' -and $script:PrimaryGameListPanel) {
+                $panelsToScan += $script:PrimaryGameListPanel
             }
-            
-            if ($selectedGames.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning')
+
+            if ($panelsToScan.Count -eq 0) {
+                if ($script:PrimaryGameListPanel) { $panelsToScan += $script:PrimaryGameListPanel }
+                if ($script:DashboardGameListPanel) { $panelsToScan += $script:DashboardGameListPanel }
+            }
+
+            if ($panelsToScan.Count -eq 0) {
+                Log "Warning: No game list panels available when optimizing selections" 'Warning'
+                [System.Windows.MessageBox]::Show("No game list is available to process selections.", "No Games Found", 'OK', 'Warning') | Out-Null
                 return
             }
-            
+
+            # Find selected games
+            $selectedGames = @()
+            foreach ($panel in $panelsToScan) {
+                foreach ($child in $panel.Children) {
+                    if ($child -is [System.Windows.Controls.Border] -and $child.Child -is [System.Windows.Controls.StackPanel]) {
+                        $stackPanel = $child.Child
+                        $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
+                        if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
+                            $selectedGames += $checkbox.Tag
+                        }
+                    }
+                }
+
+                if ($selectedGames.Count -gt 0) { break }
+            }
+
+            if ($selectedGames.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning') | Out-Null
+                return
+            }
+
             Log "Optimizing $($selectedGames.Count) selected games..." 'Info'
-            
+
             # Apply game-specific optimizations
             $optimizedCount = 0
             foreach ($game in $selectedGames) {
                 try {
                     Log "Applying optimizations for: $($game.Name)" 'Info'
-                    
+
                     # Apply the game's specific optimization profile if available
                     $gameProfile = $null
                     foreach ($profile in $GameProfiles.Keys) {
@@ -11250,7 +11478,7 @@ if ($btnOptimizeSelected) {
                             break
                         }
                     }
-                    
+
                     if ($gameProfile) {
                         # Apply specific game profile optimizations
                         Log "Applying $gameProfile profile optimizations for $($game.Name)" 'Info'
@@ -11261,25 +11489,31 @@ if ($btnOptimizeSelected) {
                         Log "Applying general gaming optimizations for $($game.Name)" 'Info'
                         $optimizedCount++
                     }
-                    
+
                 } catch {
                     Log "Failed to optimize $($game.Name): $($_.Exception.Message)" 'Error'
                 }
             }
-            
+
             if ($optimizedCount -gt 0) {
                 Log "Successfully optimized $optimizedCount out of $($selectedGames.Count) games" 'Success'
-                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information')
+                [System.Windows.MessageBox]::Show("Successfully optimized $optimizedCount games!`n`nOptimizations applied:`n- Process priority adjustments`n- System responsiveness settings`n- Network optimizations", "Optimization Complete", 'OK', 'Information') | Out-Null
             } else {
                 Log "No games were successfully optimized" 'Warning'
-                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning')
+                [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning') | Out-Null
             }
-            
+
         } catch {
             Log "Error optimizing selected games: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error')
+            [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error') | Out-Null
         }
-    })
+    }
+
+    foreach ($button in @($btnOptimizeSelected, $btnOptimizeSelectedMain, $btnOptimizeSelectedDashboard)) {
+        if ($button) {
+            $button.Add_Click($optimizeSelectedHandler)
+        }
+    }
 } else {
     Log "Warning: btnOptimizeSelected control not found - skipping event handler binding" 'Warning'
 }
