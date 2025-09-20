@@ -3416,7 +3416,7 @@ function Remove-Reg {
 }
 
 # ---------- Enhanced XAML UI with Modern Sidebar Navigation ----------
-[xml]$xaml = @'
+$xamlContent = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KOALA Gaming Optimizer v3.0 - Enhanced Edition" 
@@ -3885,9 +3885,8 @@ function Remove-Reg {
               <StackPanel>
                 <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,0,0,12"/>
                 <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto" Background="Transparent">
-<
-                  <StackPanel x:Name="gameListPanelDashboard">
 
+                  <StackPanel x:Name="dashboardGameListPanel">
                     <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..."
                                Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
                   </StackPanel>
@@ -4163,7 +4162,8 @@ function Remove-Reg {
                     <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto">
                       <StackPanel x:Name="gameListPanel">
-                        <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..." 
+                        <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..."
+
                                    Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
                       </StackPanel>
                     </ScrollViewer>
@@ -4507,6 +4507,11 @@ function Remove-Reg {
   </Grid>
 </Window>
 '@
+
+# Normalize whitespace issues (for example, stray '<' lines) that can appear after manual merges
+$xamlContent = $xamlContent -replace '<[^\S\r\n]*\r?\n\s*', '<'
+$xamlContent = $xamlContent -replace '<[^\S\r\n]+([/?A-Za-z])', '<$1'
+[xml]$xaml = $xamlContent
 
 # ---------- Build WPF UI ----------
 try {
@@ -5146,7 +5151,6 @@ if ($btnNavAdvanced) {
                 'DarkPurple'
             }
 
-            Switch-Panel "Advanced"
             Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
         }
 
