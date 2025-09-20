@@ -3885,12 +3885,15 @@ function Remove-Reg {
               <StackPanel>
                 <TextBlock Text="Detected Games" Foreground="#00FF88" FontWeight="Bold" FontSize="16" Margin="0,0,0,12"/>
                 <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto" Background="Transparent">
+<
                   <StackPanel x:Name="gameListPanelDashboard">
+
                     <TextBlock Text="Click 'Search for Installed Games' to discover games on your system..."
                                Foreground="#888" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20"/>
                   </StackPanel>
                 </ScrollViewer>
                 <Button x:Name="btnOptimizeSelectedDashboard" Content="⚡ Optimize Selected Games" Height="38"
+
                         Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,12,0,0" IsEnabled="False"
                         ToolTip="Apply optimizations to the highlighted titles"/>
               </StackPanel>
@@ -10658,6 +10661,7 @@ if ($btnSaveSettings) {
             $advancedSelections = Get-AdvancedCheckedSelections
             $advancedSelectionsValue = $advancedSelections -join ','
             $advancedSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedSelections
+
 
             $settings = @"
 # KOALA Gaming Optimizer Settings - koala-settings.cfg with Theme= UIScale= MenuMode= support
