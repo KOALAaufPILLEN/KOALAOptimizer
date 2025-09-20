@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -3938,6 +3938,7 @@ $xamlContent = @'
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,12,6,0">
                         <TextBlock Text="Background Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+
                         <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,12,6,0">
@@ -3951,6 +3952,7 @@ $xamlContent = @'
                       <StackPanel Grid.Row="1" Grid.Column="3" Margin="6,12,0,0">
                         <TextBlock Text="Text Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
                         <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}"/>
+
                       </StackPanel>
                     </Grid>
                     <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,12,0,0"/>
@@ -4354,6 +4356,7 @@ $previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
 $previewHoverCustom = $form.FindName('previewHoverCustom')
 $previewTextCustom = $form.FindName('previewTextCustom')
 
+
 # Default color palette for the custom theme inputs so XAML loading does not rely on
 # inline TextBox values that can trigger initialization failures on some hosts.
 $customThemeDefaults = [ordered]@{
@@ -4401,6 +4404,7 @@ if ($cmbOptionsTheme -and $customThemePanel) {
     $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
     $customThemePanel.Visibility = if ($initialTheme -eq 'Custom') { 'Visible' } else { 'Collapsed' }
 }
+
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -5024,6 +5028,7 @@ if ($btnApplyCustomTheme) {
             [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
         }
     })
+
 }
 
 # Function to update color preview panel
