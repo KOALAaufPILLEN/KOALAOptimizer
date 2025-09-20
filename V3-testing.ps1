@@ -261,7 +261,6 @@ $global:ThemeDefinitions = @{
         Warning = '#F59E0B'
         Danger = '#EF4444'
         Info = '#8B5CF6'
-
         CardBackgroundStart = '#1A1F3F'
         CardBackgroundEnd = '#10142A'
         SummaryBackgroundStart = '#272F62'
@@ -293,7 +292,6 @@ $global:ThemeDefinitions = @{
         Warning = '#F59E0B'
         Danger = '#EF4444'
         Info = '#35D0FF'
-
         CardBackgroundStart = '#12284A'
         CardBackgroundEnd = '#081326'
         SummaryBackgroundStart = '#1A3C63'
@@ -325,7 +323,6 @@ $global:ThemeDefinitions = @{
         Warning = '#C27803'
         Danger = '#C24133'
         Info = '#5D5FEF'
-
         CardBackgroundStart = '#FFFFFF'
         CardBackgroundEnd = '#E3E6F4'
         SummaryBackgroundStart = '#FFFFFF'
@@ -1315,6 +1312,7 @@ function Show-SystemHealthDialog {
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*"/>
           <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
         <StackPanel Grid.Column="0">
@@ -1327,12 +1325,11 @@ function Show-SystemHealthDialog {
           <TextBlock x:Name="lblMemoryMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
         
-        <!-- Disk Free Space UI removed due to PowerShell parser errors
-        <StackPanel Grid.Column="2">
+
+        <StackPanel Grid.Column="2" Visibility="Collapsed">
           <TextBlock Text="Disk Free Space" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" FontWeight="Bold"/>
           <TextBlock x:Name="lblDiskMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
-        -->
       </Grid>
     </Border>
     
@@ -3276,6 +3273,7 @@ $xamlContent = @'
         </Trigger>
       </Style.Triggers>
     </Style>
+
     <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
       <Setter Property="Foreground" Value="Black"/>
@@ -3341,6 +3339,7 @@ $xamlContent = @'
           </Style.Triggers>
         </Style>
       </Style.Resources>
+
     </Style>
 
     <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseStyle}">
@@ -3355,13 +3354,14 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
-
+  </Window.Resources>
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="FontSize" Value="16"/>
     </Style>
   </Window.Resources>
+
 
   <Grid x:Name="RootLayout" Background="{DynamicResource AppBackgroundBrush}">
     <Grid.ColumnDefinitions>
@@ -3446,7 +3446,6 @@ $xamlContent = @'
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
         <RowDefinition Height="Auto"/>
-
         <RowDefinition Height="160" MinHeight="100" MaxHeight="320"/>
       </Grid.RowDefinitions>
 
@@ -3461,14 +3460,16 @@ $xamlContent = @'
             <TextBlock Visibility="Collapsed" FontSize="22">KOALA Gaming Optimizer</TextBlock>
             <TextBlock x:Name="lblMainSubtitle" Text="Overview of system optimization status and quick actions" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0" Spacing="12">
-            <Border Background="#1F1B2E" Padding="12" CornerRadius="10">
+          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
+            <Border Background="#1F1B2E" Padding="12" CornerRadius="10" Margin="0,0,12,0">
+
               <StackPanel>
                 <TextBlock Text="Profiles" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 <TextBlock x:Name="lblHeroProfiles" Text="--" FontWeight="Bold" FontSize="16"/>
               </StackPanel>
             </Border>
-            <Border Background="#1F1B2E" Padding="12" CornerRadius="10">
+            <Border Background="#1F1B2E" Padding="12" CornerRadius="10" Margin="0,0,12,0">
+
               <StackPanel>
                 <TextBlock Text="Optimizations" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 <TextBlock x:Name="lblHeroOptimizations" Text="--" FontWeight="Bold" FontSize="16"/>
@@ -3499,8 +3500,9 @@ $xamlContent = @'
                   <TextBlock x:Name="lblHeaderSystemStatus" Text="System Ready" FontSize="24" FontWeight="Bold" Margin="0,6,0,0"/>
                   <TextBlock Text="KOALA keeps your rig optimized with fresh tweaks, smart detection, and clean logging." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="12">
-                  <Border Background="#251F35" Padding="12" CornerRadius="12" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1">
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                  <Border Background="#251F35" Padding="12" CornerRadius="12" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" Margin="0,0,0,12">
+
                     <StackPanel>
                       <TextBlock Text="Last Run" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                       <TextBlock x:Name="lblHeaderLastRun" Text="Never" FontSize="16" FontWeight="Bold"/>
@@ -3633,7 +3635,6 @@ $xamlContent = @'
                       <TextBlock Text="Latency optimizations" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
-
                   <Button x:Name="btnBasicSystem" Grid.Column="1" Height="80" Style="{StaticResource ModernButton}" Margin="5,0">
 
                     <StackPanel>
@@ -3990,7 +3991,6 @@ $xamlContent = @'
                   <StackPanel>
                     <TextBlock Text="📤 Create Backup" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Create a complete backup of your optimizations and settings with user-selectable file location." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
-
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -4010,7 +4010,6 @@ $xamlContent = @'
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-
                       <Button x:Name="btnRestoreBackup" Grid.Column="0" Content="📥 Restore Backup" Height="40" Style="{StaticResource ModernButton}" FontSize="14" Margin="0,0,5,0"/>
                       <Button x:Name="btnImportConfigBackup" Grid.Column="1" Content="📥 Import Config" Height="40" Style="{StaticResource ModernButton}" FontSize="14" Margin="5,0,0,0"/>
                     </Grid>
@@ -4020,18 +4019,15 @@ $xamlContent = @'
                   <StackPanel>
                     <TextBlock Text="📝 Activity Log Management" FontSize="18" FontWeight="Bold" Foreground="#FFD700" Margin="0,0,0,10"/>
                     <TextBlock Text="Save your optimization activity log for troubleshooting and record keeping." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,0,0,15" TextWrapping="Wrap"/>
-
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-
                       <Button x:Name="btnSaveActivityLog" Grid.Column="0" Content="💾 Save Activity Log" Height="40" Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,0,3,0"/>
                       <Button x:Name="btnClearActivityLog" Grid.Column="1" Content="🧹 Clear Log" Height="40" Style="{StaticResource WarningButton}" FontSize="12" Margin="3,0,3,0"/>
                       <Button x:Name="btnViewActivityLog" Grid.Column="2" Content="👁️ View Log" Height="40" Style="{StaticResource ModernButton}" FontSize="12" Margin="3,0,0,0"/>
-
                     </Grid>
                   </StackPanel>
                 </Border>
@@ -4040,9 +4036,7 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </ScrollViewer>
-
       <Border x:Name="FooterBar" Grid.Row="2" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,2,0,0" Padding="20,15">
-
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -4086,7 +4080,6 @@ $xamlContent = @'
           <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,3" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
           <ScrollViewer Grid.Row="2" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <TextBox x:Name="LogBox" Background="Transparent" Foreground="{DynamicResource AccentBrush}" FontFamily="Consolas" FontSize="10" IsReadOnly="True" BorderThickness="0" TextWrapping="Wrap" Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
-
           </ScrollViewer>
         </Grid>
       </Border>
@@ -4112,9 +4105,25 @@ $xamlContent = @'
 
 '@
 
-# Normalize whitespace issues (for example, stray '<' lines) that can appear after manual merges
-$xamlContent = $xamlContent -replace '<[^\S\r\n]*\r?\n\s*', '<'
-$xamlContent = $xamlContent -replace '<[^\S\r\n]+([/?A-Za-z])', '<$1'
+# Normalize merge artifacts such as orphan "<" lines or tags split across line breaks
+$xamlLines = @()
+foreach ($line in $xamlContent -split "`r?`n") {
+    $trimmed = $line.Trim()
+
+    if ($trimmed -eq '<') {
+        continue
+    }
+
+    $match = [regex]::Match($trimmed, '^<\s+([/?A-Za-z].*)$')
+    if ($match.Success) {
+        $leadingWhitespace = $line.Substring(0, $line.IndexOf('<'))
+        $line = '{0}<{1}' -f $leadingWhitespace, $match.Groups[1].Value
+    }
+
+    $xamlLines += $line
+}
+
+$xamlContent = $xamlLines -join [Environment]::NewLine
 [xml]$xaml = $xamlContent
 
 # ---------- Build WPF UI ----------
@@ -7407,7 +7416,6 @@ function Apply-ThemeColors {
                 'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
                 'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
                 'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
-
             }
 
             foreach ($resourceKey in $resourceColors.Keys) {
