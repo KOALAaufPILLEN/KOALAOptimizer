@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -3355,7 +3355,6 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
-
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
@@ -3943,6 +3942,7 @@ $xamlContent = @'
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,12,6,0">
                         <TextBlock Text="Background Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+
                         <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                       <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,12,6,0">
@@ -4358,7 +4358,6 @@ $previewBgCustom = $form.FindName('previewBgCustom')
 $previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
 $previewHoverCustom = $form.FindName('previewHoverCustom')
 $previewTextCustom = $form.FindName('previewTextCustom')
-
 # Default color palette for the custom theme inputs so XAML loading does not rely on
 # inline TextBox values that can trigger initialization failures on some hosts.
 $customThemeDefaults = [ordered]@{
