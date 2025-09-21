@@ -357,68 +357,6 @@ function Get-ThemeColors {
     }
 }
 
-# ---------- Missing Utility Functions ----------
-function Get-LogCategory {
-    param([string]$Message)
-
-    # Categorize log messages for better organization
-    if ($Message -match "Error|Failed|Exception|Critical") {
-        return "Error"
-    } elseif ($Message -match "Warning|Could not|Missing") {
-        return "Warning"
-    } elseif ($Message -match "Success|Completed|OK|Ready") {
-        return "Success"
-    } elseif ($Message -match "Game|Profile|Detection") {
-        return "Gaming"
-    } elseif ($Message -match "Theme|UI|Display") {
-        return "UI"
-    } elseif ($Message -match "Performance|CPU|Memory|System") {
-        return "Performance"
-    } else {
-        return "General"
-    }
-}
-
-function Add-LogToHistory {
-    param(
-        [string]$Message,
-        [string]$Level = 'Info',
-        [string]$Category = 'General'
-    )
-
-    if (-not $global:LogHistory) {
-        $global:LogHistory = [System.Collections.ArrayList]::new()
-    } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
-        $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
-    }
-
-    # Add to history with timestamp
-    $logEntry = @{
-        Timestamp = Get-Date
-        Message = $Message
-        Level = $Level
-        Category = $Category
-    }
-
-    if ($global:LogHistory -is [System.Collections.IList]) {
-        [void]$global:LogHistory.Add($logEntry)
-    } else {
-        $global:LogHistory += $logEntry
-    }
-
-
-    # Keep only last 1000 entries to prevent memory issues
-    $maxEntries = 1000
-    if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $maxEntries) {
-        $removeCount = $global:LogHistory.Count - $maxEntries
-        if ($removeCount -gt 0) {
-            $global:LogHistory.RemoveRange(0, $removeCount)
-        }
-    } elseif ($global:LogHistory.Count -gt $maxEntries) {
-        $global:LogHistory = $global:LogHistory[-$maxEntries..-1]
-    }
-}
-
 function Optimize-LogFile {
     param([int]$MaxSizeMB = 10)
 
@@ -3205,7 +3143,7 @@ $global:LogFilterSettings = @{
     SearchTerm = ""
     CategoryFilter = "All"
 }
-$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization")
+$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization", "Status", "Debug")
 $global:LogHistory = [System.Collections.ArrayList]::new()
 $global:MaxLogHistorySize = 1000
 
@@ -3225,6 +3163,7 @@ function Get-EnhancedLogCategories {
         "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
         "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
         "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
+        "Status" = @("Success", "Completed", "Ready", "Warning", "Alert", "Caution", "Healthy")
         "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
     }
 }
@@ -3264,11 +3203,19 @@ function Add-LogToHistory {
     #>
     param(
         [string]$Message,
-        [string]$Level,
-        [string]$Category
+        [string]$Level = 'Info',
+        [string]$Category = 'General'
     )
 
     try {
+        if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
+            $global:LogHistory = [System.Collections.ArrayList]::new()
+        }
+
+        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
+            $global:MaxLogHistorySize = 1000
+        }
+
         $logEntry = @{
             Timestamp = Get-Date
             Message = $Message
@@ -3277,25 +3224,11 @@ function Add-LogToHistory {
             Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
         }
 
-        if ($global:LogHistory -isnot [System.Collections.IList]) {
-            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
-        }
+        [void]$global:LogHistory.Add($logEntry)
 
-        if ($global:LogHistory -is [System.Collections.IList]) {
-            [void]$global:LogHistory.Add($logEntry)
-        } else {
-            $global:LogHistory += $logEntry
-        }
+        while ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $global:LogHistory.RemoveAt(0)
 
-        # Maintain history size limit
-        if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $removeCount = $global:LogHistory.Count - $global:MaxLogHistorySize
-            if ($removeCount -gt 0) {
-                $global:LogHistory.RemoveRange(0, $removeCount)
-            }
-        } elseif ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $recent = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
-            $global:LogHistory = [System.Collections.ArrayList]::new(@($recent))
         }
 
     } catch {
