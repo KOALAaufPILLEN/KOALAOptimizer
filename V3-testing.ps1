@@ -279,6 +279,16 @@ $global:ThemeDefinitions = @{
         ButtonHover = '#668A5CF6'
         ButtonPressed = '#808A5CF6'
         HeroChip = '#668A5CF6'
+        Surface = '#13172A'
+        SurfaceAlt = '#1D2438'
+        HeroCard = '#1D2438'
+        ButtonForeground = '#E4E9F7'
+        SuccessForeground = '#0B0E1A'
+        WarningForeground = '#0B0E1A'
+        DangerForeground = '#0B0E1A'
+        SuccessHover = '#668A5CF6'
+        WarningHover = '#668A5CF6'
+        DangerHover = '#668A5CF6'
         IsLight = $false
     }
     'Midnight' = @{
@@ -315,6 +325,16 @@ $global:ThemeDefinitions = @{
         ButtonHover = '#668A5CF6'
         ButtonPressed = '#808A5CF6'
         HeroChip = '#338A5CF6'
+        Surface = '#13172A'
+        SurfaceAlt = '#1D2438'
+        HeroCard = '#1D2438'
+        ButtonForeground = '#E4E9F7'
+        SuccessForeground = '#0B0E1A'
+        WarningForeground = '#0B0E1A'
+        DangerForeground = '#0B0E1A'
+        SuccessHover = '#668A5CF6'
+        WarningHover = '#668A5CF6'
+        DangerHover = '#668A5CF6'
         IsLight = $false
     }
     'Lumen' = @{
@@ -351,6 +371,16 @@ $global:ThemeDefinitions = @{
         ButtonHover = '#8A5CF6'
         ButtonPressed = '#668A5CF6'
         HeroChip = '#8A5CF6'
+        Surface = '#D6DDF1'
+        SurfaceAlt = '#B3E4E9F7'
+        HeroCard = '#B3E4E9F7'
+        ButtonForeground = '#0B0E1A'
+        SuccessForeground = '#0B0E1A'
+        WarningForeground = '#0B0E1A'
+        DangerForeground = '#0B0E1A'
+        SuccessHover = '#668A5CF6'
+        WarningHover = '#668A5CF6'
+        DangerHover = '#668A5CF6'
         IsLight = $true
     }
 }
@@ -2002,10 +2032,20 @@ function Apply-ThemeColors {
                   'PrimaryTextBrush'      = $colors.Text
                   'SecondaryTextBrush'    = $colors.TextSecondary
                   'HeroChipBrush'         = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
+                  'SurfaceBrush'          = if ($colors.ContainsKey('Surface')) { $colors['Surface'] } elseif ($colors.ContainsKey('Secondary')) { $colors['Secondary'] } else { $colors.Background }
+                  'SurfaceAltBrush'       = if ($colors.ContainsKey('SurfaceAlt')) { $colors['SurfaceAlt'] } elseif ($colors.ContainsKey('ButtonBackground')) { $colors['ButtonBackground'] } else { $colors.Primary }
+                  'HeroCardBrush'         = if ($colors.ContainsKey('HeroCard')) { $colors['HeroCard'] } elseif ($colors.ContainsKey('SurfaceAlt')) { $colors['SurfaceAlt'] } else { $colors.Secondary }
+                  'ButtonForegroundBrush' = if ($colors.ContainsKey('ButtonForeground')) { $colors['ButtonForeground'] } else { $colors.Text }
                   'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#8A5CF6' }
+                  'SuccessHoverBrush'     = if ($colors.ContainsKey('SuccessHover')) { $colors['SuccessHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'SuccessForegroundBrush' = if ($colors.ContainsKey('SuccessForeground')) { $colors['SuccessForeground'] } else { $colors.Text }
                   'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#668A5CF6' }
-                'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#808A5CF6' }
-                'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
+                  'WarningHoverBrush'     = if ($colors.ContainsKey('WarningHover')) { $colors['WarningHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'WarningForegroundBrush' = if ($colors.ContainsKey('WarningForeground')) { $colors['WarningForeground'] } else { $colors.Text }
+                  'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#808A5CF6' }
+                  'DangerHoverBrush'      = if ($colors.ContainsKey('DangerHover')) { $colors['DangerHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'DangerForegroundBrush' = if ($colors.ContainsKey('DangerForeground')) { $colors['DangerForeground'] } else { $colors.Text }
+                  'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
             }
 
             foreach ($resourceKey in $resourceColors.Keys) {
@@ -4952,6 +4992,13 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#448A5CF6"/>
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#668A5CF6"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#808A5CF6"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#E4E9F7"/>
+    <SolidColorBrush x:Key="SuccessHoverBrush" Color="#668A5CF6"/>
+    <SolidColorBrush x:Key="WarningHoverBrush" Color="#668A5CF6"/>
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="#668A5CF6"/>
+    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#0B0E1A"/>
+    <SolidColorBrush x:Key="WarningForegroundBrush" Color="#0B0E1A"/>
+    <SolidColorBrush x:Key="DangerForegroundBrush" Color="#0B0E1A"/>
 
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
@@ -4980,9 +5027,8 @@ $xamlContent = @'
 
     <Style x:Key="ModernButton" TargetType="Button" BasedOn="{StaticResource BaseControlStyle}">
       <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
-
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="14,8"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -5016,33 +5062,33 @@ $xamlContent = @'
 
 <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
   <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
-  <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource SuccessForegroundBrush}"/>
   <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
   <Style.Triggers>
     <Trigger Property="IsMouseOver" Value="True">
-      <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}"/>
     </Trigger>
   </Style.Triggers>
 </Style>
 
 <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
   <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
-  <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-  <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource WarningForegroundBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
   <Style.Triggers>
     <Trigger Property="IsMouseOver" Value="True">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}"/>
     </Trigger>
   </Style.Triggers>
 </Style>
 
 <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
   <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-  <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-  <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
   <Style.Triggers>
     <Trigger Property="IsMouseOver" Value="True">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource DangerHoverBrush}"/>
     </Trigger>
   </Style.Triggers>
 </Style>
