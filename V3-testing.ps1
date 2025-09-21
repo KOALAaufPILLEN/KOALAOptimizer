@@ -386,9 +386,10 @@ function Add-LogToHistory {
         [string]$Category = 'General'
     )
 
-    # Initialize global log history if not exists
     if (-not $global:LogHistory) {
-        $global:LogHistory = @()
+        $global:LogHistory = [System.Collections.ArrayList]::new()
+    } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
+        $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
     }
 
     # Add to history with timestamp
@@ -399,11 +400,22 @@ function Add-LogToHistory {
         Category = $Category
     }
 
-    $global:LogHistory += $logEntry
+    if ($global:LogHistory -is [System.Collections.IList]) {
+        [void]$global:LogHistory.Add($logEntry)
+    } else {
+        $global:LogHistory += $logEntry
+    }
+
 
     # Keep only last 1000 entries to prevent memory issues
-    if ($global:LogHistory.Count -gt 1000) {
-        $global:LogHistory = $global:LogHistory[-1000..-1]
+    $maxEntries = 1000
+    if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $maxEntries) {
+        $removeCount = $global:LogHistory.Count - $maxEntries
+        if ($removeCount -gt 0) {
+            $global:LogHistory.RemoveRange(0, $removeCount)
+        }
+    } elseif ($global:LogHistory.Count -gt $maxEntries) {
+        $global:LogHistory = $global:LogHistory[-$maxEntries..-1]
     }
 }
 
@@ -735,13 +747,30 @@ function Get-SafeConfigPath {
     $isAdmin = Test-AdminPrivileges
 
     if ($isAdmin -and ($currentPath -match "system32|windows|program files" -or $currentPath.Length -lt 10)) {
-        Log "Admin mode detected with unsafe path ($currentPath) - using user documents folder" 'Warning'
-        $safePath = Join-Path $env:USERPROFILE "Documents\KOALA Gaming Optimizer"
-        if (-not (Test-Path $safePath)) {
-            New-Item -ItemType Directory -Path $safePath -Force | Out-Null
-            Log "Created safe configuration directory: $safePath" 'Info'
+        if (-not $script:SafeConfigDirectory) {
+            $documentsRoot = try { [Environment]::GetFolderPath('MyDocuments') } catch { $null }
+            if ([string]::IsNullOrWhiteSpace($documentsRoot)) {
+                $documentsRoot = Join-Path $env:USERPROFILE 'Documents'
+            }
+
+            $script:SafeConfigDirectory = Join-Path $documentsRoot 'KOALA Gaming Optimizer'
         }
-        return Join-Path $safePath $Filename
+
+        if (-not $script:HasWarnedUnsafeConfigPath) {
+            Log "Admin mode detected with unsafe path ($currentPath) - using user documents folder" 'Warning'
+            $script:HasWarnedUnsafeConfigPath = $true
+        }
+
+        if (-not (Test-Path $script:SafeConfigDirectory)) {
+            try {
+                New-Item -ItemType Directory -Path $script:SafeConfigDirectory -Force | Out-Null
+                Log "Created safe configuration directory: $script:SafeConfigDirectory" 'Info'
+            } catch {
+                Log "Failed to create safe configuration directory: $script:SafeConfigDirectory - $($_.Exception.Message)" 'Warning'
+            }
+        }
+
+        return Join-Path $script:SafeConfigDirectory $Filename
     }
 
     return Join-Path $currentPath $Filename
@@ -3177,7 +3206,7 @@ $global:LogFilterSettings = @{
     CategoryFilter = "All"
 }
 $global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization")
-$global:LogHistory = @()
+$global:LogHistory = [System.Collections.ArrayList]::new()
 $global:MaxLogHistorySize = 1000
 
 function Get-EnhancedLogCategories {
@@ -3248,11 +3277,25 @@ function Add-LogToHistory {
             Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
         }
 
-        $global:LogHistory += $logEntry
+        if ($global:LogHistory -isnot [System.Collections.IList]) {
+            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
+        }
+
+        if ($global:LogHistory -is [System.Collections.IList]) {
+            [void]$global:LogHistory.Add($logEntry)
+        } else {
+            $global:LogHistory += $logEntry
+        }
 
         # Maintain history size limit
-        if ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $global:LogHistory = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
+        if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $removeCount = $global:LogHistory.Count - $global:MaxLogHistorySize
+            if ($removeCount -gt 0) {
+                $global:LogHistory.RemoveRange(0, $removeCount)
+            }
+        } elseif ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $recent = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
+            $global:LogHistory = [System.Collections.ArrayList]::new(@($recent))
         }
 
     } catch {
