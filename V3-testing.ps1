@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -3407,12 +3407,12 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,6,18,6"/>
     </Style>
-
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="FontSize" Value="18"/>
       <Setter Property="Margin" Value="0,0,0,8"/>
+
     </Style>
   </Window.Resources>
 
@@ -3893,7 +3893,6 @@ $xamlContent = @'
                 </StackPanel>
               </Border>
             </StackPanel>
-
             <StackPanel x:Name="panelOptions" Visibility="Collapsed" Orientation="Vertical" Margin="0,0,0,26">
               <Border Style="{StaticResource CardBorderStyle}" Padding="26">
                 <StackPanel>
