@@ -3224,7 +3224,12 @@ $xamlContent = @'
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
     </Style>
-    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}"/>
+    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    </Style>
+    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}"/>
     <Style TargetType="Label" BasedOn="{StaticResource BaseStyle}"/>
 
     <Style TargetType="Button" x:Key="ModernButton" BasedOn="{StaticResource BaseStyle}">
@@ -3350,8 +3355,7 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
-
-    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
+    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="FontSize" Value="16"/>
@@ -3952,7 +3956,6 @@ $xamlContent = @'
                       <StackPanel Grid.Row="1" Grid.Column="3" Margin="6,12,0,0">
                         <TextBlock Text="Text Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
                         <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}"/>
-
                       </StackPanel>
                     </Grid>
                     <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,12,0,0"/>
@@ -4355,8 +4358,6 @@ $previewBgCustom = $form.FindName('previewBgCustom')
 $previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
 $previewHoverCustom = $form.FindName('previewHoverCustom')
 $previewTextCustom = $form.FindName('previewTextCustom')
-
-
 # Default color palette for the custom theme inputs so XAML loading does not rely on
 # inline TextBox values that can trigger initialization failures on some hosts.
 $customThemeDefaults = [ordered]@{
@@ -4404,7 +4405,6 @@ if ($cmbOptionsTheme -and $customThemePanel) {
     $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
     $customThemePanel.Visibility = if ($initialTheme -eq 'Custom') { 'Visible' } else { 'Collapsed' }
 }
-
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -5028,7 +5028,6 @@ if ($btnApplyCustomTheme) {
             [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
         }
     })
-
 }
 
 # Function to update color preview panel
