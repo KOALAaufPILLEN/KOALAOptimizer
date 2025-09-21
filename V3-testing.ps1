@@ -3224,7 +3224,12 @@ $xamlContent = @'
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
     </Style>
-    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}"/>
+    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    </Style>
+    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}"/>
     <Style TargetType="Label" BasedOn="{StaticResource BaseStyle}"/>
 
     <Style TargetType="Button" x:Key="ModernButton" BasedOn="{StaticResource BaseStyle}">
@@ -3351,18 +3356,7 @@ $xamlContent = @'
       <Setter Property="Margin" Value="0,4,16,4"/>
     </Style>
 
-    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-      <Setter Property="FontWeight" Value="Bold"/>
-      <Setter Property="FontSize" Value="16"/>
-    </Style>
-  </Window.Resources>
-    <Style x:Key="ModernCheckBox" TargetType="CheckBox" BasedOn="{StaticResource BaseStyle}">
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-      <Setter Property="Margin" Value="0,4,16,4"/>
-    </Style>
-  </Window.Resources>
-    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseStyle}">
+    <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="FontSize" Value="16"/>
@@ -3443,7 +3437,7 @@ $xamlContent = @'
             <Button x:Name="btnSidebarElevate" Content="Request Admin" Height="28" Style="{StaticResource WarningButton}" FontSize="10" Margin="0,4,0,0"/>
           </StackPanel>
         </Border>
-      </DockPanel>
+      </Grid>
     </Border>
 
     <Grid x:Name="MainStage" Grid.Column="1">
@@ -3651,7 +3645,7 @@ $xamlContent = @'
                       <TextBlock Text="FPS-focused tweaks" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
                     </StackPanel>
                   </Button>
-                </UniformGrid>
+                </Grid>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -3921,30 +3915,50 @@ $xamlContent = @'
                   <StackPanel>
                     <TextBlock Text="🎨 Custom Theme Colors" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"/>
                     <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center">
                         <TextBlock Text="Background" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewBg" Height="20" Width="60" Fill="#070A1A" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewBgCustom" Height="20" Width="60" Fill="#070A1A" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center">
                         <TextBlock Text="Primary" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewPrimary" Height="20" Width="60" Fill="#6C63FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewPrimaryCustom" Height="20" Width="60" Fill="#6C63FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center">
                         <TextBlock Text="Hover" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewHover" Height="20" Width="60" Fill="#4338CA" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewHoverCustom" Height="20" Width="60" Fill="#4338CA" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
                       </StackPanel>
-                      <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                      <StackPanel Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center">
                         <TextBlock Text="Text" Foreground="#C0C6F5" FontSize="11"/>
-                        <Rectangle x:Name="previewText" Height="20" Width="60" Fill="#F5F6FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                        <Rectangle x:Name="previewTextCustom" Height="20" Width="60" Fill="#F5F6FF" Stroke="#2A3770" StrokeThickness="1" Margin="0,8,0,0"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,12,6,0">
+                        <TextBlock Text="Background Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,12,6,0">
+                        <TextBlock Text="Primary Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="2" Margin="6,12,6,0">
+                        <TextBlock Text="Hover Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}"/>
+                      </StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="3" Margin="6,12,0,0">
+                        <TextBlock Text="Text Hex" Foreground="#C0C6F5" FontSize="10" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}"/>
                       </StackPanel>
                     </Grid>
-                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,8,0,0"/>
+                    <Button x:Name="btnApplyCustomTheme" Content="Apply Custom Theme" Height="32" Style="{StaticResource SuccessButton}" Margin="0,12,0,0"/>
                   </StackPanel>
                 </Border>
                 <Border Background="#2D2438" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
@@ -4145,6 +4159,12 @@ try {
     $form = [Windows.Markup.XamlReader]::Load($reader)
 } catch {
     Write-Host "Failed to load XAML: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.Exception.InnerException) {
+        Write-Host "Inner exception: $($_.Exception.InnerException.Message)" -ForegroundColor Red
+        if ($_.Exception.InnerException.InnerException) {
+            Write-Host "Root cause: $($_.Exception.InnerException.InnerException.Message)" -ForegroundColor Red
+        }
+    }
     exit 1
 }
 
@@ -4334,6 +4354,58 @@ $previewBg = $form.FindName('previewBg')
 $previewPrimary = $form.FindName('previewPrimary')
 $previewHover = $form.FindName('previewHover')
 $previewText = $form.FindName('previewText')
+$previewBgCustom = $form.FindName('previewBgCustom')
+$previewPrimaryCustom = $form.FindName('previewPrimaryCustom')
+$previewHoverCustom = $form.FindName('previewHoverCustom')
+$previewTextCustom = $form.FindName('previewTextCustom')
+
+# Default color palette for the custom theme inputs so XAML loading does not rely on
+# inline TextBox values that can trigger initialization failures on some hosts.
+$customThemeDefaults = [ordered]@{
+    Background = '#070A1A'
+    Primary    = '#6C63FF'
+    Hover      = '#4338CA'
+    Text       = '#F5F6FF'
+}
+
+# Ensure the global custom theme cache is initialized before any preview updates so
+# other functions can safely clone the values.
+if (-not $global:CustomThemeColors) {
+    $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+    $global:CustomThemeColors['Name'] = 'Custom Theme'
+}
+
+foreach ($key in $customThemeDefaults.Keys) {
+    if (-not $global:CustomThemeColors.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($global:CustomThemeColors[$key])) {
+        $global:CustomThemeColors[$key] = $customThemeDefaults[$key]
+    }
+}
+
+$customThemeInputs = @{
+    Background = $txtCustomBg
+    Primary    = $txtCustomPrimary
+    Hover      = $txtCustomHover
+    Text       = $txtCustomText
+}
+
+foreach ($entry in $customThemeInputs.GetEnumerator()) {
+    $target = $entry.Value
+    $value  = $global:CustomThemeColors[$entry.Key]
+
+    if ($target -and [string]::IsNullOrWhiteSpace($target.Text)) {
+        $target.Text = $value
+    }
+}
+
+if ($previewBgCustom) { $previewBgCustom.Fill = $global:CustomThemeColors['Background'] }
+if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $global:CustomThemeColors['Primary'] }
+if ($previewHoverCustom) { $previewHoverCustom.Fill = $global:CustomThemeColors['Hover'] }
+if ($previewTextCustom) { $previewTextCustom.Fill = $global:CustomThemeColors['Text'] }
+
+if ($cmbOptionsTheme -and $customThemePanel) {
+    $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
+    $customThemePanel.Visibility = if ($initialTheme -eq 'Custom') { 'Visible' } else { 'Collapsed' }
+}
 
 # UI scaling controls
 $cmbUIScale = $form.FindName('cmbUIScaleMain')  # Fixed control name
@@ -4893,16 +4965,8 @@ if ($btnAdvancedServices) {
 # })
 # }
 
-# Custom theme panel visibility handler
-if ($cmbOptionsTheme) {
-    $cmbOptionsTheme.Add_SelectionChanged({
-        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag -eq "Custom") {
-            $customThemePanel.Visibility = "Visible"
-        } else {
-            $customThemePanel.Visibility = "Collapsed"
-        }
-    })
-}
+# Custom theme panel visibility is managed alongside the live preview handler that
+# runs later in the script (see Options panel event handlers section).
 
 if ($cmbOptionsLanguage) {
     $cmbOptionsLanguage.Add_SelectionChanged({
@@ -4919,39 +4983,86 @@ if ($cmbOptionsLanguage) {
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
-    try {
-        $bg = $txtCustomBg.Text
-        $primary = $txtCustomPrimary.Text  
-        $hover = $txtCustomHover.Text
-        $text = $txtCustomText.Text
-        
-        Log "Applying custom theme: BG=$bg, Primary=$primary, Hover=$hover, Text=$text" 'Info'
-        Apply-ThemeColors -Background $bg -Primary $primary -Hover $hover -Foreground $text
-        
-        [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
-    } catch {
-        Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-    }
-})
+        try {
+            $inputMap = [ordered]@{
+                Background = $txtCustomBg
+                Primary    = $txtCustomPrimary
+                Hover      = $txtCustomHover
+                Text       = $txtCustomText
+            }
+
+            $validated = @{}
+            foreach ($entry in $inputMap.GetEnumerator()) {
+                $box = $entry.Value
+                $rawValue = if ($box) { $box.Text } else { $null }
+                $trimmed = if ($rawValue) { $rawValue.Trim() } else { '' }
+
+                if ([string]::IsNullOrWhiteSpace($trimmed)) {
+                    [System.Windows.MessageBox]::Show("Please enter a $($entry.Key.ToLower()) color in HEX format (e.g. #1A2B3C).", "Custom Theme", 'OK', 'Warning')
+                    return
+                }
+
+                if ($trimmed -notmatch '^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$') {
+                    [System.Windows.MessageBox]::Show("Invalid $($entry.Key.ToLower()) color '$trimmed'. Use #RRGGBB or #AARRGGBB values.", "Custom Theme", 'OK', 'Warning')
+                    return
+                }
+
+                $normalized = $trimmed.ToUpperInvariant()
+                $validated[$entry.Key] = $normalized
+
+                if ($box) { $box.Text = $normalized }
+            }
+
+            Log "Applying custom theme: BG=$($validated.Background), Primary=$($validated.Primary), Hover=$($validated.Hover), Text=$($validated.Text)" 'Info'
+            Apply-ThemeColors -Background $validated.Background -Primary $validated.Primary -Hover $validated.Hover -Foreground $validated.Text
+            Update-ThemeColorPreview -ThemeName 'Custom'
+
+            if ($global:CustomThemeColors) {
+                foreach ($key in $validated.Keys) {
+                    $global:CustomThemeColors[$key] = $validated[$key]
+                }
+            }
+
+            [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
+        } catch {
+            Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
+        }
+    })
 }
 
 # Function to update color preview panel
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
-    
+
     if (-not $previewBg -or -not $previewPrimary -or -not $previewHover -or -not $previewText) {
         return
     }
-    
+
     try {
-        $colors = Get-ThemeColors -ThemeName $ThemeName
-        
+        $colors = if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+            $global:CustomThemeColors
+        } else {
+            Get-ThemeColors -ThemeName $ThemeName
+        }
+
         $previewBg.Fill = $colors.Background
-        $previewPrimary.Fill = $colors.Primary  
+        $previewPrimary.Fill = $colors.Primary
         $previewHover.Fill = $colors.Hover
         $previewText.Fill = $colors.Text
-        
+
+        if ($previewBgCustom) { $previewBgCustom.Fill = $colors.Background }
+        if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $colors.Primary }
+        if ($previewHoverCustom) { $previewHoverCustom.Fill = $colors.Hover }
+        if ($previewTextCustom) { $previewTextCustom.Fill = $colors.Text }
+
+        if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
+            if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors.Background }
+            if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors.Primary }
+            if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors.Hover }
+            if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors.Text }
+        }
+
         Log "Farb-Vorschau für '$($colors.Name)' aktualisiert" 'Info'
     } catch {
         Log "Fehler bei Farb-Vorschau: $($_.Exception.Message)" 'Warning'
@@ -10141,10 +10252,16 @@ if ($cmbOptionsTheme) {
                 
                 # Update color preview panel only - no instant theme application
                 Update-ThemeColorPreview -ThemeName $selectedTheme
-                
+
                 # Show/hide custom theme panel
                 if ($selectedTheme -eq "Custom" -and $customThemePanel) {
                     $customThemePanel.Visibility = "Visible"
+                    if ($global:CustomThemeColors) {
+                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
+                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
+                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
+                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
+                    }
                 } elseif ($customThemePanel) {
                     $customThemePanel.Visibility = "Collapsed"
                 }
