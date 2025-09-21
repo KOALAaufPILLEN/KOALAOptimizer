@@ -786,6 +786,12 @@ function Test-StartupControls {
         'btnSearchGames' = $btnSearchGames
         'btnAddGameFolder' = $btnAddGameFolder
         'btnCustomSearch' = $btnCustomSearch
+        'btnInstalledGamesDash' = $btnInstalledGamesDash
+        'btnSearchGamesPanel' = $btnSearchGamesPanel
+        'btnAddGameFolderPanel' = $btnAddGameFolderPanel
+        'btnCustomSearchPanel' = $btnCustomSearchPanel
+        'btnAddGameFolderDash' = $btnAddGameFolderDash
+        'btnCustomSearchDash' = $btnCustomSearchDash
         'btnOptimizeSelected' = $btnOptimizeSelected
         'btnImportOptions' = $btnImportOptions
         'btnChooseBackupFolder' = $btnChooseBackupFolder
@@ -3226,12 +3232,16 @@ $xamlContent = @'
     <SolidColorBrush x:Key="InfoBrush" Color="#60A5FA"/>
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
+
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
       <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
-    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseControlStyle}">
+    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
       <Setter Property="FontSize" Value="12"/>
+      <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
     <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}"/>
     <Style TargetType="Label" BasedOn="{StaticResource BaseControlStyle}"/>
@@ -3407,12 +3417,12 @@ $xamlContent = @'
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="Margin" Value="0,6,18,6"/>
     </Style>
+
     <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="FontSize" Value="18"/>
       <Setter Property="Margin" Value="0,0,0,8"/>
-
     </Style>
   </Window.Resources>
 
@@ -3893,6 +3903,7 @@ $xamlContent = @'
                 </StackPanel>
               </Border>
             </StackPanel>
+
             <StackPanel x:Name="panelOptions" Visibility="Collapsed" Orientation="Vertical" Margin="0,0,0,26">
               <Border Style="{StaticResource CardBorderStyle}" Padding="26">
                 <StackPanel>
@@ -3949,6 +3960,7 @@ $xamlContent = @'
                       </Border>
                     </StackPanel>
                   </Border>
+
 
                   <Border Background="#162745" BorderBrush="{DynamicResource SidebarAccentBrush}" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,12,0,0">
                     <StackPanel>
@@ -4342,6 +4354,16 @@ $chkTcpWindowAutoTuning = $form.FindName('chkTcpWindowAutoTuning')
 $dashboardGameListPanel = $form.FindName('dashboardGameListPanel')
 $gameListPanel = $form.FindName('gameListPanel')
 $gameListPanelDashboard = $form.FindName('gameListPanelDashboard')
+
+if (-not $gameListPanelDashboard -and $dashboardGameListPanel) {
+    $gameListPanelDashboard = $dashboardGameListPanel
+}
+$btnInstalledGamesDash = $form.FindName('btnInstalledGamesDash')
+$btnAddGameFolderDash = $form.FindName('btnAddGameFolderDash')
+$btnCustomSearchDash = $form.FindName('btnCustomSearchDash')
+$btnSearchGamesPanel = $form.FindName('btnSearchGamesPanel')
+$btnAddGameFolderPanel = $form.FindName('btnAddGameFolderPanel')
+$btnCustomSearchPanel = $form.FindName('btnCustomSearchPanel')
 $btnSearchGames = $form.FindName('btnSearchGames')
 $btnOptimizeSelectedMain = $form.FindName('btnOptimizeSelectedMain')
 $btnOptimizeSelectedDashboard = $form.FindName('btnOptimizeSelectedDashboard')
@@ -10179,6 +10201,16 @@ if ($btnInstalledGames) {
     Log "Warning: btnInstalledGames control not found - skipping event handler binding" 'Warning'
 }
 
+if ($btnInstalledGamesDash -and $btnInstalledGames) {
+    $btnInstalledGamesDash.Add_Click({
+        try {
+            $btnInstalledGames.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying dashboard installed games action: $($_.Exception.Message)" 'Warning'
+        }
+    })
+}
+
 # Basic Network Optimizations button
 $btnBasicNetwork.Add_Click({
     try {
@@ -11420,7 +11452,7 @@ if ($btnCustomSearch) {
     $btnCustomSearch.Add_Click({
         try {
             Log "Custom Search requested - searching only custom folders" 'Info'
-            
+
             if (-not $global:CustomGamePaths -or $global:CustomGamePaths.Count -eq 0) {
                 [System.Windows.MessageBox]::Show("No custom folders have been added yet. Please add game folders first using 'Add Game Folder'.", "No Custom Folders", 'OK', 'Warning')
                 return
@@ -11451,6 +11483,56 @@ if ($btnCustomSearch) {
     })
 } else {
     Log "Warning: btnCustomSearch control not found - skipping event handler binding" 'Warning'
+}
+
+if ($btnSearchGamesPanel -and $btnSearchGames) {
+    $btnSearchGamesPanel.Add_Click({
+        try {
+            $btnSearchGames.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying Installed Games panel search action: $($_.Exception.Message)" 'Warning'
+        }
+    })
+}
+
+if ($btnAddGameFolderPanel -and $btnAddGameFolder) {
+    $btnAddGameFolderPanel.Add_Click({
+        try {
+            $btnAddGameFolder.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying Installed Games panel add-folder action: $($_.Exception.Message)" 'Warning'
+        }
+    })
+}
+
+if ($btnCustomSearchPanel -and $btnCustomSearch) {
+    $btnCustomSearchPanel.Add_Click({
+        try {
+            $btnCustomSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying Installed Games panel custom search action: $($_.Exception.Message)" 'Warning'
+        }
+    })
+}
+
+if ($btnAddGameFolderDash -and $btnAddGameFolder) {
+    $btnAddGameFolderDash.Add_Click({
+        try {
+            $btnAddGameFolder.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying dashboard add-folder action: $($_.Exception.Message)" 'Warning'
+        }
+    })
+}
+
+if ($btnCustomSearchDash -and $btnCustomSearch) {
+    $btnCustomSearchDash.Add_Click({
+        try {
+            $btnCustomSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        } catch {
+            Log "Error relaying dashboard custom search action: $($_.Exception.Message)" 'Warning'
+        }
+    })
 }
 
 # Search all custom folders for executables
