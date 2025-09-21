@@ -386,7 +386,7 @@ function Add-LogToHistory {
         [string]$Category = 'General'
     )
 
-    # Initialize global log history if not exists
+    # Initialize global log history if not exists and ensure it's list-based for efficient trimming
     if (-not $global:LogHistory) {
         $global:LogHistory = [System.Collections.ArrayList]::new()
     } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
@@ -401,15 +401,21 @@ function Add-LogToHistory {
         Category = $Category
     }
 
-    [void]$global:LogHistory.Add($logEntry)
+    if ($global:LogHistory -is [System.Collections.IList]) {
+        [void]$global:LogHistory.Add($logEntry)
+    } else {
+        $global:LogHistory += $logEntry
+    }
 
     # Keep only last 1000 entries to prevent memory issues
-    $maxLogEntries = 1000
-    if ($global:LogHistory.Count -gt $maxLogEntries -and $global:LogHistory -is [System.Collections.ArrayList]) {
-        $removeCount = $global:LogHistory.Count - $maxLogEntries
+    $maxEntries = 1000
+    if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $maxEntries) {
+        $removeCount = $global:LogHistory.Count - $maxEntries
         if ($removeCount -gt 0) {
-            [void]$global:LogHistory.RemoveRange(0, $removeCount)
+            $global:LogHistory.RemoveRange(0, $removeCount)
         }
+    } elseif ($global:LogHistory.Count -gt $maxEntries) {
+        $global:LogHistory = $global:LogHistory[-$maxEntries..-1]
     }
 }
 
@@ -538,8 +544,6 @@ if ($PSScriptRoot) {
 # Initialize global variables for custom paths
 $global:CustomConfigPath = $null
 $global:CustomGamePaths = @()
-$script:HasLoggedUnsafePathWarning = $false
-$script:SafeConfigDirectory = $null
 
 # ---------- Core Logging Functions (moved to top to fix call order issues) ----------
 function Get-LogColor($Level) {
@@ -572,15 +576,7 @@ function Log {
 
     # Enhanced activity logging with persistent file logging and administrator mode awareness
     try {
-        $logRoot = if ($script:SafeConfigDirectory) {
-            $script:SafeConfigDirectory
-        } elseif ($global:CustomConfigPath) {
-            $global:CustomConfigPath
-        } else {
-            $ScriptRoot
-        }
-
-        $logFilePath = Join-Path $logRoot 'Koala-Activity.log'
+        $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
 
         # Additional reliability check: ensure directory exists
         $logDir = Split-Path $logFilePath -Parent
@@ -609,22 +605,11 @@ function Log {
             }
         }
 
-        # Verify file write was successful for critical operations without noisy console output
+        # Verify file write was successful for critical operations
         if ($Level -eq 'Error' -or $Level -eq 'Warning') {
-            try {
-                $recentLines = Get-Content -Path $logFilePath -Tail 5 -ErrorAction Stop
-                $matched = $false
-                foreach ($line in $recentLines) {
-                    if ($line -match [regex]::Escape($msg)) {
-                        $matched = $true
-                        break
-                    }
-                }
-                if (-not $matched) {
-                    Write-Verbose "Log verification mismatch detected for message: $msg"
-                }
-            } catch {
-                Write-Verbose "Log verification skipped: $($_.Exception.Message)"
+            $lastLine = Get-Content $logFilePath -Tail 1 -ErrorAction SilentlyContinue
+            if ($lastLine -notmatch [regex]::Escape($msg)) {
+                throw "File verification failed - log entry may not have been written"
             }
         }
 
@@ -771,6 +756,11 @@ function Get-SafeConfigPath {
             $script:SafeConfigDirectory = Join-Path $documentsRoot 'KOALA Gaming Optimizer'
         }
 
+        if (-not $script:HasWarnedUnsafeConfigPath) {
+            Log "Admin mode detected with unsafe path ($currentPath) - using user documents folder" 'Warning'
+            $script:HasWarnedUnsafeConfigPath = $true
+        }
+
         if (-not (Test-Path $script:SafeConfigDirectory)) {
             try {
                 New-Item -ItemType Directory -Path $script:SafeConfigDirectory -Force | Out-Null
@@ -780,14 +770,7 @@ function Get-SafeConfigPath {
             }
         }
 
-        if (-not $script:HasLoggedUnsafePathWarning) {
-            Log "Admin mode detected with unsafe path ($currentPath) - using user documents folder" 'Warning'
-            $script:HasLoggedUnsafePathWarning = $true
-        }
-
-        if ($script:SafeConfigDirectory) {
-            return Join-Path $script:SafeConfigDirectory $Filename
-        }
+        return Join-Path $script:SafeConfigDirectory $Filename
     }
 
     return Join-Path $currentPath $Filename
@@ -1105,12 +1088,6 @@ function Find-AllControlsOfType {
 
     if (-not $Parent) { return }
 
-    if (-not $Collection.Value) {
-        $Collection.Value = [System.Collections.ArrayList]::new()
-    } elseif ($Collection.Value -isnot [System.Collections.IList]) {
-        $Collection.Value = [System.Collections.ArrayList]::new(@($Collection.Value))
-    }
-
     if ($ControlType -isnot [Type]) {
         $typeName = $null
         if ($ControlType -is [string]) {
@@ -1139,9 +1116,7 @@ function Find-AllControlsOfType {
                 }
             }
 
-            if ($resolvedType) {
-                $ControlType = $resolvedType
-            }
+            $ControlType = $resolvedType
         }
     }
 
@@ -1151,7 +1126,7 @@ function Find-AllControlsOfType {
 
     try {
         if ($Parent -is $ControlType) {
-            [void]$Collection.Value.Add($Parent)
+            $Collection.Value += $Parent
         }
 
         if ($Parent.Children) {
@@ -1218,7 +1193,7 @@ function Set-StackPanelChildSpacing {
             }
         }
 
-        [void]($child.Margin = $newMargin)
+        $child.Margin = $newMargin
     }
 }
 
@@ -1246,7 +1221,7 @@ function Set-GridColumnSpacing {
             $newMargin.Left = $Spacing
         }
 
-        [void]($child.Margin = $newMargin)
+        $child.Margin = $newMargin
     }
 }
 
@@ -1274,7 +1249,7 @@ function Initialize-LayoutSpacing {
         }
 
         Set-StackPanelChildSpacing -Panel $panel -Spacing $spacing
-        [void]($panel.Tag = $null)
+        $panel.Tag = $null
     }
 
     $grids = New-Object System.Collections.ArrayList
@@ -1294,7 +1269,7 @@ function Initialize-LayoutSpacing {
         }
 
         Set-GridColumnSpacing -Grid $grid -Spacing $spacing
-        [void]($grid.Tag = $null)
+        $grid.Tag = $null
     }
 }
 
@@ -1590,93 +1565,103 @@ function Update-AllUIElementsRecursively {
     }
 }
 
-function Update-ButtonStyles {
-    param($Primary, $Hover)
+  function Update-ButtonStyles {
+      param($Primary, $Hover)
 
-    try {
-        $primaryBrush = $null
-        if ($Primary) {
-            $primaryBrush = New-SolidColorBrushSafe $Primary
-        }
+        try {
+          $primaryBrush = $null
+          if ($Primary) {
+              $primaryBrush = New-SolidColorBrushSafe $Primary
+          }
 
-        $hoverBrush = $null
-        if ($Hover) {
-            $hoverBrush = New-SolidColorBrushSafe $Hover
-        }
+          $hoverBrush = $null
+          if ($Hover) {
+              $hoverBrush = New-SolidColorBrushSafe $Hover
+          }
 
-        $setResourceBrush = {
-            param($key, $brushCandidate, $colorValue)
-            if (-not $form.Resources.Contains($key)) { return }
+          $brushConverter = $null
+          $setResourceBrush = {
+              param($key, $brushCandidate, $colorValue)
+              if (-not $form.Resources.Contains($key)) { return }
 
-            $brushToApply = $null
+              if ($brushCandidate) {
+                  $form.Resources[$key] = $brushCandidate.Clone()
+                  return
+              }
 
-            if ($brushCandidate) {
-                $brushToApply = $brushCandidate.Clone()
-            } elseif (-not [string]::IsNullOrWhiteSpace($colorValue)) {
-                $converted = New-SolidColorBrushSafe $colorValue
-                if ($converted) {
-                    $brushToApply = $converted.Clone()
-                }
-            }
+              if (-not $colorValue) { return }
 
-            if ($brushToApply) {
-                try {
-                    if ($brushToApply.CanFreeze) { $brushToApply.Freeze() }
-                } catch { }
-                $form.Resources[$key] = $brushToApply
-            }
-        }
+              try {
+                  if (-not $brushConverter) {
+                      $brushConverter = New-Object System.Windows.Media.BrushConverter
+                  }
+                  $converted = $brushConverter.ConvertFromString($colorValue)
+                  if ($converted) {
+                      $form.Resources[$key] = $converted
+                  } else {
+                      $form.Resources[$key] = $colorValue
+                  }
+              } catch {
+                  $form.Resources[$key] = $colorValue
+              }
+          }
 
-        & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
-        & $setResourceBrush 'ButtonBorderBrush' $primaryBrush $Primary
+          & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
+          & $setResourceBrush 'ButtonBorderBrush' $primaryBrush $Primary
 
-        $hoverBrushCandidate = if ($hoverBrush) { $hoverBrush } else { $primaryBrush }
-        $hoverColorValue = if ($Hover) { $Hover } else { $Primary }
+          $hoverBrushCandidate = $hoverBrush
+          if (-not $hoverBrushCandidate) { $hoverBrushCandidate = $primaryBrush }
 
-        & $setResourceBrush 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
-        & $setResourceBrush 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
+          $hoverColorValue = $Hover
+          if (-not $hoverColorValue) { $hoverColorValue = $Primary }
 
-        $buttons = New-Object System.Collections.ArrayList
-        Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
+          & $setResourceBrush 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
+          & $setResourceBrush 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
 
-        $modernStyle = $form.Resources['ModernButton']
-        foreach ($button in $buttons) {
-            if ($modernStyle -and $button.Style -eq $modernStyle) {
-                if ($primaryBrush) {
-                    $backgroundClone = $primaryBrush.Clone()
-                    try {
-                        if ($backgroundClone.CanFreeze) { $backgroundClone.Freeze() }
-                    } catch { }
-                    $button.Background = $backgroundClone
+          $buttons = @()
+          Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
 
-                    try {
-                        $borderClone = $primaryBrush.Clone()
-                        if ($borderClone.CanFreeze) { $borderClone.Freeze() }
-                        $button.BorderBrush = $borderClone
-                    } catch { }
-                } elseif ($Primary) {
-                    $fallbackBrush = New-SolidColorBrushSafe $Primary
-                    if ($fallbackBrush) {
-                        $backgroundClone = $fallbackBrush.Clone()
-                        try {
-                            if ($backgroundClone.CanFreeze) { $backgroundClone.Freeze() }
-                        } catch { }
-                        $button.Background = $backgroundClone
+          $modernStyle = $form.Resources['ModernButton']
+          foreach ($button in $buttons) {
+              if ($modernStyle -and $button.Style -eq $modernStyle) {
+                  if ($primaryBrush) {
+                      $button.Background = $primaryBrush.Clone()
+                      try { $button.BorderBrush = $primaryBrush.Clone() } catch { }
+                  } elseif ($Primary) {
+                      try {
+                          if (-not $brushConverter) {
+                              $brushConverter = New-Object System.Windows.Media.BrushConverter
+                          }
+                          $convertedBackground = $brushConverter.ConvertFromString($Primary)
+                          if ($convertedBackground) {
+                              $button.Background = $convertedBackground
+                          } else {
+                              $button.Background = $Primary
+                          }
+                      } catch {
+                          $button.Background = $Primary
+                      }
+                      try {
+                          if (-not $brushConverter) {
+                              $brushConverter = New-Object System.Windows.Media.BrushConverter
+                          }
+                          $convertedBorder = $brushConverter.ConvertFromString($Primary)
+                          if ($convertedBorder) {
+                              $button.BorderBrush = $convertedBorder
+                          } else {
+                              $button.BorderBrush = $Primary
+                          }
+                      } catch {
+                          try { $button.BorderBrush = $Primary } catch { }
+                      }
+                  }
+              }
+          }
 
-                        try {
-                            $borderClone = $fallbackBrush.Clone()
-                            if ($borderClone.CanFreeze) { $borderClone.Freeze() }
-                            $button.BorderBrush = $borderClone
-                        } catch { }
-                    }
-                }
-            }
-        }
-
-    } catch {
-        $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
-        Log $errorMessage 'Warning'
-    }
+      } catch {
+          $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
+          Log $errorMessage 'Warning'
+      }
 }
 
 function Update-ComboBoxStyles {
@@ -2930,193 +2915,66 @@ function Show-SystemHealthDialog {
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
 
-  
   <Window.Resources>
-    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#181B21"/>
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#14171C"/>
-    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#4F7DFF"/>
-    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1F232B"/>
-    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#181B21"/>
-    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#232730"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1E2229"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#282D36"/>
-    <SolidColorBrush x:Key="HeroCardBrush" Color="#1E2229"/>
-    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#1E2229"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#4F7DFF"/>
-    <SolidColorBrush x:Key="HeroChipBrush" Color="#2C3340"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#E6E9F3"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#8C94AA"/>
-    <SolidColorBrush x:Key="SuccessBrush" Color="#3FBF7F"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#E4B75C"/>
-    <SolidColorBrush x:Key="DangerBrush" Color="#E06B6B"/>
-    <SolidColorBrush x:Key="InfoBrush" Color="#5CAEF2"/>
-    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#252932"/>
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2F3440"/>
-    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#2D3240"/>
-    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#252A34"/>
-
-    <Style x:Key="BaseControlStyle" TargetType="Control">
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#161D3F"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F3A73"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#5D5FEF"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F6FF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9AA4D9"/>
+    <Style TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Segoe UI"/>
-      <Setter Property="FontSize" Value="13"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="SnapsToDevicePixels" Value="True"/>
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     </Style>
-
-    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="DialogButton" TargetType="Button">
       <Setter Property="FontFamily" Value="Segoe UI"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="TextWrapping" Value="Wrap"/>
-    </Style>
-
-    <Style x:Key="SectionHeader" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-      <Setter Property="FontSize" Value="17"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
-
-    <Style x:Key="SectionSubtext" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
       <Setter Property="FontSize" Value="12"/>
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-    </Style>
-
-    <Style x:Key="SidebarSectionLabel" TargetType="TextBlock" BasedOn="{StaticResource SectionSubtext}">
-      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Foreground" Value="#0B0F1E"/>
+      <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="14,6"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="Margin" Value="2,12,0,6"/>
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-    </Style>
 
-    <Style x:Key="MetricValue" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-      <Setter Property="FontSize" Value="20"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
-
-    <Style x:Key="ModernButton" TargetType="Button" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="12,6"/>
       <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Background">
+        <Setter.Value>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#3F6BFF" Offset="0"/>
+            <GradientStop Color="#2E4BD4" Offset="1"/>
+          </LinearGradientBrush>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="ButtonBorder"
-                    Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="4"
-                    Padding="{TemplateBinding Padding}">
+            <Border Background="{TemplateBinding Background}" CornerRadius="10">
+
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
-              </Trigger>
-              <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
+
+                <Setter Property="Background" Value="#7E7FFF"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Opacity" Value="0.5"/>
+                <Setter Property="Opacity" Value="0.4"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
         </Setter.Value>
       </Setter>
     </Style>
-
-    <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-      <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
-      <Setter Property="Foreground" Value="#10291A"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+    <Style x:Key="SecondaryDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+      <Setter Property="Background" Value="#1B2345"/>
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     </Style>
-
-    <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-      <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
-      <Setter Property="Foreground" Value="#2C1F05"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
-    </Style>
-
-    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-      <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-      <Setter Property="Foreground" Value="#2F0B0B"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
-    </Style>
-
-    <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Padding" Value="10"/>
-      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-      <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border x:Name="Container" Background="{TemplateBinding Background}" CornerRadius="4">
-              <Grid>
-                <Border x:Name="Accent" Width="3" Background="Transparent" HorizontalAlignment="Left" CornerRadius="2"/>
-                <ContentPresenter Margin="14,6,10,6" VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Container" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
-              </Trigger>
-              <Trigger Property="Tag" Value="Selected">
-                <Setter TargetName="Accent" Property="Background" Value="{DynamicResource SidebarAccentBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource SidebarAccentBrush}"/>
-                <Setter TargetName="Container" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
-              </Trigger>
-              <Trigger Property="IsEnabled" Value="False">
-                <Setter TargetName="Container" Property="Opacity" Value="0.4"/>
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-
-    <Style x:Key="ModernComboBox" TargetType="ComboBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="10,6"/>
-      <Setter Property="Height" Value="34"/>
-      <Style.Resources>
-        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource BaseControlStyle}">
-          <Setter Property="Background" Value="Transparent"/>
-          <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-          <Setter Property="Padding" Value="12,6"/>
-          <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-              <Setter Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
-            </Trigger>
-            <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="{DynamicResource SidebarAccentBrush}"/>
-              <Setter Property="Foreground" Value="#11141C"/>
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </Style.Resources>
-    </Style>
-
-    <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="10,6"/>
-      <Setter Property="Height" Value="32"/>
-      <Setter Property="CaretBrush" Value="{DynamicResource PrimaryTextBrush}"/>
-    </Style>
-
-    <Style x:Key="ModernCheckBox" TargetType="CheckBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-      <Setter Property="Margin" Value="0,4,18,4"/>
+    <Style x:Key="WarningDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+      <Setter Property="Background" Value="#FFB347"/>
+      <Setter Property="Foreground" Value="#281C05"/>
     </Style>
   </Window.Resources>
-
 
   <Grid Margin="15">
     <Grid.RowDefinitions>
@@ -3411,12 +3269,6 @@ function Add-LogToHistory {
     )
 
     try {
-        if (-not $global:LogHistory) {
-            $global:LogHistory = [System.Collections.ArrayList]::new()
-        } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
-            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
-        }
-
         $logEntry = @{
             Timestamp = Get-Date
             Message = $Message
@@ -3425,14 +3277,25 @@ function Add-LogToHistory {
             Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
         }
 
-        [void]$global:LogHistory.Add($logEntry)
+        if ($global:LogHistory -isnot [System.Collections.IList]) {
+            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
+        }
+
+        if ($global:LogHistory -is [System.Collections.IList]) {
+            [void]$global:LogHistory.Add($logEntry)
+        } else {
+            $global:LogHistory += $logEntry
+        }
 
         # Maintain history size limit
-        if ($global:LogHistory.Count -gt $global:MaxLogHistorySize -and $global:LogHistory -is [System.Collections.ArrayList]) {
+        if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $global:MaxLogHistorySize) {
             $removeCount = $global:LogHistory.Count - $global:MaxLogHistorySize
             if ($removeCount -gt 0) {
-                [void]$global:LogHistory.RemoveRange(0, $removeCount)
+                $global:LogHistory.RemoveRange(0, $removeCount)
             }
+        } elseif ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $recent = $global:LogHistory | Select-Object -Last $global:MaxLogHistorySize
+            $global:LogHistory = [System.Collections.ArrayList]::new(@($recent))
         }
 
     } catch {
@@ -3780,7 +3643,7 @@ function Show-LogSearchDialog {
         $btnCloseSearch = $searchWindow.FindName('btnCloseSearch')
 
         # Initialize category dropdown
-        $global:LogCategories | ForEach-Object { [void]$cmbCategory.Items.Add($_) }
+        $global:LogCategories | ForEach-Object { $cmbCategory.Items.Add($_) }
         $cmbCategory.SelectedIndex = 0
 
         # Update results info
@@ -5055,26 +4918,27 @@ $xamlContent = @'
         ResizeMode="CanResize"
         SizeToContent="Manual">
   <Window.Resources>
-    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0B0F1E"/>
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#101632"/>
-    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#5D5FEF"/>
-    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1A2145"/>
-    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#111B36"/>
-    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#1F2948"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#141F3D"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#1F2A4D"/>
-    <SolidColorBrush x:Key="HeroCardBrush" Color="#19244A"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#5D5FEF"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F6FF"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9AA5D1"/>
-    <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
-    <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
-    <SolidColorBrush x:Key="InfoBrush" Color="#8B5CF6"/>
-    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#1E2647"/>
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A3357"/>
-    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#27305C"/>
-    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1A2145"/>
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#1C1F26"/>
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#171A21"/>
+    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#FF8C32"/>
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#22262F"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#1F232B"/>
+    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2D313A"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#21252E"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2C303A"/>
+    <SolidColorBrush x:Key="HeroCardBrush" Color="#242932"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF8C32"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F1F5F9"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FACC15"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="#38BDF8"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#2D323C"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#353A45"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#353B47"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#2A303A"/>
+
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
@@ -5104,8 +4968,9 @@ $xamlContent = @'
       <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="12,7"/>
+      <Setter Property="Padding" Value="14,8"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Template">
@@ -5137,33 +5002,33 @@ $xamlContent = @'
 
     <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
-      <Setter Property="Foreground" Value="#0C1E16"/>
-      <Setter Property="BorderBrush" Value="#1E8E61"/>
+      <Setter Property="Foreground" Value="#14251A"/>
+      <Setter Property="BorderBrush" Value="#249947"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#34D399"/>
+          <Setter Property="Background" Value="#4ADE80"/>
         </Trigger>
       </Style.Triggers>
     </Style>
 
     <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
-      <Setter Property="Foreground" Value="#2C1D04"/>
-      <Setter Property="BorderBrush" Value="#C77C0C"/>
+      <Setter Property="Foreground" Value="#2E2204"/>
+      <Setter Property="BorderBrush" Value="#D1A10D"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#FBBF24"/>
+          <Setter Property="Background" Value="#FCD34D"/>
         </Trigger>
       </Style.Triggers>
     </Style>
 
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-      <Setter Property="Foreground" Value="#2C0A0A"/>
+      <Setter Property="Foreground" Value="#3F0B0B"/>
       <Setter Property="BorderBrush" Value="#B91C1C"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#F87171"/>
+          <Setter Property="Background" Value="#FB7185"/>
         </Trigger>
       </Style.Triggers>
     </Style>
@@ -5172,33 +5037,23 @@ $xamlContent = @'
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
       <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="Padding" Value="14,10"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border CornerRadius="6">
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="4"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border x:Name="accentBar" Background="Transparent" CornerRadius="3,0,0,3"/>
-                <Border x:Name="sidebarBg" Grid.Column="1" Background="{TemplateBinding Background}" CornerRadius="6" Padding="10,6">
-                  <ContentPresenter/>
-                </Border>
-              </Grid>
+            <Border x:Name="sidebarBg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="8,6">
+              <ContentPresenter/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="sidebarBg" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
               </Trigger>
               <Trigger Property="Tag" Value="Selected">
-                <Setter TargetName="sidebarBg" Property="Background" Value="#1A2145"/>
-                <Setter TargetName="accentBar" Property="Background" Value="{DynamicResource SidebarAccentBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource SidebarAccentBrush}"/>
+                <Setter TargetName="sidebarBg" Property="Background" Value="#2A2E38"/>
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.5"/>
@@ -5213,19 +5068,19 @@ $xamlContent = @'
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-      <Setter Property="Margin" Value="4,18,0,6"/>
+      <Setter Property="Margin" Value="4,20,0,8"/>
     </Style>
 
     <Style x:Key="MetricValue" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-      <Setter Property="FontSize" Value="24"/>
+      <Setter Property="FontSize" Value="22"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
     </Style>
 
     <Style x:Key="ModernComboBox" TargetType="ComboBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="#151D3B"/>
+      <Setter Property="Background" Value="#1F232B"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="#25305B"/>
+      <Setter Property="BorderBrush" Value="#323741"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Height" Value="34"/>
@@ -5236,11 +5091,11 @@ $xamlContent = @'
           <Setter Property="Padding" Value="12,6"/>
           <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter Property="Background" Value="#1F284C"/>
+              <Setter Property="Background" Value="#2B303A"/>
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
               <Setter Property="Background" Value="{DynamicResource SidebarAccentBrush}"/>
-              <Setter Property="Foreground" Value="#070B18"/>
+              <Setter Property="Foreground" Value="#1C1208"/>
             </Trigger>
           </Style.Triggers>
         </Style>
@@ -5248,9 +5103,9 @@ $xamlContent = @'
     </Style>
 
     <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="#151D3B"/>
+      <Setter Property="Background" Value="#1F232B"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="#25305B"/>
+      <Setter Property="BorderBrush" Value="#323741"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Height" Value="32"/>
@@ -5275,39 +5130,30 @@ $xamlContent = @'
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
 
-    
     <Border x:Name="SidebarShell"
             Grid.Column="0"
             Background="{DynamicResource SidebarBackgroundBrush}"
-            BorderBrush="{DynamicResource HeaderBorderBrush}"
-            BorderThickness="0,0,1,0">
-      <DockPanel LastChildFill="True">
-        <StackPanel DockPanel.Dock="Top" Margin="16,20,16,16" Tag="Spacing:2">
+            BorderBrush="#20252E"
+            BorderThickness="0,0,1,0"
+            Padding="20,18">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
           <TextBlock Text="KOALA" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
-          <TextBlock Text="Gaming Optimizer" Style="{StaticResource SectionSubtext}"/>
-          <TextBlock Text="v3.0 Enhanced" Style="{StaticResource SectionSubtext}" FontStyle="Italic"/>
+          <TextBlock Text="Gaming Optimizer" Style="{StaticResource SectionSubtext}" Margin="0,2,0,0"/>
+          <TextBlock Text="v3.0 Enhanced" Style="{StaticResource SectionSubtext}" FontStyle="Italic" Margin="0,6,0,0"/>
         </StackPanel>
 
-        <Border x:Name="SidebarAdminCard"
-                DockPanel.Dock="Bottom"
-                Background="{DynamicResource CardBackgroundBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Margin="16"
-                Padding="14">
-          <StackPanel Tag="Spacing:6">
-            <TextBlock Text="Admin status" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            <TextBlock x:Name="lblSidebarAdminStatus" Text="Checking..." FontSize="11" Foreground="{DynamicResource WarningBrush}"/>
-            <Button x:Name="btnSidebarElevate" Content="Request elevation" Height="30" Style="{StaticResource WarningButton}" FontSize="11"/>
-          </StackPanel>
-        </Border>
-
-        <ScrollViewer x:Name="SidebarNavScroll" VerticalScrollBarVisibility="Auto" Margin="16,0,16,16">
-          <StackPanel Tag="Spacing:6">
+        <ScrollViewer x:Name="SidebarNavScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <StackPanel>
             <TextBlock Text="NAVIGATION" Style="{StaticResource SidebarSectionLabel}"/>
             <Button x:Name="btnNavDashboard" Style="{StaticResource SidebarButton}" Tag="Selected">
-              <StackPanel Orientation="Horizontal" Tag="Spacing:10">
+              <StackPanel Orientation="Horizontal" Margin="0" Tag="Spacing:10">
                 <TextBlock Text="🏠" FontSize="16"/>
                 <StackPanel>
                   <TextBlock Text="Dashboard" FontWeight="SemiBold"/>
@@ -5362,9 +5208,23 @@ $xamlContent = @'
             </Button>
           </StackPanel>
         </ScrollViewer>
-      </DockPanel>
-    </Border>
 
+        <Border x:Name="SidebarAdminCard"
+                Grid.Row="2"
+                Background="#1D2027"
+                BorderBrush="#272B34"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14"
+                Margin="0,20,0,0">
+          <StackPanel>
+            <TextBlock Text="Admin status" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <TextBlock x:Name="lblSidebarAdminStatus" Text="Checking..." FontSize="11" Foreground="{DynamicResource WarningBrush}" Margin="0,6,0,0"/>
+            <Button x:Name="btnSidebarElevate" Content="Request elevation" Height="30" Style="{StaticResource WarningButton}" FontSize="11" Margin="0,10,0,0"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
 
     <Grid x:Name="MainStage" Grid.Column="1" Background="{DynamicResource AppBackgroundBrush}">
       <Grid.RowDefinitions>
@@ -5374,36 +5234,35 @@ $xamlContent = @'
         <RowDefinition Height="220"/>
       </Grid.RowDefinitions>
 
-      
       <Border x:Name="HeaderBar"
               Grid.Row="0"
               Background="{DynamicResource HeaderBackgroundBrush}"
               BorderBrush="{DynamicResource HeaderBorderBrush}"
               BorderThickness="0,0,0,1"
-              Padding="24,18">
+              Padding="26,18">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
-          <StackPanel Tag="Spacing:4">
-            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="24" FontWeight="SemiBold"/>
-            <TextBlock x:Name="lblMainSubtitle" Text="Your system at a glance" Style="{StaticResource SectionSubtext}"/>
+          <StackPanel>
+            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock x:Name="lblMainSubtitle" Text="Your system at a glance" Style="{StaticResource SectionSubtext}" Margin="0,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:12">
-            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" MinWidth="110">
+            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="100">
               <StackPanel>
                 <TextBlock Text="Profiles" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" Text="--"/>
               </StackPanel>
             </Border>
-            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" MinWidth="120">
+            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="120">
               <StackPanel>
                 <TextBlock Text="Optimizations" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" Text="--"/>
               </StackPanel>
             </Border>
-            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" MinWidth="120">
+            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="120">
               <StackPanel>
                 <TextBlock Text="Auto mode" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" Text="Off"/>
@@ -5413,44 +5272,34 @@ $xamlContent = @'
         </Grid>
       </Border>
 
-
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
-          
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
             <Border x:Name="dashboardHeroCard"
                     Background="{DynamicResource HeroCardBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="10"
+                    CornerRadius="14"
                     Padding="24">
               <Grid>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Border Grid.Row="0" Background="{DynamicResource SidebarAccentBrush}" Height="3" CornerRadius="2"/>
-                <Grid Grid.Row="1" Margin="0,18,0,0" Tag="ColumnSpacing:24">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
-                    <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
-                  <StackPanel Tag="Spacing:10">
-                    <TextBlock Text="System overview" Style="{StaticResource SectionHeader}"/>
-                    <TextBlock x:Name="lblHeaderSystemStatus" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" Text="Stable"/>
-                    <TextBlock Text="Keep KOALA running for consistent maintenance and one-click fixes." Style="{StaticResource SectionSubtext}"/>
-                  </StackPanel>
-                  <StackPanel Grid.Column="1" Tag="Spacing:10" HorizontalAlignment="Right">
-                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12">
-                      <StackPanel>
-                        <TextBlock Text="Last run" Style="{StaticResource SectionSubtext}"/>
-                        <TextBlock x:Name="lblHeaderLastRun" Style="{StaticResource MetricValue}" FontSize="18" Text="Never"/>
-                      </StackPanel>
-                    </Border>
-                    <Button x:Name="btnSystemHealth" Content="View health detail" Width="180" Height="34" Style="{StaticResource ModernButton}"/>
-                    <Button x:Name="btnHeroBenchmark" Content="Quick benchmark" Width="180" Height="34" Style="{StaticResource WarningButton}"/>
-                  </StackPanel>
-                </Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Tag="Spacing:10">
+                  <TextBlock Text="System ready" Style="{StaticResource SectionHeader}"/>
+                  <TextBlock x:Name="lblHeaderSystemStatus" Text="Optimized" Style="{StaticResource SectionHeader}" FontSize="22"/>
+                  <TextBlock Text="KOALA keeps your PC lean with smart maintenance, clean logging and one-click fixes." Style="{StaticResource SectionSubtext}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Tag="Spacing:12">
+                  <Border Background="#1E2128" CornerRadius="10" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                    <StackPanel>
+                      <TextBlock Text="Last run" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource MetricValue}" FontSize="18"/>
+                    </StackPanel>
+                  </Border>
+                  <Button x:Name="btnSystemHealth" Content="View health detail" Width="160" Height="36" Style="{StaticResource ModernButton}"/>
+                </StackPanel>
               </Grid>
             </Border>
 
@@ -5458,36 +5307,42 @@ $xamlContent = @'
                     Background="{DynamicResource CardBackgroundBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="18">
-              <UniformGrid Columns="4" Rows="1">
-                <Border x:Name="dashboardCpuCard" Background="{DynamicResource SidebarHoverBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
-                  <StackPanel Tag="Spacing:4">
-                    <TextBlock Text="CPU load" Style="{StaticResource SectionSubtext}"/>
+                    CornerRadius="12"
+                    Padding="20">
+              <Grid Tag="ColumnSpacing:16">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="dashboardCpuCard" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                  <StackPanel Tag="Spacing:6">
+                    <TextBlock Text="CPU load" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock x:Name="lblDashCpuUsage" Style="{StaticResource MetricValue}" Text="--%"/>
                     <TextBlock Text="Realtime usage of each core." Style="{StaticResource SectionSubtext}"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardMemoryCard" Background="{DynamicResource SidebarHoverBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
-                  <StackPanel Tag="Spacing:4">
-                    <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
-                    <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="{DynamicResource InfoBrush}"/>
+                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                  <StackPanel Tag="Spacing:6">
+                    <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                    <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="#60A5FA"/>
                     <TextBlock Text="Track system memory consumption." Style="{StaticResource SectionSubtext}"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardActivityCard" Background="{DynamicResource SidebarHoverBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
-                  <StackPanel Tag="Spacing:4">
-                    <TextBlock Text="Session" Style="{StaticResource SectionSubtext}"/>
+                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                  <StackPanel Tag="Spacing:6">
+                    <TextBlock Text="Session" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock Text="Active games" Style="{StaticResource SectionSubtext}"/>
                     <TextBlock x:Name="lblDashActiveGames" Style="{StaticResource MetricValue}" Text="None"/>
-                    <Separator Margin="0,6" Background="{DynamicResource CardBorderBrush}" Height="1"/>
+                    <Separator Margin="0,4" Background="#2E3441" Height="1"/>
                     <TextBlock Text="Last optimization" Style="{StaticResource SectionSubtext}"/>
                     <TextBlock x:Name="lblDashLastOptimization" Style="{StaticResource SectionSubtext}" FontSize="13" Text="Never"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardHealthCard" Background="{DynamicResource SidebarHoverBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
-                  <StackPanel Tag="Spacing:6">
-                    <TextBlock Text="System health" Style="{StaticResource SectionSubtext}"/>
+                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                  <StackPanel Tag="Spacing:8">
+                    <TextBlock Text="System health" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock x:Name="lblDashSystemHealth" Style="{StaticResource MetricValue}" Text="Not run"/>
                     <StackPanel Orientation="Horizontal" Tag="Spacing:8">
                       <Button x:Name="btnSystemHealthRunCheck" Content="Run" Width="72" Height="30" Style="{StaticResource SuccessButton}" FontSize="12"/>
@@ -5495,89 +5350,81 @@ $xamlContent = @'
                     </StackPanel>
                   </StackPanel>
                 </Border>
-              </UniformGrid>
+              </Grid>
             </Border>
 
             <Border x:Name="dashboardQuickActionsCard"
                     Background="{DynamicResource CardBackgroundBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="10"
+                    CornerRadius="12"
                     Padding="20">
               <StackPanel Tag="Spacing:10">
-                <TextBlock Text="Optimization controls" Style="{StaticResource SectionHeader}"/>
+                <TextBlock Text="Optimization controls" Style="{StaticResource SectionHeader}" FontSize="16"/>
                 <TextBlock Text="Launch KOALA automation, detection and benchmarking from one spot." Style="{StaticResource SectionSubtext}"/>
-                <StackPanel Orientation="Horizontal" Tag="Spacing:12" Margin="0,6,0,0">
-                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick optimize" Height="36" MinWidth="180" Style="{StaticResource SuccessButton}" FontSize="12"/>
-                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-detect games" Height="36" MinWidth="190" Style="{StaticResource ModernButton}" FontSize="12"/>
+                <WrapPanel ItemWidth="180" ItemHeight="40" Margin="0,4,0,0">
+                  <Button x:Name="btnDashQuickOptimize" Content="⚡ Quick optimize" Width="180" Height="36" Style="{StaticResource SuccessButton}" FontSize="12" Margin="0,0,16,16"/>
+                  <Button x:Name="btnDashAutoDetect" Content="🎮 Auto-detect games" Width="200" Height="36" Style="{StaticResource ModernButton}" FontSize="12" Margin="0,0,16,16"/>
                   <Button x:Name="btnDashAutoOptimize" Content="Auto optimize" Visibility="Collapsed"/>
-                </StackPanel>
+                </WrapPanel>
                 <CheckBox x:Name="chkDashAutoOptimize" Content="Keep auto optimization enabled" Style="{StaticResource ModernCheckBox}"/>
                 <TextBlock Text="Tip: Enable auto optimization so KOALA refreshes your tweaks whenever Windows starts." Style="{StaticResource SectionSubtext}"/>
               </StackPanel>
             </Border>
 
-            <Grid Tag="ColumnSpacing:18">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.4*"/>
-                <ColumnDefinition Width="1*"/>
-              </Grid.ColumnDefinitions>
-              <Border x:Name="dashboardGameProfileCard"
-                      Background="{DynamicResource CardBackgroundBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="20">
-                <StackPanel Tag="Spacing:12">
-                  <TextBlock Text="Game profile launcher" Style="{StaticResource SectionHeader}"/>
-                  <Grid Tag="ColumnSpacing:12">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="2*"/>
-                      <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Tag="Spacing:10">
-                      <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}"/>
-                      <Grid Tag="ColumnSpacing:10">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*"/>
-                          <ColumnDefinition Width="Auto"/>
-                          <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}"/>
-                        <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="70" Height="32" Style="{StaticResource ModernButton}"/>
-                        <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="100" Height="32" Style="{StaticResource SuccessButton}"/>
-                      </Grid>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Tag="Spacing:10">
-                      <Button x:Name="btnInstalledGamesDash" Content="Installed games" Width="180" Height="34" Style="{StaticResource ModernButton}"/>
-                      <Button x:Name="btnAddGameFolderDash" Content="Add game folder" Width="180" Height="34" Style="{StaticResource ModernButton}"/>
-                      <Button x:Name="btnCustomSearchDash" Content="Custom search" Width="180" Height="34" Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
-                    </StackPanel>
-                  </Grid>
-                </StackPanel>
-              </Border>
+            <Border x:Name="dashboardGameProfileCard"
+                    Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="20">
+              <StackPanel Tag="Spacing:12">
+                <TextBlock Text="Game profile launcher" Style="{StaticResource SectionHeader}" FontSize="16"/>
+                <Grid Tag="ColumnSpacing:16">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0" Tag="Spacing:12">
+                    <ComboBox x:Name="cmbGameProfile" Style="{StaticResource ModernComboBox}"/>
+                    <Grid Tag="ColumnSpacing:10">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBox x:Name="txtCustomGame" Grid.Column="0" Style="{StaticResource ModernTextBox}"/>
+                      <Button x:Name="btnFindExecutable" Grid.Column="1" Content="Find" Width="70" Height="32" Style="{StaticResource ModernButton}"/>
+                      <Button x:Name="btnOptimizeGame" Grid.Column="2" Content="Optimize" Width="100" Height="32" Style="{StaticResource SuccessButton}"/>
+                    </Grid>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Tag="Spacing:10">
+                    <Button x:Name="btnInstalledGamesDash" Content="Installed games" Width="180" Height="34" Style="{StaticResource ModernButton}"/>
+                    <Button x:Name="btnAddGameFolderDash" Content="Add game folder" Width="180" Height="34" Style="{StaticResource ModernButton}"/>
+                    <Button x:Name="btnCustomSearchDash" Content="Custom search" Width="180" Height="34" Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
 
-              <Border x:Name="dashboardGameListCard"
-                      Grid.Column="1"
-                      Background="{DynamicResource CardBackgroundBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="20">
-                <StackPanel Tag="Spacing:12">
-                  <TextBlock Text="Detected games" Style="{StaticResource SectionHeader}"/>
-                  <TextBlock Text="Your library updates automatically after detection." Style="{StaticResource SectionSubtext}"/>
-                  <ScrollViewer Height="260" VerticalScrollBarVisibility="Auto" Background="Transparent">
-                    <StackPanel x:Name="dashboardGameListPanel">
-                      <TextBlock Text="Click 'Search for installed games' to discover your library." Style="{StaticResource SectionSubtext}" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,40,0,0"/>
-                    </StackPanel>
-                  </ScrollViewer>
-                  <Button x:Name="btnOptimizeSelectedDashboard" Content="Optimize selected games" Height="40" Style="{StaticResource SuccessButton}" FontSize="12" IsEnabled="False"/>
-                </StackPanel>
-              </Border>
-            </Grid>
+            <Border x:Name="dashboardGameListCard"
+                    Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="20">
+              <StackPanel Tag="Spacing:12">
+                <TextBlock Text="Detected games" Style="{StaticResource SectionHeader}" FontSize="16"/>
+                <TextBlock Text="Your library updates automatically after detection." Style="{StaticResource SectionSubtext}"/>
+                <ScrollViewer Height="260" VerticalScrollBarVisibility="Auto" Background="Transparent">
+                  <StackPanel x:Name="dashboardGameListPanel">
+                    <TextBlock Text="Click 'Search for installed games' to discover your library." Style="{StaticResource SectionSubtext}" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,40,0,0"/>
+                  </StackPanel>
+                </ScrollViewer>
+                <Button x:Name="btnOptimizeSelectedDashboard" Content="Optimize selected games" Height="40" Style="{StaticResource SuccessButton}" FontSize="12" IsEnabled="False"/>
+              </StackPanel>
+            </Border>
           </StackPanel>
-
 
           <StackPanel x:Name="panelBasicOpt" Visibility="Collapsed" Tag="Spacing:16">
             <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="22">
@@ -6017,7 +5864,7 @@ $xamlContent = @'
         </Grid>
       </Border>
 
-      <Border Grid.Row="3" x:Name="activityLogBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Margin="24" Padding="16">
+      <Border Grid.Row="3" x:Name="activityLogBorder" Background="#11151C" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="10" Margin="24" Padding="16">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -7396,7 +7243,7 @@ $cmbGameProfile.Items.Clear()
 $item = New-Object System.Windows.Controls.ComboBoxItem
 $item.Content = "Custom Profile"
 $item.Tag = "custom"
-[void]$cmbGameProfile.Items.Add($item)
+$cmbGameProfile.Items.Add($item)
 
 # Competitive Shooters Section
 $headerItem = New-Object System.Windows.Controls.ComboBoxItem
@@ -7405,14 +7252,14 @@ $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
 $headerItem.Foreground = "#A08BFF"
-[void]$cmbGameProfile.Items.Add($headerItem)
+$cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege')) {
     if ($GameProfiles.ContainsKey($key)) {
         $item = New-Object System.Windows.Controls.ComboBoxItem
         $item.Content = $GameProfiles[$key].DisplayName
         $item.Tag = $key
-        [void]$cmbGameProfile.Items.Add($item)
+        $cmbGameProfile.Items.Add($item)
     }
 }
 
@@ -7423,14 +7270,14 @@ $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
 $headerItem.Foreground = "#A08BFF"
-[void]$cmbGameProfile.Items.Add($headerItem)
+$cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('fortnite', 'apexlegends', 'pubg', 'warzone')) {
     if ($GameProfiles.ContainsKey($key)) {
         $item = New-Object System.Windows.Controls.ComboBoxItem
         $item.Content = $GameProfiles[$key].DisplayName
         $item.Tag = $key
-        [void]$cmbGameProfile.Items.Add($item)
+        $cmbGameProfile.Items.Add($item)
     }
 }
 
@@ -7441,14 +7288,14 @@ $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
 $headerItem.Foreground = "#A08BFF"
-[void]$cmbGameProfile.Items.Add($headerItem)
+$cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('lol', 'rocketleague', 'dota2', 'gta5')) {
     if ($GameProfiles.ContainsKey($key)) {
         $item = New-Object System.Windows.Controls.ComboBoxItem
         $item.Content = $GameProfiles[$key].DisplayName
         $item.Tag = $key
-        [void]$cmbGameProfile.Items.Add($item)
+        $cmbGameProfile.Items.Add($item)
     }
 }
 
@@ -7459,14 +7306,14 @@ $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
 $headerItem.Foreground = "#A08BFF"
-[void]$cmbGameProfile.Items.Add($headerItem)
+$cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077')) {
     if ($GameProfiles.ContainsKey($key)) {
         $item = New-Object System.Windows.Controls.ComboBoxItem
         $item.Content = $GameProfiles[$key].DisplayName
         $item.Tag = $key
-        [void]$cmbGameProfile.Items.Add($item)
+        $cmbGameProfile.Items.Add($item)
     }
 }
 
@@ -7477,13 +7324,13 @@ $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
 $headerItem.Foreground = "#A08BFF"
-[void]$cmbGameProfile.Items.Add($headerItem)
+$cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in $GameProfiles.Keys | Where-Object { $_ -notin @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege', 'fortnite', 'apexlegends', 'pubg', 'warzone', 'lol', 'rocketleague', 'dota2', 'gta5', 'hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077') }) {
     $item = New-Object System.Windows.Controls.ComboBoxItem
     $item.Content = $GameProfiles[$key].DisplayName
     $item.Tag = $key
-    [void]$cmbGameProfile.Items.Add($item)
+    $cmbGameProfile.Items.Add($item)
 }
 $cmbGameProfile.SelectedIndex = 0
 
@@ -10703,15 +10550,15 @@ function Get-AdvancedCheckboxControls {
         return @()
     }
 
-    $results = [System.Collections.ArrayList]::new()
+    $results = @()
     $stack = [System.Collections.Stack]::new()
-    [void]$stack.Push($panelAdvanced)
+    $stack.Push($panelAdvanced)
 
     while ($stack.Count -gt 0) {
         $current = $stack.Pop()
 
         if ($current -is [System.Windows.Controls.CheckBox]) {
-            [void]$results.Add($current)
+            $results += $current
         }
 
         if ($current -is [System.Windows.DependencyObject]) {
@@ -10719,17 +10566,13 @@ function Get-AdvancedCheckboxControls {
             for ($i = 0; $i -lt $childCount; $i++) {
                 $child = [System.Windows.Media.VisualTreeHelper]::GetChild($current, $i)
                 if ($child) {
-                    [void]$stack.Push($child)
+                    $stack.Push($child)
                 }
             }
         }
     }
 
-    if ($results.Count -eq 0) {
-        return @()
-    }
-
-    return [System.Windows.Controls.CheckBox[]]$results.ToArray()
+    return $results
 }
 
 function Get-AdvancedCheckboxNames {
@@ -11211,7 +11054,6 @@ if ($btnSystemInfo) { $btnSystemInfo.Add_Click({ Get-SystemInfo }) }
 
 # Benchmark
 if ($btnBenchmark) { $btnBenchmark.Add_Click({ Start-QuickBenchmark }) }
-if ($btnHeroBenchmark) { $btnHeroBenchmark.Add_Click({ Start-QuickBenchmark }) }
 
 # System Health button - Show detailed health dialog
 if ($btnSystemHealth) {
