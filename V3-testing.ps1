@@ -2036,13 +2036,13 @@ function Apply-ThemeColors {
                   'SurfaceAltBrush'       = if ($colors.ContainsKey('SurfaceAlt')) { $colors['SurfaceAlt'] } elseif ($colors.ContainsKey('ButtonBackground')) { $colors['ButtonBackground'] } else { $colors.Primary }
                   'HeroCardBrush'         = if ($colors.ContainsKey('HeroCard')) { $colors['HeroCard'] } elseif ($colors.ContainsKey('SurfaceAlt')) { $colors['SurfaceAlt'] } else { $colors.Secondary }
                   'ButtonForegroundBrush' = if ($colors.ContainsKey('ButtonForeground')) { $colors['ButtonForeground'] } else { $colors.Text }
-                  'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#8A5CF6' }
+                  'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
                   'SuccessHoverBrush'     = if ($colors.ContainsKey('SuccessHover')) { $colors['SuccessHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
                   'SuccessForegroundBrush' = if ($colors.ContainsKey('SuccessForeground')) { $colors['SuccessForeground'] } else { $colors.Text }
-                  'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#668A5CF6' }
+                  'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
                   'WarningHoverBrush'     = if ($colors.ContainsKey('WarningHover')) { $colors['WarningHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
                   'WarningForegroundBrush' = if ($colors.ContainsKey('WarningForeground')) { $colors['WarningForeground'] } else { $colors.Text }
-                  'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#808A5CF6' }
+                  'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
                   'DangerHoverBrush'      = if ($colors.ContainsKey('DangerHover')) { $colors['DangerHover'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
                   'DangerForegroundBrush' = if ($colors.ContainsKey('DangerForeground')) { $colors['DangerForeground'] } else { $colors.Text }
                   'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
