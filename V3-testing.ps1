@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -2696,15 +2696,29 @@ function Show-SystemHealthDialog {
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Padding" Value="14,6"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
+
       <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background">
+        <Setter.Value>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#3F6BFF" Offset="0"/>
+            <GradientStop Color="#2E4BD4" Offset="1"/>
+          </LinearGradientBrush>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border Background="{TemplateBinding Background}" CornerRadius="10">
+
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
+
                 <Setter Property="Background" Value="#7E7FFF"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
@@ -2779,6 +2793,7 @@ function Show-SystemHealthDialog {
     
     <!-- Issues and Recommendations -->
     <Border Grid.Row="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="2" CornerRadius="8" Padding="15">
+
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
@@ -3086,6 +3101,7 @@ function Search-LogHistory {
     } catch {
         Log "Error searching log history: $($_.Exception.Message)" 'Error'
         return @()
+
     }
 }
 
