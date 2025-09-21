@@ -1536,29 +1536,103 @@ function Update-AllUIElementsRecursively {
     }
 }
 
-function Update-ButtonStyles {
-    param($Primary, $Hover)
+  function Update-ButtonStyles {
+      param($Primary, $Hover)
 
-    try {
-        if ($form.Resources['ModernButton']) {
-            $style = $form.Resources['ModernButton']
-            $bgSetter = $style.Setters | Where-Object { $_.Property.Name -eq 'Background' }
-            if ($bgSetter) { $bgSetter.Value = $Primary }
-        }
+        try {
+          $primaryBrush = $null
+          if ($Primary) {
+              $primaryBrush = New-SolidColorBrushSafe $Primary
+          }
 
-    $buttons = @()
-    Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
+          $hoverBrush = $null
+          if ($Hover) {
+              $hoverBrush = New-SolidColorBrushSafe $Hover
+          }
 
-        foreach ($button in $buttons) {
-            if ($button.Style -eq $form.Resources['ModernButton']) {
-                $button.Background = $Primary
-            }
-        }
+          $brushConverter = $null
+          $setResourceBrush = {
+              param($key, $brushCandidate, $colorValue)
+              if (-not $form.Resources.Contains($key)) { return }
 
-    } catch {
-        $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
-        Log $errorMessage 'Warning'
-    }
+              if ($brushCandidate) {
+                  $form.Resources[$key] = $brushCandidate.Clone()
+                  return
+              }
+
+              if (-not $colorValue) { return }
+
+              try {
+                  if (-not $brushConverter) {
+                      $brushConverter = New-Object System.Windows.Media.BrushConverter
+                  }
+                  $converted = $brushConverter.ConvertFromString($colorValue)
+                  if ($converted) {
+                      $form.Resources[$key] = $converted
+                  } else {
+                      $form.Resources[$key] = $colorValue
+                  }
+              } catch {
+                  $form.Resources[$key] = $colorValue
+              }
+          }
+
+          & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
+          & $setResourceBrush 'ButtonBorderBrush' $primaryBrush $Primary
+
+          $hoverBrushCandidate = $hoverBrush
+          if (-not $hoverBrushCandidate) { $hoverBrushCandidate = $primaryBrush }
+
+          $hoverColorValue = $Hover
+          if (-not $hoverColorValue) { $hoverColorValue = $Primary }
+
+          & $setResourceBrush 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
+          & $setResourceBrush 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
+
+          $buttons = @()
+          Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
+
+          $modernStyle = $form.Resources['ModernButton']
+          foreach ($button in $buttons) {
+              if ($modernStyle -and $button.Style -eq $modernStyle) {
+                  if ($primaryBrush) {
+                      $button.Background = $primaryBrush.Clone()
+                      try { $button.BorderBrush = $primaryBrush.Clone() } catch { }
+                  } elseif ($Primary) {
+                      try {
+                          if (-not $brushConverter) {
+                              $brushConverter = New-Object System.Windows.Media.BrushConverter
+                          }
+                          $convertedBackground = $brushConverter.ConvertFromString($Primary)
+                          if ($convertedBackground) {
+                              $button.Background = $convertedBackground
+                          } else {
+                              $button.Background = $Primary
+                          }
+                      } catch {
+                          $button.Background = $Primary
+                      }
+                      try {
+                          if (-not $brushConverter) {
+                              $brushConverter = New-Object System.Windows.Media.BrushConverter
+                          }
+                          $convertedBorder = $brushConverter.ConvertFromString($Primary)
+                          if ($convertedBorder) {
+                              $button.BorderBrush = $convertedBorder
+                          } else {
+                              $button.BorderBrush = $Primary
+                          }
+                      } catch {
+                          try { $button.BorderBrush = $Primary } catch { }
+                      }
+                  }
+              }
+          }
+
+      } catch {
+          $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
+          Log $errorMessage 'Warning'
+      }
 }
 
 function Update-ComboBoxStyles {
@@ -1866,21 +1940,25 @@ function Apply-ThemeColors {
             $innerGaugeBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($colors.Background))
             $innerGaugeBrush.Freeze()
 
-            $resourceColors = @{
-                'AppBackgroundBrush'    = $colors.Background
-                'SidebarBackgroundBrush' = $colors.SidebarBg
-                'SidebarAccentBrush'    = $colors.Primary
-                'SidebarHoverBrush'     = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
-                'HeaderBackgroundBrush' = $colors.HeaderBg
-                'HeaderBorderBrush'     = $cardBorderValue
-                'CardBackgroundBrush'   = $colors.Secondary
-                'CardBorderBrush'       = $cardBorderValue
-                'AccentBrush'           = $colors.Primary
-                'PrimaryTextBrush'      = $colors.Text
-                'SecondaryTextBrush'    = $colors.TextSecondary
-                'HeroChipBrush'         = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
-                'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
-                'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
+              $resourceColors = @{
+                  'AppBackgroundBrush'    = $colors.Background
+                  'SidebarBackgroundBrush' = $colors.SidebarBg
+                  'SidebarAccentBrush'    = $colors.Primary
+                  'SidebarHoverBrush'     = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'HeaderBackgroundBrush' = $colors.HeaderBg
+                  'HeaderBorderBrush'     = $cardBorderValue
+                  'CardBackgroundBrush'   = $colors.Secondary
+                  'CardBorderBrush'       = $cardBorderValue
+                  'AccentBrush'           = $colors.Primary
+                  'ButtonBackgroundBrush' = if ($colors.ContainsKey('ButtonBackground') -and $colors['ButtonBackground']) { $colors['ButtonBackground'] } else { $colors.Primary }
+                  'ButtonBorderBrush'     = if ($colors.ContainsKey('ButtonBorder') -and $colors['ButtonBorder']) { $colors['ButtonBorder'] } else { $colors.Primary }
+                  'ButtonHoverBrush'      = if ($colors.ContainsKey('ButtonHover') -and $colors['ButtonHover']) { $colors['ButtonHover'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'ButtonPressedBrush'    = if ($colors.ContainsKey('ButtonPressed') -and $colors['ButtonPressed']) { $colors['ButtonPressed'] } elseif ($colors.ContainsKey('Hover') -and $colors['Hover']) { $colors['Hover'] } else { $colors.Primary }
+                  'PrimaryTextBrush'      = $colors.Text
+                  'SecondaryTextBrush'    = $colors.TextSecondary
+                  'HeroChipBrush'         = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
+                  'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
+                  'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
                 'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
                 'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
             }
@@ -4813,6 +4891,11 @@ $xamlContent = @'
     <SolidColorBrush x:Key="WarningBrush" Color="#FACC15"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
     <SolidColorBrush x:Key="InfoBrush" Color="#38BDF8"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#2D323C"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#353A45"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#353B47"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#2A303A"/>
+
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
@@ -4839,9 +4922,10 @@ $xamlContent = @'
     </Style>
 
     <Style x:Key="ModernButton" TargetType="Button" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="#2D323C"/>
+      <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="#353A45"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="14,8"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -4859,10 +4943,10 @@ $xamlContent = @'
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="buttonBorder" Property="Background" Value="#353B47"/>
+                <Setter TargetName="buttonBorder" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="buttonBorder" Property="Background" Value="#2A303A"/>
+                <Setter TargetName="buttonBorder" Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.4"/>
@@ -5277,7 +5361,8 @@ $xamlContent = @'
                     <Button x:Name="btnCustomSearchDash" Content="Custom search" Width="180" Height="34" Style="{StaticResource WarningButton}" Visibility="Collapsed"/>
                   </StackPanel>
                 </Grid>
-              </Border>
+              </StackPanel>
+            </Border>
 
             <Border x:Name="dashboardGameListCard"
                     Background="{DynamicResource CardBackgroundBrush}"
