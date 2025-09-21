@@ -386,7 +386,6 @@ function Add-LogToHistory {
         [string]$Category = 'General'
     )
 
-    # Initialize global log history if not exists and ensure it's list-based for efficient trimming
     if (-not $global:LogHistory) {
         $global:LogHistory = [System.Collections.ArrayList]::new()
     } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
@@ -406,6 +405,7 @@ function Add-LogToHistory {
     } else {
         $global:LogHistory += $logEntry
     }
+
 
     # Keep only last 1000 entries to prevent memory issues
     $maxEntries = 1000
