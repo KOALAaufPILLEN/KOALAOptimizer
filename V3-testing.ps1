@@ -4896,6 +4896,7 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#353B47"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#2A303A"/>
 
+
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -4924,6 +4925,7 @@ $xamlContent = @'
       <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="14,8"/>
       <Setter Property="Cursor" Value="Hand"/>
