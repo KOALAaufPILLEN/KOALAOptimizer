@@ -403,139 +403,8 @@ function Get-ThemeColors {
     }
 }
 
-# ---------- Missing Utility Functions ----------
-function Get-LogCategory {
-    param([string]$Message)
+# Logging helpers live near the advanced monitoring section further below.
 
-    # Categorize log messages for better organization
-    if ($Message -match "Error|Failed|Exception|Critical") {
-        return "Error"
-    } elseif ($Message -match "Warning|Could not|Missing") {
-        return "Warning"
-    } elseif ($Message -match "Success|Completed|OK|Ready") {
-        return "Success"
-    } elseif ($Message -match "Game|Profile|Detection") {
-        return "Gaming"
-    } elseif ($Message -match "Theme|UI|Display") {
-        return "UI"
-    } elseif ($Message -match "Performance|CPU|Memory|System") {
-        return "Performance"
-    } else {
-        return "General"
-    }
-}
-
-function Add-LogToHistory {
-    param(
-        [string]$Message,
-        [string]$Level = 'Info',
-        [string]$Category = 'General'
-    )
-
-    # Initialize global log history if not exists and ensure it's list-based for efficient trimming
-    if (-not $global:LogHistory) {
-        $global:LogHistory = [System.Collections.ArrayList]::new()
-    } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
-        $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
-    }
-
-    # Add to history with timestamp
-    $logEntry = @{
-        Timestamp = Get-Date
-        Message = $Message
-        Level = $Level
-        Category = $Category
-    }
-
-    if ($global:LogHistory -is [System.Collections.IList]) {
-        [void]$global:LogHistory.Add($logEntry)
-    } else {
-        $global:LogHistory += $logEntry
-    }
-
-    # Keep only last 1000 entries to prevent memory issues
-    $maxEntries = 1000
-    if ($global:LogHistory -is [System.Collections.ArrayList] -and $global:LogHistory.Count -gt $maxEntries) {
-        $removeCount = $global:LogHistory.Count - $maxEntries
-        if ($removeCount -gt 0) {
-            $global:LogHistory.RemoveRange(0, $removeCount)
-        }
-    } elseif ($global:LogHistory.Count -gt $maxEntries) {
-        $global:LogHistory = $global:LogHistory[-$maxEntries..-1]
-    }
-}
-
-function Optimize-LogFile {
-    param([int]$MaxSizeMB = 10)
-
-    try {
-        $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
-
-        if (Test-Path $logFilePath) {
-            $logFile = Get-Item $logFilePath
-            $sizeMB = [math]::Round($logFile.Length / 1MB, 2)
-
-            if ($sizeMB -gt $MaxSizeMB) {
-                # Keep only the last 70% of the file
-                $content = Get-Content $logFilePath
-                $keepLines = [math]::Floor($content.Count * 0.7)
-                $content[-$keepLines..-1] | Set-Content $logFilePath
-
-                # Add optimization notice
-                Add-Content $logFilePath "[$([DateTime]::Now.ToString('HH:mm:ss'))] [Info] Log file optimized - size reduced from $sizeMB MB"
-            }
-        }
-    } catch {
-        # Silent failure for log optimization to prevent recursion
-    }
-}
-
-function Get-SystemPerformanceMetrics {
-    param([switch]$Detailed)
-
-    try {
-        $metrics = @{
-            CPU = 0
-            Memory = 0
-            Disk = 0
-            Network = 0
-        }
-
-        # Get CPU usage
-        try {
-            $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
-            $metrics.CPU = [math]::Round($cpu.Average, 1)
-        } catch {
-            $metrics.CPU = 0
-        }
-
-        # Get Memory usage
-        try {
-            $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
-            $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
-            $usedMemory = $totalMemory - $availableMemory
-            $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
-        } catch {
-            $metrics.Memory = 0
-        }
-
-        if ($Detailed) {
-            # Add more detailed metrics if needed
-            $metrics.Timestamp = Get-Date
-            $metrics.Source = "WMI"
-        }
-
-        return $metrics
-    } catch {
-        # Return default metrics on error
-        return @{
-            CPU = 0
-            Memory = 0
-            Disk = 0
-            Network = 0
-        }
-    }
-}
 
 function Ensure-NavigationVisibility {
     param([System.Windows.Controls.Panel]$NavigationPanel)
@@ -3265,13 +3134,13 @@ function Get-EnhancedLogCategories {
     #>
 
     return @{
-        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
+        "System" = @("Registry", "Service", "Process", "Hardware", "Driver", "Error", "Failed", "Critical", "Exception", "Warning")
         "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
         "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
-        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
-        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
+        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout", "Display")
+        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor", "System")
         "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
-        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
+        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config", "Success", "Completed", "Ready")
         "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
     }
 }
@@ -3295,6 +3164,14 @@ function Get-LogCategory {
         }
     }
 
+    if ($Message -match "Success|Completed|OK|Ready") {
+        return "Optimization"
+    }
+
+    if ($Message -match "Warning|Could not|Missing") {
+        return "System"
+    }
+
     return "General"
 }
 
@@ -3311,21 +3188,27 @@ function Add-LogToHistory {
     #>
     param(
         [string]$Message,
-        [string]$Level,
-        [string]$Category
+        [string]$Level = 'Info',
+        [string]$Category = 'General'
     )
 
     try {
+        if (-not $global:LogHistory) {
+            $global:LogHistory = [System.Collections.ArrayList]::new()
+        } elseif ($global:LogHistory -isnot [System.Collections.IList]) {
+            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
+        }
+
+        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -le 0) {
+            $global:MaxLogHistorySize = 1000
+        }
+
         $logEntry = @{
             Timestamp = Get-Date
             Message = $Message
             Level = $Level
             Category = $Category
             Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
-        }
-
-        if ($global:LogHistory -isnot [System.Collections.IList]) {
-            $global:LogHistory = [System.Collections.ArrayList]::new(@($global:LogHistory))
         }
 
         if ($global:LogHistory -is [System.Collections.IList]) {
