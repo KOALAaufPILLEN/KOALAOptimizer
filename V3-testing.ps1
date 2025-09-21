@@ -2196,8 +2196,8 @@ function Apply-ThemeColors {
 
         if ($shouldAttemptFallback) {
             try {
-                if ($function:Apply-ThemeColors) {
-                    & $function:Apply-ThemeColors -ThemeName 'Nebula' -IsFallback
+                if (${function:Apply-ThemeColors}) {
+                    & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
                     Log "Standard-Theme als Fallback angewendet" 'Info'
                 } else {
                     Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
@@ -2238,8 +2238,8 @@ function Switch-Theme {
 
         Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
 
-        if ($function:Apply-ThemeColors) {
-            & $function:Apply-ThemeColors -ThemeName $ThemeName
+        if (${function:Apply-ThemeColors}) {
+            & ${function:Apply-ThemeColors} -ThemeName $ThemeName
         } else {
             Log "Apply-ThemeColors Funktion nicht verfügbar - Theme kann nicht angewendet werden" 'Error'
             return
@@ -2444,8 +2444,8 @@ function Switch-Theme {
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
 
         try {
-            if ($function:Apply-ThemeColors) {
-                & $function:Apply-ThemeColors -ThemeName 'Nebula' -IsFallback
+            if (${function:Apply-ThemeColors}) {
+                & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
                 Log "Standard-Theme als Fallback angewendet" 'Info'
             } else {
                 Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
@@ -6001,13 +6001,13 @@ if (-not $gameListPanel -and $script:PrimaryGameListPanel) {
 }
 
 if ($script:PrimaryGameListPanel -and $script:DashboardGameListPanel -and -not $script:GameListMirrorAttached) {
-    if ($function:Update-GameListMirrors) {
-        & $function:Update-GameListMirrors
+    if (${function:Update-GameListMirrors}) {
+        & ${function:Update-GameListMirrors}
     }
 
     $script:PrimaryGameListPanel.add_LayoutUpdated({
-            if ($function:Update-GameListMirrors) {
-                & $function:Update-GameListMirrors
+            if (${function:Update-GameListMirrors}) {
+                & ${function:Update-GameListMirrors}
             }
         })
 
@@ -6694,8 +6694,8 @@ if ($btnApplyCustomTheme) {
             }
 
             Log "Applying custom theme: BG=$($validated.Background), Primary=$($validated.Primary), Hover=$($validated.Hover), Text=$($validated.Text)" 'Info'
-            if ($function:Apply-ThemeColors) {
-                & $function:Apply-ThemeColors -Background $validated.Background -Primary $validated.Primary -Hover $validated.Hover -Foreground $validated.Text
+            if (${function:Apply-ThemeColors}) {
+                & ${function:Apply-ThemeColors} -Background $validated.Background -Primary $validated.Primary -Hover $validated.Hover -Foreground $validated.Text
             } else {
                 Log "Apply-ThemeColors Funktion nicht verfügbar - benutzerdefiniertes Theme kann nicht angewendet werden" 'Error'
                 return
