@@ -1267,8 +1267,21 @@ function Set-BrushPropertySafe {
     if ([string]::IsNullOrWhiteSpace($Property)) { return }
 
     try {
-        $brush = New-SolidColorBrushSafe $Value
-        if ($brush) {
+        $resolvedValue = $Value
+        $previousValue = $null
+        while ($resolvedValue -is [System.Management.Automation.PSObject] -and $resolvedValue -ne $previousValue) {
+            $previousValue = $resolvedValue
+            $resolvedValue = $resolvedValue.PSObject.BaseObject
+        }
+
+        $brush = New-SolidColorBrushSafe $resolvedValue
+        $previousBrush = $null
+        while ($brush -is [System.Management.Automation.PSObject] -and $brush -ne $previousBrush) {
+            $previousBrush = $brush
+            $brush = $brush.PSObject.BaseObject
+        }
+
+        if ($brush -is [System.Windows.Media.Brush]) {
             if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
                 $Target.$Property = $brush.Clone()
             } else {
@@ -1277,23 +1290,48 @@ function Set-BrushPropertySafe {
             return
         }
 
-        $colorValue = Get-ColorStringFromValue $Value
-        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
+        $colorValue = Get-ColorStringFromValue $resolvedValue
+        $previousColor = $null
+        while ($colorValue -is [System.Management.Automation.PSObject] -and $colorValue -ne $previousColor) {
+            $previousColor = $colorValue
+            $colorValue = $colorValue.PSObject.BaseObject
+        }
+
+        $colorString = $null
+        if ($null -ne $colorValue) {
+            if ($colorValue -is [string]) {
+                $colorString = $colorValue
+            } else {
+                try { $colorString = [string]$colorValue } catch { $colorString = $null }
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($colorString)) {
             try {
                 if (-not $script:SharedBrushConverter) {
                     $script:SharedBrushConverter = New-Object System.Windows.Media.BrushConverter
                 }
 
-                $converted = $script:SharedBrushConverter.ConvertFromString($colorValue)
-                if ($converted) {
-                    $Target.$Property = $converted
+                $converted = $script:SharedBrushConverter.ConvertFromString($colorString)
+                $previousConverted = $null
+                while ($converted -is [System.Management.Automation.PSObject] -and $converted -ne $previousConverted) {
+                    $previousConverted = $converted
+                    $converted = $converted.PSObject.BaseObject
+                }
+
+                if ($converted -is [System.Windows.Media.Brush]) {
+                    if ($converted -is [System.Windows.Freezable] -and $converted.IsFrozen) {
+                        $Target.$Property = $converted.Clone()
+                    } else {
+                        $Target.$Property = $converted
+                    }
                     return
                 }
             } catch {
                 Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
             }
 
-            $Target.$Property = $colorValue
+            $Target.$Property = $colorString
             return
         }
 
