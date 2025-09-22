@@ -2278,6 +2278,10 @@ function Apply-ThemeColors {
             }
 
             $dashboardCards = @(
+                'heroCardProfiles',
+                'heroCardOptimizations',
+                'heroCardAutoMode',
+                'dashboardHeroCard',
                 'dashboardCpuCard',
                 'dashboardMemoryCard',
                 'dashboardActivityCard',
@@ -2672,14 +2676,14 @@ function Switch-Theme {
                                 Set-BrushPropertySafe -Target $mainContent.Children[0] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
-                            if ($mainContent.Children.Count -gt 2) {
-                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'Background' -Value $themeColors.HeaderBg
-                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
+                            if ($mainContent.Children.Count -gt 3) {
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'Background' -Value $themeColors.HeaderBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
-                            if ($mainContent.Children.Count -gt 3) {
-                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'Background' -Value $themeColors.LogBg
-                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'BorderBrush' -Value $themeColors.Accent -AllowTransparentFallback
+                            if ($mainContent.Children.Count -gt 4) {
+                                Set-BrushPropertySafe -Target $mainContent.Children[4] -Property 'Background' -Value $themeColors.LogBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[4] -Property 'BorderBrush' -Value $themeColors.Accent -AllowTransparentFallback
                             }
 
                             $mainContent.InvalidateVisual()
@@ -5052,7 +5056,10 @@ $xamlContent = @'
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
     <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#19173A"/>
     <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
-    <SolidColorBrush x:Key="HeroCardBrush" Color="#1F1B40"/>
+    <LinearGradientBrush x:Key="HeroCardBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#2F2568" Offset="0"/>
+      <GradientStop Color="#171533" Offset="1"/>
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="AccentBrush" Color="#B497FF"/>
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
@@ -5064,6 +5071,7 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A264B"/>
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#282450"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1A1839"/>
+    <SolidColorBrush x:Key="HeroChipBrush" Color="#292250"/>
 
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
@@ -5259,7 +5267,7 @@ $xamlContent = @'
     <Border x:Name="SidebarShell"
             Grid.Column="0"
             Background="{DynamicResource SidebarBackgroundBrush}"
-            BorderBrush="#20252E"
+            BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="0,0,1,0"
             Padding="20,18">
       <Grid>
@@ -5269,11 +5277,13 @@ $xamlContent = @'
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,20">
-          <TextBlock Text="KOALA" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
-          <TextBlock Text="Gaming Optimizer" Style="{StaticResource SectionSubtext}" Margin="0,2,0,0"/>
-          <TextBlock Text="v3.0 Enhanced" Style="{StaticResource SectionSubtext}" FontStyle="Italic" Margin="0,6,0,0"/>
-        </StackPanel>
+        <Border Grid.Row="0" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="14" Padding="18" Margin="0,0,0,24">
+          <StackPanel Tag="Spacing:6">
+            <TextBlock Text="🐨 KOALA" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock Text="Gaming Optimizer v3.0" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock Text="Advanced FPS boosting suite" Style="{StaticResource SectionSubtext}" FontSize="11"/>
+          </StackPanel>
+        </Border>
 
         <ScrollViewer x:Name="SidebarNavScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
           <StackPanel>
@@ -5355,9 +5365,10 @@ $xamlContent = @'
     <Grid x:Name="MainStage" Grid.Column="1" Background="{DynamicResource AppBackgroundBrush}">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
         <RowDefinition Height="Auto"/>
-        <RowDefinition Height="220"/>
+        <RowDefinition Height="260"/>
       </Grid.RowDefinitions>
 
       <Border x:Name="HeaderBar"
@@ -5365,66 +5376,114 @@ $xamlContent = @'
               Background="{DynamicResource HeaderBackgroundBrush}"
               BorderBrush="{DynamicResource HeaderBorderBrush}"
               BorderThickness="0,0,0,1"
-              Padding="26,18">
+              Padding="26,20">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <StackPanel>
-            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
-            <TextBlock x:Name="lblMainSubtitle" Text="Your system at a glance" Style="{StaticResource SectionSubtext}" Margin="0,4,0,0"/>
+            <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock x:Name="lblMainSubtitle" Text="Your system at a glance" Style="{StaticResource SectionSubtext}" Margin="0,6,0,0"/>
+            <WrapPanel Margin="0,18,0,0" ItemHeight="28">
+              <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="12,6" Margin="0,0,10,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Tag="Spacing:6">
+                  <TextBlock Text="⚡" FontSize="14"/>
+                  <TextBlock Text="Instant optimizations" Style="{StaticResource SectionSubtext}"/>
+                </StackPanel>
+              </Border>
+              <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="12,6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Tag="Spacing:6">
+                  <TextBlock Text="📊" FontSize="14"/>
+                  <TextBlock Text="Live system insights" Style="{StaticResource SectionSubtext}"/>
+                </StackPanel>
+              </Border>
+            </WrapPanel>
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:12">
-            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="100" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Profiles" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" Text="--"/>
-              </StackPanel>
-            </Border>
-            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="120" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Optimizations" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" Text="--"/>
-              </StackPanel>
-            </Border>
-            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="120" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Auto mode" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" Text="Off"/>
-              </StackPanel>
-            </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Tag="Spacing:12">
+            <Button x:Name="btnSystemHealth" Content="View health detail" Width="170" Height="40" Style="{StaticResource ModernButton}"/>
           </StackPanel>
         </Grid>
       </Border>
 
-      <ScrollViewer x:Name="MainScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="26">
+      <Grid Grid.Row="1" Margin="26,18,26,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border x:Name="heroCardProfiles" Grid.Column="0" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,0,18,0">
+          <StackPanel Tag="Spacing:10">
+            <TextBlock Text="🎮" FontSize="26"/>
+            <TextBlock Text="Profiles ready" Style="{StaticResource SectionHeader}" FontSize="18"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="28" Text="--"/>
+            <TextBlock Text="Configured libraries and detected games." Style="{StaticResource SectionSubtext}"/>
+          </StackPanel>
+        </Border>
+        <Border x:Name="heroCardOptimizations" Grid.Column="1" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,0,18,0">
+          <StackPanel Tag="Spacing:10">
+            <TextBlock Text="🧰" FontSize="26"/>
+            <TextBlock Text="Optimizations applied" Style="{StaticResource SectionHeader}" FontSize="18"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="28" Text="--"/>
+            <TextBlock Text="Latest tweaks and automation status." Style="{StaticResource SectionSubtext}"/>
+          </StackPanel>
+        </Border>
+        <Border x:Name="heroCardAutoMode" Grid.Column="2" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22">
+          <StackPanel Tag="Spacing:10">
+            <TextBlock Text="🤖" FontSize="26"/>
+            <TextBlock Text="Auto mode" Style="{StaticResource SectionHeader}" FontSize="18"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="28" Text="Off"/>
+            <TextBlock Text="Keep automation running even when minimized." Style="{StaticResource SectionSubtext}"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
             <Border x:Name="dashboardHeroCard"
                     Background="{DynamicResource HeroCardBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="14"
-                    Padding="24">
+                    CornerRadius="16"
+                    Padding="26">
               <Grid>
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="2*"/>
+                  <ColumnDefinition Width="2.4*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Tag="Spacing:10">
-                  <TextBlock Text="System ready" Style="{StaticResource SectionHeader}"/>
-                  <TextBlock x:Name="lblHeaderSystemStatus" Text="Optimized" Style="{StaticResource SectionHeader}" FontSize="22"/>
+                <StackPanel Grid.Column="0" Tag="Spacing:12">
+                  <TextBlock Text="System optimization status" Style="{StaticResource SectionHeader}" FontSize="20"/>
+                  <TextBlock x:Name="lblHeaderSystemStatus" Text="Optimized" Style="{StaticResource SectionHeader}" FontSize="28"/>
                   <TextBlock Text="KOALA keeps your PC lean with smart maintenance, clean logging and one-click fixes." Style="{StaticResource SectionSubtext}"/>
+                  <WrapPanel Margin="0,6,0,0" ItemHeight="28">
+                    <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="10,4" Margin="0,0,10,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                      <StackPanel Orientation="Horizontal" Tag="Spacing:6">
+                        <TextBlock Text="🧠" FontSize="13"/>
+                        <TextBlock Text="Adaptive tuning" Style="{StaticResource SectionSubtext}"/>
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="10,4" Margin="0,0,10,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                      <StackPanel Orientation="Horizontal" Tag="Spacing:6">
+                        <TextBlock Text="🔄" FontSize="13"/>
+                        <TextBlock Text="Auto restore points" Style="{StaticResource SectionSubtext}"/>
+                      </StackPanel>
+                    </Border>
+                  </WrapPanel>
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Tag="Spacing:12">
-                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="10" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                    <StackPanel>
+                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                    <StackPanel Tag="Spacing:4">
                       <TextBlock Text="Last run" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource MetricValue}" FontSize="18"/>
+                      <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource MetricValue}" FontSize="22"/>
                     </StackPanel>
                   </Border>
-                  <Button x:Name="btnSystemHealth" Content="View health detail" Width="160" Height="36" Style="{StaticResource ModernButton}"/>
+                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                    <StackPanel Tag="Spacing:4">
+                      <TextBlock Text="Optimization log" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock Text="View latest actions in the activity log below." Style="{StaticResource SectionSubtext}"/>
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
               </Grid>
             </Border>
@@ -5434,13 +5493,24 @@ $xamlContent = @'
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="12"
-                    Padding="20">
-              <Grid Tag="ColumnSpacing:16">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="*"/>
+                    Padding="24">
+              <StackPanel Tag="Spacing:18">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="System summary" Style="{StaticResource SectionHeader}" FontSize="18"/>
+                    <TextBlock Text="Realtime metrics and health status." Style="{StaticResource SectionSubtext}"/>
+                  </StackPanel>
+                </Grid>
+                <Grid Tag="ColumnSpacing:16">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Border x:Name="dashboardCpuCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                   <StackPanel Tag="Spacing:6">
@@ -5476,7 +5546,8 @@ $xamlContent = @'
                     </StackPanel>
                   </StackPanel>
                 </Border>
-              </Grid>
+                </Grid>
+              </StackPanel>
             </Border>
 
             <Border x:Name="dashboardQuickActionsCard"
@@ -5970,7 +6041,7 @@ $xamlContent = @'
         </StackPanel>
       </ScrollViewer>
 
-      <Border x:Name="FooterBar" Grid.Row="2" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16">
+      <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -5990,9 +6061,10 @@ $xamlContent = @'
         </Grid>
       </Border>
 
-      <Border Grid.Row="3" x:Name="activityLogBorder" Background="#11151C" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="10" Margin="24" Padding="16">
+      <Border Grid.Row="4" x:Name="activityLogBorder" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Margin="26,18,26,24" Padding="22">
         <Grid>
           <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -6002,18 +6074,47 @@ $xamlContent = @'
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Activity log" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:6">
-              <Button x:Name="btnToggleLogView" Content="Detailed" Width="80" Height="28" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnExtendLog" Content="Extend" Width="70" Height="28" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnClearLog" Content="Clear" Width="70" Height="28" Style="{StaticResource WarningButton}" FontSize="11"/>
-              <Button x:Name="btnSaveLog" Content="Save log" Width="80" Height="28" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnSearchLog" Content="Search" Width="70" Height="28" Style="{StaticResource SuccessButton}" FontSize="11"/>
+            <StackPanel>
+              <TextBlock Text="Activity log" Style="{StaticResource SectionHeader}" FontSize="18"/>
+              <TextBlock Text="Monitor every action KOALA performs and keep a detailed history." Style="{StaticResource SectionSubtext}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:8" VerticalAlignment="Center">
+              <Button x:Name="btnToggleLogView" Content="Detailed" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+              <Button x:Name="btnExtendLog" Content="Extend" Width="80" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+              <Button x:Name="btnClearLog" Content="Clear" Width="80" Height="32" Style="{StaticResource WarningButton}" FontSize="11"/>
+              <Button x:Name="btnSaveLog" Content="Save log" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+              <Button x:Name="btnSearchLog" Content="Search" Width="80" Height="32" Style="{StaticResource SuccessButton}" FontSize="11"/>
             </StackPanel>
           </Grid>
-          <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
-          <ScrollViewer Grid.Row="2" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <TextBox x:Name="LogBox" Background="Transparent" Foreground="{DynamicResource AccentBrush}" FontFamily="Consolas" FontSize="10" IsReadOnly="True" BorderThickness="0" TextWrapping="Wrap" Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
+          <WrapPanel Grid.Row="1" Margin="0,18,0,12">
+            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+              <StackPanel Tag="Spacing:4">
+                <TextBlock Text="Active game" Style="{StaticResource SectionSubtext}"/>
+                <TextBlock Text="{Binding Text, ElementName=lblDashActiveGames}" Style="{StaticResource MetricValue}" FontSize="16"/>
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+              <StackPanel Tag="Spacing:4">
+                <TextBlock Text="CPU usage" Style="{StaticResource SectionSubtext}"/>
+                <TextBlock Text="{Binding Text, ElementName=lblDashCpuUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+              <StackPanel Tag="Spacing:4">
+                <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
+                <TextBlock Text="{Binding Text, ElementName=lblDashMemoryUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+              <StackPanel Tag="Spacing:4">
+                <TextBlock Text="Health" Style="{StaticResource SectionSubtext}"/>
+                <TextBlock Text="{Binding Text, ElementName=lblDashSystemHealth}" Style="{StaticResource MetricValue}" FontSize="16"/>
+              </StackPanel>
+            </Border>
+          </WrapPanel>
+          <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
+          <ScrollViewer Grid.Row="3" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <TextBox x:Name="LogBox" Background="Transparent" Foreground="{DynamicResource AccentBrush}" FontFamily="Consolas" FontSize="11" IsReadOnly="True" BorderThickness="0" TextWrapping="Wrap" Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
           </ScrollViewer>
         </Grid>
       </Border>
