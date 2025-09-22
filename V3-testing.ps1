@@ -226,7 +226,7 @@ function Set-BorderBrushSafe {
     try {
         # Check if element supports BorderBrush
         if ($Element.GetType().GetProperty("BorderBrush")) {
-            $Element.BorderBrush = $BorderBrushValue
+            Set-BrushPropertySafe -Target $Element -Property 'BorderBrush' -Value $BorderBrushValue -AllowTransparentFallback
         }
 
         # Set BorderThickness if provided and supported
@@ -246,34 +246,34 @@ function Set-BorderBrushSafe {
 # ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
 $global:ThemeDefinitions = @{
     'Nebula' = @{
-        Name = 'Nebula Night'
-        Background = '#090B1A'
-        Primary = '#5D5FEF'
-        Hover = '#7E7FFF'
-        Text = '#F5F6FF'
-        Secondary = '#10142A'
-        Accent = '#9D7BFF'
-        TextSecondary = '#A4AFDF'
-        LogBg = '#0F1428'
-        SidebarBg = '#0E1429'
-        HeaderBg = '#121B39'
-        Success = '#10B981'
-        Warning = '#F59E0B'
-        Danger = '#EF4444'
-        Info = '#8B5CF6'
-        CardBackgroundStart = '#1A1F3F'
-        CardBackgroundEnd = '#10142A'
-        SummaryBackgroundStart = '#272F62'
-        SummaryBackgroundEnd = '#151B3A'
-        CardBorder = '#5D5FEF'
-        GlowAccent = '#B59BFF'
-        GaugeBackground = '#151D3B'
-        GaugeStroke = '#9D7BFF'
-        SelectedBackground = '#5D5FEF'
+        Name = 'Nebula Vortex'
+        Background = '#080716'
+        Primary = '#8F6FFF'
+        Hover = '#A78BFA'
+        Text = '#F5F3FF'
+        Secondary = '#14132B'
+        Accent = '#B497FF'
+        TextSecondary = '#A9A5D9'
+        LogBg = '#0B0A1D'
+        SidebarBg = '#0E0C21'
+        HeaderBg = '#151233'
+        Success = '#34D399'
+        Warning = '#FBBF24'
+        Danger = '#F87171'
+        Info = '#60A5FA'
+        CardBackgroundStart = '#19173A'
+        CardBackgroundEnd = '#0F0D22'
+        SummaryBackgroundStart = '#241F4D'
+        SummaryBackgroundEnd = '#131029'
+        CardBorder = '#2F285A'
+        GlowAccent = '#8F6FFF'
+        GaugeBackground = '#100F25'
+        GaugeStroke = '#B197FF'
+        SelectedBackground = '#8F6FFF'
         UnselectedBackground = 'Transparent'
-        SelectedForeground = '#0B0F1E'
-        UnselectedForeground = '#D5DAFF'
-        HoverBackground = '#242B53'
+        SelectedForeground = '#F5F3FF'
+        UnselectedForeground = '#A9A5D9'
+        HoverBackground = '#1F1B3F'
         IsLight = $false
     }
     'Midnight' = @{
@@ -340,6 +340,8 @@ $global:ThemeDefinitions = @{
     }
 }
 
+$script:SharedBrushConverter = $null
+
 
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
 $global:CustomThemeColors = $null
@@ -350,10 +352,10 @@ function Get-ThemeColors {
     param([string]$ThemeName = 'Nebula')
 
     if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
-        return $global:ThemeDefinitions[$ThemeName]
+        return Normalize-ThemeColorTable $global:ThemeDefinitions[$ThemeName]
     } else {
         Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
-        return $global:ThemeDefinitions['Nebula']
+        return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
     }
 }
 
@@ -451,8 +453,8 @@ function Ensure-NavigationVisibility {
 
                     # Ensure proper styling
                     if (-not $button.Style) {
-                        $button.Background = '#2F3A73'
-                        $button.Foreground = 'White'
+                        $button.Background = '#2F285A'
+                        $button.Foreground = '#F5F3FF'
                         $button.BorderThickness = '0'
                         $button.Margin = '0,2'
                         $button.Padding = '15,10'
@@ -490,6 +492,111 @@ function Get-LogColor($Level) {
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
         default { 'White' }
+    }
+}
+
+
+$global:LogFilterSettings = @{
+    ShowInfo = $true
+    ShowSuccess = $true
+    ShowWarning = $true
+    ShowError = $true
+    ShowContext = $false
+    ShowDebug = $false
+    SearchTerm = ""
+    CategoryFilter = "All"
+}
+$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization", "Status", "Debug")
+$global:LogHistory = [System.Collections.ArrayList]::new()
+$global:MaxLogHistorySize = 1000
+
+function Get-EnhancedLogCategories {
+    <#
+    .SYNOPSIS
+    Enhanced logging categories for better organization and filtering
+    .DESCRIPTION
+    Provides categorization system for logs to enable filtering and organization
+    #>
+
+    return @{
+        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
+        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
+        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
+        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
+        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
+        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
+        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
+        "Status" = @("Success", "Completed", "Ready", "Warning", "Alert", "Caution", "Healthy")
+        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
+    }
+}
+
+function Get-LogCategory {
+    <#
+    .SYNOPSIS
+    Determines the category of a log message based on content analysis
+    .PARAMETER Message
+    The log message to categorize
+    #>
+    param([string]$Message)
+
+    $categories = Get-EnhancedLogCategories
+
+    foreach ($category in $categories.Keys) {
+        foreach ($keyword in $categories[$category]) {
+            if ($Message -match $keyword) {
+                return $category
+            }
+        }
+    }
+
+    return "General"
+}
+
+function Add-LogToHistory {
+    <#
+    .SYNOPSIS
+    Adds a log entry to the searchable history with metadata
+    .PARAMETER Message
+    The log message
+    .PARAMETER Level
+    The log level
+    .PARAMETER Category
+    The log category
+    #>
+    param(
+        [string]$Message,
+        [string]$Level = 'Info',
+        [string]$Category = 'General'
+    )
+
+    try {
+        if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
+            $global:LogHistory = [System.Collections.ArrayList]::new()
+        }
+
+        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
+            $global:MaxLogHistorySize = 1000
+        }
+
+        $logEntry = @{
+            Timestamp = Get-Date
+            Message = $Message
+            Level = $Level
+            Category = $Category
+            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
+        }
+
+        [void]$global:LogHistory.Add($logEntry)
+
+        while ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $global:LogHistory.RemoveAt(0)
+
+        }
+
+    } catch {
+        # Silent fail to prevent logging issues
+        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
     }
 }
 
@@ -999,20 +1106,204 @@ function Update-GameListMirrors {
     }
 }
 
-# Creates a frozen SolidColorBrush from a string value when possible.
-function New-SolidColorBrushSafe {
-    param([string]$ColorValue)
+# Resolve a color-like value (string, brush, PSObject) to a usable color string.
+function Get-ColorStringFromValue {
+    param([object]$ColorValue)
 
-    if ([string]::IsNullOrWhiteSpace($ColorValue)) { return $null }
+    if ($null -eq $ColorValue) { return $null }
+
+    if ($ColorValue -is [string]) { return $ColorValue }
+
+    if ($ColorValue -is [System.Windows.Media.Color]) {
+        return $ColorValue.ToString()
+    }
+
+    if ($ColorValue -is [System.Windows.Media.Brush]) {
+        try { return $ColorValue.ToString() } catch { return $null }
+    }
+
+    if ($ColorValue -is [System.Management.Automation.PSObject]) {
+        foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
+            if ($ColorValue.PSObject.Properties[$propName]) {
+                $resolved = Get-ColorStringFromValue $ColorValue.$propName
+                if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+            }
+        }
+
+        if ($ColorValue.PSObject.BaseObject -ne $ColorValue) {
+            $resolved = Get-ColorStringFromValue $ColorValue.PSObject.BaseObject
+            if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+        }
+
+        try { return $ColorValue.ToString() } catch { return $null }
+    }
+
+    if ($ColorValue -is [System.Collections.IDictionary]) {
+        foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
+            if ($ColorValue.Contains($propName)) {
+                $resolved = Get-ColorStringFromValue $ColorValue[$propName]
+                if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+            }
+        }
+    }
+
+    if ($ColorValue -is [System.Array]) {
+        $length = $ColorValue.Length
+        if ($length -eq 4) {
+            $bytes = @()
+            foreach ($item in $ColorValue) { $bytes += [byte]$item }
+            $color = [System.Windows.Media.Color]::FromArgb($bytes[0], $bytes[1], $bytes[2], $bytes[3])
+            return $color.ToString()
+        } elseif ($length -eq 3) {
+            $bytes = @()
+            foreach ($item in $ColorValue) { $bytes += [byte]$item }
+            $color = [System.Windows.Media.Color]::FromRgb($bytes[0], $bytes[1], $bytes[2])
+            return $color.ToString()
+        }
+    }
+
+    if ($ColorValue -is [System.ValueType]) {
+        return $ColorValue.ToString()
+    }
+
+    try { return [string]$ColorValue } catch { return $null }
+}
+
+# Convert all color-like entries in a theme table to strings for consistent usage.
+function Normalize-ThemeColorTable {
+    param([hashtable]$Theme)
+
+    if (-not $Theme) { return $Theme }
+
+    foreach ($key in @($Theme.Keys)) {
+        $value = $Theme[$key]
+
+        if ($null -eq $value) { continue }
+        if ($value -is [string]) { continue }
+        if ($value -is [bool]) { continue }
+        if ($value -is [int] -or $value -is [double] -or $value -is [decimal]) { continue }
+
+        $resolved = Get-ColorStringFromValue $value
+        if (-not [string]::IsNullOrWhiteSpace($resolved)) {
+            $Theme[$key] = $resolved
+        }
+    }
+
+    return $Theme
+}
+
+# Creates a frozen SolidColorBrush from a color-like value when possible.
+function New-SolidColorBrushSafe {
+    param([Parameter(ValueFromPipeline = $true)][object]$ColorValue)
+
+    if ($null -eq $ColorValue) { return $null }
+
+    if ($ColorValue -is [System.Windows.Media.Brush]) {
+        try { return $ColorValue.Clone() } catch { return $ColorValue }
+    }
+
+    if ($ColorValue -is [System.Windows.Media.Color]) {
+        $brushFromColor = New-Object System.Windows.Media.SolidColorBrush $ColorValue
+        $brushFromColor.Freeze()
+        return $brushFromColor
+    }
+
+    $resolvedValue = Get-ColorStringFromValue $ColorValue
+    if ([string]::IsNullOrWhiteSpace($resolvedValue)) { return $null }
 
     try {
-        $color = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($ColorValue)
+        $color = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
         $brush = New-Object System.Windows.Media.SolidColorBrush $color
         $brush.Freeze()
         return $brush
     } catch {
-        Write-Verbose "Failed to convert '$ColorValue' to SolidColorBrush: $($_.Exception.Message)"
+        Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
         return $null
+    }
+}
+
+function Set-ShapeFillSafe {
+    param(
+        [object]$Shape,
+        [object]$Value
+    )
+
+    if (-not $Shape) { return }
+
+    try {
+        $brush = New-SolidColorBrushSafe $Value
+        if ($brush) {
+            try {
+                if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
+                    $Shape.Fill = $brush.Clone()
+                } else {
+                    $Shape.Fill = $brush
+                }
+            } catch {
+                $Shape.Fill = $brush
+            }
+            return
+        }
+
+        $colorValue = Get-ColorStringFromValue $Value
+        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
+            $Shape.Fill = $colorValue
+        }
+    } catch {
+        Write-Verbose "Set-ShapeFillSafe failed: $($_.Exception.Message)"
+    }
+}
+
+# Centralized helper to assign Brush-like theme values to WPF dependency properties.
+function Set-BrushPropertySafe {
+    param(
+        [Parameter(Mandatory = $true)][object]$Target,
+        [Parameter(Mandatory = $true)][string]$Property,
+        [object]$Value,
+        [switch]$AllowTransparentFallback
+    )
+
+    if (-not $Target) { return }
+    if ([string]::IsNullOrWhiteSpace($Property)) { return }
+
+    try {
+        $brush = New-SolidColorBrushSafe $Value
+        if ($brush) {
+            if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
+                $Target.$Property = $brush.Clone()
+            } else {
+                $Target.$Property = $brush
+            }
+            return
+        }
+
+        $colorValue = Get-ColorStringFromValue $Value
+        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
+            try {
+                if (-not $script:SharedBrushConverter) {
+                    $script:SharedBrushConverter = New-Object System.Windows.Media.BrushConverter
+                }
+
+                $converted = $script:SharedBrushConverter.ConvertFromString($colorValue)
+                if ($converted) {
+                    $Target.$Property = $converted
+                    return
+                }
+            } catch {
+                Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
+            }
+
+            $Target.$Property = $colorValue
+            return
+        }
+
+        if ($AllowTransparentFallback) {
+            $Target.$Property = 'Transparent'
+        } else {
+            $Target.$Property = $null
+        }
+    } catch {
+        Write-Verbose "Set-BrushPropertySafe failed for property '$Property' on $($Target.GetType().Name): $($_.Exception.Message)"
     }
 }
 
@@ -1221,22 +1512,20 @@ function Apply-FallbackThemeColors {
 
         switch ($elementType) {
             "Window" {
-                try { $element.Background = $colors.Background } catch { Write-Verbose "Window background could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
             }
             "Border" {
-                try { $element.Background = $colors.Secondary } catch { Write-Verbose "Border background could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
             }
             "TextBlock" {
-                try { $element.Foreground = $colors.Text } catch { Write-Verbose "TextBlock foreground could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
             }
             "Label" {
-                try { $element.Foreground = $colors.Text } catch { Write-Verbose "Label foreground could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
             }
             "Button" {
-                try {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                } catch { Write-Verbose "Button colors could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
             }
         }
 
@@ -1264,111 +1553,111 @@ function Update-AllUIElementsRecursively {
 
         switch ($elementType) {
             "Window" {
-                $element.Background = $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 if ($element.BorderBrush) {
-                    try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
                 }
             }
             "Border" {
                 $currentBg = if ($element.Background) { $element.Background.ToString() } else { $null }
 
-                if ($currentBg -match "#161D3F|#1B2345|#141830|#1A1F39|#141830|#F8F9FA|#FFFFFF|#F0F2F5") {
-                    $element.Background = $colors.Secondary
+                if ($currentBg -match "#161D3F|#1B2345|#141830|#1A1F39|#141830|#14132B|#F8F9FA|#FFFFFF|#F0F2F5") {
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
                 if ($currentBg -match "#0E101A|#36393F|#0E0E10") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 }
 
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "GroupBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 if ($element.Header -and $element.Header -is [System.String]) {
                     $headerBlock = New-Object System.Windows.Controls.TextBlock
                     $headerBlock.Text = $element.Header
-                    $headerBlock.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $headerBlock -Property 'Foreground' -Value $colors.Text
                     $headerBlock.FontWeight = "Bold"
                     $element.Header = $headerBlock
                 } elseif ($element.Header -and $element.Header -is [System.Windows.Controls.TextBlock]) {
-                    $element.Header.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element.Header -Property 'Foreground' -Value $colors.Text
                 }
             }
             "StackPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "Grid" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "WrapPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "DockPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "TabItem" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "TabControl" {
-                $element.Background = $colors.Background
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Expander" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 if ($element.Header -and $element.Header -is [System.Windows.Controls.TextBlock]) {
-                    $element.Header.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element.Header -Property 'Foreground' -Value $colors.Text
                 }
             }
             "TextBlock" {
                 $currentForeground = if ($element.Foreground) { $element.Foreground.ToString() } else { $null }
 
-                if ($currentForeground -match "#5D5FEF|#5D5FEF|#8A77FF") {
-                    $element.Foreground = $colors.Accent
+                if ($currentForeground -match "#8F6FFF|#B497FF|#5D5FEF|#8A77FF") {
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Accent
                 }
-                elseif ($currentForeground -match "#A6AACF|#B8B8B8|#777EA6888|#6C757D|#8B949E") {
-                    $element.Foreground = $colors.TextSecondary
+                elseif ($currentForeground -match "#A9A5D9|#A6AACF|#B8B8B8|#777EA6888|#6C757D|#8B949E") {
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.TextSecondary
                 }
                 elseif ($currentForeground -match "White|#FFFFFF|Black|#000000|#212529|#1C1E21") {
-                    $element.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 }
                 elseif (-not $currentForeground) {
-                    $element.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 }
             }
             "Label" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "TextBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                $element.SelectionBrush = $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $element -Property 'SelectionBrush' -Value $colors.Primary
             }
             "ComboBox" {
                 $comboBackground = $colors.Secondary
@@ -1379,9 +1668,9 @@ function Update-AllUIElementsRecursively {
                     $comboForeground = $colors.Text
                 }
 
-                $element.Background = $comboBackground
-                $element.Foreground = $comboForeground
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $comboBackground
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $comboForeground
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 try {
                     $element.FontSize = 12
@@ -1390,8 +1679,8 @@ function Update-AllUIElementsRecursively {
 
                 foreach ($item in $element.Items) {
                     if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                        $item.Background = $comboBackground
-                        $item.Foreground = $comboForeground
+                        Set-BrushPropertySafe -Target $item -Property 'Background' -Value $comboBackground
+                        Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $comboForeground
 
                         try {
                             $item.Padding = "10,6"
@@ -1402,56 +1691,56 @@ function Update-AllUIElementsRecursively {
                 }
             }
             "ListBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "ListView" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "CheckBox" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "RadioButton" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "Button" {
                 if ($element.Name -and -not ($element.Name -match "btnNav")) {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                    try { $element.BorderBrush = $colors.Hover } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
                 } elseif ($element.Name -match "btnNav") {
                     if ($element.Tag -eq "Selected") {
-                        $element.Background = $colors.SelectedBackground
-                        $element.Foreground = $colors.SelectedForeground
+                        Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $element.Background = $colors.UnselectedBackground
-                        $element.Foreground = $colors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
                     }
                 } else {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                    try { $element.BorderBrush = $colors.Hover } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
                 }
             }
             "ScrollViewer" {
-                $element.Background = $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
 
                 try {
                     if ($element.Template) {
         $scrollBars = @()
         Find-AllControlsOfType -Parent $element -ControlType 'System.Windows.Controls.Primitives.ScrollBar' -Collection ([ref]$scrollBars)
                         foreach ($scrollBar in $scrollBars) {
-                            $scrollBar.Background = $colors.Secondary
-                            try { $scrollBar.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            Set-BrushPropertySafe -Target $scrollBar -Property 'Background' -Value $colors.Secondary
+                            Set-BrushPropertySafe -Target $scrollBar -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
                         }
                     }
                 } catch {
@@ -1459,24 +1748,24 @@ function Update-AllUIElementsRecursively {
                 }
             }
             "ProgressBar" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Primary
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Slider" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Primary
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Menu" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "MenuItem" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
         }
 
@@ -1563,35 +1852,11 @@ function Update-AllUIElementsRecursively {
           foreach ($button in $buttons) {
               if ($modernStyle -and $button.Style -eq $modernStyle) {
                   if ($primaryBrush) {
-                      $button.Background = $primaryBrush.Clone()
-                      try { $button.BorderBrush = $primaryBrush.Clone() } catch { }
+                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $primaryBrush
+                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $primaryBrush
                   } elseif ($Primary) {
-                      try {
-                          if (-not $brushConverter) {
-                              $brushConverter = New-Object System.Windows.Media.BrushConverter
-                          }
-                          $convertedBackground = $brushConverter.ConvertFromString($Primary)
-                          if ($convertedBackground) {
-                              $button.Background = $convertedBackground
-                          } else {
-                              $button.Background = $Primary
-                          }
-                      } catch {
-                          $button.Background = $Primary
-                      }
-                      try {
-                          if (-not $brushConverter) {
-                              $brushConverter = New-Object System.Windows.Media.BrushConverter
-                          }
-                          $convertedBorder = $brushConverter.ConvertFromString($Primary)
-                          if ($convertedBorder) {
-                              $button.BorderBrush = $convertedBorder
-                          } else {
-                              $button.BorderBrush = $Primary
-                          }
-                      } catch {
-                          try { $button.BorderBrush = $Primary } catch { }
-                      }
+                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $Primary
+                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $Primary
                   }
               }
           }
@@ -1633,13 +1898,9 @@ function Update-ComboBoxStyles {
         $itemForeground = $actualForeground
 
         foreach ($combo in $comboBoxes) {
-            $combo.Background = $actualBackground
-            $combo.Foreground = $actualForeground
-            try {
-                $combo.BorderBrush = $Border
-            } catch {
-                Write-Verbose 'BorderBrush assignment skipped for compatibility'
-            }
+            Set-BrushPropertySafe -Target $combo -Property 'Background' -Value $actualBackground
+            Set-BrushPropertySafe -Target $combo -Property 'Foreground' -Value $actualForeground
+            Set-BrushPropertySafe -Target $combo -Property 'BorderBrush' -Value $Border -AllowTransparentFallback
 
             try {
                 $combo.FontSize = 13
@@ -1650,8 +1911,8 @@ function Update-ComboBoxStyles {
 
             foreach ($item in $combo.Items) {
                 if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                    $item.Background = $itemBackground
-                    $item.Foreground = $itemForeground
+                    Set-BrushPropertySafe -Target $item -Property 'Background' -Value $itemBackground
+                    Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $itemForeground
 
                     try {
                         $item.Padding = '12,6'
@@ -1752,6 +2013,8 @@ function Update-ThemeColorPreview {
             Get-ThemeColors -ThemeName $ThemeName
         }
 
+        $colors = Normalize-ThemeColorTable $colors
+
         $bgBrush = New-SolidColorBrushSafe $colors.Background
         $primaryBrush = New-SolidColorBrushSafe $colors.Primary
         $hoverBrush = New-SolidColorBrushSafe $colors.Hover
@@ -1830,7 +2093,6 @@ function Apply-ThemeColors {
                 $colors['TextSecondary'] = $Foreground
             }
 
-            $global:CustomThemeColors = $colors.Clone()
             $appliedThemeName = 'Custom'
         } else {
             if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
@@ -1839,6 +2101,12 @@ function Apply-ThemeColors {
                 $colors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
             }
             $appliedThemeName = $ThemeName
+        }
+
+        $colors = Normalize-ThemeColorTable $colors
+
+        if ($PSCmdlet.ParameterSetName -eq 'ByCustom') {
+            $global:CustomThemeColors = $colors.Clone()
         }
 
         if (-not $form) {
@@ -1908,26 +2176,28 @@ function Apply-ThemeColors {
             $innerGaugeBrush.Freeze()
 
               $resourceColors = @{
-                  'AppBackgroundBrush'    = $colors.Background
-                  'SidebarBackgroundBrush' = $colors.SidebarBg
-                  'SidebarAccentBrush'    = $colors.Primary
-                  'SidebarHoverBrush'     = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
-                  'HeaderBackgroundBrush' = $colors.HeaderBg
-                  'HeaderBorderBrush'     = $cardBorderValue
-                  'CardBackgroundBrush'   = $colors.Secondary
-                  'CardBorderBrush'       = $cardBorderValue
-                  'AccentBrush'           = $colors.Primary
-                  'ButtonBackgroundBrush' = if ($colors.ContainsKey('ButtonBackground') -and $colors['ButtonBackground']) { $colors['ButtonBackground'] } else { $colors.Primary }
-                  'ButtonBorderBrush'     = if ($colors.ContainsKey('ButtonBorder') -and $colors['ButtonBorder']) { $colors['ButtonBorder'] } else { $colors.Primary }
-                  'ButtonHoverBrush'      = if ($colors.ContainsKey('ButtonHover') -and $colors['ButtonHover']) { $colors['ButtonHover'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
-                  'ButtonPressedBrush'    = if ($colors.ContainsKey('ButtonPressed') -and $colors['ButtonPressed']) { $colors['ButtonPressed'] } elseif ($colors.ContainsKey('Hover') -and $colors['Hover']) { $colors['Hover'] } else { $colors.Primary }
-                  'PrimaryTextBrush'      = $colors.Text
-                  'SecondaryTextBrush'    = $colors.TextSecondary
-                  'HeroChipBrush'         = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
-                  'SuccessBrush'          = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
-                  'WarningBrush'          = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
-                'DangerBrush'           = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
-                'InfoBrush'             = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
+                  'AppBackgroundBrush'             = $colors.Background
+                  'SidebarBackgroundBrush'         = $colors.SidebarBg
+                  'SidebarAccentBrush'             = $colors.Primary
+                  'SidebarHoverBrush'              = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'SidebarSelectedBrush'           = if ($colors.ContainsKey('SelectedBackground')) { $colors['SelectedBackground'] } else { $colors.Primary }
+                  'SidebarSelectedForegroundBrush' = if ($colors.ContainsKey('SelectedForeground')) { $colors['SelectedForeground'] } else { $colors.Text }
+                  'HeaderBackgroundBrush'          = $colors.HeaderBg
+                  'HeaderBorderBrush'              = $cardBorderValue
+                  'CardBackgroundBrush'            = $colors.Secondary
+                  'CardBorderBrush'                = $cardBorderValue
+                  'AccentBrush'                    = if ($colors.ContainsKey('Accent') -and $colors['Accent']) { $colors['Accent'] } else { $colors.Primary }
+                  'ButtonBackgroundBrush'          = if ($colors.ContainsKey('ButtonBackground') -and $colors['ButtonBackground']) { $colors['ButtonBackground'] } else { $colors.Primary }
+                  'ButtonBorderBrush'              = if ($colors.ContainsKey('ButtonBorder') -and $colors['ButtonBorder']) { $colors['ButtonBorder'] } else { $colors.Primary }
+                  'ButtonHoverBrush'               = if ($colors.ContainsKey('ButtonHover') -and $colors['ButtonHover']) { $colors['ButtonHover'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                  'ButtonPressedBrush'             = if ($colors.ContainsKey('ButtonPressed') -and $colors['ButtonPressed']) { $colors['ButtonPressed'] } elseif ($colors.ContainsKey('Hover') -and $colors['Hover']) { $colors['Hover'] } else { $colors.Primary }
+                  'PrimaryTextBrush'               = $colors.Text
+                  'SecondaryTextBrush'             = $colors.TextSecondary
+                  'HeroChipBrush'                  = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
+                  'SuccessBrush'                   = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
+                  'WarningBrush'                   = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
+                  'DangerBrush'                    = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
+                  'InfoBrush'                      = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
             }
 
             foreach ($resourceKey in $resourceColors.Keys) {
@@ -2281,6 +2551,8 @@ function Switch-Theme {
             $themeColors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
         }
 
+        $themeColors = Normalize-ThemeColorTable $themeColors
+
         Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
 
         if (${function:Apply-ThemeColors}) {
@@ -2293,26 +2565,7 @@ function Switch-Theme {
         $form.Dispatcher.Invoke([action]{
 
             try {
-                $backgroundBrush = $null
-                try {
-                    $backgroundBrush = New-SolidColorBrushSafe $themeColors.Background
-                } catch {
-                    $backgroundBrush = $null
-                }
-
-                if ($backgroundBrush) {
-                    $form.Background = $backgroundBrush.Clone()
-                } else {
-                    try {
-                        $converter = New-Object System.Windows.Media.BrushConverter
-                        $converted = $converter.ConvertFromString($themeColors.Background)
-                        if ($converted) {
-                            $form.Background = $converted
-                        }
-                    } catch {
-                        $form.Background = $themeColors.Background
-                    }
-                }
+                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
             } catch {
                 Write-Verbose "Switch-Theme background refresh skipped: $($_.Exception.Message)"
             }
@@ -2332,11 +2585,11 @@ function Switch-Theme {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $themeColors.SelectedBackground
-                        $btn.Foreground = $themeColors.SelectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $btn.Background = $themeColors.UnselectedBackground
-                        $btn.Foreground = $themeColors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
                     }
 
                     $btn.InvalidateVisual()
@@ -2350,20 +2603,20 @@ function Switch-Theme {
                 if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
                     $sidebar = $firstChild.Children[0]
                     if ($sidebar) {
-                        $sidebar.Background = $themeColors.SidebarBg
-                        try { $sidebar.BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        Set-BrushPropertySafe -Target $sidebar -Property 'Background' -Value $themeColors.SidebarBg
+                        Set-BrushPropertySafe -Target $sidebar -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
 
                         if ($sidebar.Child -is [System.Windows.Controls.Grid]) {
                             $sidebarGrid = $sidebar.Child
                             if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
-                                $sidebarGrid.Children[0].Background = $themeColors.SidebarBg
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[0] -Property 'Background' -Value $themeColors.SidebarBg
                             }
                             if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
-                                try { $sidebarGrid.Children[1].Background = $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
+                                try { Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
                             }
                             if ($sidebarGrid.Children.Count -gt 2) {
-                                $sidebarGrid.Children[2].Background = $themeColors.SidebarBg
-                                try { $sidebarGrid.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'Background' -Value $themeColors.SidebarBg
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
                         }
 
@@ -2375,18 +2628,18 @@ function Switch-Theme {
                         $mainContent = $firstChild.Children[1]
                         if ($mainContent) {
                             if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
-                                $mainContent.Children[0].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[0].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[0] -Property 'Background' -Value $themeColors.HeaderBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[0] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
                             if ($mainContent.Children.Count -gt 2) {
-                                $mainContent.Children[2].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'Background' -Value $themeColors.HeaderBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
                             if ($mainContent.Children.Count -gt 3) {
-                                $mainContent.Children[3].Background = $themeColors.LogBg
-                                try { $mainContent.Children[3].BorderBrush = $themeColors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'Background' -Value $themeColors.LogBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'BorderBrush' -Value $themeColors.Accent -AllowTransparentFallback
                             }
 
                             $mainContent.InvalidateVisual()
@@ -2405,15 +2658,15 @@ function Switch-Theme {
             }
 
             if ($global:LogBox) {
-                $global:LogBox.Background = $themeColors.LogBg
-                $global:LogBox.Foreground = $themeColors.Accent
+                Set-BrushPropertySafe -Target $global:LogBox -Property 'Background' -Value $themeColors.LogBg
+                Set-BrushPropertySafe -Target $global:LogBox -Property 'Foreground' -Value $themeColors.Accent
                 $global:LogBox.InvalidateVisual()
                 $global:LogBox.UpdateLayout()
             }
 
             if ($activityLogBorder) {
                 try {
-                    $activityLogBorder.Background = $themeColors.LogBg
+                    Set-BrushPropertySafe -Target $activityLogBorder -Property 'Background' -Value $themeColors.LogBg
                     Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
@@ -2430,7 +2683,7 @@ function Switch-Theme {
         Start-Sleep -Milliseconds 100
 
         $form.Dispatcher.BeginInvoke([action]{
-            $form.Background = $themeColors.Background
+            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
             $form.InvalidateVisual()
             $form.UpdateLayout()
 
@@ -2444,11 +2697,11 @@ function Switch-Theme {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $themeColors.SelectedBackground
-                        $btn.Foreground = $themeColors.SelectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $btn.Background = $themeColors.UnselectedBackground
-                        $btn.Foreground = $themeColors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
                     }
                     $btn.InvalidateVisual()
                 }
@@ -2775,9 +3028,9 @@ function Update-SystemHealthSummary {
             }
 
             switch ($status) {
-                'Excellent' { $foreground = '#5D5FEF' }
+                'Excellent' { $foreground = '#8F6FFF' }
                 'Good' { $foreground = '#A7F3D0' }
-                'Fair' { $foreground = '#A08BFF' }
+                'Fair' { $foreground = '#A78BFA' }
                 'Poor' { $foreground = '#FFA500' }
                 'Critical' { $foreground = '#FF6B6B' }
                 default { $foreground = '#A6AACF' }
@@ -2849,16 +3102,16 @@ function Show-SystemHealthDialog {
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="System Health Monitor"
         Width="750" Height="600"
-        Background="#0B0F1E"
+        Background="#080716"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
 
   <Window.Resources>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#161D3F"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F3A73"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#5D5FEF"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F6FF"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9AA4D9"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#8F6FFF"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
     <Style TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
@@ -2866,7 +3119,7 @@ function Show-SystemHealthDialog {
     <Style x:Key="DialogButton" TargetType="Button">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="12"/>
-      <Setter Property="Foreground" Value="#0B0F1E"/>
+      <Setter Property="Foreground" Value="#120B22"/>
       <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Padding" Value="14,6"/>
@@ -2876,8 +3129,8 @@ function Show-SystemHealthDialog {
       <Setter Property="Background">
         <Setter.Value>
           <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#3F6BFF" Offset="0"/>
-            <GradientStop Color="#2E4BD4" Offset="1"/>
+            <GradientStop Color="#8F6FFF" Offset="0"/>
+            <GradientStop Color="#B497FF" Offset="1"/>
           </LinearGradientBrush>
         </Setter.Value>
       </Setter>
@@ -2894,7 +3147,7 @@ function Show-SystemHealthDialog {
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
 
-                <Setter Property="Background" Value="#7E7FFF"/>
+              <Setter Property="Background" Value="#A78BFA"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.4"/>
@@ -2905,12 +3158,12 @@ function Show-SystemHealthDialog {
       </Setter>
     </Style>
     <Style x:Key="SecondaryDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
-      <Setter Property="Background" Value="#1B2345"/>
+      <Setter Property="Background" Value="#1F1B3F"/>
       <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     </Style>
     <Style x:Key="WarningDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
-      <Setter Property="Background" Value="#FFB347"/>
-      <Setter Property="Foreground" Value="#281C05"/>
+      <Setter Property="Background" Value="#FBBF24"/>
+      <Setter Property="Foreground" Value="#1B1302"/>
     </Style>
   </Window.Resources>
 
@@ -2952,7 +3205,7 @@ function Show-SystemHealthDialog {
 
         <StackPanel Grid.Column="0">
           <TextBlock Text="CPU Usage" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" FontWeight="Bold"/>
-          <TextBlock x:Name="lblCpuMetric" Text="--%" Foreground="#5D5FEF" FontSize="14" Margin="0,2,0,0"/>
+          <TextBlock x:Name="lblCpuMetric" Text="--%" Foreground="{DynamicResource AccentBrush}" FontSize="14" Margin="0,2,0,0"/>
         </StackPanel>
 
         <StackPanel Grid.Column="1">
@@ -3133,109 +3386,6 @@ function Show-SystemHealthDialog {
         [System.Windows.MessageBox]::Show("Error displaying system health window: $($_.Exception.Message)", "Health Monitor Error", 'OK', 'Error')
     }
 }
-$global:LogFilterSettings = @{
-    ShowInfo = $true
-    ShowSuccess = $true
-    ShowWarning = $true
-    ShowError = $true
-    ShowContext = $false
-    ShowDebug = $false
-    SearchTerm = ""
-    CategoryFilter = "All"
-}
-$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization", "Status", "Debug")
-$global:LogHistory = [System.Collections.ArrayList]::new()
-$global:MaxLogHistorySize = 1000
-
-function Get-EnhancedLogCategories {
-    <#
-    .SYNOPSIS
-    Enhanced logging categories for better organization and filtering
-    .DESCRIPTION
-    Provides categorization system for logs to enable filtering and organization
-    #>
-
-    return @{
-        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
-        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
-        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
-        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
-        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
-        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
-        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
-        "Status" = @("Success", "Completed", "Ready", "Warning", "Alert", "Caution", "Healthy")
-        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
-    }
-}
-
-function Get-LogCategory {
-    <#
-    .SYNOPSIS
-    Determines the category of a log message based on content analysis
-    .PARAMETER Message
-    The log message to categorize
-    #>
-    param([string]$Message)
-
-    $categories = Get-EnhancedLogCategories
-
-    foreach ($category in $categories.Keys) {
-        foreach ($keyword in $categories[$category]) {
-            if ($Message -match $keyword) {
-                return $category
-            }
-        }
-    }
-
-    return "General"
-}
-
-function Add-LogToHistory {
-    <#
-    .SYNOPSIS
-    Adds a log entry to the searchable history with metadata
-    .PARAMETER Message
-    The log message
-    .PARAMETER Level
-    The log level
-    .PARAMETER Category
-    The log category
-    #>
-    param(
-        [string]$Message,
-        [string]$Level = 'Info',
-        [string]$Category = 'General'
-    )
-
-    try {
-        if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
-            $global:LogHistory = [System.Collections.ArrayList]::new()
-        }
-
-        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
-            $global:MaxLogHistorySize = 1000
-        }
-
-        $logEntry = @{
-            Timestamp = Get-Date
-            Message = $Message
-            Level = $Level
-            Category = $Category
-            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
-        }
-
-        [void]$global:LogHistory.Add($logEntry)
-
-        while ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $global:LogHistory.RemoveAt(0)
-
-        }
-
-    } catch {
-        # Silent fail to prevent logging issues
-        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
-    }
-}
 
 function Search-LogHistory {
     <#
@@ -3401,12 +3551,12 @@ function Show-LogSearchDialog {
         ResizeMode="CanResize">
 
   <Window.Resources>
-    <SolidColorBrush x:Key="DialogBackgroundBrush" Color="#0B0F1E"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#161D3F"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F3A73"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#5D5FEF"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F6FF"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9AA4D9"/>
+    <SolidColorBrush x:Key="DialogBackgroundBrush" Color="#080716"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#8F6FFF"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
     <Style TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
@@ -3423,7 +3573,7 @@ function Show-LogSearchDialog {
     <Style TargetType="Button" x:Key="DialogButton">
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Foreground" Value="#0B0F1E"/>
+        <Setter Property="Foreground" Value="#120B22"/>
         <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="14,6"/>
@@ -3437,7 +3587,7 @@ function Show-LogSearchDialog {
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#7E7FFF"/>
+                            <Setter Property="Background" Value="#A78BFA"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4"/>
@@ -3448,12 +3598,12 @@ function Show-LogSearchDialog {
         </Setter>
     </Style>
     <Style x:Key="SecondaryDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
-        <Setter Property="Background" Value="#1B2345"/>
+        <Setter Property="Background" Value="#1F1B3F"/>
         <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     </Style>
     <Style x:Key="DangerDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
-        <Setter Property="Background" Value="#F45B69"/>
-        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="Background" Value="#F87171"/>
+        <Setter Property="Foreground" Value="#21060B"/>
     </Style>
   </Window.Resources>
 
@@ -3527,8 +3677,8 @@ function Show-LogSearchDialog {
                 <StackPanel>
                   <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding Level}" FontWeight="Bold" FontSize="10" Foreground="#5D5FEF" Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#5D5FEF" Margin="0,0,0,0"/>
+                    <TextBlock Text="{Binding Level}" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding Category}" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,0"/>
                   </StackPanel>
                   <TextBlock Text="{Binding Message}" FontSize="11" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,3,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
@@ -3809,9 +3959,9 @@ function Update-DashboardMetrics {
                 if ($metrics.CpuUsage -ge 80) {
                     $lblDashCpuUsage.Foreground = "#FF4444"  # Red for high
                 } elseif ($metrics.CpuUsage -ge 60) {
-                    $lblDashCpuUsage.Foreground = "#A08BFF"  # Gold for medium
+                    $lblDashCpuUsage.Foreground = "#A78BFA"  # Purple for medium load
                 } else {
-                    $lblDashCpuUsage.Foreground = "#5D5FEF"  # Green for low
+                    $lblDashCpuUsage.Foreground = "#8F6FFF"  # Accent for low load
                 }
             })
         }
@@ -3825,9 +3975,9 @@ function Update-DashboardMetrics {
                 if ($metrics.MemoryUsagePercent -ge 85) {
                     $lblDashMemoryUsage.Foreground = "#FF4444"  # Red for high
                 } elseif ($metrics.MemoryUsagePercent -ge 70) {
-                    $lblDashMemoryUsage.Foreground = "#A08BFF"  # Gold for medium
+                    $lblDashMemoryUsage.Foreground = "#A78BFA"  # Purple for medium
                 } else {
-                    $lblDashMemoryUsage.Foreground = "#5D5FEF"  # Blue for normal
+                    $lblDashMemoryUsage.Foreground = "#8F6FFF"  # Accent for normal
                 }
             })
         }
@@ -3856,7 +4006,7 @@ function Update-DashboardMetrics {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($metrics.ActiveGamesCount -gt 0) {
                     $lblDashActiveGames.Text = "$($metrics.ActiveGamesCount) running"
-                    $lblDashActiveGames.Foreground = "#5D5FEF"  # Green for active
+                    $lblDashActiveGames.Foreground = "#8F6FFF"  # Accent for active games
                 } else {
                     $lblDashActiveGames.Text = "None detected"
                     $lblDashActiveGames.Foreground = "#A6AACF"  # Default color
@@ -4064,7 +4214,7 @@ function Update-ActiveGamesTracking {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($currentGames.Count -gt 0) {
                     $lblDashActiveGames.Text = "$($currentGames.Count) active"
-                    $lblDashActiveGames.Foreground = "#5D5FEF"
+                    $lblDashActiveGames.Foreground = "#8F6FFF"
                 } else {
                     $lblDashActiveGames.Text = "None active"
                     $lblDashActiveGames.Foreground = "#A6AACF"
@@ -4851,26 +5001,29 @@ $xamlContent = @'
         ResizeMode="CanResize"
         SizeToContent="Manual">
   <Window.Resources>
-    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#1C1F26"/>
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#171A21"/>
-    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#FF8C32"/>
-    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#22262F"/>
-    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#1F232B"/>
-    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2D313A"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#21252E"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#2C303A"/>
-    <SolidColorBrush x:Key="HeroCardBrush" Color="#242932"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#FF8C32"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F1F5F9"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9CA3AF"/>
-    <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#FACC15"/>
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#080716"/>
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#0E0C21"/>
+    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#8F6FFF"/>
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1F1B3F"/>
+    <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#8F6FFF"/>
+    <SolidColorBrush x:Key="SidebarSelectedForegroundBrush" Color="#F5F3FF"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#151233"/>
+    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2F285A"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#19173A"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
+    <SolidColorBrush x:Key="HeroCardBrush" Color="#1F1B40"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#B497FF"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#34D399"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
-    <SolidColorBrush x:Key="InfoBrush" Color="#38BDF8"/>
-    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#2D323C"/>
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#353A45"/>
-    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#353B47"/>
-    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#2A303A"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="#60A5FA"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#1E1B38"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A264B"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#282450"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1A1839"/>
 
 
     <Style x:Key="BaseControlStyle" TargetType="Control">
@@ -4968,7 +5121,7 @@ $xamlContent = @'
 
     <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource BaseControlStyle}">
       <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Padding" Value="14,10"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -4985,8 +5138,8 @@ $xamlContent = @'
                 <Setter TargetName="sidebarBg" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
               </Trigger>
               <Trigger Property="Tag" Value="Selected">
-                <Setter TargetName="sidebarBg" Property="Background" Value="#2A2E38"/>
-                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                <Setter TargetName="sidebarBg" Property="Background" Value="{DynamicResource SidebarSelectedBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource SidebarSelectedForegroundBrush}"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.5"/>
@@ -5011,9 +5164,9 @@ $xamlContent = @'
     </Style>
 
     <Style x:Key="ModernComboBox" TargetType="ComboBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="#1F232B"/>
+      <Setter Property="Background" Value="{DynamicResource ContentBackgroundBrush}"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="#323741"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Height" Value="34"/>
@@ -5024,11 +5177,11 @@ $xamlContent = @'
           <Setter Property="Padding" Value="12,6"/>
           <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter Property="Background" Value="#2B303A"/>
+              <Setter Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
               <Setter Property="Background" Value="{DynamicResource SidebarAccentBrush}"/>
-              <Setter Property="Foreground" Value="#1C1208"/>
+              <Setter Property="Foreground" Value="{DynamicResource SidebarSelectedForegroundBrush}"/>
             </Trigger>
           </Style.Triggers>
         </Style>
@@ -5036,9 +5189,9 @@ $xamlContent = @'
     </Style>
 
     <Style x:Key="ModernTextBox" TargetType="TextBox" BasedOn="{StaticResource BaseControlStyle}">
-      <Setter Property="Background" Value="#1F232B"/>
+      <Setter Property="Background" Value="{DynamicResource ContentBackgroundBrush}"/>
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-      <Setter Property="BorderBrush" Value="#323741"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Height" Value="32"/>
@@ -5144,8 +5297,8 @@ $xamlContent = @'
 
         <Border x:Name="SidebarAdminCard"
                 Grid.Row="2"
-                Background="#1D2027"
-                BorderBrush="#272B34"
+                Background="{DynamicResource ContentBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="14"
@@ -5183,19 +5336,19 @@ $xamlContent = @'
             <TextBlock x:Name="lblMainSubtitle" Text="Your system at a glance" Style="{StaticResource SectionSubtext}" Margin="0,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:12">
-            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="100">
+            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="100" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Profiles" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" Text="--"/>
               </StackPanel>
             </Border>
-            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="120">
+            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="120" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Optimizations" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" Text="--"/>
               </StackPanel>
             </Border>
-            <Border Background="#262B34" CornerRadius="8" Padding="14" MinWidth="120">
+            <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="8" Padding="14" MinWidth="120" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Auto mode" Style="{StaticResource SectionSubtext}"/>
                 <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" Text="Off"/>
@@ -5225,7 +5378,7 @@ $xamlContent = @'
                   <TextBlock Text="KOALA keeps your PC lean with smart maintenance, clean logging and one-click fixes." Style="{StaticResource SectionSubtext}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Tag="Spacing:12">
-                  <Border Background="#1E2128" CornerRadius="10" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="10" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                     <StackPanel>
                       <TextBlock Text="Last run" Style="{StaticResource SectionSubtext}"/>
                       <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource MetricValue}" FontSize="18"/>
@@ -5249,31 +5402,31 @@ $xamlContent = @'
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border x:Name="dashboardCpuCard" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                <Border x:Name="dashboardCpuCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                   <StackPanel Tag="Spacing:6">
                     <TextBlock Text="CPU load" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock x:Name="lblDashCpuUsage" Style="{StaticResource MetricValue}" Text="--%"/>
                     <TextBlock Text="Realtime usage of each core." Style="{StaticResource SectionSubtext}"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                   <StackPanel Tag="Spacing:6">
                     <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-                    <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="#60A5FA"/>
+                    <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="{DynamicResource AccentBrush}"/>
                     <TextBlock Text="Track system memory consumption." Style="{StaticResource SectionSubtext}"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                   <StackPanel Tag="Spacing:6">
                     <TextBlock Text="Session" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock Text="Active games" Style="{StaticResource SectionSubtext}"/>
                     <TextBlock x:Name="lblDashActiveGames" Style="{StaticResource MetricValue}" Text="None"/>
-                    <Separator Margin="0,4" Background="#2E3441" Height="1"/>
+                    <Separator Margin="0,4" Background="{DynamicResource CardBorderBrush}" Height="1"/>
                     <TextBlock Text="Last optimization" Style="{StaticResource SectionSubtext}"/>
                     <TextBlock x:Name="lblDashLastOptimization" Style="{StaticResource SectionSubtext}" FontSize="13" Text="Never"/>
                   </StackPanel>
                 </Border>
-                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="#1E222A" CornerRadius="10" Padding="16" BorderBrush="#2A2E38" BorderThickness="1">
+                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                   <StackPanel Tag="Spacing:8">
                     <TextBlock Text="System health" Style="{StaticResource SectionSubtext}" FontSize="13"/>
                     <TextBlock x:Name="lblDashSystemHealth" Style="{StaticResource MetricValue}" Text="Not run"/>
@@ -5404,10 +5557,10 @@ $xamlContent = @'
                   <Button x:Name="btnAdvancedServices" Content="🛠️ Services" Style="{StaticResource ModernButton}" MinWidth="120" Height="32" FontSize="12"/>
                 </StackPanel>
 
-                <Expander x:Name="expanderNetworkTweaks" Header="🌐 Network optimizations" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10">
+                <Expander x:Name="expanderNetworkTweaks" Header="🌐 Network optimizations" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Fine tune TCP and latency for competitive play." Style="{StaticResource SectionSubtext}"/>
-                    <Expander x:Name="expanderNetworkOptimizations" Header="Core network tweaks" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10" IsExpanded="True">
+                    <Expander x:Name="expanderNetworkOptimizations" Header="Core network tweaks" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10" IsExpanded="True">
                       <WrapPanel>
                         <CheckBox x:Name="chkAckNetwork" Content="TCP ACK Frequency" Style="{StaticResource ModernCheckBox}"/>
                         <CheckBox x:Name="chkDelAckTicksNetwork" Content="Delayed ACK Ticks" Style="{StaticResource ModernCheckBox}"/>
@@ -5421,7 +5574,7 @@ $xamlContent = @'
                         <CheckBox x:Name="chkTcpWindowAutoTuningNetwork" Content="Window auto tuning" Style="{StaticResource ModernCheckBox}"/>
                       </WrapPanel>
                     </Expander>
-                    <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
                       <Grid Tag="ColumnSpacing:12">
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*"/>
@@ -5436,10 +5589,10 @@ $xamlContent = @'
                   </StackPanel>
                 </Expander>
 
-                <Expander x:Name="expanderSystemOptimizations" Header="💻 System optimizations" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10">
+                <Expander x:Name="expanderSystemOptimizations" Header="💻 System optimizations" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Performance and hardware adjustments for maximum efficiency." Style="{StaticResource SectionSubtext}"/>
-                    <Expander x:Name="expanderPerformanceOptimizations" Header="Performance essentials" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10" IsExpanded="True">
+                    <Expander x:Name="expanderPerformanceOptimizations" Header="Performance essentials" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10" IsExpanded="True">
                       <WrapPanel>
                         <CheckBox x:Name="chkMemoryCompressionSystem" Content="Memory compression" Style="{StaticResource ModernCheckBox}"/>
                         <CheckBox x:Name="chkPowerPlanSystem" Content="High performance plan" Style="{StaticResource ModernCheckBox}"/>
@@ -5456,7 +5609,7 @@ $xamlContent = @'
                       </WrapPanel>
                     </Expander>
 
-                    <Expander x:Name="expanderAdvancedPerformance" Header="Advanced enhancements" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10">
+                    <Expander x:Name="expanderAdvancedPerformance" Header="Advanced enhancements" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                       <WrapPanel>
                         <CheckBox x:Name="chkDynamicResolution" Content="Dynamic resolution" Style="{StaticResource ModernCheckBox}"/>
                         <CheckBox x:Name="chkEnhancedFramePacing" Content="Enhanced frame pacing" Style="{StaticResource ModernCheckBox}"/>
@@ -5477,7 +5630,7 @@ $xamlContent = @'
                       </WrapPanel>
                     </Expander>
 
-                    <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
                       <Grid Tag="ColumnSpacing:12">
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*"/>
@@ -5492,10 +5645,10 @@ $xamlContent = @'
                   </StackPanel>
                 </Expander>
 
-                <Expander x:Name="expanderServiceManagement" Header="🛠️ Service optimizations" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10">
+                <Expander x:Name="expanderServiceManagement" Header="🛠️ Service optimizations" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Manage background services for better responsiveness." Style="{StaticResource SectionSubtext}"/>
-                    <Expander x:Name="expanderServiceOptimizations" Header="Service tweaks" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10" IsExpanded="True">
+                    <Expander x:Name="expanderServiceOptimizations" Header="Service tweaks" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10" IsExpanded="True">
                       <WrapPanel>
                         <CheckBox x:Name="chkDisableXboxServicesServices" Content="Disable Xbox services" Style="{StaticResource ModernCheckBox}"/>
                         <CheckBox x:Name="chkDisableTelemetryServices" Content="Disable telemetry" Style="{StaticResource ModernCheckBox}"/>
@@ -5507,7 +5660,7 @@ $xamlContent = @'
                         <CheckBox x:Name="chkDisableThemesServices" Content="Optimize themes service" Style="{StaticResource ModernCheckBox}"/>
                       </WrapPanel>
                     </Expander>
-                    <Expander x:Name="expanderPrivacyServices" Header="Privacy &amp; background" Background="#1C1F26" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="#2C303A" BorderThickness="1" Padding="10">
+                    <Expander x:Name="expanderPrivacyServices" Header="Privacy &amp; background" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                       <WrapPanel>
                         <CheckBox x:Name="chkDisableCortana" Content="Disable Cortana" Style="{StaticResource ModernCheckBox}"/>
                         <CheckBox x:Name="chkDisableWindowsUpdate" Content="Optimize Windows Update" Style="{StaticResource ModernCheckBox}"/>
@@ -5519,7 +5672,7 @@ $xamlContent = @'
                         <CheckBox x:Name="chkDisableWSH" Content="Disable Windows Script Host" Style="{StaticResource ModernCheckBox}"/>
                       </WrapPanel>
                     </Expander>
-                    <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
                       <Grid Tag="ColumnSpacing:12">
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*"/>
@@ -5541,7 +5694,7 @@ $xamlContent = @'
             <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="22">
               <StackPanel Tag="Spacing:16">
                 <TextBlock Text="Installed games" Style="{StaticResource SectionHeader}" FontSize="18"/>
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Detection &amp; search" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <Grid Tag="ColumnSpacing:12">
@@ -5556,7 +5709,7 @@ $xamlContent = @'
                     </Grid>
                   </StackPanel>
                 </Border>
-                <Border x:Name="installedGamesPanel" Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border x:Name="installedGamesPanel" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Detected games" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <ScrollViewer Height="280" VerticalScrollBarVisibility="Auto">
@@ -5575,7 +5728,7 @@ $xamlContent = @'
             <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="22">
               <StackPanel Tag="Spacing:16">
                 <TextBlock Text="Theme &amp; preferences" Style="{StaticResource SectionHeader}" FontSize="18" HorizontalAlignment="Center"/>
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Theme" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <Grid Tag="ColumnSpacing:10">
@@ -5602,7 +5755,7 @@ $xamlContent = @'
                       <Button x:Name="btnOptionsApplyThemeMain" Grid.Column="2" Content="Apply" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="12"/>
                       <Button x:Name="btnApplyTheme" Visibility="Collapsed" Width="0" Height="0"/>
                     </Grid>
-                    <Border x:Name="themeColorPreview" Background="#1A1D24" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <Border x:Name="themeColorPreview" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12">
                       <Grid Tag="ColumnSpacing:10">
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*"/>
@@ -5612,26 +5765,26 @@ $xamlContent = @'
                         </Grid.ColumnDefinitions>
                         <StackPanel>
                           <TextBlock Text="Background" Style="{StaticResource SectionSubtext}" FontSize="11" HorizontalAlignment="Center"/>
-                          <Rectangle x:Name="previewBg" Height="20" Fill="#1C1F26" Stroke="#394150" StrokeThickness="1"/>
+                          <Rectangle x:Name="previewBg" Height="20" Fill="{DynamicResource CardBackgroundBrush}" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1">
                           <TextBlock Text="Primary" Style="{StaticResource SectionSubtext}" FontSize="11" HorizontalAlignment="Center"/>
-                          <Rectangle x:Name="previewPrimary" Height="20" Fill="#FF8C32" Stroke="#394150" StrokeThickness="1"/>
+                          <Rectangle x:Name="previewPrimary" Height="20" Fill="#8F6FFF" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                           <TextBlock Text="Hover" Style="{StaticResource SectionSubtext}" FontSize="11" HorizontalAlignment="Center"/>
-                          <Rectangle x:Name="previewHover" Height="20" Fill="#FF9D54" Stroke="#394150" StrokeThickness="1"/>
+                          <Rectangle x:Name="previewHover" Height="20" Fill="#A78BFA" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1"/>
                         </StackPanel>
                         <StackPanel Grid.Column="3">
                           <TextBlock Text="Text" Style="{StaticResource SectionSubtext}" FontSize="11" HorizontalAlignment="Center"/>
-                          <Rectangle x:Name="previewText" Height="20" Fill="#F8FAFC" Stroke="#394150" StrokeThickness="1"/>
+                          <Rectangle x:Name="previewText" Height="20" Fill="#F5F3FF" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1"/>
                         </StackPanel>
                       </Grid>
                     </Border>
                   </StackPanel>
                 </Border>
 
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:10">
                     <TextBlock x:Name="lblLanguageSectionTitle" Text="Language" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <TextBlock x:Name="lblLanguageDescription" Text="Choose how KOALA talks to you." Style="{StaticResource SectionSubtext}"/>
@@ -5649,7 +5802,7 @@ $xamlContent = @'
                   </StackPanel>
                 </Border>
 
-                <Border x:Name="customThemePanel" Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16" Visibility="Collapsed">
+                <Border x:Name="customThemePanel" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Visibility="Collapsed">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Custom colors" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <Grid Tag="ColumnSpacing:12">
@@ -5661,22 +5814,22 @@ $xamlContent = @'
                       </Grid.ColumnDefinitions>
                       <StackPanel>
                         <TextBlock Text="Background" Style="{StaticResource SectionSubtext}" FontSize="11"/>
-                        <Rectangle x:Name="previewBgCustom" Height="22" Width="70" Fill="#1C1F26" Stroke="#394150" StrokeThickness="1" Margin="0,4,0,0"/>
+                        <Rectangle x:Name="previewBgCustom" Height="22" Width="70" Fill="{DynamicResource CardBackgroundBrush}" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1" Margin="0,4,0,0"/>
                         <TextBox x:Name="txtCustomBg" Style="{StaticResource ModernTextBox}" Margin="0,6,0,0"/>
                       </StackPanel>
                       <StackPanel Grid.Column="1">
                         <TextBlock Text="Primary" Style="{StaticResource SectionSubtext}" FontSize="11"/>
-                        <Rectangle x:Name="previewPrimaryCustom" Height="22" Width="70" Fill="#FF8C32" Stroke="#394150" StrokeThickness="1" Margin="0,4,0,0"/>
+                        <Rectangle x:Name="previewPrimaryCustom" Height="22" Width="70" Fill="#8F6FFF" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1" Margin="0,4,0,0"/>
                         <TextBox x:Name="txtCustomPrimary" Style="{StaticResource ModernTextBox}" Margin="0,6,0,0"/>
                       </StackPanel>
                       <StackPanel Grid.Column="2">
                         <TextBlock Text="Hover" Style="{StaticResource SectionSubtext}" FontSize="11"/>
-                        <Rectangle x:Name="previewHoverCustom" Height="22" Width="70" Fill="#FF9D54" Stroke="#394150" StrokeThickness="1" Margin="0,4,0,0"/>
+                        <Rectangle x:Name="previewHoverCustom" Height="22" Width="70" Fill="#A78BFA" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1" Margin="0,4,0,0"/>
                         <TextBox x:Name="txtCustomHover" Style="{StaticResource ModernTextBox}" Margin="0,6,0,0"/>
                       </StackPanel>
                       <StackPanel Grid.Column="3">
                         <TextBlock Text="Text" Style="{StaticResource SectionSubtext}" FontSize="11"/>
-                        <Rectangle x:Name="previewTextCustom" Height="22" Width="70" Fill="#F8FAFC" Stroke="#394150" StrokeThickness="1" Margin="0,4,0,0"/>
+                        <Rectangle x:Name="previewTextCustom" Height="22" Width="70" Fill="#F5F3FF" Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="1" Margin="0,4,0,0"/>
                         <TextBox x:Name="txtCustomText" Style="{StaticResource ModernTextBox}" Margin="0,6,0,0"/>
                       </StackPanel>
                     </Grid>
@@ -5684,7 +5837,7 @@ $xamlContent = @'
                   </StackPanel>
                 </Border>
 
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:10">
                     <TextBlock Text="UI scaling" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <Grid Tag="ColumnSpacing:10">
@@ -5704,7 +5857,7 @@ $xamlContent = @'
                   </StackPanel>
                 </Border>
 
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:10">
                     <TextBlock Text="Settings management" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <Grid Tag="ColumnSpacing:10">
@@ -5727,7 +5880,7 @@ $xamlContent = @'
             <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="22">
               <StackPanel Tag="Spacing:16">
                 <TextBlock Text="Backup and restore" Style="{StaticResource SectionHeader}" FontSize="18" HorizontalAlignment="Center"/>
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Create backup" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <TextBlock Text="Store your optimizations and settings to a safe location." Style="{StaticResource SectionSubtext}"/>
@@ -5741,7 +5894,7 @@ $xamlContent = @'
                     </Grid>
                   </StackPanel>
                 </Border>
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Restore" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <TextBlock Text="Import existing configurations or restore from a backup file." Style="{StaticResource SectionSubtext}"/>
@@ -5755,7 +5908,7 @@ $xamlContent = @'
                     </Grid>
                   </StackPanel>
                 </Border>
-                <Border Background="#1C1F26" BorderBrush="#2C303A" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel Tag="Spacing:12">
                     <TextBlock Text="Activity log" Style="{StaticResource SectionSubtext}" FontSize="14"/>
                     <TextBlock Text="Export or clear your optimization history." Style="{StaticResource SectionSubtext}"/>
@@ -6113,6 +6266,7 @@ $customThemeDefaults = [ordered]@{
 # other functions can safely clone the values.
 if (-not $global:CustomThemeColors) {
     $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+    $global:CustomThemeColors = Normalize-ThemeColorTable $global:CustomThemeColors
     $global:CustomThemeColors['Name'] = 'Custom Theme'
 }
 
@@ -6138,10 +6292,10 @@ foreach ($entry in $customThemeInputs.GetEnumerator()) {
     }
 }
 
-if ($previewBgCustom) { $previewBgCustom.Fill = $global:CustomThemeColors['Background'] }
-if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $global:CustomThemeColors['Primary'] }
-if ($previewHoverCustom) { $previewHoverCustom.Fill = $global:CustomThemeColors['Hover'] }
-if ($previewTextCustom) { $previewTextCustom.Fill = $global:CustomThemeColors['Text'] }
+if ($previewBgCustom) { Set-ShapeFillSafe -Shape $previewBgCustom -Value $global:CustomThemeColors['Background'] }
+if ($previewPrimaryCustom) { Set-ShapeFillSafe -Shape $previewPrimaryCustom -Value $global:CustomThemeColors['Primary'] }
+if ($previewHoverCustom) { Set-ShapeFillSafe -Shape $previewHoverCustom -Value $global:CustomThemeColors['Hover'] }
+if ($previewTextCustom) { Set-ShapeFillSafe -Shape $previewTextCustom -Value $global:CustomThemeColors['Text'] }
 
 if ($cmbOptionsTheme -and $customThemePanel) {
     $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
@@ -6271,8 +6425,8 @@ function Set-ActiveNavigationButton {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     $btn.Tag = ''
-                    $btn.Background = $colors.UnselectedBackground
-                    $btn.Foreground = $colors.UnselectedForeground
+                    Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
+                    Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
 
                     # Sofort visuell aktualisieren
                     $btn.InvalidateVisual()
@@ -6284,8 +6438,8 @@ function Set-ActiveNavigationButton {
             $activeBtn = $form.FindName($ActiveButtonName)
             if ($activeBtn) {
                 $activeBtn.Tag = 'Selected'
-                $activeBtn.Background = $colors.SelectedBackground
-                $activeBtn.Foreground = $colors.SelectedForeground
+                Set-BrushPropertySafe -Target $activeBtn -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $activeBtn -Property 'Foreground' -Value $colors.SelectedForeground -AllowTransparentFallback
 
                 # Sofort visuell aktualisieren
                 $activeBtn.InvalidateVisual()
@@ -7184,7 +7338,7 @@ $headerItem.Content = "--- COMPETITIVE SHOOTERS ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#A08BFF"
+$headerItem.Foreground = "#8F6FFF"
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege')) {
@@ -7202,7 +7356,7 @@ $headerItem.Content = "--- BATTLE ROYALE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#A08BFF"
+$headerItem.Foreground = "#8F6FFF"
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('fortnite', 'apexlegends', 'pubg', 'warzone')) {
@@ -7220,7 +7374,7 @@ $headerItem.Content = "--- MULTIPLAYER ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#A08BFF"
+$headerItem.Foreground = "#8F6FFF"
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('lol', 'rocketleague', 'dota2', 'gta5')) {
@@ -7238,7 +7392,7 @@ $headerItem.Content = "--- AAA TITLES ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#A08BFF"
+$headerItem.Foreground = "#8F6FFF"
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077')) {
@@ -7256,7 +7410,7 @@ $headerItem.Content = "--- SURVIVAL & MORE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#A08BFF"
+$headerItem.Foreground = "#8F6FFF"
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in $GameProfiles.Keys | Where-Object { $_ -notin @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege', 'fortnite', 'apexlegends', 'pubg', 'warzone', 'lol', 'rocketleague', 'dota2', 'gta5', 'hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077') }) {
@@ -7446,12 +7600,12 @@ function Show-InstalledGames {
         ResizeMode="CanResize">
 
   <Window.Resources>
-    <SolidColorBrush x:Key="DialogBackgroundBrush" Color="#0B0F1E"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#161D3F"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F3A73"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#5D5FEF"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F6FF"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9AA4D9"/>
+    <SolidColorBrush x:Key="DialogBackgroundBrush" Color="#080716"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#8F6FFF"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
     <Style TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
@@ -7460,7 +7614,7 @@ function Show-InstalledGames {
     <Style TargetType="Button" x:Key="DialogButton">
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Foreground" Value="#0B0F1E"/>
+        <Setter Property="Foreground" Value="#120B22"/>
         <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="14,6"/>
@@ -7474,7 +7628,7 @@ function Show-InstalledGames {
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#7E7FFF"/>
+                            <Setter Property="Background" Value="#A78BFA"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4"/>
@@ -7485,7 +7639,7 @@ function Show-InstalledGames {
         </Setter>
     </Style>
     <Style x:Key="SecondaryDialogButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
-        <Setter Property="Background" Value="#1B2345"/>
+        <Setter Property="Background" Value="#1F1B3F"/>
         <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     </Style>
   </Window.Resources>
@@ -7514,8 +7668,8 @@ function Show-InstalledGames {
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="2">
                 <StackPanel>
                   <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource AccentBrush}"/>
-                  <TextBlock Text="{Binding Path}" FontSize="11" Foreground="#B8B8B8" Margin="0,2,0,0"/>
-                  <TextBlock Text="{Binding Details}" FontSize="10" Foreground="#5D5FEF" Margin="0,2,0,0"/>
+                  <TextBlock Text="{Binding Path}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
+                  <TextBlock Text="{Binding Details}" FontSize="10" Foreground="{DynamicResource AccentBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
               </Border>
             </DataTemplate>
@@ -7528,7 +7682,7 @@ function Show-InstalledGames {
     <Border Grid.Row="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="2" CornerRadius="8" Padding="10" Margin="0,15,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
         <Button x:Name="btnRefreshGames" Content="Refresh Search" Width="140" Height="34" Style="{StaticResource DialogButton}" Margin="0,0,10,0"/>
-        <Button x:Name="btnCloseGames" Content="Close" Width="80" Height="32" Background="#A06CFF" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" FontWeight="SemiBold"/>
+        <Button x:Name="btnCloseGames" Content="Close" Width="80" Height="32" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" FontWeight="SemiBold"/>
       </StackPanel>
     </Border>
   </Grid>
@@ -7943,7 +8097,7 @@ function Search-GamesForPanel {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Searching for installed games with advanced detection..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#5D5FEF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8067,7 +8221,7 @@ function Search-GamesForPanel {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "✅ Found $($foundGames.Count) installed games:"
-            $headerText.Foreground = "#5D5FEF"
+            $headerText.Foreground = "#8F6FFF"
             $headerText.FontWeight = "Bold"
             $headerText.Margin = "0,0,0,10"
             $gameListPanel.Children.Add($headerText)
@@ -8075,9 +8229,9 @@ function Search-GamesForPanel {
             # Add games with checkboxes
             foreach ($game in $foundGames) {
                 $gameContainer = New-Object System.Windows.Controls.Border
-                $gameContainer.Background = "#1A1F39"
+                $gameContainer.Background = "#14132B"
                 try {
-                    $gameContainer.BorderBrush = "#2F3A73"
+                    $gameContainer.BorderBrush = "#2F285A"
                     $gameContainer.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8099,13 +8253,13 @@ function Search-GamesForPanel {
 
                 $gameNameText = New-Object System.Windows.Controls.TextBlock
                 $gameNameText.Text = $game.Name
-                $gameNameText.Foreground = "#5D5FEF"
+                $gameNameText.Foreground = "#8F6FFF"
                 $gameNameText.FontWeight = "Bold"
                 $gameNameText.FontSize = "12"
 
                 $gamePathText = New-Object System.Windows.Controls.TextBlock
                 $gamePathText.Text = $game.Path
-                $gamePathText.Foreground = "#B8B8B8"
+                $gamePathText.Foreground = "#A9A5D9"
                 $gamePathText.FontSize = "10"
                 $gamePathText.TextWrapping = "Wrap"
 
@@ -8165,7 +8319,7 @@ function Search-CustomFoldersForExecutables {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Scanning custom folders for .exe files..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#A08BFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8236,7 +8390,7 @@ function Search-CustomFoldersForExecutables {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
-            $headerText.Foreground = "#A08BFF"
+            $headerText.Foreground = "#8F6FFF"
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 12
             $headerText.Margin = "0,0,0,8"
@@ -8249,9 +8403,9 @@ function Search-CustomFoldersForExecutables {
             foreach ($executable in $foundExecutables) {
                 # Create container border
                 $border = New-Object System.Windows.Controls.Border
-                $border.Background = "#1E233E"
+                $border.Background = "#14132B"
                 try {
-                    $border.BorderBrush = "#2F3A73"
+                    $border.BorderBrush = "#2F285A"
                     $border.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8264,7 +8418,7 @@ function Search-CustomFoldersForExecutables {
                 # Create checkbox for selection
                 $checkbox = New-Object System.Windows.Controls.CheckBox
                 $checkbox.Content = $executable.Name
-                $checkbox.Foreground = "White"
+                $checkbox.Foreground = "#F5F3FF"
                 $checkbox.FontWeight = "SemiBold"
                 $checkbox.Tag = $executable.Path  # Store full path for optimization
                 $stackPanel.Children.Add($checkbox)
@@ -8272,14 +8426,14 @@ function Search-CustomFoldersForExecutables {
                 # Add details
                 $detailsText = New-Object System.Windows.Controls.TextBlock
                 $detailsText.Text = "🔍 $($executable.Details)"
-                $detailsText.Foreground = "#B8B8B8"
+                $detailsText.Foreground = "#A9A5D9"
                 $detailsText.FontSize = 10
                 $detailsText.Margin = "20,2,0,0"
                 $stackPanel.Children.Add($detailsText)
 
                 $fileDetailsText = New-Object System.Windows.Controls.TextBlock
                 $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
-                $fileDetailsText.Foreground = "#777EA6888"
+                $fileDetailsText.Foreground = "#7D7EB0"
                 $fileDetailsText.FontSize = 9
                 $fileDetailsText.Margin = "20,1,0,0"
                 $stackPanel.Children.Add($fileDetailsText)
@@ -10118,7 +10272,7 @@ if ($btnAutoDetect) {
             if ($lblDashActiveGames) {
                 $lblDashActiveGames.Dispatcher.Invoke([Action]{
                     $lblDashActiveGames.Text = "$($detectedGames.Count) running"
-                    $lblDashActiveGames.Foreground = "#5D5FEF"
+                    $lblDashActiveGames.Foreground = "#8F6FFF"
                 })
             }
 
@@ -11381,7 +11535,7 @@ function Start-CustomFolderOnlySearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching '$FolderPath' for all executables (.exe)..."
-        $loadingText.Foreground = "#A08BFF"
+        $loadingText.Foreground = "#8F6FFF"
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -11426,7 +11580,7 @@ function Start-CustomFolderOnlySearch {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($foundExecutables.Count) Executables in '$([System.IO.Path]::GetFileName($FolderPath))'"
-            $headerText.Foreground = "#5D5FEF"
+            $headerText.Foreground = "#8F6FFF"
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -11435,9 +11589,9 @@ function Start-CustomFolderOnlySearch {
             # Add each executable with optimization option
             foreach ($executable in $foundExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#1A1F39"
+                $gamePanel.Background = "#14132B"
                 try {
-                    $gamePanel.BorderBrush = "#2F3A73"
+                    $gamePanel.BorderBrush = "#2F285A"
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -11455,14 +11609,14 @@ function Start-CustomFolderOnlySearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $executable.Name
-                $gameName.Foreground = "White"
+                $gameName.Foreground = "#F5F3FF"
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 $($executable.Path)`n📊 Size: $($executable.Size) MB | 📅 Modified: $($executable.LastModified)"
-                $gameDetails.Foreground = "#A6AACF"
+                $gameDetails.Foreground = "#A9A5D9"
                 $gameDetails.FontSize = 10
                 $gameDetails.TextWrapping = "Wrap"
                 $gameInfo.Children.Add($gameDetails)
@@ -11507,7 +11661,7 @@ function Start-CustomFolderOnlySearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files (.exe) found in the selected folder.`n`nTip: Make sure the folder contains game installations or executable files."
-            $noGamesText.Foreground = "#777EA6"
+            $noGamesText.Foreground = "#7D7EB0"
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.TextAlignment = "Center"
@@ -11619,7 +11773,7 @@ function Start-AllCustomFoldersSearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching all custom folders for executables..."
-        $loadingText.Foreground = "#A08BFF"
+        $loadingText.Foreground = "#8F6FFF"
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -11656,7 +11810,7 @@ function Start-AllCustomFoldersSearch {
         if ($allExecutables.Count -gt 0) {
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($allExecutables.Count) Executables in Custom Folders"
-            $headerText.Foreground = "#5D5FEF"
+            $headerText.Foreground = "#8F6FFF"
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -11664,9 +11818,9 @@ function Start-AllCustomFoldersSearch {
 
             foreach ($exe in $allExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#1A1F39"
+                $gamePanel.Background = "#14132B"
                 try {
-                    $gamePanel.BorderBrush = "#2F3A73"
+                    $gamePanel.BorderBrush = "#2F285A"
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -11683,14 +11837,14 @@ function Start-AllCustomFoldersSearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $exe.Name
-                $gameName.Foreground = "White"
+                $gameName.Foreground = "#F5F3FF"
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 From: $($exe.Folder) | 📊 $($exe.Size) MB | 📅 $($exe.LastModified)"
-                $gameDetails.Foreground = "#A6AACF"
+                $gameDetails.Foreground = "#A9A5D9"
                 $gameDetails.FontSize = 10
                 $gameInfo.Children.Add($gameDetails)
 
@@ -11725,7 +11879,7 @@ function Start-AllCustomFoldersSearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files found in custom folders."
-            $noGamesText.Foreground = "#777EA6"
+            $noGamesText.Foreground = "#7D7EB0"
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.Margin = "0,20"
@@ -12534,7 +12688,7 @@ function Initialize-Application {
             # Administrator mode - full access
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Administrator Mode"
-                $lblAdminStatus.Foreground = "#5D5FEF"
+                $lblAdminStatus.Foreground = "#8F6FFF"
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "All optimizations available"
@@ -12553,7 +12707,7 @@ function Initialize-Application {
             # Limited mode - some restrictions
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Limited Mode"
-                $lblAdminStatus.Foreground = "#A08BFF"
+                $lblAdminStatus.Foreground = "#8F6FFF"
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "Some optimizations require administrator privileges"
