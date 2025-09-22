@@ -350,10 +350,10 @@ function Get-ThemeColors {
     param([string]$ThemeName = 'Nebula')
 
     if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
-        return $global:ThemeDefinitions[$ThemeName]
+        return Normalize-ThemeColorTable $global:ThemeDefinitions[$ThemeName]
     } else {
         Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
-        return $global:ThemeDefinitions['Nebula']
+        return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
     }
 }
 
@@ -490,6 +490,111 @@ function Get-LogColor($Level) {
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
         default { 'White' }
+    }
+}
+
+
+$global:LogFilterSettings = @{
+    ShowInfo = $true
+    ShowSuccess = $true
+    ShowWarning = $true
+    ShowError = $true
+    ShowContext = $false
+    ShowDebug = $false
+    SearchTerm = ""
+    CategoryFilter = "All"
+}
+$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization", "Status", "Debug")
+$global:LogHistory = [System.Collections.ArrayList]::new()
+$global:MaxLogHistorySize = 1000
+
+function Get-EnhancedLogCategories {
+    <#
+    .SYNOPSIS
+    Enhanced logging categories for better organization and filtering
+    .DESCRIPTION
+    Provides categorization system for logs to enable filtering and organization
+    #>
+
+    return @{
+        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
+        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
+        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
+        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
+        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
+        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
+        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
+        "Status" = @("Success", "Completed", "Ready", "Warning", "Alert", "Caution", "Healthy")
+        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
+    }
+}
+
+function Get-LogCategory {
+    <#
+    .SYNOPSIS
+    Determines the category of a log message based on content analysis
+    .PARAMETER Message
+    The log message to categorize
+    #>
+    param([string]$Message)
+
+    $categories = Get-EnhancedLogCategories
+
+    foreach ($category in $categories.Keys) {
+        foreach ($keyword in $categories[$category]) {
+            if ($Message -match $keyword) {
+                return $category
+            }
+        }
+    }
+
+    return "General"
+}
+
+function Add-LogToHistory {
+    <#
+    .SYNOPSIS
+    Adds a log entry to the searchable history with metadata
+    .PARAMETER Message
+    The log message
+    .PARAMETER Level
+    The log level
+    .PARAMETER Category
+    The log category
+    #>
+    param(
+        [string]$Message,
+        [string]$Level = 'Info',
+        [string]$Category = 'General'
+    )
+
+    try {
+        if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
+            $global:LogHistory = [System.Collections.ArrayList]::new()
+        }
+
+        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
+            $global:MaxLogHistorySize = 1000
+        }
+
+        $logEntry = @{
+            Timestamp = Get-Date
+            Message = $Message
+            Level = $Level
+            Category = $Category
+            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
+        }
+
+        [void]$global:LogHistory.Add($logEntry)
+
+        while ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
+            $global:LogHistory.RemoveAt(0)
+
+        }
+
+    } catch {
+        # Silent fail to prevent logging issues
+        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
     }
 }
 
@@ -999,20 +1104,151 @@ function Update-GameListMirrors {
     }
 }
 
-# Creates a frozen SolidColorBrush from a string value when possible.
-function New-SolidColorBrushSafe {
-    param([string]$ColorValue)
+# Resolve a color-like value (string, brush, PSObject) to a usable color string.
+function Get-ColorStringFromValue {
+    param([object]$ColorValue)
 
-    if ([string]::IsNullOrWhiteSpace($ColorValue)) { return $null }
+    if ($null -eq $ColorValue) { return $null }
+
+    if ($ColorValue -is [string]) { return $ColorValue }
+
+    if ($ColorValue -is [System.Windows.Media.Color]) {
+        return $ColorValue.ToString()
+    }
+
+    if ($ColorValue -is [System.Windows.Media.Brush]) {
+        try { return $ColorValue.ToString() } catch { return $null }
+    }
+
+    if ($ColorValue -is [System.Management.Automation.PSObject]) {
+        foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
+            if ($ColorValue.PSObject.Properties[$propName]) {
+                $resolved = Get-ColorStringFromValue $ColorValue.$propName
+                if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+            }
+        }
+
+        if ($ColorValue.PSObject.BaseObject -ne $ColorValue) {
+            $resolved = Get-ColorStringFromValue $ColorValue.PSObject.BaseObject
+            if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+        }
+
+        try { return $ColorValue.ToString() } catch { return $null }
+    }
+
+    if ($ColorValue -is [System.Collections.IDictionary]) {
+        foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
+            if ($ColorValue.Contains($propName)) {
+                $resolved = Get-ColorStringFromValue $ColorValue[$propName]
+                if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
+            }
+        }
+    }
+
+    if ($ColorValue -is [System.Array]) {
+        $length = $ColorValue.Length
+        if ($length -eq 4) {
+            $bytes = @()
+            foreach ($item in $ColorValue) { $bytes += [byte]$item }
+            $color = [System.Windows.Media.Color]::FromArgb($bytes[0], $bytes[1], $bytes[2], $bytes[3])
+            return $color.ToString()
+        } elseif ($length -eq 3) {
+            $bytes = @()
+            foreach ($item in $ColorValue) { $bytes += [byte]$item }
+            $color = [System.Windows.Media.Color]::FromRgb($bytes[0], $bytes[1], $bytes[2])
+            return $color.ToString()
+        }
+    }
+
+    if ($ColorValue -is [System.ValueType]) {
+        return $ColorValue.ToString()
+    }
+
+    try { return [string]$ColorValue } catch { return $null }
+}
+
+# Convert all color-like entries in a theme table to strings for consistent usage.
+function Normalize-ThemeColorTable {
+    param([hashtable]$Theme)
+
+    if (-not $Theme) { return $Theme }
+
+    foreach ($key in @($Theme.Keys)) {
+        $value = $Theme[$key]
+
+        if ($null -eq $value) { continue }
+        if ($value -is [string]) { continue }
+        if ($value -is [bool]) { continue }
+        if ($value -is [int] -or $value -is [double] -or $value -is [decimal]) { continue }
+
+        $resolved = Get-ColorStringFromValue $value
+        if (-not [string]::IsNullOrWhiteSpace($resolved)) {
+            $Theme[$key] = $resolved
+        }
+    }
+
+    return $Theme
+}
+
+# Creates a frozen SolidColorBrush from a color-like value when possible.
+function New-SolidColorBrushSafe {
+    param([Parameter(ValueFromPipeline = $true)][object]$ColorValue)
+
+    if ($null -eq $ColorValue) { return $null }
+
+    if ($ColorValue -is [System.Windows.Media.Brush]) {
+        try { return $ColorValue.Clone() } catch { return $ColorValue }
+    }
+
+    if ($ColorValue -is [System.Windows.Media.Color]) {
+        $brushFromColor = New-Object System.Windows.Media.SolidColorBrush $ColorValue
+        $brushFromColor.Freeze()
+        return $brushFromColor
+    }
+
+    $resolvedValue = Get-ColorStringFromValue $ColorValue
+    if ([string]::IsNullOrWhiteSpace($resolvedValue)) { return $null }
 
     try {
-        $color = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($ColorValue)
+        $color = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
         $brush = New-Object System.Windows.Media.SolidColorBrush $color
         $brush.Freeze()
         return $brush
     } catch {
-        Write-Verbose "Failed to convert '$ColorValue' to SolidColorBrush: $($_.Exception.Message)"
+        Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
         return $null
+    }
+}
+
+function Set-ShapeFillSafe {
+    param(
+        [object]$Shape,
+        [object]$Value
+    )
+
+    if (-not $Shape) { return }
+
+    try {
+        $brush = New-SolidColorBrushSafe $Value
+        if ($brush) {
+            try {
+                if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
+                    $Shape.Fill = $brush.Clone()
+                } else {
+                    $Shape.Fill = $brush
+                }
+            } catch {
+                $Shape.Fill = $brush
+            }
+            return
+        }
+
+        $colorValue = Get-ColorStringFromValue $Value
+        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
+            $Shape.Fill = $colorValue
+        }
+    } catch {
+        Write-Verbose "Set-ShapeFillSafe failed: $($_.Exception.Message)"
     }
 }
 
@@ -1752,6 +1988,8 @@ function Update-ThemeColorPreview {
             Get-ThemeColors -ThemeName $ThemeName
         }
 
+        $colors = Normalize-ThemeColorTable $colors
+
         $bgBrush = New-SolidColorBrushSafe $colors.Background
         $primaryBrush = New-SolidColorBrushSafe $colors.Primary
         $hoverBrush = New-SolidColorBrushSafe $colors.Hover
@@ -1830,7 +2068,6 @@ function Apply-ThemeColors {
                 $colors['TextSecondary'] = $Foreground
             }
 
-            $global:CustomThemeColors = $colors.Clone()
             $appliedThemeName = 'Custom'
         } else {
             if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
@@ -1839,6 +2076,12 @@ function Apply-ThemeColors {
                 $colors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
             }
             $appliedThemeName = $ThemeName
+        }
+
+        $colors = Normalize-ThemeColorTable $colors
+
+        if ($PSCmdlet.ParameterSetName -eq 'ByCustom') {
+            $global:CustomThemeColors = $colors.Clone()
         }
 
         if (-not $form) {
@@ -2282,6 +2525,8 @@ function Switch-Theme {
 
             $themeColors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
         }
+
+        $themeColors = Normalize-ThemeColorTable $themeColors
 
         Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
 
@@ -3133,109 +3378,6 @@ function Show-SystemHealthDialog {
     } catch {
         Log "Error showing system health dialog: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error displaying system health window: $($_.Exception.Message)", "Health Monitor Error", 'OK', 'Error')
-    }
-}
-$global:LogFilterSettings = @{
-    ShowInfo = $true
-    ShowSuccess = $true
-    ShowWarning = $true
-    ShowError = $true
-    ShowContext = $false
-    ShowDebug = $false
-    SearchTerm = ""
-    CategoryFilter = "All"
-}
-$global:LogCategories = @("All", "System", "Gaming", "Network", "UI", "Performance", "Security", "Optimization", "Status", "Debug")
-$global:LogHistory = [System.Collections.ArrayList]::new()
-$global:MaxLogHistorySize = 1000
-
-function Get-EnhancedLogCategories {
-    <#
-    .SYNOPSIS
-    Enhanced logging categories for better organization and filtering
-    .DESCRIPTION
-    Provides categorization system for logs to enable filtering and organization
-    #>
-
-    return @{
-        "System" = @("Registry", "Service", "Process", "Hardware", "Driver")
-        "Gaming" = @("Game", "Profile", "Optimization", "FPS", "Latency", "Auto-Detect")
-        "Network" = @("TCP", "UDP", "Latency", "Bandwidth", "DNS", "Firewall")
-        "UI" = @("Theme", "Panel", "Control", "Navigation", "Scale", "Layout")
-        "Performance" = @("CPU", "Memory", "Disk", "GPU", "Benchmark", "Monitor")
-        "Security" = @("Admin", "Permission", "UAC", "Privilege", "Access")
-        "Optimization" = @("Applied", "Reverted", "Backup", "Restore", "Config")
-        "Status" = @("Success", "Completed", "Ready", "Warning", "Alert", "Caution", "Healthy")
-        "Debug" = @("Verbose", "Trace", "Internal", "Exception", "Stack")
-    }
-}
-
-function Get-LogCategory {
-    <#
-    .SYNOPSIS
-    Determines the category of a log message based on content analysis
-    .PARAMETER Message
-    The log message to categorize
-    #>
-    param([string]$Message)
-
-    $categories = Get-EnhancedLogCategories
-
-    foreach ($category in $categories.Keys) {
-        foreach ($keyword in $categories[$category]) {
-            if ($Message -match $keyword) {
-                return $category
-            }
-        }
-    }
-
-    return "General"
-}
-
-function Add-LogToHistory {
-    <#
-    .SYNOPSIS
-    Adds a log entry to the searchable history with metadata
-    .PARAMETER Message
-    The log message
-    .PARAMETER Level
-    The log level
-    .PARAMETER Category
-    The log category
-    #>
-    param(
-        [string]$Message,
-        [string]$Level = 'Info',
-        [string]$Category = 'General'
-    )
-
-    try {
-        if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
-            $global:LogHistory = [System.Collections.ArrayList]::new()
-        }
-
-        if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
-            $global:MaxLogHistorySize = 1000
-        }
-
-        $logEntry = @{
-            Timestamp = Get-Date
-            Message = $Message
-            Level = $Level
-            Category = $Category
-            Thread = [System.Threading.Thread]::CurrentThread.ManagedThreadId
-        }
-
-        [void]$global:LogHistory.Add($logEntry)
-
-        while ($global:LogHistory.Count -gt $global:MaxLogHistorySize) {
-            $global:LogHistory.RemoveAt(0)
-
-        }
-
-    } catch {
-        # Silent fail to prevent logging issues
-        Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
     }
 }
 
@@ -6118,6 +6260,7 @@ $customThemeDefaults = [ordered]@{
 # other functions can safely clone the values.
 if (-not $global:CustomThemeColors) {
     $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+    $global:CustomThemeColors = Normalize-ThemeColorTable $global:CustomThemeColors
     $global:CustomThemeColors['Name'] = 'Custom Theme'
 }
 
@@ -6143,10 +6286,10 @@ foreach ($entry in $customThemeInputs.GetEnumerator()) {
     }
 }
 
-if ($previewBgCustom) { $previewBgCustom.Fill = $global:CustomThemeColors['Background'] }
-if ($previewPrimaryCustom) { $previewPrimaryCustom.Fill = $global:CustomThemeColors['Primary'] }
-if ($previewHoverCustom) { $previewHoverCustom.Fill = $global:CustomThemeColors['Hover'] }
-if ($previewTextCustom) { $previewTextCustom.Fill = $global:CustomThemeColors['Text'] }
+if ($previewBgCustom) { Set-ShapeFillSafe -Shape $previewBgCustom -Value $global:CustomThemeColors['Background'] }
+if ($previewPrimaryCustom) { Set-ShapeFillSafe -Shape $previewPrimaryCustom -Value $global:CustomThemeColors['Primary'] }
+if ($previewHoverCustom) { Set-ShapeFillSafe -Shape $previewHoverCustom -Value $global:CustomThemeColors['Hover'] }
+if ($previewTextCustom) { Set-ShapeFillSafe -Shape $previewTextCustom -Value $global:CustomThemeColors['Text'] }
 
 if ($cmbOptionsTheme -and $customThemePanel) {
     $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
