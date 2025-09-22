@@ -226,7 +226,7 @@ function Set-BorderBrushSafe {
     try {
         # Check if element supports BorderBrush
         if ($Element.GetType().GetProperty("BorderBrush")) {
-            $Element.BorderBrush = $BorderBrushValue
+            Set-BrushPropertySafe -Target $Element -Property 'BorderBrush' -Value $BorderBrushValue -AllowTransparentFallback
         }
 
         # Set BorderThickness if provided and supported
@@ -339,6 +339,8 @@ $global:ThemeDefinitions = @{
         IsLight = $true
     }
 }
+
+$script:SharedBrushConverter = $null
 
 
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
@@ -1252,6 +1254,59 @@ function Set-ShapeFillSafe {
     }
 }
 
+# Centralized helper to assign Brush-like theme values to WPF dependency properties.
+function Set-BrushPropertySafe {
+    param(
+        [Parameter(Mandatory = $true)][object]$Target,
+        [Parameter(Mandatory = $true)][string]$Property,
+        [object]$Value,
+        [switch]$AllowTransparentFallback
+    )
+
+    if (-not $Target) { return }
+    if ([string]::IsNullOrWhiteSpace($Property)) { return }
+
+    try {
+        $brush = New-SolidColorBrushSafe $Value
+        if ($brush) {
+            if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
+                $Target.$Property = $brush.Clone()
+            } else {
+                $Target.$Property = $brush
+            }
+            return
+        }
+
+        $colorValue = Get-ColorStringFromValue $Value
+        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
+            try {
+                if (-not $script:SharedBrushConverter) {
+                    $script:SharedBrushConverter = New-Object System.Windows.Media.BrushConverter
+                }
+
+                $converted = $script:SharedBrushConverter.ConvertFromString($colorValue)
+                if ($converted) {
+                    $Target.$Property = $converted
+                    return
+                }
+            } catch {
+                Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
+            }
+
+            $Target.$Property = $colorValue
+            return
+        }
+
+        if ($AllowTransparentFallback) {
+            $Target.$Property = 'Transparent'
+        } else {
+            $Target.$Property = $null
+        }
+    } catch {
+        Write-Verbose "Set-BrushPropertySafe failed for property '$Property' on $($Target.GetType().Name): $($_.Exception.Message)"
+    }
+}
+
 # ---------- Theme and Styling Helpers (moved forward for availability) ----------
 function Find-AllControlsOfType {
     param(
@@ -1457,22 +1512,20 @@ function Apply-FallbackThemeColors {
 
         switch ($elementType) {
             "Window" {
-                try { $element.Background = $colors.Background } catch { Write-Verbose "Window background could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
             }
             "Border" {
-                try { $element.Background = $colors.Secondary } catch { Write-Verbose "Border background could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
             }
             "TextBlock" {
-                try { $element.Foreground = $colors.Text } catch { Write-Verbose "TextBlock foreground could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
             }
             "Label" {
-                try { $element.Foreground = $colors.Text } catch { Write-Verbose "Label foreground could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
             }
             "Button" {
-                try {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                } catch { Write-Verbose "Button colors could not be set" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
             }
         }
 
@@ -1500,111 +1553,113 @@ function Update-AllUIElementsRecursively {
 
         switch ($elementType) {
             "Window" {
-                $element.Background = $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 if ($element.BorderBrush) {
-                    try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
                 }
             }
             "Border" {
                 $currentBg = if ($element.Background) { $element.Background.ToString() } else { $null }
 
                 if ($currentBg -match "#161D3F|#1B2345|#141830|#1A1F39|#141830|#14132B|#F8F9FA|#FFFFFF|#F0F2F5") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+
                 }
                 if ($currentBg -match "#0E101A|#36393F|#0E0E10") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 }
 
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "GroupBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 if ($element.Header -and $element.Header -is [System.String]) {
                     $headerBlock = New-Object System.Windows.Controls.TextBlock
                     $headerBlock.Text = $element.Header
-                    $headerBlock.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $headerBlock -Property 'Foreground' -Value $colors.Text
                     $headerBlock.FontWeight = "Bold"
                     $element.Header = $headerBlock
                 } elseif ($element.Header -and $element.Header -is [System.Windows.Controls.TextBlock]) {
-                    $element.Header.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element.Header -Property 'Foreground' -Value $colors.Text
                 }
             }
             "StackPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "Grid" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "WrapPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "DockPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
-                    $element.Background = $colors.Background
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
             }
             "TabItem" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "TabControl" {
-                $element.Background = $colors.Background
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Expander" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 if ($element.Header -and $element.Header -is [System.Windows.Controls.TextBlock]) {
-                    $element.Header.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element.Header -Property 'Foreground' -Value $colors.Text
                 }
             }
             "TextBlock" {
                 $currentForeground = if ($element.Foreground) { $element.Foreground.ToString() } else { $null }
 
                 if ($currentForeground -match "#8F6FFF|#B497FF|#5D5FEF|#8A77FF") {
-                    $element.Foreground = $colors.Accent
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Accent
                 }
                 elseif ($currentForeground -match "#A9A5D9|#A6AACF|#B8B8B8|#777EA6888|#6C757D|#8B949E") {
-                    $element.Foreground = $colors.TextSecondary
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.TextSecondary
+
                 }
                 elseif ($currentForeground -match "White|#FFFFFF|Black|#000000|#212529|#1C1E21") {
-                    $element.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 }
                 elseif (-not $currentForeground) {
-                    $element.Foreground = $colors.Text
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 }
             }
             "Label" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "TextBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
-                $element.SelectionBrush = $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $element -Property 'SelectionBrush' -Value $colors.Primary
             }
             "ComboBox" {
                 $comboBackground = $colors.Secondary
@@ -1615,9 +1670,9 @@ function Update-AllUIElementsRecursively {
                     $comboForeground = $colors.Text
                 }
 
-                $element.Background = $comboBackground
-                $element.Foreground = $comboForeground
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $comboBackground
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $comboForeground
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
                 try {
                     $element.FontSize = 12
@@ -1626,8 +1681,8 @@ function Update-AllUIElementsRecursively {
 
                 foreach ($item in $element.Items) {
                     if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                        $item.Background = $comboBackground
-                        $item.Foreground = $comboForeground
+                        Set-BrushPropertySafe -Target $item -Property 'Background' -Value $comboBackground
+                        Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $comboForeground
 
                         try {
                             $item.Padding = "10,6"
@@ -1638,56 +1693,56 @@ function Update-AllUIElementsRecursively {
                 }
             }
             "ListBox" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "ListView" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "CheckBox" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "RadioButton" {
-                $element.Foreground = $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
-                    $element.Background = $colors.Secondary
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 }
             }
             "Button" {
                 if ($element.Name -and -not ($element.Name -match "btnNav")) {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                    try { $element.BorderBrush = $colors.Hover } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
                 } elseif ($element.Name -match "btnNav") {
                     if ($element.Tag -eq "Selected") {
-                        $element.Background = $colors.SelectedBackground
-                        $element.Foreground = $colors.SelectedForeground
+                        Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $element.Background = $colors.UnselectedBackground
-                        $element.Foreground = $colors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
                     }
                 } else {
-                    $element.Background = $colors.Primary
-                    $element.Foreground = 'White'
-                    try { $element.BorderBrush = $colors.Hover } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
+                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
+                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
                 }
             }
             "ScrollViewer" {
-                $element.Background = $colors.Background
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
 
                 try {
                     if ($element.Template) {
         $scrollBars = @()
         Find-AllControlsOfType -Parent $element -ControlType 'System.Windows.Controls.Primitives.ScrollBar' -Collection ([ref]$scrollBars)
                         foreach ($scrollBar in $scrollBars) {
-                            $scrollBar.Background = $colors.Secondary
-                            try { $scrollBar.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                            Set-BrushPropertySafe -Target $scrollBar -Property 'Background' -Value $colors.Secondary
+                            Set-BrushPropertySafe -Target $scrollBar -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
                         }
                     }
                 } catch {
@@ -1695,24 +1750,24 @@ function Update-AllUIElementsRecursively {
                 }
             }
             "ProgressBar" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Primary
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Slider" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Primary
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "Menu" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
             "MenuItem" {
-                $element.Background = $colors.Secondary
-                $element.Foreground = $colors.Text
-                try { $element.BorderBrush = $colors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+                Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
         }
 
@@ -1799,35 +1854,11 @@ function Update-AllUIElementsRecursively {
           foreach ($button in $buttons) {
               if ($modernStyle -and $button.Style -eq $modernStyle) {
                   if ($primaryBrush) {
-                      $button.Background = $primaryBrush.Clone()
-                      try { $button.BorderBrush = $primaryBrush.Clone() } catch { }
+                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $primaryBrush
+                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $primaryBrush
                   } elseif ($Primary) {
-                      try {
-                          if (-not $brushConverter) {
-                              $brushConverter = New-Object System.Windows.Media.BrushConverter
-                          }
-                          $convertedBackground = $brushConverter.ConvertFromString($Primary)
-                          if ($convertedBackground) {
-                              $button.Background = $convertedBackground
-                          } else {
-                              $button.Background = $Primary
-                          }
-                      } catch {
-                          $button.Background = $Primary
-                      }
-                      try {
-                          if (-not $brushConverter) {
-                              $brushConverter = New-Object System.Windows.Media.BrushConverter
-                          }
-                          $convertedBorder = $brushConverter.ConvertFromString($Primary)
-                          if ($convertedBorder) {
-                              $button.BorderBrush = $convertedBorder
-                          } else {
-                              $button.BorderBrush = $Primary
-                          }
-                      } catch {
-                          try { $button.BorderBrush = $Primary } catch { }
-                      }
+                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $Primary
+                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $Primary
                   }
               }
           }
@@ -1869,13 +1900,9 @@ function Update-ComboBoxStyles {
         $itemForeground = $actualForeground
 
         foreach ($combo in $comboBoxes) {
-            $combo.Background = $actualBackground
-            $combo.Foreground = $actualForeground
-            try {
-                $combo.BorderBrush = $Border
-            } catch {
-                Write-Verbose 'BorderBrush assignment skipped for compatibility'
-            }
+            Set-BrushPropertySafe -Target $combo -Property 'Background' -Value $actualBackground
+            Set-BrushPropertySafe -Target $combo -Property 'Foreground' -Value $actualForeground
+            Set-BrushPropertySafe -Target $combo -Property 'BorderBrush' -Value $Border -AllowTransparentFallback
 
             try {
                 $combo.FontSize = 13
@@ -1886,8 +1913,8 @@ function Update-ComboBoxStyles {
 
             foreach ($item in $combo.Items) {
                 if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                    $item.Background = $itemBackground
-                    $item.Foreground = $itemForeground
+                    Set-BrushPropertySafe -Target $item -Property 'Background' -Value $itemBackground
+                    Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $itemForeground
 
                     try {
                         $item.Padding = '12,6'
@@ -2540,26 +2567,7 @@ function Switch-Theme {
         $form.Dispatcher.Invoke([action]{
 
             try {
-                $backgroundBrush = $null
-                try {
-                    $backgroundBrush = New-SolidColorBrushSafe $themeColors.Background
-                } catch {
-                    $backgroundBrush = $null
-                }
-
-                if ($backgroundBrush) {
-                    $form.Background = $backgroundBrush.Clone()
-                } else {
-                    try {
-                        $converter = New-Object System.Windows.Media.BrushConverter
-                        $converted = $converter.ConvertFromString($themeColors.Background)
-                        if ($converted) {
-                            $form.Background = $converted
-                        }
-                    } catch {
-                        $form.Background = $themeColors.Background
-                    }
-                }
+                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
             } catch {
                 Write-Verbose "Switch-Theme background refresh skipped: $($_.Exception.Message)"
             }
@@ -2579,11 +2587,11 @@ function Switch-Theme {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $themeColors.SelectedBackground
-                        $btn.Foreground = $themeColors.SelectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $btn.Background = $themeColors.UnselectedBackground
-                        $btn.Foreground = $themeColors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
                     }
 
                     $btn.InvalidateVisual()
@@ -2597,20 +2605,20 @@ function Switch-Theme {
                 if ($firstChild.Children -and $firstChild.Children.Count -gt 0) {
                     $sidebar = $firstChild.Children[0]
                     if ($sidebar) {
-                        $sidebar.Background = $themeColors.SidebarBg
-                        try { $sidebar.BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                        Set-BrushPropertySafe -Target $sidebar -Property 'Background' -Value $themeColors.SidebarBg
+                        Set-BrushPropertySafe -Target $sidebar -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
 
                         if ($sidebar.Child -is [System.Windows.Controls.Grid]) {
                             $sidebarGrid = $sidebar.Child
                             if ($sidebarGrid.Children -and $sidebarGrid.Children.Count -gt 0) {
-                                $sidebarGrid.Children[0].Background = $themeColors.SidebarBg
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[0] -Property 'Background' -Value $themeColors.SidebarBg
                             }
                             if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
-                                try { $sidebarGrid.Children[1].Background = $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
+                                try { Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
                             }
                             if ($sidebarGrid.Children.Count -gt 2) {
-                                $sidebarGrid.Children[2].Background = $themeColors.SidebarBg
-                                try { $sidebarGrid.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'Background' -Value $themeColors.SidebarBg
+                                Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
                         }
 
@@ -2622,18 +2630,18 @@ function Switch-Theme {
                         $mainContent = $firstChild.Children[1]
                         if ($mainContent) {
                             if ($mainContent.Children -and $mainContent.Children.Count -gt 0) {
-                                $mainContent.Children[0].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[0].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[0] -Property 'Background' -Value $themeColors.HeaderBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[0] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
                             if ($mainContent.Children.Count -gt 2) {
-                                $mainContent.Children[2].Background = $themeColors.HeaderBg
-                                try { $mainContent.Children[2].BorderBrush = $themeColors.Primary } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'Background' -Value $themeColors.HeaderBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
                             }
 
                             if ($mainContent.Children.Count -gt 3) {
-                                $mainContent.Children[3].Background = $themeColors.LogBg
-                                try { $mainContent.Children[3].BorderBrush = $themeColors.Accent } catch { Write-Verbose "BorderBrush assignment skipped for compatibility" }
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'Background' -Value $themeColors.LogBg
+                                Set-BrushPropertySafe -Target $mainContent.Children[3] -Property 'BorderBrush' -Value $themeColors.Accent -AllowTransparentFallback
                             }
 
                             $mainContent.InvalidateVisual()
@@ -2652,15 +2660,15 @@ function Switch-Theme {
             }
 
             if ($global:LogBox) {
-                $global:LogBox.Background = $themeColors.LogBg
-                $global:LogBox.Foreground = $themeColors.Accent
+                Set-BrushPropertySafe -Target $global:LogBox -Property 'Background' -Value $themeColors.LogBg
+                Set-BrushPropertySafe -Target $global:LogBox -Property 'Foreground' -Value $themeColors.Accent
                 $global:LogBox.InvalidateVisual()
                 $global:LogBox.UpdateLayout()
             }
 
             if ($activityLogBorder) {
                 try {
-                    $activityLogBorder.Background = $themeColors.LogBg
+                    Set-BrushPropertySafe -Target $activityLogBorder -Property 'Background' -Value $themeColors.LogBg
                     Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
@@ -2677,7 +2685,7 @@ function Switch-Theme {
         Start-Sleep -Milliseconds 100
 
         $form.Dispatcher.BeginInvoke([action]{
-            $form.Background = $themeColors.Background
+            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
             $form.InvalidateVisual()
             $form.UpdateLayout()
 
@@ -2691,11 +2699,11 @@ function Switch-Theme {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     if ($btn.Tag -eq "Selected") {
-                        $btn.Background = $themeColors.SelectedBackground
-                        $btn.Foreground = $themeColors.SelectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
                     } else {
-                        $btn.Background = $themeColors.UnselectedBackground
-                        $btn.Foreground = $themeColors.UnselectedForeground
+                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
+                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
                     }
                     $btn.InvalidateVisual()
                 }
@@ -6419,8 +6427,8 @@ function Set-ActiveNavigationButton {
                 $btn = $form.FindName($btnName)
                 if ($btn) {
                     $btn.Tag = ''
-                    $btn.Background = $colors.UnselectedBackground
-                    $btn.Foreground = $colors.UnselectedForeground
+                    Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
+                    Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
 
                     # Sofort visuell aktualisieren
                     $btn.InvalidateVisual()
@@ -6432,8 +6440,8 @@ function Set-ActiveNavigationButton {
             $activeBtn = $form.FindName($ActiveButtonName)
             if ($activeBtn) {
                 $activeBtn.Tag = 'Selected'
-                $activeBtn.Background = $colors.SelectedBackground
-                $activeBtn.Foreground = $colors.SelectedForeground
+                Set-BrushPropertySafe -Target $activeBtn -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $activeBtn -Property 'Foreground' -Value $colors.SelectedForeground -AllowTransparentFallback
 
                 # Sofort visuell aktualisieren
                 $activeBtn.InvalidateVisual()
