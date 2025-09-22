@@ -2323,20 +2323,18 @@ function Apply-ThemeColors {
         $headerBrush = New-SolidColorBrushSafe $colors.HeaderBg
         $primaryBrush = New-SolidColorBrushSafe $colors.Primary
 
-        if ($backgroundBrush) {
-            $form.Background = $backgroundBrush.Clone()
-        } else {
-            try { $form.Background = $colors.Background } catch { Write-Verbose "Form background assignment skipped" }
+        $formBackgroundValue = if ($backgroundBrush) { $backgroundBrush } else { $colors.Background }
+        try {
+            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $formBackgroundValue
+        } catch {
+            Write-Verbose "Form background assignment skipped"
         }
 
         $rootLayout = $form.FindName('RootLayout')
         if ($rootLayout) {
             try {
-                if ($backgroundBrush) {
-                    $rootLayout.Background = $backgroundBrush.Clone()
-                } else {
-                    $rootLayout.Background = $colors.Background
-                }
+                $rootLayoutBackground = if ($backgroundBrush) { $backgroundBrush } else { $colors.Background }
+                Set-BrushPropertySafe -Target $rootLayout -Property 'Background' -Value $rootLayoutBackground
             } catch {
                 Write-Verbose "RootLayout background assignment skipped"
             }
@@ -2344,13 +2342,11 @@ function Apply-ThemeColors {
 
         $sidebar = $form.FindName('SidebarShell')
         if ($sidebar -is [System.Windows.Controls.Border]) {
-            if ($sidebarBrush) { $sidebar.Background = $sidebarBrush.Clone() } else { $sidebar.Background = $colors.SidebarBg }
+            $sidebarBackground = if ($sidebarBrush) { $sidebarBrush } else { $colors.SidebarBg }
+            Set-BrushPropertySafe -Target $sidebar -Property 'Background' -Value $sidebarBackground
             try {
-                if ($primaryBrush) {
-                    $sidebar.BorderBrush = $primaryBrush.Clone()
-                } else {
-                    $sidebar.BorderBrush = $colors.Primary
-                }
+                $sidebarBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
+                Set-BrushPropertySafe -Target $sidebar -Property 'BorderBrush' -Value $sidebarBorder -AllowTransparentFallback
             } catch {
                 Write-Verbose "Sidebar border assignment skipped"
             }
@@ -2359,11 +2355,8 @@ function Apply-ThemeColors {
         $navScroll = $form.FindName('SidebarNavScroll')
         if ($navScroll -is [System.Windows.Controls.ScrollViewer]) {
             try {
-                if ($sidebarBrush) {
-                    $navScroll.Background = $sidebarBrush.Clone()
-                } else {
-                    $navScroll.Background = $colors.SidebarBg
-                }
+                $navScrollBackground = if ($sidebarBrush) { $sidebarBrush } else { $colors.SidebarBg }
+                Set-BrushPropertySafe -Target $navScroll -Property 'Background' -Value $navScrollBackground
             } catch {
                 Write-Verbose "Sidebar scroll background skipped"
             }
@@ -2371,13 +2364,11 @@ function Apply-ThemeColors {
 
         $adminCard = $form.FindName('SidebarAdminCard')
         if ($adminCard -is [System.Windows.Controls.Border]) {
-            if ($headerBrush) { $adminCard.Background = $headerBrush.Clone() } else { $adminCard.Background = $colors.HeaderBg }
+            $adminBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
+            Set-BrushPropertySafe -Target $adminCard -Property 'Background' -Value $adminBackground
             try {
-                if ($primaryBrush) {
-                    $adminCard.BorderBrush = $primaryBrush.Clone()
-                } else {
-                    $adminCard.BorderBrush = $colors.Primary
-                }
+                $adminBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
+                Set-BrushPropertySafe -Target $adminCard -Property 'BorderBrush' -Value $adminBorder -AllowTransparentFallback
             } catch {
                 Write-Verbose "Sidebar admin border assignment skipped"
             }
@@ -2386,11 +2377,8 @@ function Apply-ThemeColors {
         $mainStage = $form.FindName('MainStage')
         if ($mainStage -is [System.Windows.Controls.Grid]) {
             try {
-                if ($secondaryBrush) {
-                    $mainStage.Background = $secondaryBrush.Clone()
-                } else {
-                    $mainStage.Background = $colors.Secondary
-                }
+                $mainStageBackground = if ($secondaryBrush) { $secondaryBrush } else { $colors.Secondary }
+                Set-BrushPropertySafe -Target $mainStage -Property 'Background' -Value $mainStageBackground
             } catch {
                 Write-Verbose "MainStage background assignment skipped"
             }
@@ -2398,13 +2386,11 @@ function Apply-ThemeColors {
 
         $headerBar = $form.FindName('HeaderBar')
         if ($headerBar -is [System.Windows.Controls.Border]) {
-            if ($headerBrush) { $headerBar.Background = $headerBrush.Clone() } else { $headerBar.Background = $colors.HeaderBg }
+            $headerBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
+            Set-BrushPropertySafe -Target $headerBar -Property 'Background' -Value $headerBackground
             try {
-                if ($primaryBrush) {
-                    $headerBar.BorderBrush = $primaryBrush.Clone()
-                } else {
-                    $headerBar.BorderBrush = $colors.Primary
-                }
+                $headerBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
+                Set-BrushPropertySafe -Target $headerBar -Property 'BorderBrush' -Value $headerBorder -AllowTransparentFallback
             } catch {
                 Write-Verbose "Header border assignment skipped"
             }
@@ -2412,13 +2398,11 @@ function Apply-ThemeColors {
 
         $footerBar = $form.FindName('FooterBar')
         if ($footerBar -is [System.Windows.Controls.Border]) {
-            if ($headerBrush) { $footerBar.Background = $headerBrush.Clone() } else { $footerBar.Background = $colors.HeaderBg }
+            $footerBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
+            Set-BrushPropertySafe -Target $footerBar -Property 'Background' -Value $footerBackground
             try {
-                if ($primaryBrush) {
-                    $footerBar.BorderBrush = $primaryBrush.Clone()
-                } else {
-                    $footerBar.BorderBrush = $colors.Primary
-                }
+                $footerBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
+                Set-BrushPropertySafe -Target $footerBar -Property 'BorderBrush' -Value $footerBorder -AllowTransparentFallback
             } catch {
                 Write-Verbose "Footer border assignment skipped"
             }
@@ -5401,6 +5385,11 @@ $xamlContent = @'
             </WrapPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Tag="Spacing:12">
+            <StackPanel Width="220" Tag="Spacing:6">
+              <TextBlock Text="Theme preset" Style="{StaticResource SectionSubtext}" FontSize="12"/>
+              <ComboBox x:Name="cmbHeaderTheme" Style="{StaticResource ModernComboBox}" Width="220"/>
+            </StackPanel>
+            <Button x:Name="btnHeaderApplyTheme" Content="Apply theme" Width="120" Height="36" Style="{StaticResource SuccessButton}" FontSize="12"/>
             <Button x:Name="btnSystemHealth" Content="View health detail" Width="170" Height="40" Style="{StaticResource ModernButton}"/>
           </StackPanel>
         </Grid>
@@ -6217,7 +6206,8 @@ $lblHeaderLastRun = $form.FindName('lblHeaderLastRun')
 $lblHeroProfiles = $form.FindName('lblHeroProfiles')
 $lblHeroOptimizations = $form.FindName('lblHeroOptimizations')
 $lblHeroAutoMode = $form.FindName('lblHeroAutoMode')
-# $cmbHeaderTheme = $form.FindName('cmbHeaderTheme')  # Removed from header - now only in Options
+$cmbHeaderTheme = $form.FindName('cmbHeaderTheme')
+$btnHeaderApplyTheme = $form.FindName('btnHeaderApplyTheme')
 
 # Admin status controls (sidebar)
 $lblSidebarAdminStatus = $form.FindName('lblSidebarAdminStatus')
@@ -6441,6 +6431,45 @@ if ($previewTextCustom) { Set-ShapeFillSafe -Shape $previewTextCustom -Value $gl
 if ($cmbOptionsTheme -and $customThemePanel) {
     $initialTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { $null }
     $customThemePanel.Visibility = if ($initialTheme -eq 'Custom') { 'Visible' } else { 'Collapsed' }
+}
+
+if (-not (Get-Variable -Name 'ThemeSelectionSyncInProgress' -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:ThemeSelectionSyncInProgress = $false
+}
+
+if ($cmbHeaderTheme -and $cmbOptionsTheme) {
+    try {
+        $cmbHeaderTheme.Items.Clear()
+        foreach ($item in $cmbOptionsTheme.Items) {
+            if ($item -is [System.Windows.Controls.ComboBoxItem]) {
+                $cloneItem = New-Object System.Windows.Controls.ComboBoxItem
+                $cloneItem.Content = $item.Content
+                $cloneItem.Tag = $item.Tag
+                if ($item.ToolTip) { $cloneItem.ToolTip = $item.ToolTip }
+                [void]$cmbHeaderTheme.Items.Add($cloneItem)
+            }
+        }
+
+        $selectedTag = $null
+        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+            $selectedTag = $cmbOptionsTheme.SelectedItem.Tag
+        }
+
+        if (-not $selectedTag -and $cmbHeaderTheme.Items.Count -gt 0) {
+            $selectedTag = ($cmbHeaderTheme.Items[0]).Tag
+        }
+
+        if ($selectedTag) {
+            foreach ($headerItem in $cmbHeaderTheme.Items) {
+                if ($headerItem.Tag -eq $selectedTag) {
+                    $cmbHeaderTheme.SelectedItem = $headerItem
+                    break
+                }
+            }
+        }
+    } catch {
+        Log "Warning: Failed to initialize header theme options: $($_.Exception.Message)" 'Warning'
+    }
 }
 
 # UI scaling controls
@@ -10685,10 +10714,26 @@ $btnBasicGaming.Add_Click({
 # Options panel event handlers - selection changes only update preview, no instant application
 if ($cmbOptionsTheme) {
     $cmbOptionsTheme.Add_SelectionChanged({
+        if ($script:ThemeSelectionSyncInProgress) { return }
+
         try {
+            $script:ThemeSelectionSyncInProgress = $true
+
             if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
                 $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
                 $themeName = $cmbOptionsTheme.SelectedItem.Content
+
+                # Keep header selection in sync without causing recursion
+                if ($cmbHeaderTheme) {
+                    foreach ($headerItem in $cmbHeaderTheme.Items) {
+                        if ($headerItem.Tag -eq $selectedTheme) {
+                            if ($cmbHeaderTheme.SelectedItem -ne $headerItem) {
+                                $cmbHeaderTheme.SelectedItem = $headerItem
+                            }
+                            break
+                        }
+                    }
+                }
 
                 # Update color preview panel only - no instant theme application
                 Update-ThemeColorPreview -ThemeName $selectedTheme
@@ -10710,6 +10755,54 @@ if ($cmbOptionsTheme) {
             }
         } catch {
             Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
+        } finally {
+            $script:ThemeSelectionSyncInProgress = $false
+        }
+    })
+}
+
+if ($cmbHeaderTheme) {
+    $cmbHeaderTheme.Add_SelectionChanged({
+        if ($script:ThemeSelectionSyncInProgress) { return }
+
+        try {
+            $script:ThemeSelectionSyncInProgress = $true
+
+            if ($cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
+                $themeName = $cmbHeaderTheme.SelectedItem.Content
+
+                if ($cmbOptionsTheme) {
+                    foreach ($item in $cmbOptionsTheme.Items) {
+                        if ($item.Tag -eq $selectedTheme) {
+                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
+                                $cmbOptionsTheme.SelectedItem = $item
+                            }
+                            break
+                        }
+                    }
+                }
+
+                Update-ThemeColorPreview -ThemeName $selectedTheme
+
+                if ($selectedTheme -eq 'Custom' -and $customThemePanel) {
+                    $customThemePanel.Visibility = 'Visible'
+                    if ($global:CustomThemeColors) {
+                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
+                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
+                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
+                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
+                    }
+                } elseif ($customThemePanel) {
+                    $customThemePanel.Visibility = 'Collapsed'
+                }
+
+                Log "Header theme selection changed to '$themeName'" 'Info'
+            }
+        } catch {
+            Log "Error syncing header theme selection: $($_.Exception.Message)" 'Error'
+        } finally {
+            $script:ThemeSelectionSyncInProgress = $false
         }
     })
 }
@@ -10748,6 +10841,33 @@ if ($btnApplyTheme) {
         # Apply the selected theme instantly - same as main button functionality
         if ($btnOptionsApplyTheme) {
             $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        }
+    })
+}
+
+if ($btnHeaderApplyTheme -and $btnOptionsApplyTheme) {
+    $btnHeaderApplyTheme.Add_Click({
+        try {
+            if ($cmbHeaderTheme -and $cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
+
+                if ($cmbOptionsTheme) {
+                    foreach ($item in $cmbOptionsTheme.Items) {
+                        if ($item.Tag -eq $selectedTheme) {
+                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
+                                $cmbOptionsTheme.SelectedItem = $item
+                            }
+                            break
+                        }
+                    }
+                }
+
+                $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+            } else {
+                [System.Windows.MessageBox]::Show("Please select a theme first.", "Theme", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error applying theme from header: $($_.Exception.Message)" 'Error'
         }
     })
 }
