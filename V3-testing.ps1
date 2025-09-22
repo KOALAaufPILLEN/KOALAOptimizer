@@ -1563,6 +1563,7 @@ function Update-AllUIElementsRecursively {
 
                 if ($currentBg -match "#161D3F|#1B2345|#141830|#1A1F39|#141830|#14132B|#F8F9FA|#FFFFFF|#F0F2F5") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
+
                 }
                 if ($currentBg -match "#0E101A|#36393F|#0E0E10") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
@@ -1639,6 +1640,7 @@ function Update-AllUIElementsRecursively {
                 }
                 elseif ($currentForeground -match "#A9A5D9|#A6AACF|#B8B8B8|#777EA6888|#6C757D|#8B949E") {
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.TextSecondary
+
                 }
                 elseif ($currentForeground -match "White|#FFFFFF|Black|#000000|#212529|#1C1E21") {
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
