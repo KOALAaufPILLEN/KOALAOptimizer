@@ -6409,6 +6409,8 @@ function Set-ActiveNavigationButton {
             Get-ThemeColors -ThemeName $CurrentTheme
         }
 
+        $colors = Normalize-ThemeColorTable $colors
+
         # Alle Navigation Buttons
 
         $navButtons = if ($global:NavigationButtonNames) {
@@ -6485,6 +6487,8 @@ function Set-ActiveAdvancedSectionButton {
             Get-ThemeColors -ThemeName $CurrentTheme
         }
 
+        $colors = Normalize-ThemeColorTable $colors
+
         $buttonMap = @{
             'Network'  = $btnAdvancedNetwork
             'System'   = $btnAdvancedSystem
@@ -6499,12 +6503,12 @@ function Set-ActiveAdvancedSectionButton {
 
             if ($key -eq $Section) {
                 $button.Tag = 'Selected'
-                $button.Background = $colors.SelectedBackground
-                $button.Foreground = $colors.SelectedForeground
+                Set-BrushPropertySafe -Target $button -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $button -Property 'Foreground' -Value $colors.SelectedForeground -AllowTransparentFallback
             } else {
                 $button.Tag = $null
-                $button.Background = $colors.UnselectedBackground
-                $button.Foreground = $colors.UnselectedForeground
+                Set-BrushPropertySafe -Target $button -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
+                Set-BrushPropertySafe -Target $button -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
             }
 
             $button.InvalidateVisual()
