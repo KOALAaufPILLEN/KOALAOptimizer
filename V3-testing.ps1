@@ -2280,14 +2280,15 @@ function Apply-ThemeColors {
             }
 
             $dashboardCards = @(
-                'heroCardProfiles',
-                'heroCardOptimizations',
-                'heroCardAutoMode',
+                'dashboardSummaryStrip',
                 'dashboardHeroCard',
+                'dashboardSummaryPanel',
                 'dashboardCpuCard',
                 'dashboardMemoryCard',
                 'dashboardActivityCard',
                 'dashboardHealthCard',
+                'dashboardQuickActionsCard',
+                'dashboardActionBar',
                 'dashboardGameProfileCard',
                 'dashboardGameListCard'
             )
@@ -5394,88 +5395,53 @@ $xamlContent = @'
               <ComboBox x:Name="cmbHeaderTheme" Style="{StaticResource ModernComboBox}" Width="220"/>
             </StackPanel>
             <Button x:Name="btnHeaderApplyTheme" Content="Apply theme" Width="120" Height="36" Style="{StaticResource SuccessButton}" FontSize="12"/>
-            <Button x:Name="btnSystemHealth" Content="View health detail" Width="170" Height="40" Style="{StaticResource ModernButton}"/>
           </StackPanel>
         </Grid>
       </Border>
-
-      <Grid Grid.Row="1" Margin="26,18,26,12">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*"/>
-          <ColumnDefinition Width="*"/>
-          <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Border x:Name="heroCardProfiles" Grid.Column="0" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,0,18,0">
-          <StackPanel Tag="Spacing:10">
-            <TextBlock Text="🎮" FontSize="26"/>
-            <TextBlock Text="Profiles ready" Style="{StaticResource SectionHeader}" FontSize="18"/>
-            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="28" Text="--"/>
-            <TextBlock Text="Configured libraries and detected games." Style="{StaticResource SectionSubtext}"/>
+      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
           </StackPanel>
-        </Border>
-        <Border x:Name="heroCardOptimizations" Grid.Column="1" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,0,18,0">
-          <StackPanel Tag="Spacing:10">
-            <TextBlock Text="🧰" FontSize="26"/>
-            <TextBlock Text="Optimizations applied" Style="{StaticResource SectionHeader}" FontSize="18"/>
-            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="28" Text="--"/>
-            <TextBlock Text="Latest tweaks and automation status." Style="{StaticResource SectionSubtext}"/>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
           </StackPanel>
-        </Border>
-        <Border x:Name="heroCardAutoMode" Grid.Column="2" Background="{DynamicResource HeroCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="22">
-          <StackPanel Tag="Spacing:10">
-            <TextBlock Text="🤖" FontSize="26"/>
-            <TextBlock Text="Auto mode" Style="{StaticResource SectionHeader}" FontSize="18"/>
-            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="28" Text="Off"/>
-            <TextBlock Text="Keep automation running even when minimized." Style="{StaticResource SectionSubtext}"/>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
           </StackPanel>
-        </Border>
-      </Grid>
-
+        </StackPanel>
+      </Border>
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
             <Border x:Name="dashboardHeroCard"
-                    Background="{DynamicResource HeroCardBrush}"
+                    Background="{DynamicResource CardBackgroundBrush}"
                     BorderBrush="{DynamicResource CardBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="16"
                     Padding="26">
               <Grid>
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="2.4*"/>
                   <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Tag="Spacing:12">
-                  <TextBlock Text="System optimization status" Style="{StaticResource SectionHeader}" FontSize="20"/>
-                  <TextBlock x:Name="lblHeaderSystemStatus" Text="Optimized" Style="{StaticResource SectionHeader}" FontSize="28"/>
-                  <TextBlock Text="KOALA keeps your PC lean with smart maintenance, clean logging and one-click fixes." Style="{StaticResource SectionSubtext}"/>
-                  <WrapPanel Margin="0,6,0,0" ItemHeight="28">
-                    <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="10,4" Margin="0,0,10,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                      <StackPanel Orientation="Horizontal" Tag="Spacing:6">
-                        <TextBlock Text="🧠" FontSize="13"/>
-                        <TextBlock Text="Adaptive tuning" Style="{StaticResource SectionSubtext}"/>
-                      </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="14" Padding="10,4" Margin="0,0,10,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                      <StackPanel Orientation="Horizontal" Tag="Spacing:6">
-                        <TextBlock Text="🔄" FontSize="13"/>
-                        <TextBlock Text="Auto restore points" Style="{StaticResource SectionSubtext}"/>
-                      </StackPanel>
-                    </Border>
-                  </WrapPanel>
+
+                  <TextBlock Text="System ready" Style="{StaticResource SectionHeader}" FontSize="20"/>
+                  <TextBlock x:Name="lblHeaderSystemStatus" Text="Stable" Style="{StaticResource SectionHeader}" FontSize="28"/>
+                  <TextBlock Text="KOALA keeps your PC lean with smart maintenance, clean logging and one-click fixes to ensure optimal gaming performance." Style="{StaticResource SectionSubtext}"/>
+                  <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+                    <TextBlock Text="Last run:" Style="{StaticResource SectionSubtext}"/>
+                    <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                  </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Tag="Spacing:12">
-                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="Last run" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock x:Name="lblHeaderLastRun" Text="Never" Style="{StaticResource MetricValue}" FontSize="22"/>
-                    </StackPanel>
-                  </Border>
-                  <Border Background="{DynamicResource ContentBackgroundBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="Optimization log" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock Text="View latest actions in the activity log below." Style="{StaticResource SectionSubtext}"/>
-                    </StackPanel>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Tag="Spacing:12">
+                  <Button x:Name="btnSystemHealth" Content="View health detail" Width="200" Height="40" Style="{StaticResource ModernButton}"/>
+                  <Border Background="{DynamicResource HeroChipBrush}" CornerRadius="12" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Right">
+                    <TextBlock Text="Admin status: All optimizations available" Style="{StaticResource SectionSubtext}"/>
                   </Border>
                 </StackPanel>
               </Grid>
@@ -5488,58 +5454,46 @@ $xamlContent = @'
                     CornerRadius="12"
                     Padding="24">
               <StackPanel Tag="Spacing:18">
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                  </Grid.ColumnDefinitions>
-                  <StackPanel>
-                    <TextBlock Text="System summary" Style="{StaticResource SectionHeader}" FontSize="18"/>
-                    <TextBlock Text="Realtime metrics and health status." Style="{StaticResource SectionSubtext}"/>
-                  </StackPanel>
-                </Grid>
-                <Grid Tag="ColumnSpacing:16">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border x:Name="dashboardCpuCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                  <StackPanel Tag="Spacing:6">
-                    <TextBlock Text="CPU load" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-                    <TextBlock x:Name="lblDashCpuUsage" Style="{StaticResource MetricValue}" Text="--%"/>
-                    <TextBlock Text="Realtime usage of each core." Style="{StaticResource SectionSubtext}"/>
-                  </StackPanel>
-                </Border>
-                <Border x:Name="dashboardMemoryCard" Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                  <StackPanel Tag="Spacing:6">
-                    <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-                    <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="{DynamicResource AccentBrush}"/>
-                    <TextBlock Text="Track system memory consumption." Style="{StaticResource SectionSubtext}"/>
-                  </StackPanel>
-                </Border>
-                <Border x:Name="dashboardActivityCard" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                  <StackPanel Tag="Spacing:6">
-                    <TextBlock Text="Session" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-                    <TextBlock Text="Active games" Style="{StaticResource SectionSubtext}"/>
-                    <TextBlock x:Name="lblDashActiveGames" Style="{StaticResource MetricValue}" Text="None"/>
-                    <Separator Margin="0,4" Background="{DynamicResource CardBorderBrush}" Height="1"/>
-                    <TextBlock Text="Last optimization" Style="{StaticResource SectionSubtext}"/>
-                    <TextBlock x:Name="lblDashLastOptimization" Style="{StaticResource SectionSubtext}" FontSize="13" Text="Never"/>
-                  </StackPanel>
-                </Border>
-                <Border x:Name="dashboardHealthCard" Grid.Column="3" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                  <StackPanel Tag="Spacing:8">
-                    <TextBlock Text="System health" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-                    <TextBlock x:Name="lblDashSystemHealth" Style="{StaticResource MetricValue}" Text="Not run"/>
-                    <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-                      <Button x:Name="btnSystemHealthRunCheck" Content="Run" Width="72" Height="30" Style="{StaticResource SuccessButton}" FontSize="12"/>
-                      <Button x:Name="btnBenchmark" Content="Benchmark" Width="100" Height="30" Style="{StaticResource WarningButton}" FontSize="12"/>
+                <StackPanel>
+                  <TextBlock Text="System summary" Style="{StaticResource SectionHeader}" FontSize="18"/>
+                  <TextBlock Text="Realtime metrics and health status." Style="{StaticResource SectionSubtext}"/>
+                </StackPanel>
+                <UniformGrid Rows="1" Columns="4" Margin="0,4,0,0">
+                  <Border x:Name="dashboardCpuCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,12,0">
+                    <StackPanel Tag="Spacing:6">
+                      <TextBlock Text="CPU load" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                      <TextBlock x:Name="lblDashCpuUsage" Style="{StaticResource MetricValue}" Text="--%"/>
+                      <TextBlock Text="Realtime usage of each core." Style="{StaticResource SectionSubtext}"/>
                     </StackPanel>
-                  </StackPanel>
-                </Border>
-                </Grid>
+                  </Border>
+                  <Border x:Name="dashboardMemoryCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12,0">
+                    <StackPanel Tag="Spacing:6">
+                      <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                      <TextBlock x:Name="lblDashMemoryUsage" Style="{StaticResource MetricValue}" Text="-- / -- GB" Foreground="{DynamicResource AccentBrush}"/>
+                      <TextBlock Text="Track system memory consumption." Style="{StaticResource SectionSubtext}"/>
+                    </StackPanel>
+                  </Border>
+                  <Border x:Name="dashboardActivityCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12,0">
+                    <StackPanel Tag="Spacing:6">
+                      <TextBlock Text="Session" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                      <TextBlock Text="Active games" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock x:Name="lblDashActiveGames" Style="{StaticResource MetricValue}" Text="None"/>
+                      <Separator Margin="0,4" Background="{DynamicResource CardBorderBrush}" Height="1"/>
+                      <TextBlock Text="Last optimization" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock x:Name="lblDashLastOptimization" Style="{StaticResource SectionSubtext}" FontSize="13" Text="Never"/>
+                    </StackPanel>
+                  </Border>
+                  <Border x:Name="dashboardHealthCard" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12,0,0,0">
+                    <StackPanel Tag="Spacing:8">
+                      <TextBlock Text="System health" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+                      <TextBlock x:Name="lblDashSystemHealth" Style="{StaticResource MetricValue}" Text="Not run"/>
+                      <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+                        <Button x:Name="btnSystemHealthRunCheck" Content="Run" Width="72" Height="30" Style="{StaticResource SuccessButton}" FontSize="12"/>
+                        <Button x:Name="btnBenchmark" Content="Benchmark" Width="100" Height="30" Style="{StaticResource WarningButton}" FontSize="12"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </UniformGrid>
               </StackPanel>
             </Border>
 
@@ -5559,6 +5513,23 @@ $xamlContent = @'
                 </WrapPanel>
                 <CheckBox x:Name="chkDashAutoOptimize" Content="Keep auto optimization enabled" Style="{StaticResource ModernCheckBox}"/>
                 <TextBlock Text="Tip: Enable auto optimization so KOALA refreshes your tweaks whenever Windows starts." Style="{StaticResource SectionSubtext}"/>
+              </StackPanel>
+            </Border>
+
+            <Border x:Name="dashboardActionBar"
+                    Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="18">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Tag="Spacing:12">
+                <Button x:Name="btnExportConfigMain" Content="Export config" Width="140" Height="38" Style="{StaticResource ModernButton}"/>
+                <Button x:Name="btnImportConfigMain" Content="Import config" Width="140" Height="38" Style="{StaticResource ModernButton}"/>
+                <Button x:Name="btnBackupMain" Content="Backup" Width="120" Height="38" Style="{StaticResource ModernButton}"/>
+                <Button x:Name="btnApplyMain" Content="Apply all" Width="140" Height="44" Style="{StaticResource SuccessButton}" FontSize="16"/>
+                <Button x:Name="btnRevertMain" Content="Revert all" Width="140" Height="44" Style="{StaticResource DangerButton}" FontSize="16"/>
+                <Button x:Name="btnApply" Visibility="Collapsed" Width="0" Height="0"/>
+                <Button x:Name="btnRevert" Visibility="Collapsed" Width="0" Height="0"/>
               </StackPanel>
             </Border>
 
@@ -6033,27 +6004,7 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </ScrollViewer>
-
-      <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16">
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-          </Grid.ColumnDefinitions>
-          <StackPanel Grid.Column="0" Orientation="Horizontal" Tag="Spacing:12">
-            <Button x:Name="btnExportConfigMain" Content="Export config" Width="140" Height="38" Style="{StaticResource ModernButton}"/>
-            <Button x:Name="btnImportConfigMain" Content="Import config" Width="140" Height="38" Style="{StaticResource ModernButton}"/>
-            <Button x:Name="btnBackupMain" Content="Backup" Width="120" Height="38" Style="{StaticResource ModernButton}"/>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:12">
-            <Button x:Name="btnApplyMain" Content="Apply all" Width="140" Height="44" Style="{StaticResource SuccessButton}" FontSize="16"/>
-            <Button x:Name="btnRevertMain" Content="Revert all" Width="140" Height="44" Style="{StaticResource DangerButton}" FontSize="16"/>
-            <Button x:Name="btnApply" Visibility="Collapsed" Width="0" Height="0"/>
-            <Button x:Name="btnRevert" Visibility="Collapsed" Width="0" Height="0"/>
-          </StackPanel>
-        </Grid>
-      </Border>
-
+      <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
       <Border Grid.Row="4" x:Name="activityLogBorder" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Margin="26,18,26,24" Padding="22">
         <Grid>
           <Grid.RowDefinitions>
