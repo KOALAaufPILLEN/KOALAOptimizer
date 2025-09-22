@@ -453,8 +453,8 @@ function Ensure-NavigationVisibility {
 
                     # Ensure proper styling
                     if (-not $button.Style) {
-                        $button.Background = '#2F285A'
-                        $button.Foreground = '#F5F3FF'
+                        Set-BrushPropertySafe -Target $button -Property 'Background' -Value '#2F285A'
+                        Set-BrushPropertySafe -Target $button -Property 'Foreground' -Value '#F5F3FF'
                         $button.BorderThickness = '0'
                         $button.Margin = '0,2'
                         $button.Padding = '15,10'
@@ -1994,11 +1994,13 @@ function Update-TextStyles {
         foreach ($textBlock in $textBlocks) {
             if ($textBlock.Tag -eq 'AccentText') { continue }
 
-            if ($textBlock.Style -eq $form.Resources['HeaderText']) {
-                $textBlock.Foreground = $Header
+            $targetColor = if ($textBlock.Style -eq $form.Resources['HeaderText']) {
+                $Header
             } else {
-                $textBlock.Foreground = $Foreground
+                $Foreground
             }
+
+            Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $targetColor
 
             try {
                 if (-not $textBlock.FontSize -or $textBlock.FontSize -lt 11) {
@@ -2008,7 +2010,7 @@ function Update-TextStyles {
                 if ($isLight) {
                     $textBlock.FontWeight = 'Normal'
                     if ($textBlock.Text -and $textBlock.Text.Length -gt 50) {
-                        $textBlock.Foreground = $colors.TextSecondary
+                        Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $colors.TextSecondary
                     }
                 }
             } catch {
@@ -2020,7 +2022,7 @@ function Update-TextStyles {
     Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Label' -Collection ([ref]$labels)
 
         foreach ($label in $labels) {
-            $label.Foreground = $Foreground
+            Set-BrushPropertySafe -Target $label -Property 'Foreground' -Value $Foreground
             try {
                 if (-not $label.FontSize -or $label.FontSize -lt 11) {
                     $label.FontSize = 11
@@ -2489,16 +2491,18 @@ function Apply-ThemeColors {
                     }
 
                     if ($backgroundBrush) {
-                        $form.Background = $backgroundBrush.Clone()
+                        Set-BrushPropertySafe -Target $form -Property 'Background' -Value $backgroundBrush
                     } else {
                         try {
                             $converter = New-Object System.Windows.Media.BrushConverter
                             $converted = $converter.ConvertFromString($colors.Background)
                             if ($converted) {
-                                $form.Background = $converted
+                                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $converted
+                            } else {
+                                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
                             }
                         } catch {
-                            $form.Background = $colors.Background
+                            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
                         }
                     }
                 } catch {
@@ -3068,7 +3072,7 @@ function Update-SystemHealthSummary {
         if ($lblDashSystemHealth) {
             $lblDashSystemHealth.Dispatcher.Invoke([Action]{
                 $lblDashSystemHealth.Text = $text
-                $lblDashSystemHealth.Foreground = $foreground
+                Set-BrushPropertySafe -Target $lblDashSystemHealth -Property 'Foreground' -Value $foreground
             })
         }
     } catch {
