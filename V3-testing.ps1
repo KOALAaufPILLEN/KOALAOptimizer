@@ -251,7 +251,6 @@ $script:BrushResourceKeys = @(
     'DialogBackgroundBrush'
 )
 
-
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
 $global:CustomThemeColors = $null
 
@@ -2472,6 +2471,16 @@ function Apply-ThemeColors {
                 } else {
                     Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
                 }
+            }
+
+            Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
+
+            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
+            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
+            try {
+                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
+            } catch {
+                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
             }
 
             Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
@@ -5628,6 +5637,23 @@ $xamlContent = @'
             <Button x:Name="btnHeaderApplyTheme" Content="Apply theme" Width="120" Height="36" Style="{StaticResource SuccessButton}" FontSize="12"/>
           </StackPanel>
         </Grid>
+      </Border>
+      
+      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
       </Border>
 
       <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
