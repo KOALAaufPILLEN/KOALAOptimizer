@@ -223,6 +223,33 @@ try {
     $script:SharedBrushConverter = $null
 }
 
+$script:BrushResourceKeys = @(
+    'AppBackgroundBrush'
+    'SidebarBackgroundBrush'
+    'SidebarAccentBrush'
+    'SidebarHoverBrush'
+    'SidebarSelectedBrush'
+    'SidebarSelectedForegroundBrush'
+    'HeaderBackgroundBrush'
+    'HeaderBorderBrush'
+    'CardBackgroundBrush'
+    'ContentBackgroundBrush'
+    'CardBorderBrush'
+    'HeroCardBrush'
+    'AccentBrush'
+    'PrimaryTextBrush'
+    'SecondaryTextBrush'
+    'SuccessBrush'
+    'WarningBrush'
+    'DangerBrush'
+    'InfoBrush'
+    'ButtonBackgroundBrush'
+    'ButtonBorderBrush'
+    'ButtonHoverBrush'
+    'ButtonPressedBrush'
+    'HeroChipBrush'
+    'DialogBackgroundBrush'
+)
 
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
 $global:CustomThemeColors = $null
@@ -1322,6 +1349,56 @@ function Set-BrushPropertySafe {
     }
 }
 
+function Normalize-BrushResources {
+    param(
+        [System.Windows.ResourceDictionary]$Resources,
+        [string[]]$Keys,
+        [switch]$AllowTransparentFallback
+    )
+
+    if (-not $Resources) { return }
+
+    $targetKeys = @()
+    if ($Keys -and $Keys.Count -gt 0) {
+        $targetKeys = $Keys
+    } else {
+        $targetKeys = @($Resources.Keys)
+    }
+
+    foreach ($key in $targetKeys) {
+        if (-not $Resources.Contains($key)) { continue }
+
+        $resourceValue = $Resources[$key]
+        if ($resourceValue -is [System.Windows.Media.Brush]) { continue }
+
+        $normalizedBrush = Resolve-BrushInstance $resourceValue
+        if (-not $normalizedBrush) {
+            $colorString = Get-ColorStringFromValue $resourceValue
+            if (-not [string]::IsNullOrWhiteSpace($colorString)) {
+                $normalizedBrush = New-SolidColorBrushSafe $colorString
+            }
+        }
+
+        if (-not $normalizedBrush -and $AllowTransparentFallback) {
+            $normalizedBrush = [System.Windows.Media.Brushes]::Transparent
+        }
+
+        if ($normalizedBrush -is [System.Windows.Media.Brush]) {
+            if ($normalizedBrush -is [System.Windows.Freezable] -and $normalizedBrush.IsFrozen) {
+                try { $Resources[$key] = $normalizedBrush.Clone() } catch { $Resources[$key] = $normalizedBrush }
+            } else {
+                $Resources[$key] = $normalizedBrush
+            }
+        } elseif ($resourceValue -is [System.Management.Automation.PSObject]) {
+            if ($AllowTransparentFallback) {
+                $Resources[$key] = [System.Windows.Media.Brushes]::Transparent
+            } else {
+                Write-Verbose "Normalize-BrushResources skipped '$key' due to unresolved brush value"
+            }
+        }
+    }
+}
+
 # ---------- Theme and Styling Helpers (moved forward for availability) ----------
 function Find-AllControlsOfType {
     param(
@@ -1968,6 +2045,8 @@ function Update-AllUIElementsRecursively {
               }
           }
 
+          Normalize-BrushResources -Resources $form.Resources -Keys @('ButtonBackgroundBrush','ButtonBorderBrush','ButtonHoverBrush','ButtonPressedBrush') -AllowTransparentFallback
+
       } catch {
           $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
           Log $errorMessage 'Warning'
@@ -2304,21 +2383,9 @@ function Apply-ThemeColors {
                 } else {
                     Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
                 }
-
-                if ($brush -is [System.Windows.Media.Brush]) {
-                    try { $form.Resources[$resourceKey] = $brush } catch { Write-Verbose "Resource brush '$resourceKey' could not be updated: $($_.Exception.Message)" }
-                } else {
-                    Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
-                }
             }
 
-            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
-            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
-            try {
-                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
-            } catch {
-                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
-            }
+            Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
 
             $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
             if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
@@ -5506,6 +5573,23 @@ $xamlContent = @'
         </StackPanel>
       </Border>
 
+      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -13769,6 +13853,7 @@ Start-PerformanceMonitoring
 Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
 
 # Show the form
+Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
 try {
     $form.ShowDialog() | Out-Null
 } catch {
