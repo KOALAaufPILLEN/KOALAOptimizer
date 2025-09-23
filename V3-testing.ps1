@@ -219,7 +219,7 @@ $global:LastOptimizationTime = $null  # Track when optimizations were last appli
 function Set-BorderBrushSafe {
     param(
         [System.Windows.FrameworkElement]$Element,
-        [string]$BorderBrushValue,
+        [object]$BorderBrushValue,
         [string]$BorderThicknessValue = $null
     )
 
@@ -2471,7 +2471,7 @@ function Apply-ThemeColors {
 
         $mainScroll = $form.FindName('MainScrollViewer')
         if ($mainScroll -is [System.Windows.Controls.ScrollViewer]) {
-            try { $mainScroll.Background = [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
+            try { Set-BrushPropertySafe -Target $mainScroll -Property 'Background' -Value [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
         }
 
         try {
@@ -4048,11 +4048,11 @@ function Update-DashboardMetrics {
 
                 # Color coding based on CpuUsage and MemoryUsagePercent for dynamic metrics display
                 if ($metrics.CpuUsage -ge 80) {
-                    $lblDashCpuUsage.Foreground = "#FF4444"  # Red for high
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
                 } elseif ($metrics.CpuUsage -ge 60) {
-                    $lblDashCpuUsage.Foreground = "#A78BFA"  # Purple for medium load
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium load
                 } else {
-                    $lblDashCpuUsage.Foreground = "#8F6FFF"  # Accent for low load
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for low load
                 }
             })
         }
@@ -4064,11 +4064,11 @@ function Update-DashboardMetrics {
 
                 # Color coding based on percentage
                 if ($metrics.MemoryUsagePercent -ge 85) {
-                    $lblDashMemoryUsage.Foreground = "#FF4444"  # Red for high
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
                 } elseif ($metrics.MemoryUsagePercent -ge 70) {
-                    $lblDashMemoryUsage.Foreground = "#A78BFA"  # Purple for medium
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium
                 } else {
-                    $lblDashMemoryUsage.Foreground = "#8F6FFF"  # Accent for normal
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for normal
                 }
             })
         }
@@ -4097,10 +4097,10 @@ function Update-DashboardMetrics {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($metrics.ActiveGamesCount -gt 0) {
                     $lblDashActiveGames.Text = "$($metrics.ActiveGamesCount) running"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"  # Accent for active games
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'  # Accent for active games
                 } else {
                     $lblDashActiveGames.Text = "None detected"
-                    $lblDashActiveGames.Foreground = "#A6AACF"  # Default color
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'  # Default color
                 }
             })
         }
@@ -4122,13 +4122,13 @@ function Update-DashboardMetrics {
             $lblHeaderSystemStatus.Dispatcher.Invoke([Action]{
                 if ($metrics.CpuUsage -ge 80 -or $metrics.MemoryUsagePercent -ge 85) {
                     $lblHeaderSystemStatus.Text = 'High Load'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::Salmon
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::Salmon
                 } elseif ($metrics.CpuUsage -ge 60 -or $metrics.MemoryUsagePercent -ge 70) {
                     $lblHeaderSystemStatus.Text = 'Monitoring'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::Gold
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::Gold
                 } else {
                     $lblHeaderSystemStatus.Text = 'Stable'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::LightGreen
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::LightGreen
                 }
             })
         }
@@ -4305,10 +4305,10 @@ function Update-ActiveGamesTracking {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($currentGames.Count -gt 0) {
                     $lblDashActiveGames.Text = "$($currentGames.Count) active"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
                 } else {
                     $lblDashActiveGames.Text = "None active"
-                    $lblDashActiveGames.Foreground = "#A6AACF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
                 }
             })
         }
@@ -4525,7 +4525,7 @@ function Stop-GameDetectionMonitoring {
         if ($lblDashActiveGames) {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 $lblDashActiveGames.Text = "None detected"
-                $lblDashActiveGames.Foreground = "#A6AACF"
+                Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
             })
         }
     } catch {
@@ -7528,7 +7528,7 @@ $headerItem.Content = "--- COMPETITIVE SHOOTERS ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege')) {
@@ -7546,7 +7546,7 @@ $headerItem.Content = "--- BATTLE ROYALE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('fortnite', 'apexlegends', 'pubg', 'warzone')) {
@@ -7564,7 +7564,7 @@ $headerItem.Content = "--- MULTIPLAYER ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('lol', 'rocketleague', 'dota2', 'gta5')) {
@@ -7582,7 +7582,7 @@ $headerItem.Content = "--- AAA TITLES ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077')) {
@@ -7600,7 +7600,7 @@ $headerItem.Content = "--- SURVIVAL & MORE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in $GameProfiles.Keys | Where-Object { $_ -notin @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege', 'fortnite', 'apexlegends', 'pubg', 'warzone', 'lol', 'rocketleague', 'dota2', 'gta5', 'hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077') }) {
@@ -8287,7 +8287,7 @@ function Search-GamesForPanel {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Searching for installed games with advanced detection..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF' } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8411,7 +8411,7 @@ function Search-GamesForPanel {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "✅ Found $($foundGames.Count) installed games:"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.Margin = "0,0,0,10"
             $gameListPanel.Children.Add($headerText)
@@ -8419,9 +8419,9 @@ function Search-GamesForPanel {
             # Add games with checkboxes
             foreach ($game in $foundGames) {
                 $gameContainer = New-Object System.Windows.Controls.Border
-                $gameContainer.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gameContainer -Property 'Background' -Value '#14132B'
                 try {
-                    $gameContainer.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gameContainer -Property 'BorderBrush' -Value '#2F285A'
                     $gameContainer.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8443,13 +8443,13 @@ function Search-GamesForPanel {
 
                 $gameNameText = New-Object System.Windows.Controls.TextBlock
                 $gameNameText.Text = $game.Name
-                $gameNameText.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $gameNameText -Property 'Foreground' -Value '#8F6FFF'
                 $gameNameText.FontWeight = "Bold"
                 $gameNameText.FontSize = "12"
 
                 $gamePathText = New-Object System.Windows.Controls.TextBlock
                 $gamePathText.Text = $game.Path
-                $gamePathText.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gamePathText -Property 'Foreground' -Value '#A9A5D9'
                 $gamePathText.FontSize = "10"
                 $gamePathText.TextWrapping = "Wrap"
 
@@ -8472,7 +8472,7 @@ function Search-GamesForPanel {
             # No games found
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "❌ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
-            $noGamesText.Foreground = "#FFB86C"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#FFB86C'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.TextAlignment = "Center"
@@ -8488,7 +8488,7 @@ function Search-GamesForPanel {
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
         $errorText.Text = "❌ Error searching for games: $($_.Exception.Message)"
-        $errorText.Foreground = "#FF6B6B"
+        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
         $errorText.TextWrapping = "Wrap"
@@ -8509,7 +8509,7 @@ function Search-CustomFoldersForExecutables {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Scanning custom folders for .exe files..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF' } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8580,7 +8580,7 @@ function Search-CustomFoldersForExecutables {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 12
             $headerText.Margin = "0,0,0,8"
@@ -8593,9 +8593,9 @@ function Search-CustomFoldersForExecutables {
             foreach ($executable in $foundExecutables) {
                 # Create container border
                 $border = New-Object System.Windows.Controls.Border
-                $border.Background = "#14132B"
+                Set-BrushPropertySafe -Target $border -Property 'Background' -Value '#14132B'
                 try {
-                    $border.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $border -Property 'BorderBrush' -Value '#2F285A'
                     $border.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8608,7 +8608,7 @@ function Search-CustomFoldersForExecutables {
                 # Create checkbox for selection
                 $checkbox = New-Object System.Windows.Controls.CheckBox
                 $checkbox.Content = $executable.Name
-                $checkbox.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $checkbox -Property 'Foreground' -Value '#F5F3FF'
                 $checkbox.FontWeight = "SemiBold"
                 $checkbox.Tag = $executable.Path  # Store full path for optimization
                 $stackPanel.Children.Add($checkbox)
@@ -8616,14 +8616,14 @@ function Search-CustomFoldersForExecutables {
                 # Add details
                 $detailsText = New-Object System.Windows.Controls.TextBlock
                 $detailsText.Text = "🔍 $($executable.Details)"
-                $detailsText.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $detailsText -Property 'Foreground' -Value '#A9A5D9'
                 $detailsText.FontSize = 10
                 $detailsText.Margin = "20,2,0,0"
                 $stackPanel.Children.Add($detailsText)
 
                 $fileDetailsText = New-Object System.Windows.Controls.TextBlock
                 $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
-                $fileDetailsText.Foreground = "#7D7EB0"
+                Set-BrushPropertySafe -Target $fileDetailsText -Property 'Foreground' -Value '#7D7EB0'
                 $fileDetailsText.FontSize = 9
                 $fileDetailsText.Margin = "20,1,0,0"
                 $stackPanel.Children.Add($fileDetailsText)
@@ -8638,7 +8638,7 @@ function Search-CustomFoldersForExecutables {
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
             $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
-            $noExecutablesText.Foreground = "#FF6B6B"
+            Set-BrushPropertySafe -Target $noExecutablesText -Property 'Foreground' -Value '#FF6B6B'
             $noExecutablesText.HorizontalAlignment = "Center"
             $noExecutablesText.Margin = "0,20"
             $noExecutablesText.TextWrapping = "Wrap"
@@ -8652,7 +8652,7 @@ function Search-CustomFoldersForExecutables {
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
         $errorText.Text = "❌ Error searching custom folders: $($_.Exception.Message)"
-        $errorText.Foreground = "#FF6B6B"
+        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
         $errorText.TextWrapping = "Wrap"
@@ -10462,7 +10462,7 @@ if ($btnAutoDetect) {
             if ($lblDashActiveGames) {
                 $lblDashActiveGames.Dispatcher.Invoke([Action]{
                     $lblDashActiveGames.Text = "$($detectedGames.Count) running"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
                 })
             }
 
@@ -10500,7 +10500,7 @@ if ($btnAutoDetect) {
         if ($lblDashActiveGames) {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 $lblDashActiveGames.Text = "None detected"
-                $lblDashActiveGames.Foreground = "#A6AACF"
+                Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
             })
         }
     }
@@ -11816,7 +11816,7 @@ function Start-CustomFolderOnlySearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching '$FolderPath' for all executables (.exe)..."
-        $loadingText.Foreground = "#8F6FFF"
+        Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF'
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -11861,7 +11861,7 @@ function Start-CustomFolderOnlySearch {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($foundExecutables.Count) Executables in '$([System.IO.Path]::GetFileName($FolderPath))'"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -11870,9 +11870,9 @@ function Start-CustomFolderOnlySearch {
             # Add each executable with optimization option
             foreach ($executable in $foundExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
                 try {
-                    $gamePanel.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -11890,14 +11890,14 @@ function Start-CustomFolderOnlySearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $executable.Name
-                $gameName.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $gameName -Property 'Foreground' -Value '#F5F3FF'
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 $($executable.Path)`n📊 Size: $($executable.Size) MB | 📅 Modified: $($executable.LastModified)"
-                $gameDetails.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gameDetails -Property 'Foreground' -Value '#A9A5D9'
                 $gameDetails.FontSize = 10
                 $gameDetails.TextWrapping = "Wrap"
                 $gameInfo.Children.Add($gameDetails)
@@ -11942,7 +11942,7 @@ function Start-CustomFolderOnlySearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files (.exe) found in the selected folder.`n`nTip: Make sure the folder contains game installations or executable files."
-            $noGamesText.Foreground = "#7D7EB0"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#7D7EB0'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.TextAlignment = "Center"
@@ -12054,7 +12054,7 @@ function Start-AllCustomFoldersSearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching all custom folders for executables..."
-        $loadingText.Foreground = "#8F6FFF"
+        Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF'
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -12091,7 +12091,7 @@ function Start-AllCustomFoldersSearch {
         if ($allExecutables.Count -gt 0) {
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($allExecutables.Count) Executables in Custom Folders"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -12099,9 +12099,9 @@ function Start-AllCustomFoldersSearch {
 
             foreach ($exe in $allExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
                 try {
-                    $gamePanel.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -12118,14 +12118,14 @@ function Start-AllCustomFoldersSearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $exe.Name
-                $gameName.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $gameName -Property 'Foreground' -Value '#F5F3FF'
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 From: $($exe.Folder) | 📊 $($exe.Size) MB | 📅 $($exe.LastModified)"
-                $gameDetails.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gameDetails -Property 'Foreground' -Value '#A9A5D9'
                 $gameDetails.FontSize = 10
                 $gameInfo.Children.Add($gameDetails)
 
@@ -12160,7 +12160,7 @@ function Start-AllCustomFoldersSearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files found in custom folders."
-            $noGamesText.Foreground = "#7D7EB0"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#7D7EB0'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.Margin = "0,20"
@@ -12969,7 +12969,7 @@ function Initialize-Application {
             # Administrator mode - full access
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Administrator Mode"
-                $lblAdminStatus.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "All optimizations available"
@@ -12988,7 +12988,7 @@ function Initialize-Application {
             # Limited mode - some restrictions
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Limited Mode"
-                $lblAdminStatus.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "Some optimizations require administrator privileges"
