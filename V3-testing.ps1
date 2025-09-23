@@ -340,7 +340,13 @@ $global:ThemeDefinitions = @{
     }
 }
 
-$script:SharedBrushConverter = $null
+# Pre-instantiate the shared brush converter so later theming fallbacks never
+# leave string literals or PSObject wrappers parked in resource dictionaries.
+try {
+    $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
+} catch {
+    $script:SharedBrushConverter = $null
+}
 
 
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
@@ -1222,6 +1228,18 @@ function New-SolidColorBrushSafe {
     }
 }
 
+function Get-SharedBrushConverter {
+    if (-not $script:SharedBrushConverter -or $script:SharedBrushConverter.GetType().FullName -ne 'System.Windows.Media.BrushConverter') {
+        try {
+            $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
+        } catch {
+            $script:SharedBrushConverter = $null
+        }
+    }
+
+    return $script:SharedBrushConverter
+}
+
 function Set-ShapeFillSafe {
     param(
         [object]$Shape,
@@ -1307,38 +1325,49 @@ function Set-BrushPropertySafe {
         }
 
         if (-not [string]::IsNullOrWhiteSpace($colorString)) {
-            try {
-                if (-not $script:SharedBrushConverter) {
-                    $script:SharedBrushConverter = New-Object System.Windows.Media.BrushConverter
-                }
-
-                $converted = $script:SharedBrushConverter.ConvertFromString($colorString)
-                $previousConverted = $null
-                while ($converted -is [System.Management.Automation.PSObject] -and $converted -ne $previousConverted) {
-                    $previousConverted = $converted
-                    $converted = $converted.PSObject.BaseObject
-                }
-
-                if ($converted -is [System.Windows.Media.Brush]) {
-                    if ($converted -is [System.Windows.Freezable] -and $converted.IsFrozen) {
-                        $Target.$Property = $converted.Clone()
-                    } else {
-                        $Target.$Property = $converted
+            $converter = Get-SharedBrushConverter
+            if ($converter) {
+                try {
+                    $converted = $converter.ConvertFromString($colorString)
+                    $previousConverted = $null
+                    while ($converted -is [System.Management.Automation.PSObject] -and $converted -ne $previousConverted) {
+                        $previousConverted = $converted
+                        $converted = $converted.PSObject.BaseObject
                     }
-                    return
+
+                    if ($converted -is [System.Windows.Media.Brush]) {
+                        if ($converted -is [System.Windows.Freezable] -and $converted.IsFrozen) {
+                            $Target.$Property = $converted.Clone()
+                        } else {
+                            $Target.$Property = $converted
+                        }
+                        return
+                    }
+                } catch {
+                    Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
                 }
-            } catch {
-                Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
             }
 
-            $Target.$Property = $colorString
-            return
+            $fallbackBrush = New-SolidColorBrushSafe $colorString
+            if ($fallbackBrush -is [System.Windows.Media.Brush]) {
+                if ($fallbackBrush -is [System.Windows.Freezable] -and $fallbackBrush.IsFrozen) {
+                    $Target.$Property = $fallbackBrush.Clone()
+                } else {
+                    $Target.$Property = $fallbackBrush
+                }
+                return
+            }
         }
 
         if ($AllowTransparentFallback) {
-            $Target.$Property = 'Transparent'
+            $transparentBrush = [System.Windows.Media.Brushes]::Transparent
+            if ($transparentBrush -is [System.Windows.Freezable] -and $transparentBrush.IsFrozen) {
+                $Target.$Property = $transparentBrush.Clone()
+            } else {
+                $Target.$Property = $transparentBrush
+            }
         } else {
-            $Target.$Property = $null
+            try { $Target.$Property = $null } catch { }
         }
     } catch {
         Write-Verbose "Set-BrushPropertySafe failed for property '$Property' on $($Target.GetType().Name): $($_.Exception.Message)"
@@ -1880,12 +1909,14 @@ function Update-AllUIElementsRecursively {
 
               try {
                   if (-not $brushConverter) {
-                      $brushConverter = New-Object System.Windows.Media.BrushConverter
+                      $brushConverter = Get-SharedBrushConverter
                   }
 
-                  $converted = $brushConverter.ConvertFromString($colorString)
-                  if ($converted -and (& $assignBrush $key $converted)) {
-                      return
+                  if ($brushConverter) {
+                      $converted = $brushConverter.ConvertFromString($colorString)
+                      if ($converted -and (& $assignBrush $key $converted)) {
+                          return
+                      }
                   }
               } catch {
                   # fall through to safe brush creation
@@ -1896,7 +1927,7 @@ function Update-AllUIElementsRecursively {
                   return
               }
 
-              $form.Resources[$key] = $colorString
+              Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
           }
 
           & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
@@ -5424,6 +5455,7 @@ $xamlContent = @'
           </StackPanel>
         </Grid>
       </Border>
+      
       <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
@@ -5440,6 +5472,7 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </Border>
+
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6031,6 +6064,7 @@ $xamlContent = @'
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
+
       <Border Grid.Row="4" x:Name="activityLogBorder" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Margin="26,18,26,24" Padding="22">
         <Grid>
           <Grid.RowDefinitions>
