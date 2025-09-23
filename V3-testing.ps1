@@ -5300,6 +5300,7 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
+    
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5670,22 +5671,6 @@ $xamlContent = @'
         </StackPanel>
       </Border>
 
-      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
-          </StackPanel>
-        </StackPanel>
-      </Border>
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6085,17 +6070,9 @@ $xamlContent = @'
                       </Grid.ColumnDefinitions>
                       <TextBlock Text="Preset" VerticalAlignment="Center" Style="{StaticResource SectionSubtext}"/>
                       <ComboBox x:Name="cmbOptionsThemeMain" Grid.Column="1" Style="{StaticResource ModernComboBox}">
-                        <ComboBoxItem Content="Dark Purple" Tag="DarkPurple"/>
-                        <ComboBoxItem Content="GitHub Dark" Tag="GitHubDark"/>
-                        <ComboBoxItem Content="Light Mode" Tag="Light"/>
-                        <ComboBoxItem Content="YouTube" Tag="YouTube"/>
-                        <ComboBoxItem Content="Facebook" Tag="Facebook"/>
-                        <ComboBoxItem Content="Reddit" Tag="Reddit"/>
-                        <ComboBoxItem Content="Discord" Tag="Discord"/>
-                        <ComboBoxItem Content="Twitch" Tag="Twitch"/>
-                        <ComboBoxItem Content="Forest" Tag="Forest"/>
-                        <ComboBoxItem Content="Ocean" Tag="Ocean"/>
-                        <ComboBoxItem Content="PORNHUB" Tag="PORNHUB"/>
+                        <ComboBoxItem Content="Nebula Vortex" Tag="Nebula"/>
+                        <ComboBoxItem Content="Midnight Azure" Tag="Midnight"/>
+                        <ComboBoxItem Content="Lumen Daybreak" Tag="Lumen"/>
                         <ComboBoxItem Content="Custom" Tag="Custom"/>
                       </ComboBox>
                       <Button x:Name="btnOptionsApplyThemeMain" Grid.Column="2" Content="Apply" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="12"/>
@@ -7333,8 +7310,15 @@ if ($btnApplyCustomTheme) {
 
             if ($global:CustomThemeColors) {
                 foreach ($key in $validated.Keys) {
-                    $global:CustomThemeColors[$key] = $validated[$key]
+                    $converted = New-SolidColorBrushSafe $validated[$key]
+                    if ($converted -is [System.Windows.Media.Brush]) {
+                        $global:CustomThemeColors[$key] = $converted
+                    } else {
+                        $global:CustomThemeColors[$key] = $validated[$key]
+                    }
                 }
+
+                $global:CustomThemeColors = Normalize-ThemeColorTable $global:CustomThemeColors
             }
 
             [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
