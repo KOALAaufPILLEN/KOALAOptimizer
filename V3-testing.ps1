@@ -5424,7 +5424,6 @@ $xamlContent = @'
           </StackPanel>
         </Grid>
       </Border>
-
       <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
@@ -5441,7 +5440,6 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </Border>
-
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6033,7 +6031,6 @@ $xamlContent = @'
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
-
       <Border Grid.Row="4" x:Name="activityLogBorder" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Margin="26,18,26,24" Padding="22">
         <Grid>
           <Grid.RowDefinitions>
