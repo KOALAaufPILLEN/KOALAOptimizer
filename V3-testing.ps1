@@ -1399,6 +1399,94 @@ function Normalize-BrushResources {
     }
 }
 
+function Normalize-ElementBrushProperties {
+    param([System.Windows.DependencyObject]$Element)
+
+    if ($null -eq $Element) { return }
+
+    $brushPropertyNames = @(
+        'Background',
+        'Foreground',
+        'BorderBrush',
+        'SelectionBrush',
+        'CaretBrush',
+        'Stroke',
+        'Fill',
+        'OpacityMask',
+        'SelectionForeground',
+        'HighlightBrush'
+    )
+
+    foreach ($propertyName in $brushPropertyNames) {
+        try {
+            $propertyInfo = $Element.GetType().GetProperty($propertyName)
+        } catch {
+            $propertyInfo = $null
+        }
+
+        if (-not $propertyInfo -or -not $propertyInfo.CanRead -or -not $propertyInfo.CanWrite) { continue }
+
+        try {
+            $currentValue = $propertyInfo.GetValue($Element, $null)
+        } catch {
+            continue
+        }
+
+        if ($null -eq $currentValue) { continue }
+        if ($currentValue -is [System.Windows.Media.Brush]) { continue }
+
+        Set-BrushPropertySafe -Target $Element -Property $propertyName -Value $currentValue -AllowTransparentFallback
+    }
+}
+
+function Normalize-VisualTreeBrushes {
+    param([System.Windows.DependencyObject]$Root)
+
+    if ($null -eq $Root) { return }
+
+    $visited = New-Object 'System.Collections.Generic.HashSet[int]'
+    $stack = New-Object System.Collections.Stack
+    $stack.Push($Root)
+
+    while ($stack.Count -gt 0) {
+        $current = $stack.Pop()
+
+        if ($current -isnot [System.Windows.DependencyObject]) { continue }
+
+        try {
+            $hash = [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode($current)
+        } catch {
+            continue
+        }
+
+        if (-not $visited.Add($hash)) { continue }
+
+        Normalize-ElementBrushProperties -Element $current
+
+        $childCount = 0
+        try {
+            $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
+        } catch {
+            $childCount = 0
+        }
+
+        for ($i = 0; $i -lt $childCount; $i++) {
+            $child = $null
+            try { $child = [System.Windows.Media.VisualTreeHelper]::GetChild($current, $i) } catch { $child = $null }
+            if ($child) { $stack.Push($child) }
+        }
+
+        try {
+            foreach ($logicalChild in [System.Windows.LogicalTreeHelper]::GetChildren($current)) {
+                if ($logicalChild -is [System.Windows.DependencyObject]) {
+                    $stack.Push($logicalChild)
+                }
+            }
+        } catch {
+        }
+    }
+}
+
 # ---------- Theme and Styling Helpers (moved forward for availability) ----------
 function Find-AllControlsOfType {
     param(
@@ -2395,6 +2483,16 @@ function Apply-ThemeColors {
                 $glowAccentColor = [System.Windows.Media.Colors]::Transparent
             }
 
+            Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
+
+            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
+            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
+            try {
+                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
+            } catch {
+                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
+            }
+
             $glowEffect = New-Object System.Windows.Media.Effects.DropShadowEffect
             $glowEffect.Color = $glowAccentColor
             $glowEffect.BlurRadius = if ($colors.ContainsKey('IsLight') -and $colors.IsLight) { 24 } else { 32 }
@@ -2673,6 +2771,8 @@ function Apply-ThemeColors {
         Update-ButtonStyles -Primary $colors.Primary -Hover $colors.Hover
         Update-ComboBoxStyles -Background $colors.Secondary -Foreground $colors.Text -Border $colors.Primary -ThemeName $appliedThemeName
         Update-TextStyles -Foreground $colors.Text -Header $colors.Accent -ThemeName $appliedThemeName
+
+        Normalize-VisualTreeBrushes -Root $form
 
     } catch {
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
@@ -5573,23 +5673,6 @@ $xamlContent = @'
         </StackPanel>
       </Border>
 
-      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
-          </StackPanel>
-        </StackPanel>
-      </Border>
-      
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -13853,6 +13936,7 @@ Start-PerformanceMonitoring
 Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
 
 # Show the form
+Normalize-VisualTreeBrushes -Root $form
 Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
 try {
     $form.ShowDialog() | Out-Null
