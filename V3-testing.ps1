@@ -196,6 +196,8 @@ try {
     return
 }
 
+$BrushConverter = New-Object System.Windows.Media.BrushConverter
+
 # ---------- Global Performance Variables ----------
 $global:PerformanceCounters = @{}
 $script:LocalizationResources = $null
@@ -217,7 +219,7 @@ $global:LastOptimizationTime = $null  # Track when optimizations were last appli
 function Set-BorderBrushSafe {
     param(
         [System.Windows.FrameworkElement]$Element,
-        [string]$BorderBrushValue,
+        [object]$BorderBrushValue,
         [string]$BorderThicknessValue = $null
     )
 
@@ -247,7 +249,7 @@ function Set-BorderBrushSafe {
 $global:ThemeDefinitions = @{
     'Nebula' = @{
         Name = 'Nebula Vortex'
-        Background = '#080716'
+        Background = $BrushConverter.ConvertFromString('#080716')
         Primary = '#8F6FFF'
         Hover = '#A78BFA'
         Text = '#F5F3FF'
@@ -261,24 +263,24 @@ $global:ThemeDefinitions = @{
         Warning = '#FBBF24'
         Danger = '#F87171'
         Info = '#60A5FA'
-        CardBackgroundStart = '#19173A'
-        CardBackgroundEnd = '#0F0D22'
-        SummaryBackgroundStart = '#241F4D'
-        SummaryBackgroundEnd = '#131029'
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#19173A')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#0F0D22')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#241F4D')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#131029')
         CardBorder = '#2F285A'
         GlowAccent = '#8F6FFF'
-        GaugeBackground = '#100F25'
+        GaugeBackground = $BrushConverter.ConvertFromString('#100F25')
         GaugeStroke = '#B197FF'
-        SelectedBackground = '#8F6FFF'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = '#F5F3FF'
-        UnselectedForeground = '#A9A5D9'
-        HoverBackground = '#1F1B3F'
+        SelectedBackground = $BrushConverter.ConvertFromString('#8F6FFF')
+        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
+        SelectedForeground = $BrushConverter.ConvertFromString('#F5F3FF')
+        UnselectedForeground = $BrushConverter.ConvertFromString('#A9A5D9')
+        HoverBackground = $BrushConverter.ConvertFromString('#1F1B3F')
         IsLight = $false
     }
     'Midnight' = @{
         Name = 'Midnight Azure'
-        Background = '#071021'
+        Background = $BrushConverter.ConvertFromString('#071021')
         Primary = '#3FA6FF'
         Hover = '#63B8FF'
         Text = '#E6F1FF'
@@ -292,24 +294,24 @@ $global:ThemeDefinitions = @{
         Warning = '#F59E0B'
         Danger = '#EF4444'
         Info = '#35D0FF'
-        CardBackgroundStart = '#12284A'
-        CardBackgroundEnd = '#081326'
-        SummaryBackgroundStart = '#1A3C63'
-        SummaryBackgroundEnd = '#0C203A'
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#12284A')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#081326')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#1A3C63')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#0C203A')
         CardBorder = '#3FA6FF'
         GlowAccent = '#35D0FF'
-        GaugeBackground = '#102845'
+        GaugeBackground = $BrushConverter.ConvertFromString('#102845')
         GaugeStroke = '#63B8FF'
-        SelectedBackground = '#3FA6FF'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = '#031021'
-        UnselectedForeground = '#E6F1FF'
-        HoverBackground = '#1B395A'
+        SelectedBackground = $BrushConverter.ConvertFromString('#3FA6FF')
+        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
+        SelectedForeground = $BrushConverter.ConvertFromString('#031021')
+        UnselectedForeground = $BrushConverter.ConvertFromString('#E6F1FF')
+        HoverBackground = $BrushConverter.ConvertFromString('#1B395A')
         IsLight = $false
     }
     'Lumen' = @{
         Name = 'Lumen Daybreak'
-        Background = '#F5F7FB'
+        Background = $BrushConverter.ConvertFromString('#F5F7FB')
         Primary = '#5D5FEF'
         Hover = '#4448D8'
         Text = '#161B3A'
@@ -323,19 +325,19 @@ $global:ThemeDefinitions = @{
         Warning = '#C27803'
         Danger = '#C24133'
         Info = '#5D5FEF'
-        CardBackgroundStart = '#FFFFFF'
-        CardBackgroundEnd = '#E3E6F4'
-        SummaryBackgroundStart = '#FFFFFF'
-        SummaryBackgroundEnd = '#D6DAEE'
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#E3E6F4')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#D6DAEE')
         CardBorder = '#5D5FEF'
         GlowAccent = '#2EA6A6'
-        GaugeBackground = '#FFFFFF'
+        GaugeBackground = $BrushConverter.ConvertFromString('#FFFFFF')
         GaugeStroke = '#5D5FEF'
-        SelectedBackground = '#5D5FEF'
-        UnselectedBackground = 'Transparent'
-        SelectedForeground = '#FFFFFF'
-        UnselectedForeground = '#161B3A'
-        HoverBackground = '#4448D8'
+        SelectedBackground = $BrushConverter.ConvertFromString('#5D5FEF')
+        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
+        SelectedForeground = $BrushConverter.ConvertFromString('#FFFFFF')
+        UnselectedForeground = $BrushConverter.ConvertFromString('#161B3A')
+        HoverBackground = $BrushConverter.ConvertFromString('#4448D8')
         IsLight = $true
     }
 }
@@ -1187,6 +1189,16 @@ function Normalize-ThemeColorTable {
         if ($null -eq $value) { continue }
         if ($value -is [string]) { continue }
         if ($value -is [bool]) { continue }
+        if ($value -is [System.Windows.Media.Brush]) {
+            try {
+                if ($value -is [System.Windows.Freezable] -and -not $value.IsFrozen) {
+                    $value.Freeze()
+                }
+            } catch {
+                Write-Verbose "Normalize-ThemeColorTable: Failed to freeze brush for key '$key'"
+            }
+            continue
+        }
         if ($value -is [int] -or $value -is [double] -or $value -is [decimal]) { continue }
 
         $resolved = Get-ColorStringFromValue $value
@@ -2225,91 +2237,80 @@ function Apply-ThemeColors {
             $gaugeBackgroundValue = if ($colors.ContainsKey('GaugeBackground') -and $colors['GaugeBackground']) { $colors['GaugeBackground'] } else { $colors.Secondary }
             $gaugeStrokeValue = if ($colors.ContainsKey('GaugeStroke') -and $colors['GaugeStroke']) { $colors['GaugeStroke'] } else { $colors.Primary }
 
-            $cardStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardStartValue)
-            $cardEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardEndValue)
-            $summaryStartColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryStartValue)
-            $summaryEndColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($summaryEndValue)
-            $cardBorderColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($cardBorderValue)
-            $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentValue)
-            $gaugeBackgroundColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeBackgroundValue)
-            $gaugeStrokeColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($gaugeStrokeValue)
+            $cardBrush = New-SolidColorBrushSafe $cardStartValue
+            if (-not $cardBrush) { $cardBrush = New-SolidColorBrushSafe $cardEndValue }
+            if (-not $cardBrush) { $cardBrush = New-SolidColorBrushSafe $colors.Secondary }
 
-            $cardGradient = New-Object System.Windows.Media.LinearGradientBrush
-            $cardGradient.StartPoint = [System.Windows.Point]::new(0, 0)
-            $cardGradient.EndPoint = [System.Windows.Point]::new(1, 1)
-            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardStartColor, 0))
-            [void]$cardGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($cardEndColor, 1))
-            $cardGradient.Freeze()
+            $summaryBrush = New-SolidColorBrushSafe $summaryStartValue
+            if (-not $summaryBrush) { $summaryBrush = New-SolidColorBrushSafe $summaryEndValue }
+            if (-not $summaryBrush) { $summaryBrush = $cardBrush }
 
-            $summaryGradient = New-Object System.Windows.Media.LinearGradientBrush
-            $summaryGradient.StartPoint = [System.Windows.Point]::new(0, 0)
-            $summaryGradient.EndPoint = [System.Windows.Point]::new(1, 1)
-            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryStartColor, 0))
-            [void]$summaryGradient.GradientStops.Add([System.Windows.Media.GradientStop]::new($summaryEndColor, 1))
-            $summaryGradient.Freeze()
+            $cardBorderBrush = New-SolidColorBrushSafe $cardBorderValue
+            if (-not $cardBorderBrush) { $cardBorderBrush = New-SolidColorBrushSafe $colors.Primary }
 
-            try {
-                $form.Resources['HeroCardBrush'] = $summaryGradient.Clone()
-            } catch {
-                Write-Verbose "HeroCardBrush resource assignment skipped"
+            $contentBrush = New-SolidColorBrushSafe $colors.Secondary
+            if ($contentBrush -is [System.Windows.Media.Brush]) {
+                try { $form.Resources['ContentBackgroundBrush'] = $contentBrush } catch { Write-Verbose "Content background resource assignment skipped" }
             }
 
-            try {
-                $contentBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($colors.Secondary))
-                $contentBrush.Freeze()
-                $form.Resources['ContentBackgroundBrush'] = $contentBrush
-            } catch {
-                Write-Verbose "Content background resource assignment skipped"
+            $heroBrush = New-SolidColorBrushSafe $summaryBrush
+            if (-not $heroBrush) { $heroBrush = $summaryBrush }
+            if ($heroBrush -is [System.Windows.Media.Brush]) {
+                try { $form.Resources['HeroCardBrush'] = $heroBrush } catch { Write-Verbose "HeroCardBrush resource assignment skipped" }
             }
 
-            $cardBorderBrush = New-Object System.Windows.Media.SolidColorBrush $cardBorderColor
-            $cardBorderBrush.Freeze()
+            $gaugeBackgroundBrush = New-SolidColorBrushSafe $gaugeBackgroundValue
+            if (-not $gaugeBackgroundBrush) { $gaugeBackgroundBrush = New-SolidColorBrushSafe $colors.Secondary }
 
-            $gaugeBackgroundBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeBackgroundColor
-            $gaugeBackgroundBrush.Freeze()
+            $gaugeStrokeBrush = New-SolidColorBrushSafe $gaugeStrokeValue
+            if (-not $gaugeStrokeBrush) { $gaugeStrokeBrush = New-SolidColorBrushSafe $colors.Primary }
 
-            $gaugeStrokeBrush = New-Object System.Windows.Media.SolidColorBrush $gaugeStrokeColor
-            $gaugeStrokeBrush.Freeze()
+            $innerGaugeBrush = New-SolidColorBrushSafe $colors.Background
+            if (-not $innerGaugeBrush) { $innerGaugeBrush = New-SolidColorBrushSafe '#000000' }
 
-            $innerGaugeBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($colors.Background))
-            $innerGaugeBrush.Freeze()
-
-              $resourceColors = @{
-                  'AppBackgroundBrush'             = $colors.Background
-                  'SidebarBackgroundBrush'         = $colors.SidebarBg
-                  'SidebarAccentBrush'             = $colors.Primary
-                  'SidebarHoverBrush'              = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
-                  'SidebarSelectedBrush'           = if ($colors.ContainsKey('SelectedBackground')) { $colors['SelectedBackground'] } else { $colors.Primary }
-                  'SidebarSelectedForegroundBrush' = if ($colors.ContainsKey('SelectedForeground')) { $colors['SelectedForeground'] } else { $colors.Text }
-                  'HeaderBackgroundBrush'          = $colors.HeaderBg
-                  'HeaderBorderBrush'              = $cardBorderValue
-                  'CardBackgroundBrush'            = $colors.Secondary
-                  'CardBorderBrush'                = $cardBorderValue
-                  'AccentBrush'                    = if ($colors.ContainsKey('Accent') -and $colors['Accent']) { $colors['Accent'] } else { $colors.Primary }
-                  'ButtonBackgroundBrush'          = if ($colors.ContainsKey('ButtonBackground') -and $colors['ButtonBackground']) { $colors['ButtonBackground'] } else { $colors.Primary }
-                  'ButtonBorderBrush'              = if ($colors.ContainsKey('ButtonBorder') -and $colors['ButtonBorder']) { $colors['ButtonBorder'] } else { $colors.Primary }
-                  'ButtonHoverBrush'               = if ($colors.ContainsKey('ButtonHover') -and $colors['ButtonHover']) { $colors['ButtonHover'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
-                  'ButtonPressedBrush'             = if ($colors.ContainsKey('ButtonPressed') -and $colors['ButtonPressed']) { $colors['ButtonPressed'] } elseif ($colors.ContainsKey('Hover') -and $colors['Hover']) { $colors['Hover'] } else { $colors.Primary }
-                  'PrimaryTextBrush'               = $colors.Text
-                  'SecondaryTextBrush'             = $colors.TextSecondary
-                  'HeroChipBrush'                  = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
-                  'SuccessBrush'                   = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
-                  'WarningBrush'                   = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
-                  'DangerBrush'                    = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
-                  'InfoBrush'                      = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
+            $resourceColors = @{
+                'AppBackgroundBrush'             = $colors.Background
+                'SidebarBackgroundBrush'         = $colors.SidebarBg
+                'SidebarAccentBrush'             = $colors.Primary
+                'SidebarHoverBrush'              = if ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                'SidebarSelectedBrush'           = if ($colors.ContainsKey('SelectedBackground')) { $colors['SelectedBackground'] } else { $colors.Primary }
+                'SidebarSelectedForegroundBrush' = if ($colors.ContainsKey('SelectedForeground')) { $colors['SelectedForeground'] } else { $colors.Text }
+                'HeaderBackgroundBrush'          = $colors.HeaderBg
+                'HeaderBorderBrush'              = if ($cardBorderBrush) { $cardBorderBrush } else { $cardBorderValue }
+                'CardBackgroundBrush'            = if ($cardBrush) { $cardBrush } else { $colors.Secondary }
+                'CardBorderBrush'                = if ($cardBorderBrush) { $cardBorderBrush } else { $cardBorderValue }
+                'AccentBrush'                    = if ($colors.ContainsKey('Accent') -and $colors['Accent']) { $colors['Accent'] } else { $colors.Primary }
+                'ButtonBackgroundBrush'          = if ($colors.ContainsKey('ButtonBackground') -and $colors['ButtonBackground']) { $colors['ButtonBackground'] } else { $colors.Primary }
+                'ButtonBorderBrush'              = if ($colors.ContainsKey('ButtonBorder') -and $colors['ButtonBorder']) { $colors['ButtonBorder'] } else { $colors.Primary }
+                'ButtonHoverBrush'               = if ($colors.ContainsKey('ButtonHover') -and $colors['ButtonHover']) { $colors['ButtonHover'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } elseif ($colors.ContainsKey('Hover')) { $colors['Hover'] } else { $colors.Primary }
+                'ButtonPressedBrush'             = if ($colors.ContainsKey('ButtonPressed') -and $colors['ButtonPressed']) { $colors['ButtonPressed'] } elseif ($colors.ContainsKey('Hover') -and $colors['Hover']) { $colors['Hover'] } else { $colors.Primary }
+                'PrimaryTextBrush'               = $colors.Text
+                'SecondaryTextBrush'             = $colors.TextSecondary
+                'HeroChipBrush'                  = if ($colors.ContainsKey('HeroChip') -and $colors['HeroChip']) { $colors['HeroChip'] } elseif ($colors.ContainsKey('HoverBackground') -and $colors['HoverBackground']) { $colors['HoverBackground'] } else { $colors.Accent }
+                'SuccessBrush'                   = if ($colors.ContainsKey('Success')) { $colors['Success'] } else { '#10B981' }
+                'WarningBrush'                   = if ($colors.ContainsKey('Warning')) { $colors['Warning'] } else { '#F59E0B' }
+                'DangerBrush'                    = if ($colors.ContainsKey('Danger')) { $colors['Danger'] } else { '#EF4444' }
+                'InfoBrush'                      = if ($colors.ContainsKey('Info')) { $colors['Info'] } else { $colors.Primary }
             }
 
             foreach ($resourceKey in $resourceColors.Keys) {
                 $value = $resourceColors[$resourceKey]
-                if ([string]::IsNullOrWhiteSpace($value)) { continue }
-                try {
-                    $brushColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($value)
-                    $brush = New-Object System.Windows.Media.SolidColorBrush $brushColor
-                    $brush.Freeze()
-                    $form.Resources[$resourceKey] = $brush
-                } catch {
-                    Write-Verbose "Resource brush '$resourceKey' could not be updated: $($_.Exception.Message)"
+                if ($null -eq $value) { continue }
+
+                $brush = New-SolidColorBrushSafe $value
+                if ($brush -is [System.Windows.Media.Brush]) {
+                    try { $form.Resources[$resourceKey] = $brush } catch { Write-Verbose "Resource brush '$resourceKey' could not be updated: $($_.Exception.Message)" }
+                } else {
+                    Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
                 }
+            }
+
+            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
+            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
+            try {
+                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
+            } catch {
+                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
             }
 
             $glowEffect = New-Object System.Windows.Media.Effects.DropShadowEffect
@@ -2331,8 +2332,8 @@ function Apply-ThemeColors {
 
             $summaryPanel = $form.FindName('dashboardSummaryPanel')
             if ($summaryPanel -is [System.Windows.Controls.Border]) {
-                $summaryPanel.Background = $summaryGradient.Clone()
-                $summaryPanel.BorderBrush = $cardBorderBrush.Clone()
+                Set-BrushPropertySafe -Target $summaryPanel -Property 'Background' -Value $summaryBrush
+                Set-BrushPropertySafe -Target $summaryPanel -Property 'BorderBrush' -Value $cardBorderBrush
                 $summaryPanel.Effect = $glowEffect.Clone()
             }
 
@@ -2353,8 +2354,8 @@ function Apply-ThemeColors {
             foreach ($cardName in $dashboardCards) {
                 $card = $form.FindName($cardName)
                 if ($card -is [System.Windows.Controls.Border]) {
-                    $card.Background = $cardGradient.Clone()
-                    $card.BorderBrush = $cardBorderBrush.Clone()
+                    Set-BrushPropertySafe -Target $card -Property 'Background' -Value $cardBrush
+                    Set-BrushPropertySafe -Target $card -Property 'BorderBrush' -Value $cardBorderBrush
                     $card.Effect = $glowEffect.Clone()
                 }
             }
@@ -2362,15 +2363,15 @@ function Apply-ThemeColors {
             foreach ($ellipseName in 'ellipseCpuRing', 'ellipseMemoryRing') {
                 $ellipse = $form.FindName($ellipseName)
                 if ($ellipse) {
-                    $ellipse.Fill = $gaugeBackgroundBrush.Clone()
-                    $ellipse.Stroke = $gaugeStrokeBrush.Clone()
+                    Set-BrushPropertySafe -Target $ellipse -Property 'Fill' -Value $gaugeBackgroundBrush
+                    Set-BrushPropertySafe -Target $ellipse -Property 'Stroke' -Value $gaugeStrokeBrush
                 }
             }
 
             foreach ($innerEllipseName in 'ellipseCpuInner', 'ellipseMemoryInner') {
                 $innerEllipse = $form.FindName($innerEllipseName)
                 if ($innerEllipse) {
-                    $innerEllipse.Fill = $innerGaugeBrush.Clone()
+                    Set-BrushPropertySafe -Target $innerEllipse -Property 'Fill' -Value $innerGaugeBrush
                 }
             }
         } catch {
@@ -2470,7 +2471,7 @@ function Apply-ThemeColors {
 
         $mainScroll = $form.FindName('MainScrollViewer')
         if ($mainScroll -is [System.Windows.Controls.ScrollViewer]) {
-            try { $mainScroll.Background = [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
+            try { Set-BrushPropertySafe -Target $mainScroll -Property 'Background' -Value [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
         }
 
         try {
@@ -4047,11 +4048,11 @@ function Update-DashboardMetrics {
 
                 # Color coding based on CpuUsage and MemoryUsagePercent for dynamic metrics display
                 if ($metrics.CpuUsage -ge 80) {
-                    $lblDashCpuUsage.Foreground = "#FF4444"  # Red for high
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
                 } elseif ($metrics.CpuUsage -ge 60) {
-                    $lblDashCpuUsage.Foreground = "#A78BFA"  # Purple for medium load
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium load
                 } else {
-                    $lblDashCpuUsage.Foreground = "#8F6FFF"  # Accent for low load
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for low load
                 }
             })
         }
@@ -4063,11 +4064,11 @@ function Update-DashboardMetrics {
 
                 # Color coding based on percentage
                 if ($metrics.MemoryUsagePercent -ge 85) {
-                    $lblDashMemoryUsage.Foreground = "#FF4444"  # Red for high
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
                 } elseif ($metrics.MemoryUsagePercent -ge 70) {
-                    $lblDashMemoryUsage.Foreground = "#A78BFA"  # Purple for medium
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium
                 } else {
-                    $lblDashMemoryUsage.Foreground = "#8F6FFF"  # Accent for normal
+                    Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for normal
                 }
             })
         }
@@ -4096,10 +4097,10 @@ function Update-DashboardMetrics {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($metrics.ActiveGamesCount -gt 0) {
                     $lblDashActiveGames.Text = "$($metrics.ActiveGamesCount) running"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"  # Accent for active games
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'  # Accent for active games
                 } else {
                     $lblDashActiveGames.Text = "None detected"
-                    $lblDashActiveGames.Foreground = "#A6AACF"  # Default color
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'  # Default color
                 }
             })
         }
@@ -4121,13 +4122,13 @@ function Update-DashboardMetrics {
             $lblHeaderSystemStatus.Dispatcher.Invoke([Action]{
                 if ($metrics.CpuUsage -ge 80 -or $metrics.MemoryUsagePercent -ge 85) {
                     $lblHeaderSystemStatus.Text = 'High Load'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::Salmon
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::Salmon
                 } elseif ($metrics.CpuUsage -ge 60 -or $metrics.MemoryUsagePercent -ge 70) {
                     $lblHeaderSystemStatus.Text = 'Monitoring'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::Gold
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::Gold
                 } else {
                     $lblHeaderSystemStatus.Text = 'Stable'
-                    $lblHeaderSystemStatus.Foreground = [System.Windows.Media.Brushes]::LightGreen
+                    Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::LightGreen
                 }
             })
         }
@@ -4304,10 +4305,10 @@ function Update-ActiveGamesTracking {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 if ($currentGames.Count -gt 0) {
                     $lblDashActiveGames.Text = "$($currentGames.Count) active"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
                 } else {
                     $lblDashActiveGames.Text = "None active"
-                    $lblDashActiveGames.Foreground = "#A6AACF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
                 }
             })
         }
@@ -4524,7 +4525,7 @@ function Stop-GameDetectionMonitoring {
         if ($lblDashActiveGames) {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 $lblDashActiveGames.Text = "None detected"
-                $lblDashActiveGames.Foreground = "#A6AACF"
+                Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
             })
         }
     } catch {
@@ -5456,6 +5457,23 @@ $xamlContent = @'
         </Grid>
       </Border>
       
+      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
@@ -7527,7 +7545,7 @@ $headerItem.Content = "--- COMPETITIVE SHOOTERS ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege')) {
@@ -7545,7 +7563,7 @@ $headerItem.Content = "--- BATTLE ROYALE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('fortnite', 'apexlegends', 'pubg', 'warzone')) {
@@ -7563,7 +7581,7 @@ $headerItem.Content = "--- MULTIPLAYER ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('lol', 'rocketleague', 'dota2', 'gta5')) {
@@ -7581,7 +7599,7 @@ $headerItem.Content = "--- AAA TITLES ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in @('hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077')) {
@@ -7599,7 +7617,7 @@ $headerItem.Content = "--- SURVIVAL & MORE ---"
 $headerItem.Tag = ""
 $headerItem.IsEnabled = $false
 $headerItem.FontWeight = "Bold"
-$headerItem.Foreground = "#8F6FFF"
+Set-BrushPropertySafe -Target $headerItem -Property 'Foreground' -Value '#8F6FFF'
 $cmbGameProfile.Items.Add($headerItem)
 
 foreach ($key in $GameProfiles.Keys | Where-Object { $_ -notin @('cs2', 'csgo', 'valorant', 'overwatch2', 'r6siege', 'fortnite', 'apexlegends', 'pubg', 'warzone', 'lol', 'rocketleague', 'dota2', 'gta5', 'hogwartslegacy', 'starfield', 'baldursgate3', 'cyberpunk2077') }) {
@@ -8286,7 +8304,7 @@ function Search-GamesForPanel {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Searching for installed games with advanced detection..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF' } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8410,7 +8428,7 @@ function Search-GamesForPanel {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "✅ Found $($foundGames.Count) installed games:"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.Margin = "0,0,0,10"
             $gameListPanel.Children.Add($headerText)
@@ -8418,9 +8436,9 @@ function Search-GamesForPanel {
             # Add games with checkboxes
             foreach ($game in $foundGames) {
                 $gameContainer = New-Object System.Windows.Controls.Border
-                $gameContainer.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gameContainer -Property 'Background' -Value '#14132B'
                 try {
-                    $gameContainer.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gameContainer -Property 'BorderBrush' -Value '#2F285A'
                     $gameContainer.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8442,13 +8460,13 @@ function Search-GamesForPanel {
 
                 $gameNameText = New-Object System.Windows.Controls.TextBlock
                 $gameNameText.Text = $game.Name
-                $gameNameText.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $gameNameText -Property 'Foreground' -Value '#8F6FFF'
                 $gameNameText.FontWeight = "Bold"
                 $gameNameText.FontSize = "12"
 
                 $gamePathText = New-Object System.Windows.Controls.TextBlock
                 $gamePathText.Text = $game.Path
-                $gamePathText.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gamePathText -Property 'Foreground' -Value '#A9A5D9'
                 $gamePathText.FontSize = "10"
                 $gamePathText.TextWrapping = "Wrap"
 
@@ -8471,7 +8489,7 @@ function Search-GamesForPanel {
             # No games found
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "❌ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
-            $noGamesText.Foreground = "#FFB86C"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#FFB86C'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.TextAlignment = "Center"
@@ -8487,7 +8505,7 @@ function Search-GamesForPanel {
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
         $errorText.Text = "❌ Error searching for games: $($_.Exception.Message)"
-        $errorText.Foreground = "#FF6B6B"
+        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
         $errorText.TextWrapping = "Wrap"
@@ -8508,7 +8526,7 @@ function Search-CustomFoldersForExecutables {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         try { $loadingText.Text = "🔍 Scanning custom folders for .exe files..." } catch { Write-Verbose "Text assignment skipped for compatibility" }
-        try { $loadingText.Foreground = "#8F6FFF" } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
+        try { Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF' } catch { Write-Verbose "Foreground assignment skipped for compatibility" }
         try { $loadingText.FontStyle = "Italic" } catch { Write-Verbose "FontStyle assignment skipped for compatibility" }
         try { $loadingText.HorizontalAlignment = "Center" } catch { Write-Verbose "HorizontalAlignment assignment skipped for compatibility" }
         try { $loadingText.Margin = "0,20" } catch { Write-Verbose "Margin assignment skipped for compatibility" }
@@ -8579,7 +8597,7 @@ function Search-CustomFoldersForExecutables {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 12
             $headerText.Margin = "0,0,0,8"
@@ -8592,9 +8610,9 @@ function Search-CustomFoldersForExecutables {
             foreach ($executable in $foundExecutables) {
                 # Create container border
                 $border = New-Object System.Windows.Controls.Border
-                $border.Background = "#14132B"
+                Set-BrushPropertySafe -Target $border -Property 'Background' -Value '#14132B'
                 try {
-                    $border.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $border -Property 'BorderBrush' -Value '#2F285A'
                     $border.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -8607,7 +8625,7 @@ function Search-CustomFoldersForExecutables {
                 # Create checkbox for selection
                 $checkbox = New-Object System.Windows.Controls.CheckBox
                 $checkbox.Content = $executable.Name
-                $checkbox.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $checkbox -Property 'Foreground' -Value '#F5F3FF'
                 $checkbox.FontWeight = "SemiBold"
                 $checkbox.Tag = $executable.Path  # Store full path for optimization
                 $stackPanel.Children.Add($checkbox)
@@ -8615,14 +8633,14 @@ function Search-CustomFoldersForExecutables {
                 # Add details
                 $detailsText = New-Object System.Windows.Controls.TextBlock
                 $detailsText.Text = "🔍 $($executable.Details)"
-                $detailsText.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $detailsText -Property 'Foreground' -Value '#A9A5D9'
                 $detailsText.FontSize = 10
                 $detailsText.Margin = "20,2,0,0"
                 $stackPanel.Children.Add($detailsText)
 
                 $fileDetailsText = New-Object System.Windows.Controls.TextBlock
                 $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
-                $fileDetailsText.Foreground = "#7D7EB0"
+                Set-BrushPropertySafe -Target $fileDetailsText -Property 'Foreground' -Value '#7D7EB0'
                 $fileDetailsText.FontSize = 9
                 $fileDetailsText.Margin = "20,1,0,0"
                 $stackPanel.Children.Add($fileDetailsText)
@@ -8637,7 +8655,7 @@ function Search-CustomFoldersForExecutables {
         } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
             $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
-            $noExecutablesText.Foreground = "#FF6B6B"
+            Set-BrushPropertySafe -Target $noExecutablesText -Property 'Foreground' -Value '#FF6B6B'
             $noExecutablesText.HorizontalAlignment = "Center"
             $noExecutablesText.Margin = "0,20"
             $noExecutablesText.TextWrapping = "Wrap"
@@ -8651,7 +8669,7 @@ function Search-CustomFoldersForExecutables {
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
         $errorText.Text = "❌ Error searching custom folders: $($_.Exception.Message)"
-        $errorText.Foreground = "#FF6B6B"
+        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
         $errorText.HorizontalAlignment = "Center"
         $errorText.Margin = "0,20"
         $errorText.TextWrapping = "Wrap"
@@ -10461,7 +10479,7 @@ if ($btnAutoDetect) {
             if ($lblDashActiveGames) {
                 $lblDashActiveGames.Dispatcher.Invoke([Action]{
                     $lblDashActiveGames.Text = "$($detectedGames.Count) running"
-                    $lblDashActiveGames.Foreground = "#8F6FFF"
+                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
                 })
             }
 
@@ -10499,7 +10517,7 @@ if ($btnAutoDetect) {
         if ($lblDashActiveGames) {
             $lblDashActiveGames.Dispatcher.Invoke([Action]{
                 $lblDashActiveGames.Text = "None detected"
-                $lblDashActiveGames.Foreground = "#A6AACF"
+                Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
             })
         }
     }
@@ -11815,7 +11833,7 @@ function Start-CustomFolderOnlySearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching '$FolderPath' for all executables (.exe)..."
-        $loadingText.Foreground = "#8F6FFF"
+        Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF'
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -11860,7 +11878,7 @@ function Start-CustomFolderOnlySearch {
             # Add header
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($foundExecutables.Count) Executables in '$([System.IO.Path]::GetFileName($FolderPath))'"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -11869,9 +11887,9 @@ function Start-CustomFolderOnlySearch {
             # Add each executable with optimization option
             foreach ($executable in $foundExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
                 try {
-                    $gamePanel.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -11889,14 +11907,14 @@ function Start-CustomFolderOnlySearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $executable.Name
-                $gameName.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $gameName -Property 'Foreground' -Value '#F5F3FF'
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 $($executable.Path)`n📊 Size: $($executable.Size) MB | 📅 Modified: $($executable.LastModified)"
-                $gameDetails.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gameDetails -Property 'Foreground' -Value '#A9A5D9'
                 $gameDetails.FontSize = 10
                 $gameDetails.TextWrapping = "Wrap"
                 $gameInfo.Children.Add($gameDetails)
@@ -11941,7 +11959,7 @@ function Start-CustomFolderOnlySearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files (.exe) found in the selected folder.`n`nTip: Make sure the folder contains game installations or executable files."
-            $noGamesText.Foreground = "#7D7EB0"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#7D7EB0'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.TextAlignment = "Center"
@@ -12053,7 +12071,7 @@ function Start-AllCustomFoldersSearch {
         # Add loading message
         $loadingText = New-Object System.Windows.Controls.TextBlock
         $loadingText.Text = "🔍 Searching all custom folders for executables..."
-        $loadingText.Foreground = "#8F6FFF"
+        Set-BrushPropertySafe -Target $loadingText -Property 'Foreground' -Value '#8F6FFF'
         $loadingText.FontStyle = "Italic"
         $loadingText.HorizontalAlignment = "Center"
         $loadingText.Margin = "0,20"
@@ -12090,7 +12108,7 @@ function Start-AllCustomFoldersSearch {
         if ($allExecutables.Count -gt 0) {
             $headerText = New-Object System.Windows.Controls.TextBlock
             $headerText.Text = "Found $($allExecutables.Count) Executables in Custom Folders"
-            $headerText.Foreground = "#8F6FFF"
+            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
             $headerText.FontWeight = "Bold"
             $headerText.FontSize = 14
             $headerText.Margin = "0,0,0,10"
@@ -12098,9 +12116,9 @@ function Start-AllCustomFoldersSearch {
 
             foreach ($exe in $allExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
-                $gamePanel.Background = "#14132B"
+                Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
                 try {
-                    $gamePanel.BorderBrush = "#2F285A"
+                    Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
                 } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
@@ -12117,14 +12135,14 @@ function Start-AllCustomFoldersSearch {
 
                 $gameName = New-Object System.Windows.Controls.TextBlock
                 $gameName.Text = $exe.Name
-                $gameName.Foreground = "#F5F3FF"
+                Set-BrushPropertySafe -Target $gameName -Property 'Foreground' -Value '#F5F3FF'
                 $gameName.FontWeight = "Bold"
                 $gameName.FontSize = 14
                 $gameInfo.Children.Add($gameName)
 
                 $gameDetails = New-Object System.Windows.Controls.TextBlock
                 $gameDetails.Text = "📁 From: $($exe.Folder) | 📊 $($exe.Size) MB | 📅 $($exe.LastModified)"
-                $gameDetails.Foreground = "#A9A5D9"
+                Set-BrushPropertySafe -Target $gameDetails -Property 'Foreground' -Value '#A9A5D9'
                 $gameDetails.FontSize = 10
                 $gameInfo.Children.Add($gameDetails)
 
@@ -12159,7 +12177,7 @@ function Start-AllCustomFoldersSearch {
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files found in custom folders."
-            $noGamesText.Foreground = "#7D7EB0"
+            Set-BrushPropertySafe -Target $noGamesText -Property 'Foreground' -Value '#7D7EB0'
             $noGamesText.FontStyle = "Italic"
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.Margin = "0,20"
@@ -12968,7 +12986,7 @@ function Initialize-Application {
             # Administrator mode - full access
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Administrator Mode"
-                $lblAdminStatus.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "All optimizations available"
@@ -12987,7 +13005,7 @@ function Initialize-Application {
             # Limited mode - some restrictions
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Limited Mode"
-                $lblAdminStatus.Foreground = "#8F6FFF"
+                Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
             }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "Some optimizations require administrator privileges"
