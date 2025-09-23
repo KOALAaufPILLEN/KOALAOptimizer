@@ -122,33 +122,33 @@ function Set-BorderBrushSafe {
 $global:ThemeDefinitions = @{
     'Nebula' = @{
         Name = 'Nebula Vortex'
-        Background = $BrushConverter.ConvertFromString('#080716')
-        Primary = '#8F6FFF'
-        Hover = '#A78BFA'
-        Text = '#F5F3FF'
-        Secondary = '#14132B'
-        Accent = '#B497FF'
-        TextSecondary = '#A9A5D9'
-        LogBg = '#0B0A1D'
-        SidebarBg = '#0E0C21'
-        HeaderBg = '#151233'
-        Success = '#34D399'
-        Warning = '#FBBF24'
-        Danger = '#F87171'
+        Background = $BrushConverter.ConvertFromString('#0F0F12')
+        Primary = '#A855F7'
+        Hover = '#9333EA'
+        Text = '#FFFFFF'
+        Secondary = '#151517'
+        Accent = '#A855F7'
+        TextSecondary = '#9CA3AF'
+        LogBg = '#111111'
+        SidebarBg = '#141416'
+        HeaderBg = '#151517'
+        Success = '#22C55E'
+        Warning = '#F59E0B'
+        Danger = '#EF4444'
         Info = '#60A5FA'
-        CardBackgroundStart = $BrushConverter.ConvertFromString('#19173A')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#0F0D22')
-        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#241F4D')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#131029')
-        CardBorder = '#2F285A'
-        GlowAccent = '#8F6FFF'
-        GaugeBackground = $BrushConverter.ConvertFromString('#100F25')
-        GaugeStroke = '#B197FF'
-        SelectedBackground = $BrushConverter.ConvertFromString('#8F6FFF')
-        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
-        SelectedForeground = $BrushConverter.ConvertFromString('#F5F3FF')
-        UnselectedForeground = $BrushConverter.ConvertFromString('#A9A5D9')
-        HoverBackground = $BrushConverter.ConvertFromString('#1F1B3F')
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#1A1A1D')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#1A1A1D')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#151517')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#151517')
+        CardBorder = '#2A2A2E'
+        GlowAccent = '#00000000'
+        GaugeBackground = $BrushConverter.ConvertFromString('#1F1F23')
+        GaugeStroke = '#A855F7'
+        SelectedBackground = $BrushConverter.ConvertFromString('#A855F7')
+        UnselectedBackground = $BrushConverter.ConvertFromString('#1F1F23')
+        SelectedForeground = $BrushConverter.ConvertFromString('#FFFFFF')
+        UnselectedForeground = $BrushConverter.ConvertFromString('#9CA3AF')
+        HoverBackground = $BrushConverter.ConvertFromString('#222227')
         IsLight = $false
     }
     'Midnight' = @{
@@ -250,6 +250,30 @@ $script:BrushResourceKeys = @(
     'HeroChipBrush'
     'DialogBackgroundBrush'
 )
+
+function Register-BrushResourceKeys {
+    param([System.Collections.IEnumerable]$Keys)
+
+    if (-not $Keys) { return }
+
+    foreach ($rawKey in $Keys) {
+        if ($null -eq $rawKey) { continue }
+
+        $keyText = $null
+        try { $keyText = [string]$rawKey } catch { $keyText = $null }
+        if ([string]::IsNullOrWhiteSpace($keyText)) { continue }
+        if (-not $keyText.EndsWith('Brush')) { continue }
+
+        if (-not $script:BrushResourceKeys) {
+            $script:BrushResourceKeys = @()
+        }
+
+        if ($script:BrushResourceKeys -notcontains $keyText) {
+            $script:BrushResourceKeys += $keyText
+        }
+    }
+}
+
 
 # Storage for the last applied custom theme so navigation refreshes reuse the same colors
 $global:CustomThemeColors = $null
@@ -2473,48 +2497,33 @@ function Apply-ThemeColors {
                 }
             }
 
-            Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
-
-            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
-            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
-            try {
-                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
-            } catch {
-                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
+            if ($form -and $form.Resources) {
+                Register-BrushResourceKeys -Keys $form.Resources.Keys
             }
 
-            Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
-
-            $glowAccentColorString = Get-ColorStringFromValue $glowAccentValue
-            if ([string]::IsNullOrWhiteSpace($glowAccentColorString)) { $glowAccentColorString = Get-ColorStringFromValue $colors.Accent }
-            try {
-                $glowAccentColor = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($glowAccentColorString)
-            } catch {
-                $glowAccentColor = [System.Windows.Media.Colors]::Transparent
+            $targetBrushKeys = @($script:BrushResourceKeys)
+            if ($form -and $form.Resources) {
+                try {
+                    foreach ($resourceKey in $form.Resources.Keys) {
+                        if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($targetBrushKeys -notcontains $resourceKey)) {
+                            $targetBrushKeys += $resourceKey
+                        }
+                    }
+                } catch {
+                    # Ignore enumeration errors and fall back to the static list
+                }
             }
 
-            $glowEffect = New-Object System.Windows.Media.Effects.DropShadowEffect
-            $glowEffect.Color = $glowAccentColor
-            $glowEffect.BlurRadius = if ($colors.ContainsKey('IsLight') -and $colors.IsLight) { 24 } else { 32 }
-            $glowEffect.Opacity = if ($colors.ContainsKey('IsLight') -and $colors.IsLight) { 0.35 } else { 0.55 }
-            $glowEffect.ShadowDepth = 0
+            Normalize-BrushResources -Resources $form.Resources -Keys $targetBrushKeys -AllowTransparentFallback
 
-            try {
-                $cardGlow = New-Object System.Windows.Media.Effects.DropShadowEffect
-                $cardGlow.Color = $glowAccentColor
-                $cardGlow.BlurRadius = if ($colors.ContainsKey('IsLight') -and $colors.IsLight) { 24 } else { 28 }
-                $cardGlow.Opacity = if ($colors.ContainsKey('IsLight') -and $colors.IsLight) { 0.35 } else { 0.55 }
-                $cardGlow.ShadowDepth = 0
-                $form.Resources['CardGlow'] = $cardGlow
-            } catch {
-                Write-Verbose "CardGlow resource update skipped: $($_.Exception.Message)"
-            }
+            $glowEffect = $null
+            try { $form.Resources['CardGlow'] = $null } catch { Write-Verbose "CardGlow reset skipped: $($_.Exception.Message)" }
 
             $summaryPanel = $form.FindName('dashboardSummaryPanel')
             if ($summaryPanel -is [System.Windows.Controls.Border]) {
                 Set-BrushPropertySafe -Target $summaryPanel -Property 'Background' -Value $summaryBrush
                 Set-BrushPropertySafe -Target $summaryPanel -Property 'BorderBrush' -Value $cardBorderBrush
-                $summaryPanel.Effect = $glowEffect.Clone()
+                $summaryPanel.Effect = $null
             }
 
             $dashboardCards = @(
@@ -2536,7 +2545,7 @@ function Apply-ThemeColors {
                 if ($card -is [System.Windows.Controls.Border]) {
                     Set-BrushPropertySafe -Target $card -Property 'Background' -Value $cardBrush
                     Set-BrushPropertySafe -Target $card -Property 'BorderBrush' -Value $cardBorderBrush
-                    $card.Effect = $glowEffect.Clone()
+                    $card.Effect = $null
                 }
             }
 
@@ -3399,14 +3408,7 @@ function Show-SystemHealthDialog {
       <Setter Property="FontWeight" Value="SemiBold"/>
 
       <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Background">
-        <Setter.Value>
-          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#8F6FFF" Offset="0"/>
-            <GradientStop Color="#B497FF" Offset="1"/>
-          </LinearGradientBrush>
-        </Setter.Value>
-      </Setter>
+      <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Foreground" Value="White"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -5274,35 +5276,30 @@ $xamlContent = @'
         ResizeMode="CanResize"
         SizeToContent="Manual">
   <Window.Resources>
-    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#080716"/>
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#0E0C21"/>
-    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#8F6FFF"/>
-    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1F1B3F"/>
-    <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#8F6FFF"/>
-    <SolidColorBrush x:Key="SidebarSelectedForegroundBrush" Color="#F5F3FF"/>
-    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#151233"/>
-    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2F285A"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#14132B"/>
-    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#19173A"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#2F285A"/>
-    <LinearGradientBrush x:Key="HeroCardBrush" StartPoint="0,0" EndPoint="1,1">
-      <GradientStop Color="#2F2568" Offset="0"/>
-      <GradientStop Color="#171533" Offset="1"/>
-    </LinearGradientBrush>
-    <SolidColorBrush x:Key="AccentBrush" Color="#B497FF"/>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F3FF"/>
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A9A5D9"/>
-    <SolidColorBrush x:Key="SuccessBrush" Color="#34D399"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24"/>
-    <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0F0F12"/>
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#141416"/>
+    <SolidColorBrush x:Key="SidebarAccentBrush" Color="#A855F7"/>
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#222227"/>
+    <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#A855F7"/>
+    <SolidColorBrush x:Key="SidebarSelectedForegroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#151517"/>
+    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2A2A2E"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1A1A1D"/>
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#151517"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#2A2A2E"/>
+    <SolidColorBrush x:Key="HeroCardBrush" Color="#1A1A1D"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#A855F7"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
     <SolidColorBrush x:Key="InfoBrush" Color="#60A5FA"/>
-    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#1E1B38"/>
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A264B"/>
-    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#282450"/>
-    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1A1839"/>
-    <SolidColorBrush x:Key="HeroChipBrush" Color="#292250"/>
-
-
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#151517"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A2A2E"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
+    <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5365,33 +5362,33 @@ $xamlContent = @'
 
     <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
-      <Setter Property="Foreground" Value="#14251A"/>
-      <Setter Property="BorderBrush" Value="#249947"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#4ADE80"/>
+          <Setter Property="Background" Value="#34D399"/>
         </Trigger>
       </Style.Triggers>
     </Style>
 
     <Style x:Key="WarningButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
-      <Setter Property="Foreground" Value="#2E2204"/>
-      <Setter Property="BorderBrush" Value="#D1A10D"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#FCD34D"/>
+          <Setter Property="Background" Value="#FBBF24"/>
         </Trigger>
       </Style.Triggers>
     </Style>
 
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
       <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-      <Setter Property="Foreground" Value="#3F0B0B"/>
-      <Setter Property="BorderBrush" Value="#B91C1C"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#FB7185"/>
+          <Setter Property="Background" Value="#DC2626"/>
         </Trigger>
       </Style.Triggers>
     </Style>
@@ -5673,6 +5670,22 @@ $xamlContent = @'
         </StackPanel>
       </Border>
 
+      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6318,7 +6331,15 @@ $xamlContent = @'
           </WrapPanel>
           <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
           <ScrollViewer Grid.Row="3" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <TextBox x:Name="LogBox" Background="Transparent" Foreground="{DynamicResource AccentBrush}" FontFamily="Consolas" FontSize="11" IsReadOnly="True" BorderThickness="0" TextWrapping="Wrap" Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
+            <TextBox x:Name="LogBox"
+                     Background="{DynamicResource ContentBackgroundBrush}"
+                     Foreground="{DynamicResource PrimaryTextBrush}"
+                     FontFamily="Consolas"
+                     FontSize="11"
+                     IsReadOnly="True"
+                     BorderThickness="0"
+                     TextWrapping="Wrap"
+                     Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
           </ScrollViewer>
         </Grid>
       </Border>
@@ -6381,6 +6402,9 @@ try {
     $reader = New-Object System.Xml.XmlNodeReader $xaml
     $form = [Windows.Markup.XamlReader]::Load($reader)
     Initialize-LayoutSpacing -Root $form
+    if ($form -and $form.Resources) {
+        Register-BrushResourceKeys -Keys $form.Resources.Keys
+    }
 } catch {
     Write-Host "Failed to load XAML: $($_.Exception.Message)" -ForegroundColor Red
     if ($_.Exception.InnerException) {
@@ -13937,7 +13961,23 @@ Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info
 
 # Show the form
 Normalize-VisualTreeBrushes -Root $form
-Normalize-BrushResources -Resources $form.Resources -Keys $script:BrushResourceKeys -AllowTransparentFallback
+
+$finalBrushKeys = @($script:BrushResourceKeys)
+if ($form -and $form.Resources) {
+    Register-BrushResourceKeys -Keys $form.Resources.Keys
+    $finalBrushKeys = @($script:BrushResourceKeys)
+    try {
+        foreach ($resourceKey in $form.Resources.Keys) {
+            if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($finalBrushKeys -notcontains $resourceKey)) {
+                $finalBrushKeys += $resourceKey
+            }
+        }
+    } catch {
+        # Ignore enumeration issues during final normalization
+    }
+}
+
+Normalize-BrushResources -Resources $form.Resources -Keys $finalBrushKeys -AllowTransparentFallback
 try {
     $form.ShowDialog() | Out-Null
 } catch {
