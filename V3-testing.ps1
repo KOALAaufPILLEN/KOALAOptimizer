@@ -26,133 +26,6 @@
 # Build Date: 2024
 # Author: KOALA Team
 
-# Enable advanced parameter handling and expose a syntax validation switch so
-# contributors can lint the script without launching the heavy WPF UI.
-[CmdletBinding()]
-param(
-    [switch]$SyntaxCheckOnly
-)
-
-function Test-ScriptSyntax {
-    <#
-    .SYNOPSIS
-    Tests the PowerShell syntax of this script for validation
-    .DESCRIPTION
-    Validates the script syntax using multiple PowerShell parsers
-    #>
-    param(
-        [string]$ScriptPath = $PSCommandPath
-    )
-
-    Write-Host "Testing PowerShell syntax..." -ForegroundColor Yellow
-
-    try {
-
-        $content = Get-Content -Path $ScriptPath -Raw
-        $lines = Get-Content -Path $ScriptPath
-
-        # Detect unresolved Git merge markers before invoking the parser so
-        # contributors get a clear error message instead of a generic syntax
-        # failure.
-        $markerPattern = '^(<{7}|={7}|>{7})'
-        $conflicts = $lines | Select-String -Pattern $markerPattern
-
-        if ($conflicts) {
-            Write-Host "❌ Found unresolved merge markers:" -ForegroundColor Red
-            foreach ($match in $conflicts) {
-                Write-Host ("  Line {0}: {1}" -f $match.LineNumber, $match.Line.Trim()) -ForegroundColor Red
-            }
-            return $false
-        }
-
-
-        # Parse entire script once to gather syntax diagnostics for each section
-        $allParseErrors = @()
-        [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$allParseErrors) | Out-Null
-
-        $chunkSize = 1000
-        $hasSectionErrors = $false
-        for ($offset = 0; $offset -lt $lines.Count; $offset += $chunkSize) {
-            $endIndex = [Math]::Min($offset + $chunkSize - 1, $lines.Count - 1)
-            $rangeLabel = "Lines {0}-{1}" -f ($offset + 1), ($endIndex + 1)
-            $chunkErrors = $allParseErrors | Where-Object {
-                $_.Extent.StartLineNumber -ge ($offset + 1) -and $_.Extent.StartLineNumber -le ($endIndex + 1)
-            }
-
-            if ($chunkErrors.Count -gt 0) {
-                if (-not $hasSectionErrors) {
-                    Write-Host "❌ Section parser errors detected:" -ForegroundColor Red
-                }
-
-                $hasSectionErrors = $true
-                foreach ($err in $chunkErrors) {
-                    Write-Host ("  {0} → Line {1}: {2}" -f $rangeLabel, $err.Extent.StartLineNumber, $err.Message) -ForegroundColor Red
-                }
-            } else {
-                Write-Host "$rangeLabel ✔️ no syntax errors" -ForegroundColor Green
-            }
-        }
-
-        if ($hasSectionErrors) {
-            return $false
-        }
-
-        # Identify consecutive duplicate commands that may have been introduced accidentally
-        $duplicateCommands = @()
-        for ($i = 1; $i -lt $lines.Count; $i++) {
-            $current = $lines[$i].Trim()
-            $previous = $lines[$i - 1].Trim()
-
-            if ([string]::IsNullOrWhiteSpace($current)) { continue }
-            if ($current -eq '{' -or $current -eq '}' -or $current.StartsWith('#')) { continue }
-            if ($current.StartsWith('<')) { continue }
-            if ($current -cne $previous) { continue }
-
-            $duplicateCommands += [pscustomobject]@{
-                Line = $i + 1
-                Text = $lines[$i].Trim()
-            }
-        }
-
-        if ($duplicateCommands.Count -gt 0) {
-            Write-Host "⚠️ Potential duplicate commands detected:" -ForegroundColor Yellow
-            foreach ($dup in $duplicateCommands | Select-Object -First 10) {
-                Write-Host ("  Line {0}: {1}" -f $dup.Line, $dup.Text) -ForegroundColor Yellow
-            }
-            if ($duplicateCommands.Count -gt 10) {
-                $remaining = $duplicateCommands.Count - 10
-                Write-Host "  ...and $remaining more" -ForegroundColor Yellow
-            }
-        }
-
-        # Test with AST parser
-        $parseErrors = $allParseErrors
-
-
-        if ($parseErrors.Count -eq 0) {
-            Write-Host "✅ Syntax validation passed" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "❌ Found $($parseErrors.Count) syntax errors:" -ForegroundColor Red
-            $parseErrors | ForEach-Object {
-                Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red
-            }
-            return $false
-        }
-    } catch {
-        Write-Host "❌ Syntax validation failed: $($_.Exception.Message)" -ForegroundColor Red
-        return $false
-    }
-}
-
-if ($SyntaxCheckOnly) {
-    if (Test-ScriptSyntax -ScriptPath $PSCommandPath) {
-        return
-    }
-
-    exit 1
-}
-
 # ---------- Check PowerShell Version ----------
 if ($PSVersionTable.PSVersion.Major -lt 5) {
     Write-Host "This script requires PowerShell 5.0 or higher" -ForegroundColor Red
@@ -1210,14 +1083,60 @@ function Normalize-ThemeColorTable {
     return $Theme
 }
 
+# Creates a cloneable brush instance from a variety of incoming values.
+function Resolve-BrushInstance {
+    param([object]$BrushCandidate)
+
+    if ($null -eq $BrushCandidate) { return $null }
+
+    $current = $BrushCandidate
+    $previous = $null
+
+    while ($current -is [System.Management.Automation.PSObject] -and $current -ne $previous) {
+        $previous = $current
+        $current = $current.PSObject.BaseObject
+    }
+
+    if ($current -is [System.Windows.Media.Brush]) {
+        try {
+            $clone = if ($current -is [System.Windows.Freezable]) { $current.Clone() } else { $current }
+            if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
+                try { $clone.Freeze() } catch { }
+            }
+            return $clone
+        } catch {
+            return $current
+        }
+    }
+
+    return $null
+}
+
 # Creates a frozen SolidColorBrush from a color-like value when possible.
 function New-SolidColorBrushSafe {
     param([Parameter(ValueFromPipeline = $true)][object]$ColorValue)
 
     if ($null -eq $ColorValue) { return $null }
 
-    if ($ColorValue -is [System.Windows.Media.Brush]) {
-        try { return $ColorValue.Clone() } catch { return $ColorValue }
+    $existingBrush = Resolve-BrushInstance $ColorValue
+    if ($existingBrush -is [System.Windows.Media.SolidColorBrush]) {
+        return $existingBrush
+    }
+
+    if ($existingBrush -is [System.Windows.Media.Brush]) {
+        try {
+            $colorText = $existingBrush.ToString()
+            if (-not [string]::IsNullOrWhiteSpace($colorText)) {
+                $colorCandidate = [System.Windows.Media.ColorConverter]::ConvertFromString($colorText)
+                if ($colorCandidate -is [System.Windows.Media.Color]) {
+                    $fromBrush = New-Object System.Windows.Media.SolidColorBrush $colorCandidate
+                    $fromBrush.Freeze()
+                    return $fromBrush
+                }
+            }
+        } catch {
+            Write-Verbose "Failed to coerce brush value '$existingBrush' to SolidColorBrush: $($_.Exception.Message)"
+        }
     }
 
     if ($ColorValue -is [System.Windows.Media.Color]) {
@@ -1229,15 +1148,43 @@ function New-SolidColorBrushSafe {
     $resolvedValue = Get-ColorStringFromValue $ColorValue
     if ([string]::IsNullOrWhiteSpace($resolvedValue)) { return $null }
 
+    $converter = Get-SharedBrushConverter
+    if ($converter) {
+        try {
+            $converted = $converter.ConvertFromString($resolvedValue)
+            $convertedBrush = Resolve-BrushInstance $converted
+            if ($convertedBrush -is [System.Windows.Media.SolidColorBrush]) {
+                return $convertedBrush
+            }
+        } catch {
+            Write-Verbose "BrushConverter could not convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
+        }
+    }
+
     try {
-        $color = [System.Windows.Media.Color][System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
-        $brush = New-Object System.Windows.Media.SolidColorBrush $color
-        $brush.Freeze()
-        return $brush
+        $color = [System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
+        if ($color -is [System.Windows.Media.Color]) {
+            $brush = New-Object System.Windows.Media.SolidColorBrush $color
+            $brush.Freeze()
+            return $brush
+        }
     } catch {
         Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
-        return $null
     }
+
+    return $null
+}
+
+function Get-SharedBrushConverter {
+    if (-not $script:SharedBrushConverter -or $script:SharedBrushConverter.GetType().FullName -ne 'System.Windows.Media.BrushConverter') {
+        try {
+            $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
+        } catch {
+            $script:SharedBrushConverter = $null
+        }
+    }
+
+    return $script:SharedBrushConverter
 }
 
 function Get-SharedBrushConverter {
@@ -1261,24 +1208,7 @@ function Set-ShapeFillSafe {
     if (-not $Shape) { return }
 
     try {
-        $brush = New-SolidColorBrushSafe $Value
-        if ($brush) {
-            try {
-                if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
-                    $Shape.Fill = $brush.Clone()
-                } else {
-                    $Shape.Fill = $brush
-                }
-            } catch {
-                $Shape.Fill = $brush
-            }
-            return
-        }
-
-        $colorValue = Get-ColorStringFromValue $Value
-        if (-not [string]::IsNullOrWhiteSpace($colorValue)) {
-            $Shape.Fill = $colorValue
-        }
+        Set-BrushPropertySafe -Target $Shape -Property 'Fill' -Value $Value -AllowTransparentFallback
     } catch {
         Write-Verbose "Set-ShapeFillSafe failed: $($_.Exception.Message)"
     }
@@ -1304,7 +1234,10 @@ function Set-BrushPropertySafe {
             $resolvedValue = $resolvedValue.PSObject.BaseObject
         }
 
-        $brush = New-SolidColorBrushSafe $resolvedValue
+        $brush = Resolve-BrushInstance $resolvedValue
+        if (-not $brush) {
+            $brush = New-SolidColorBrushSafe $resolvedValue
+        }
         $previousBrush = $null
         while ($brush -is [System.Management.Automation.PSObject] -and $brush -ne $previousBrush) {
             $previousBrush = $brush
@@ -1341,17 +1274,16 @@ function Set-BrushPropertySafe {
             if ($converter) {
                 try {
                     $converted = $converter.ConvertFromString($colorString)
-                    $previousConverted = $null
-                    while ($converted -is [System.Management.Automation.PSObject] -and $converted -ne $previousConverted) {
-                        $previousConverted = $converted
-                        $converted = $converted.PSObject.BaseObject
+                    $convertedBrush = Resolve-BrushInstance $converted
+                    if (-not $convertedBrush) {
+                        $convertedBrush = New-SolidColorBrushSafe $converted
                     }
 
-                    if ($converted -is [System.Windows.Media.Brush]) {
-                        if ($converted -is [System.Windows.Freezable] -and $converted.IsFrozen) {
-                            $Target.$Property = $converted.Clone()
+                    if ($convertedBrush -is [System.Windows.Media.Brush]) {
+                        if ($convertedBrush -is [System.Windows.Freezable] -and $convertedBrush.IsFrozen) {
+                            $Target.$Property = $convertedBrush.Clone()
                         } else {
-                            $Target.$Property = $converted
+                            $Target.$Property = $convertedBrush
                         }
                         return
                     }
@@ -1897,14 +1829,23 @@ function Update-AllUIElementsRecursively {
                   param($resourceKey, $brush)
                   if (-not $brush) { return $false }
 
+                  $normalizedBrush = Resolve-BrushInstance $brush
+                  if (-not $normalizedBrush) {
+                      $normalizedBrush = New-SolidColorBrushSafe $brush
+                  }
+
+                  if (-not $normalizedBrush -or ($normalizedBrush -isnot [System.Windows.Media.Brush])) {
+                      return $false
+                  }
+
                   try {
-                      if ($brush -is [System.Windows.Freezable] -and $brush.IsFrozen) {
-                          $form.Resources[$resourceKey] = $brush.Clone()
+                      if ($normalizedBrush -is [System.Windows.Freezable] -and $normalizedBrush.IsFrozen) {
+                          $form.Resources[$resourceKey] = $normalizedBrush.Clone()
                       } else {
-                          $form.Resources[$resourceKey] = $brush
+                          $form.Resources[$resourceKey] = $normalizedBrush
                       }
                   } catch {
-                      $form.Resources[$resourceKey] = $brush
+                      $form.Resources[$resourceKey] = $normalizedBrush
                   }
 
                   return $true
@@ -2297,7 +2238,11 @@ function Apply-ThemeColors {
                 $value = $resourceColors[$resourceKey]
                 if ($null -eq $value) { continue }
 
-                $brush = New-SolidColorBrushSafe $value
+                $brush = Resolve-BrushInstance $value
+                if (-not $brush) {
+                    $brush = New-SolidColorBrushSafe $value
+                }
+
                 if ($brush -is [System.Windows.Media.Brush]) {
                     try { $form.Resources[$resourceKey] = $brush } catch { Write-Verbose "Resource brush '$resourceKey' could not be updated: $($_.Exception.Message)" }
                 } else {
@@ -5475,6 +5420,23 @@ $xamlContent = @'
       </Border>
 
       <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
             <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
