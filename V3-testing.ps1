@@ -2488,7 +2488,6 @@ function Apply-ThemeColors {
             foreach ($resourceKey in $resourceColors.Keys) {
                 $value = $resourceColors[$resourceKey]
                 if ($null -eq $value) { continue }
-
                 $brush = Resolve-BrushInstance $value
                 if (-not $brush) {
                     $brush = New-SolidColorBrushSafe $value
@@ -5304,7 +5303,6 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
 
-
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5627,8 +5625,8 @@ $xamlContent = @'
           </StackPanel>
         </Grid>
       </Border>
-
-      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+      
+      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
             <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
@@ -6305,7 +6303,6 @@ $xamlContent = @'
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
-
     </Grid>
 
     <StackPanel Visibility="Collapsed">
