@@ -251,6 +251,7 @@ $script:BrushResourceKeys = @(
     'DialogBackgroundBrush'
 )
 
+
 function Register-BrushResourceKeys {
     param([System.Collections.IEnumerable]$Keys)
 
@@ -374,7 +375,7 @@ function Ensure-NavigationVisibility {
         # Ensure all navigation buttons are visible and properly styled
         $navigationButtons = @(
             'btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames',
-            'btnNavOptions', 'btnNavBackup'
+            'btnNavOptions', 'btnNavBackup', 'btnNavLog'
         )
 
         foreach ($buttonName in $navigationButtons) {
@@ -772,6 +773,7 @@ function Test-StartupControls {
         'btnNavGames' = $btnNavGames
         'btnNavOptions' = $btnNavOptions
         'btnNavBackup' = $btnNavBackup
+        'btnNavLog' = $btnNavLog
 
         # Panels
         'panelDashboard' = $panelDashboard
@@ -780,6 +782,7 @@ function Test-StartupControls {
         'panelGames' = $panelGames
         'panelOptions' = $panelOptions
         'panelBackup' = $panelBackup
+        'panelLog' = $panelLog
         'btnAdvancedNetwork' = $btnAdvancedNetwork
         'btnAdvancedSystem' = $btnAdvancedSystem
         'btnAdvancedServices' = $btnAdvancedServices
@@ -2485,7 +2488,6 @@ function Apply-ThemeColors {
             foreach ($resourceKey in $resourceColors.Keys) {
                 $value = $resourceColors[$resourceKey]
                 if ($null -eq $value) { continue }
-
                 $brush = Resolve-BrushInstance $value
                 if (-not $brush) {
                     $brush = New-SolidColorBrushSafe $value
@@ -2681,7 +2683,7 @@ function Apply-ThemeColors {
         }
 
         try {
-            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
+            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions, $panelBackup, $panelLog)
             foreach ($panel in $panels) {
                 if ($panel) {
                     try {
@@ -2860,7 +2862,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
             }
 
             foreach ($btnName in $navButtons) {
@@ -2931,7 +2933,7 @@ function Switch-Theme {
                 }
             }
 
-            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions)
+            $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions, $panelBackup, $panelLog)
             foreach ($panel in $panels) {
                 if ($panel) {
                     $panel.InvalidateVisual()
@@ -2972,7 +2974,7 @@ function Switch-Theme {
             $navButtons = if ($global:NavigationButtonNames) {
                 $global:NavigationButtonNames
             } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
             }
 
             foreach ($btnName in $navButtons) {
@@ -5300,7 +5302,7 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
-    
+
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5514,59 +5516,46 @@ $xamlContent = @'
 
         <ScrollViewer x:Name="SidebarNavScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
           <StackPanel>
-            <TextBlock Text="NAVIGATION" Style="{StaticResource SidebarSectionLabel}"/>
             <Button x:Name="btnNavDashboard" Style="{StaticResource SidebarButton}" Tag="Selected">
               <StackPanel Orientation="Horizontal" Margin="0" Tag="Spacing:10">
                 <TextBlock Text="🏠" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Dashboard" FontWeight="SemiBold"/>
-                  <TextBlock Text="Overview &amp; health" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Dashboard" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavBasicOpt" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal" Tag="Spacing:10">
                 <TextBlock Text="⚡" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Quick Optimize" FontWeight="SemiBold"/>
-                  <TextBlock Text="Safe presets" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Quick optimize" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavAdvanced" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal" Tag="Spacing:10">
                 <TextBlock Text="🛠️" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Advanced" FontWeight="SemiBold"/>
-                  <TextBlock Text="Deep tweaks" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Advanced" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavGames" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal" Tag="Spacing:10">
                 <TextBlock Text="🎮" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Game Profiles" FontWeight="SemiBold"/>
-                  <TextBlock Text="Library" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Game profiles" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavOptions" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal" Tag="Spacing:10">
                 <TextBlock Text="🎨" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Options" FontWeight="SemiBold"/>
-                  <TextBlock Text="Themes &amp; prefs" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Options" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
             <Button x:Name="btnNavBackup" Style="{StaticResource SidebarButton}">
               <StackPanel Orientation="Horizontal" Tag="Spacing:10">
                 <TextBlock Text="🗂️" FontSize="16"/>
-                <StackPanel>
-                  <TextBlock Text="Backups" FontWeight="SemiBold"/>
-                  <TextBlock Text="Safety net" Style="{StaticResource SectionSubtext}"/>
-                </StackPanel>
+                <TextBlock Text="Backups" FontWeight="SemiBold"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="btnNavLog" Style="{StaticResource SidebarButton}">
+              <StackPanel Orientation="Horizontal" Tag="Spacing:10">
+                <TextBlock Text="🧾" FontSize="16"/>
+                <TextBlock Text="Activity log" FontWeight="SemiBold"/>
               </StackPanel>
             </Button>
           </StackPanel>
@@ -6233,76 +6222,87 @@ $xamlContent = @'
               </StackPanel>
             </Border>
           </StackPanel>
+
+          <StackPanel x:Name="panelLog" Visibility="Collapsed" Tag="Spacing:16">
+            <Border x:Name="activityLogBorder"
+                    Background="{DynamicResource ContentBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="24">
+              <Grid Tag="RowSpacing:16">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="Activity log" Style="{StaticResource SectionHeader}" FontSize="20"/>
+                    <TextBlock Text="Monitor every action KOALA performs and keep a detailed history." Style="{StaticResource SectionSubtext}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:8" VerticalAlignment="Center">
+                    <Button x:Name="btnToggleLogView" Content="Detailed" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                    <Button x:Name="btnExtendLog" Content="Extend" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                    <Button x:Name="btnClearLog" Content="Clear" Width="90" Height="32" Style="{StaticResource WarningButton}" FontSize="11"/>
+                    <Button x:Name="btnSaveLog" Content="Save log" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                    <Button x:Name="btnSearchLog" Content="Search" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="11"/>
+                  </StackPanel>
+                </Grid>
+
+                <WrapPanel Grid.Row="1" Margin="0,10,0,6">
+                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                    <StackPanel Tag="Spacing:4">
+                      <TextBlock Text="Active game" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock Text="{Binding Text, ElementName=lblDashActiveGames}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                    </StackPanel>
+                  </Border>
+                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                    <StackPanel Tag="Spacing:4">
+                      <TextBlock Text="CPU usage" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock Text="{Binding Text, ElementName=lblDashCpuUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                    </StackPanel>
+                  </Border>
+                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                    <StackPanel Tag="Spacing:4">
+                      <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock Text="{Binding Text, ElementName=lblDashMemoryUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                    </StackPanel>
+                  </Border>
+                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                    <StackPanel Tag="Spacing:4">
+                      <TextBlock Text="Health" Style="{StaticResource SectionSubtext}"/>
+                      <TextBlock Text="{Binding Text, ElementName=lblDashSystemHealth}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                    </StackPanel>
+                  </Border>
+                </WrapPanel>
+
+                <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
+
+                <ScrollViewer Grid.Row="3" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                  <TextBox x:Name="LogBox"
+                           Background="{DynamicResource ContentBackgroundBrush}"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           FontFamily="Consolas"
+                           FontSize="11"
+                           IsReadOnly="True"
+                           BorderThickness="0"
+                           TextWrapping="Wrap"
+                           Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
+                </ScrollViewer>
+              </Grid>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
-
-      <Border Grid.Row="4" x:Name="activityLogBorder" Background="{DynamicResource ContentBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="16" Margin="26,18,26,24" Padding="22">
-        <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-          </Grid.RowDefinitions>
-          <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-              <TextBlock Text="Activity log" Style="{StaticResource SectionHeader}" FontSize="18"/>
-              <TextBlock Text="Monitor every action KOALA performs and keep a detailed history." Style="{StaticResource SectionSubtext}"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:8" VerticalAlignment="Center">
-              <Button x:Name="btnToggleLogView" Content="Detailed" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnExtendLog" Content="Extend" Width="80" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnClearLog" Content="Clear" Width="80" Height="32" Style="{StaticResource WarningButton}" FontSize="11"/>
-              <Button x:Name="btnSaveLog" Content="Save log" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-              <Button x:Name="btnSearchLog" Content="Search" Width="80" Height="32" Style="{StaticResource SuccessButton}" FontSize="11"/>
-            </StackPanel>
-          </Grid>
-          <WrapPanel Grid.Row="1" Margin="0,18,0,12">
-            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-              <StackPanel Tag="Spacing:4">
-                <TextBlock Text="Active game" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock Text="{Binding Text, ElementName=lblDashActiveGames}" Style="{StaticResource MetricValue}" FontSize="16"/>
-              </StackPanel>
-            </Border>
-            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-              <StackPanel Tag="Spacing:4">
-                <TextBlock Text="CPU usage" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock Text="{Binding Text, ElementName=lblDashCpuUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
-              </StackPanel>
-            </Border>
-            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-              <StackPanel Tag="Spacing:4">
-                <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock Text="{Binding Text, ElementName=lblDashMemoryUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
-              </StackPanel>
-            </Border>
-            <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-              <StackPanel Tag="Spacing:4">
-                <TextBlock Text="Health" Style="{StaticResource SectionSubtext}"/>
-                <TextBlock Text="{Binding Text, ElementName=lblDashSystemHealth}" Style="{StaticResource MetricValue}" FontSize="16"/>
-              </StackPanel>
-            </Border>
-          </WrapPanel>
-          <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
-          <ScrollViewer Grid.Row="3" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <TextBox x:Name="LogBox"
-                     Background="{DynamicResource ContentBackgroundBrush}"
-                     Foreground="{DynamicResource PrimaryTextBrush}"
-                     FontFamily="Consolas"
-                     FontSize="11"
-                     IsReadOnly="True"
-                     BorderThickness="0"
-                     TextWrapping="Wrap"
-                     Text="Initializing KOALA Gaming Optimizer v3.0...&#10;Ready for optimization commands."/>
-          </ScrollViewer>
-        </Grid>
-      </Border>
     </Grid>
 
     <StackPanel Visibility="Collapsed">
@@ -6384,6 +6384,7 @@ $btnNavAdvanced = $form.FindName('btnNavAdvanced')
 $btnNavGames = $form.FindName('btnNavGames')
 $btnNavOptions = $form.FindName('btnNavOptions')
 $btnNavBackup = $form.FindName('btnNavBackup')
+$btnNavLog = $form.FindName('btnNavLog')
 
 # Main content panels
 $panelDashboard = $form.FindName('panelDashboard')
@@ -6392,6 +6393,7 @@ $panelAdvanced = $form.FindName('panelAdvanced')
 $panelGames = $form.FindName('panelGames')
 $panelOptions = $form.FindName('panelOptions')
 $panelBackup = $form.FindName('panelBackup')
+$panelLog = $form.FindName('panelLog')
 $btnAdvancedNetwork = $form.FindName('btnAdvancedNetwork')
 $btnAdvancedSystem = $form.FindName('btnAdvancedSystem')
 $btnAdvancedServices = $form.FindName('btnAdvancedServices')
@@ -6755,7 +6757,8 @@ $global:NavigationButtonNames = @(
     'btnNavAdvanced',
     'btnNavGames',
     'btnNavOptions',
-    'btnNavBackup'
+    'btnNavBackup',
+    'btnNavLog'
 )
 $global:CurrentPanel = "Dashboard"
 $global:MenuMode = "Dashboard"  # For legacy compatibility
@@ -6784,7 +6787,7 @@ function Set-ActiveNavigationButton {
         $navButtons = if ($global:NavigationButtonNames) {
             $global:NavigationButtonNames
         } else {
-            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup')
+            @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
         }
 
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
@@ -6900,6 +6903,7 @@ function Switch-Panel {
         if ($panelGames) { $panelGames.Visibility = "Collapsed" }
         if ($panelOptions) { $panelOptions.Visibility = "Collapsed" }
         if ($panelBackup) { $panelBackup.Visibility = "Collapsed" }
+        if ($panelLog) { $panelLog.Visibility = "Collapsed" }
 
         # Get current theme
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
@@ -6965,6 +6969,15 @@ function Switch-Panel {
                 if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Create backups and restore your optimization settings" }
                 $global:CurrentPanel = "Backup"
                 $global:MenuMode = "Backup"
+            }
+            "Log" {
+                if ($panelLog) { $panelLog.Visibility = "Visible" }
+                Set-ActiveNavigationButton -ActiveButtonName 'btnNavLog' -CurrentTheme $currentTheme
+
+                if ($lblMainTitle) { $lblMainTitle.Text = "Activity log" }
+                if ($lblMainSubtitle) { $lblMainSubtitle.Text = "Review detailed optimization history and export records" }
+                $global:CurrentPanel = "Log"
+                $global:MenuMode = "Log"
             }
             default {
                 # Default to Dashboard
@@ -7168,6 +7181,19 @@ if ($btnNavBackup) {
         }
 
         Switch-Panel "Backup"
+        Switch-Theme -ThemeName $currentTheme
+    })
+}
+
+if ($btnNavLog) {
+    $btnNavLog.Add_Click({
+        $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
+            $cmbOptionsTheme.SelectedItem.Tag
+        } else {
+            'Nebula'
+        }
+
+        Switch-Panel "Log"
         Switch-Theme -ThemeName $currentTheme
     })
 }
