@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -36,13 +36,10 @@ if ($PSVersionTable.PSVersion.Major -lt 5) {
 # optimizer relies on. Older PowerShell builds do not expose the $IsWindows
 # automatic variable, so fall back to the .NET APIs when necessary.
 $script:IsWindowsPlatform = $false
-try {
     $script:IsWindowsPlatform = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
         [System.Runtime.InteropServices.OSPlatform]::Windows
     )
-} catch {
     $script:IsWindowsPlatform = ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)
-}
 
 if (-not $script:IsWindowsPlatform) {
     Write-Host 'KOALA Gaming Optimizer requires Windows because it depends on WPF and Windows-specific APIs.' -ForegroundColor Yellow
@@ -50,7 +47,6 @@ if (-not $script:IsWindowsPlatform) {
 }
 
 # ---------- WPF Assemblies ----------
-try {
     # Load required assemblies for the WPF-based UI. Breaking the list of
     # assemblies into an array keeps the code readable and avoids issues with
     # extremely long lines or accidental line wraps.
@@ -63,11 +59,9 @@ try {
         'Microsoft.VisualBasic'
     )
     Add-Type -AssemblyName $assemblies -ErrorAction Stop
-} catch {
     $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
     Write-Host $warning -ForegroundColor Yellow
     return
-}
 
 $BrushConverter = New-Object System.Windows.Media.BrushConverter
 
@@ -98,24 +92,21 @@ function Set-BorderBrushSafe {
 
     if (-not $Element) { return }
 
-    try {
         # Check if element supports BorderBrush
         if ($Element.GetType().GetProperty("BorderBrush")) {
             Set-BrushPropertySafe -Target $Element -Property 'BorderBrush' -Value $BorderBrushValue -AllowTransparentFallback
+
         }
 
         # Set BorderThickness if provided and supported
         if ($BorderThicknessValue -and $Element.GetType().GetProperty("BorderThickness")) {
             $Element.BorderThickness = $BorderThicknessValue
         }
-    } catch [System.InvalidOperationException] {
         # Sealed object exception - skip assignment
         Write-Verbose "BorderBrush assignment skipped due to sealed object (compatible with .NET Framework 4.8)"
-    } catch {
         # Other exceptions - log but don't fail
         Write-Verbose "BorderBrush assignment failed: $($_.Exception.Message)"
     }
-}
 
 # ---------- CENTRALIZED THEME ARRAY - ONLY CHANGE HERE! ----------
 # ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
@@ -217,11 +208,8 @@ $global:ThemeDefinitions = @{
 
 # Pre-instantiate the shared brush converter so later theming fallbacks never
 # leave string literals or PSObject wrappers parked in resource dictionaries.
-try {
     $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
-} catch {
     $script:SharedBrushConverter = $null
-}
 
 $script:BrushResourceKeys = @(
     'AppBackgroundBrush'
@@ -290,12 +278,10 @@ function Get-ThemeColors {
         Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
         return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
     }
-}
 
 function Optimize-LogFile {
     param([int]$MaxSizeMB = 10)
 
-    try {
         $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
 
         if (Test-Path $logFilePath) {
@@ -310,41 +296,35 @@ function Optimize-LogFile {
 
                 # Add optimization notice
                 Add-Content $logFilePath "[$([DateTime]::Now.ToString('HH:mm:ss'))] [Info] Log file optimized - size reduced from $sizeMB MB"
+
             }
         }
-    } catch {
         # Silent failure for log optimization to prevent recursion
     }
-}
 
 function Get-SystemPerformanceMetrics {
     param([switch]$Detailed)
 
-    try {
         $metrics = @{
             CPU = 0
             Memory = 0
             Disk = 0
             Network = 0
+
         }
 
         # Get CPU usage
-        try {
             $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
             $metrics.CPU = [math]::Round($cpu.Average, 1)
-        } catch {
             $metrics.CPU = 0
         }
 
         # Get Memory usage
-        try {
             $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
             $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
             $usedMemory = $totalMemory - $availableMemory
             $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
-        } catch {
             $metrics.Memory = 0
-        }
 
         if ($Detailed) {
             # Add more detailed metrics if needed
@@ -353,7 +333,6 @@ function Get-SystemPerformanceMetrics {
         }
 
         return $metrics
-    } catch {
         # Return default metrics on error
         return @{
             CPU = 0
@@ -361,15 +340,13 @@ function Get-SystemPerformanceMetrics {
             Disk = 0
             Network = 0
         }
-    }
-}
 
 function Ensure-NavigationVisibility {
     param([System.Windows.Controls.Panel]$NavigationPanel)
 
-    try {
         if (-not $NavigationPanel) {
             return
+
         }
 
         # Ensure all navigation buttons are visible and properly styled
@@ -379,7 +356,6 @@ function Ensure-NavigationVisibility {
         )
 
         foreach ($buttonName in $navigationButtons) {
-            try {
                 $button = $form.FindName($buttonName)
                 if ($button) {
                     $button.Visibility = [System.Windows.Visibility]::Visible
@@ -391,16 +367,13 @@ function Ensure-NavigationVisibility {
                         $button.BorderThickness = '0'
                         $button.Margin = '0,2'
                         $button.Padding = '15,10'
+
                     }
                 }
-            } catch {
                 # Silent failure for individual buttons
             }
         }
-    } catch {
         # Silent failure for navigation visibility
-    }
-}
 
 
 # ---------- Paths with Admin-safe Configuration ----------
@@ -408,9 +381,7 @@ if ($PSScriptRoot) {
     $ScriptRoot = $PSScriptRoot
 } elseif ($MyInvocation -and $MyInvocation.MyCommand -and $MyInvocation.MyCommand.Path) {
     $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-} else {
     $ScriptRoot = (Get-Location).Path
-}
 
 # Function moved to after helper functions to fix call order
 
@@ -503,9 +474,9 @@ function Add-LogToHistory {
         [string]$Category = 'General'
     )
 
-    try {
         if (-not $global:LogHistory -or -not ($global:LogHistory -is [System.Collections.IList])) {
             $global:LogHistory = [System.Collections.ArrayList]::new()
+
         }
 
         if (-not $global:MaxLogHistorySize -or $global:MaxLogHistorySize -lt 10) {
@@ -527,11 +498,9 @@ function Add-LogToHistory {
 
         }
 
-    } catch {
         # Silent fail to prevent logging issues
         Write-Verbose "Failed to add log to history: $($_.Exception.Message)"
     }
-}
 
 function Log {
     param([string]$msg, [string]$Level = 'Info')
@@ -553,13 +522,13 @@ function Log {
     }
 
     # Enhanced activity logging with persistent file logging and administrator mode awareness
-    try {
         $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
 
         # Additional reliability check: ensure directory exists
         $logDir = Split-Path $logFilePath -Parent
         if (-not (Test-Path $logDir)) {
             New-Item -Path $logDir -ItemType Directory -Force -ErrorAction Stop | Out-Null
+
         }
 
         # Enhanced file writing with retry mechanism
@@ -568,12 +537,10 @@ function Log {
         $success = $false
 
         while (-not $success -and $retryCount -lt $maxRetries) {
-            try {
                 # Enhanced log entry with category information
                 $enhancedLogMessage = "[$global:CachedTimestamp] [$Level] [$category] $msg"
                 Add-Content -Path $logFilePath -Value $enhancedLogMessage -Encoding UTF8 -ErrorAction Stop
                 $success = $true
-            } catch {
                 $retryCount++
                 if ($retryCount -lt $maxRetries) {
                     Start-Sleep -Milliseconds 100
@@ -581,7 +548,6 @@ function Log {
                     throw
                 }
             }
-        }
 
         # Verify file write was successful for critical operations
         if ($Level -eq 'Error' -or $Level -eq 'Warning') {
@@ -593,49 +559,38 @@ function Log {
 
         # Enhanced context logging for comprehensive user action tracking
         if ($msg -match "Theme|Game|Mode|Optimization|Service|System|Network|Settings|Backup|Import|Export|Search") {
-            try {
                 $adminStatus = if (Get-Command Test-AdminPrivileges -ErrorAction SilentlyContinue) { Test-AdminPrivileges } else { "Unknown" }
                 $contextMessage = "[$global:CachedTimestamp] [Context] [$category] User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus"
                 Add-Content -Path $logFilePath -Value $contextMessage -Encoding UTF8 -ErrorAction SilentlyContinue
 
                 # Add to history as well
                 Add-LogToHistory -Message "User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus" -Level "Context" -Category $category
-            } catch {
                 # Ignore context logging errors to prevent circular issues
             }
-        }
 
         # Additional validation logging for critical operations
         if ($Level -eq 'Error') {
-            try {
                 $errorContext = "[$global:CachedTimestamp] [ErrorContext] [$category] PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})"
                 Add-Content -Path $logFilePath -Value $errorContext -Encoding UTF8 -ErrorAction SilentlyContinue
 
                 # Add to history as well
                 Add-LogToHistory -Message "PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})" -Level "ErrorContext" -Category $category
-            } catch {
                 # Ignore additional context logging errors
             }
-        }
 
-    } catch {
         # Enhanced error reporting for administrator mode and permission issues
         $errorContext = ""
         if ($_.Exception.Message -match "Access.*denied|UnauthorizedAccess") {
             $errorContext = " (Insufficient permissions - try running as Administrator)"
         } elseif ($_.Exception.Message -match "path.*not found|DirectoryNotFound") {
             $errorContext = " (Directory access issue - check script location)"
-        } elseif ($_.Exception.Message -match "sharing violation|used by another process") {
             $errorContext = " (File in use - another instance may be running)"
-        }
 
         # Fallback to console with enhanced error context
         Write-Host "LOG FILE ERROR: $($_.Exception.Message)$errorContext" -ForegroundColor Red
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
-    }
 
     if ($global:LogBox -and $global:LogBoxAvailable) {
-        try {
             # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
             $global:LogBox.Dispatcher.Invoke({
                 try {
@@ -654,6 +609,7 @@ function Log {
                         if ($global:LogViewDetailed -eq $false) {
                             if ($msg -match "Success|Error|Warning|Applied|Optimization") {
                                 # Important messages are shown in compact view
+
                             } else {
                                 # Hide non-essential messages in compact view
                                 $currentText = $global:LogBox.Text
@@ -677,20 +633,13 @@ function Log {
                         $global:LogBoxAvailable = $false
                         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
                     }
-                } catch {
                     $global:LogBoxAvailable = $false
                     Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
                     Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
                 }
-            }, [System.Windows.Threading.DispatcherPriority]::Normal)
-        } catch {
             $global:LogBoxAvailable = $false
             Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
-        }
-    } else {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
-    }
-}
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
@@ -698,20 +647,18 @@ function Test-AdminPrivileges {
         return $false
     }
 
-    try {
         $id = [Security.Principal.WindowsIdentity]::GetCurrent()
         if (-not $id) {
             return $false
+
         }
 
         $principal = New-Object Security.Principal.WindowsPrincipal($id)
         return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    } catch {
         $warningMessage = 'Admin privilege detection unavailable: {0}' -f $_.Exception.Message
         Log $warningMessage 'Warning'
         return $false
     }
-}
 
 function Get-SafeConfigPath {
     param([string]$Filename)
@@ -740,10 +687,8 @@ function Get-SafeConfigPath {
         }
 
         if (-not (Test-Path $script:SafeConfigDirectory)) {
-            try {
                 New-Item -ItemType Directory -Path $script:SafeConfigDirectory -Force | Out-Null
                 Log "Created safe configuration directory: $script:SafeConfigDirectory" 'Info'
-            } catch {
                 Log "Failed to create safe configuration directory: $script:SafeConfigDirectory - $($_.Exception.Message)" 'Warning'
             }
         }
@@ -752,7 +697,6 @@ function Get-SafeConfigPath {
     }
 
     return Join-Path $currentPath $Filename
-}
 
 # Initialize paths after function definition
 $BackupPath = Get-SafeConfigPath 'Koala-Backup.json'
@@ -874,25 +818,20 @@ function Test-StartupControls {
         }
 
         # Provide UI feedback but do not block startup
-        try {
             $message = "⚠️ STARTUP VALIDATION: $($missingControls.Count) UI controls are missing.`n`nMissing: $($missingControls -join ', ')`n`nThe application will continue to run, but some features may not work properly.`n`nCheck the Activity Log for detailed fix suggestions."
 
             # Only show message box if WPF is available
             if ([System.Windows.MessageBox] -and $form) {
                 [System.Windows.MessageBox]::Show($message, "Startup Control Validation", 'OK', 'Warning')
+
             } else {
                 Log "UI feedback not available - continuing with console logging only" 'Info'
             }
-        } catch {
             Log "Could not display UI feedback for missing controls: $($_.Exception.Message)" 'Warning'
-        }
 
         return $false
-    } else {
         Log "[OK] All critical controls found and bound successfully" 'Success'
         return $true
-    }
-}
 $SettingsPath = Get-SafeConfigPath 'koala-settings.cfg'
 
 # ---------- UI Cloning and Mirroring Helpers (moved forward for availability) ----------
@@ -903,7 +842,6 @@ function Clone-UIElement {
         $Element
     )
 
-    try {
         $xaml = [System.Windows.Markup.XamlWriter]::Save($Element)
         $stringReader = New-Object System.IO.StringReader $xaml
         $xmlReader = [System.Xml.XmlReader]::Create($stringReader)
@@ -911,11 +849,9 @@ function Clone-UIElement {
         $xmlReader.Close()
         $stringReader.Close()
         return $clone
-    } catch {
         Write-Verbose "Clone-UIElement failed: $($_.Exception.Message)"
         return $null
     }
-}
 
 function Copy-TagValue {
     param($Value)
@@ -964,14 +900,11 @@ function New-ClonedCheckBox {
     try { $clone.IsChecked = $Source.IsChecked } catch { }
     try { $clone.ToolTip = $Source.ToolTip } catch { }
 
-    try {
         $clone.Tag = Copy-TagValue -Value $Source.Tag
     } catch {
         Write-Verbose "Failed to copy checkbox Tag value: $($_.Exception.Message)"
-    }
 
     return $clone
-}
 
 function Copy-ChildElement {
     param([System.Windows.UIElement]$Source)
@@ -1004,13 +937,13 @@ function Copy-ChildElement {
 function Update-GameListMirrors {
     if (-not $script:PrimaryGameListPanel -or -not $script:DashboardGameListPanel) { return }
 
-    try {
         $script:DashboardGameListPanel.Children.Clear()
         foreach ($child in $script:PrimaryGameListPanel.Children) {
             if ($child -is [System.Windows.Controls.TextBlock]) {
                 $clonedText = New-ClonedTextBlock -Source $child
                 if ($clonedText) { $script:DashboardGameListPanel.Children.Add($clonedText) }
                 continue
+
             }
 
             if ($child -is [System.Windows.Controls.Border]) {
@@ -1036,10 +969,8 @@ function Update-GameListMirrors {
                 $script:DashboardGameListPanel.Children.Add($fallback)
             }
         }
-    } catch {
         Write-Verbose "Update-GameListMirrors failed: $($_.Exception.Message)"
     }
-}
 
 # Resolve a color-like value (string, brush, PSObject) to a usable color string.
 function Get-ColorStringFromValue {
@@ -1056,6 +987,7 @@ function Get-ColorStringFromValue {
     if ($ColorValue -is [System.Windows.Media.Brush]) {
         try { return $ColorValue.ToString() } catch { return $null }
     }
+catch { }
 
     if ($ColorValue -is [System.Management.Automation.PSObject]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -1072,6 +1004,7 @@ function Get-ColorStringFromValue {
 
         try { return $ColorValue.ToString() } catch { return $null }
     }
+catch { }
 
     if ($ColorValue -is [System.Collections.IDictionary]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -1102,7 +1035,6 @@ function Get-ColorStringFromValue {
     }
 
     try { return [string]$ColorValue } catch { return $null }
-}
 
 # Normalize theme tables so color values resolve to reusable brush instances.
 function Normalize-ThemeColorTable {
@@ -1117,9 +1049,7 @@ function Normalize-ThemeColorTable {
 
         if ($value -is [string]) {
             $stringBrush = $null
-            try {
                 $stringBrush = New-SolidColorBrushSafe $value
-            } catch {
                 $stringBrush = $null
             }
 
@@ -1133,11 +1063,10 @@ function Normalize-ThemeColorTable {
 
         if ($value -is [bool]) { continue }
         if ($value -is [System.Windows.Media.Brush]) {
-            try {
                 if ($value -is [System.Windows.Freezable] -and -not $value.IsFrozen) {
                     $value.Freeze()
+
                 }
-            } catch {
                 Write-Verbose "Normalize-ThemeColorTable: Failed to freeze brush for key '$key'"
             }
             continue
@@ -1148,10 +1077,8 @@ function Normalize-ThemeColorTable {
         if (-not [string]::IsNullOrWhiteSpace($resolved)) {
             $Theme[$key] = $resolved
         }
-    }
 
     return $Theme
-}
 
 # Creates a cloneable brush instance from a variety of incoming values.
 function Resolve-BrushInstance {
@@ -1168,19 +1095,17 @@ function Resolve-BrushInstance {
     }
 
     if ($current -is [System.Windows.Media.Brush]) {
-        try {
             $clone = if ($current -is [System.Windows.Freezable]) { $current.Clone() } else { $current }
             if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
                 try { $clone.Freeze() } catch { }
+
             }
             return $clone
         } catch {
             return $current
         }
-    }
 
     return $null
-}
 
 # Creates a frozen SolidColorBrush from a color-like value when possible.
 function New-SolidColorBrushSafe {
@@ -1194,7 +1119,6 @@ function New-SolidColorBrushSafe {
     }
 
     if ($existingBrush -is [System.Windows.Media.Brush]) {
-        try {
             $colorText = $existingBrush.ToString()
             if (-not [string]::IsNullOrWhiteSpace($colorText)) {
                 $colorCandidate = [System.Windows.Media.ColorConverter]::ConvertFromString($colorText)
@@ -1202,9 +1126,9 @@ function New-SolidColorBrushSafe {
                     $fromBrush = New-Object System.Windows.Media.SolidColorBrush $colorCandidate
                     $fromBrush.Freeze()
                     return $fromBrush
+
                 }
             }
-        } catch {
             Write-Verbose "Failed to coerce brush value '$existingBrush' to SolidColorBrush: $($_.Exception.Message)"
         }
     }
@@ -1220,42 +1144,34 @@ function New-SolidColorBrushSafe {
 
     $converter = Get-SharedBrushConverter
     if ($converter) {
-        try {
             $converted = $converter.ConvertFromString($resolvedValue)
             $convertedBrush = Resolve-BrushInstance $converted
             if ($convertedBrush -is [System.Windows.Media.SolidColorBrush]) {
                 return $convertedBrush
+
             }
-        } catch {
             Write-Verbose "BrushConverter could not convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
         }
-    }
 
-    try {
         $color = [System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
         if ($color -is [System.Windows.Media.Color]) {
             $brush = New-Object System.Windows.Media.SolidColorBrush $color
             $brush.Freeze()
             return $brush
+
         }
-    } catch {
         Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
-    }
 
     return $null
-}
 
 function Get-SharedBrushConverter {
     if (-not $script:SharedBrushConverter -or $script:SharedBrushConverter.GetType().FullName -ne 'System.Windows.Media.BrushConverter') {
-        try {
             $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
-        } catch {
             $script:SharedBrushConverter = $null
         }
     }
 
     return $script:SharedBrushConverter
-}
 
 function Set-ShapeFillSafe {
     param(
@@ -1265,12 +1181,9 @@ function Set-ShapeFillSafe {
 
     if (-not $Shape) { return }
 
-    try {
         Set-BrushPropertySafe -Target $Shape -Property 'Fill' -Value $Value -AllowTransparentFallback
-    } catch {
         Write-Verbose "Set-ShapeFillSafe failed: $($_.Exception.Message)"
     }
-}
 
 # Centralized helper to assign Brush-like theme values to WPF dependency properties.
 function Set-BrushPropertySafe {
@@ -1284,12 +1197,12 @@ function Set-BrushPropertySafe {
     if (-not $Target) { return }
     if ([string]::IsNullOrWhiteSpace($Property)) { return }
 
-    try {
         $resolvedValue = $Value
         $previousValue = $null
         while ($resolvedValue -is [System.Management.Automation.PSObject] -and $resolvedValue -ne $previousValue) {
             $previousValue = $resolvedValue
             $resolvedValue = $resolvedValue.PSObject.BaseObject
+
         }
 
         $brush = Resolve-BrushInstance $resolvedValue
@@ -1325,16 +1238,16 @@ function Set-BrushPropertySafe {
             } else {
                 try { $colorString = [string]$colorValue } catch { $colorString = $null }
             }
-        }
+catch { }
 
         if (-not [string]::IsNullOrWhiteSpace($colorString)) {
             $converter = Get-SharedBrushConverter
             if ($converter) {
-                try {
                     $converted = $converter.ConvertFromString($colorString)
                     $convertedBrush = Resolve-BrushInstance $converted
                     if (-not $convertedBrush) {
                         $convertedBrush = New-SolidColorBrushSafe $converted
+
                     }
 
                     if ($convertedBrush -is [System.Windows.Media.Brush]) {
@@ -1345,10 +1258,8 @@ function Set-BrushPropertySafe {
                         }
                         return
                     }
-                } catch {
                     Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
                 }
-            }
 
             $fallbackBrush = New-SolidColorBrushSafe $colorString
             if ($fallbackBrush -is [System.Windows.Media.Brush]) {
@@ -1358,8 +1269,6 @@ function Set-BrushPropertySafe {
                     $Target.$Property = $fallbackBrush
                 }
                 return
-            }
-        }
 
         if ($AllowTransparentFallback) {
             $transparentBrush = [System.Windows.Media.Brushes]::Transparent
@@ -1368,13 +1277,8 @@ function Set-BrushPropertySafe {
             } else {
                 $Target.$Property = $transparentBrush
             }
-        } else {
             try { $Target.$Property = $null } catch { }
-        }
-    } catch {
         Write-Verbose "Set-BrushPropertySafe failed for property '$Property' on $($Target.GetType().Name): $($_.Exception.Message)"
-    }
-}
 
 function Convert-ToBrushResource {
     param(
@@ -1386,33 +1290,28 @@ function Convert-ToBrushResource {
 
     $probe = New-Object System.Windows.Controls.Border
 
-    try {
         if ($AllowTransparentFallback) {
             Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value -AllowTransparentFallback
+
         } else {
             Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value
         }
-    } catch {
         return $null
-    }
 
     $result = $probe.Background
     if ($null -eq $result) { return $null }
 
     if ($result -is [System.Windows.Freezable]) {
-        try {
             $clone = $result.Clone()
             if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
                 try { $clone.Freeze() } catch { }
+
             }
             return $clone
         } catch {
             return $result
-        }
-    }
 
     return $result
-}
 
 function Normalize-BrushResources {
     param(
@@ -1451,9 +1350,6 @@ function Normalize-BrushResources {
             $Resources[$key] = [System.Windows.Media.Brushes]::Transparent
         } else {
             Write-Verbose "Normalize-BrushResources skipped '$key' due to unresolved brush value"
-        }
-    }
-}
 
 function Normalize-ElementBrushProperties {
     param([System.Windows.DependencyObject]$Element)
@@ -1474,17 +1370,13 @@ function Normalize-ElementBrushProperties {
     )
 
     foreach ($propertyName in $brushPropertyNames) {
-        try {
             $propertyInfo = $Element.GetType().GetProperty($propertyName)
-        } catch {
             $propertyInfo = $null
         }
 
         if (-not $propertyInfo -or -not $propertyInfo.CanRead -or -not $propertyInfo.CanWrite) { continue }
 
-        try {
             $currentValue = $propertyInfo.GetValue($Element, $null)
-        } catch {
             continue
         }
 
@@ -1492,8 +1384,6 @@ function Normalize-ElementBrushProperties {
         if ($currentValue -is [System.Windows.Media.Brush]) { continue }
 
         Set-BrushPropertySafe -Target $Element -Property $propertyName -Value $currentValue -AllowTransparentFallback
-    }
-}
 
 function Normalize-VisualTreeBrushes {
     param([System.Windows.DependencyObject]$Root)
@@ -1509,9 +1399,7 @@ function Normalize-VisualTreeBrushes {
 
         if ($current -isnot [System.Windows.DependencyObject]) { continue }
 
-        try {
             $hash = [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode($current)
-        } catch {
             continue
         }
 
@@ -1520,9 +1408,7 @@ function Normalize-VisualTreeBrushes {
         Normalize-ElementBrushProperties -Element $current
 
         $childCount = 0
-        try {
             $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
-        } catch {
             $childCount = 0
         }
 
@@ -1532,16 +1418,12 @@ function Normalize-VisualTreeBrushes {
             if ($child) { $stack.Push($child) }
         }
 
-        try {
             foreach ($logicalChild in [System.Windows.LogicalTreeHelper]::GetChildren($current)) {
                 if ($logicalChild -is [System.Windows.DependencyObject]) {
                     $stack.Push($logicalChild)
+
                 }
             }
-        } catch {
-        }
-    }
-}
 
 # ---------- Theme and Styling Helpers (moved forward for availability) ----------
 function Find-AllControlsOfType {
@@ -1578,6 +1460,7 @@ function Find-AllControlsOfType {
                     default {
                         try { $resolvedType = [Type]::GetType("$typeName, PresentationFramework", $false) } catch { }
                     }
+catch { }
                 }
             }
 
@@ -1589,9 +1472,9 @@ function Find-AllControlsOfType {
         return
     }
 
-    try {
         if ($Parent -is $ControlType) {
             $Collection.Value += $Parent
+
         }
 
         if ($Parent.Children) {
@@ -1600,13 +1483,8 @@ function Find-AllControlsOfType {
             }
         } elseif ($Parent.Content -and $Parent.Content -is [System.Windows.UIElement]) {
             Find-AllControlsOfType -Parent $Parent.Content -ControlType $ControlType -Collection $Collection
-        } elseif ($Parent.Child) {
             Find-AllControlsOfType -Parent $Parent.Child -ControlType $ControlType -Collection $Collection
-        }
-    } catch {
         # Continue searching even if error occurs with specific element
-    }
-}
 
 function Set-StackPanelChildSpacing {
     param(
@@ -1651,16 +1529,11 @@ function Set-StackPanelChildSpacing {
                 } elseif ($current -lt $Spacing) {
                     $newMargin.Bottom = $Spacing
                 }
-            } else {
                 if ([math]::Abs($current) -lt 0.01) {
                     $newMargin.Bottom = 0
                 }
-            }
-        }
 
         $child.Margin = $newMargin
-    }
-}
 
 function Set-GridColumnSpacing {
     param(
@@ -1849,12 +1722,12 @@ function Apply-FallbackThemeColors {
 
     if (-not $element -or -not $colors) { return }
 
-    try {
         $elementType = $element.GetType().Name
 
         switch ($elementType) {
             "Window" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
+
             }
             "Border" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
@@ -1879,18 +1752,13 @@ function Apply-FallbackThemeColors {
             Apply-FallbackThemeColors -element $element.Content -colors $colors
         } elseif ($element.Child) {
             Apply-FallbackThemeColors -element $element.Child -colors $colors
-        }
-    } catch {
         # Ignore errors in fallback theming to avoid breaking the UI
-    }
-}
 
 function Update-AllUIElementsRecursively {
     param($element, $colors)
 
     if (-not $element -or -not $colors) { return }
 
-    try {
         $elementType = $element.GetType().Name
 
         switch ($elementType) {
@@ -1898,6 +1766,7 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 if ($element.BorderBrush) {
                     Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
+
                 }
             }
             "Border" {
@@ -1941,21 +1810,18 @@ function Update-AllUIElementsRecursively {
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
-            }
             "WrapPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
-            }
             "DockPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
-            }
             "TabItem" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
@@ -2016,21 +1882,17 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $comboForeground
                 Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
-                try {
                     $element.FontSize = 12
                     $element.FontWeight = 'Normal'
-                } catch { Write-Verbose "ComboBox font styling skipped for compatibility" }
 
                 foreach ($item in $element.Items) {
                     if ($item -is [System.Windows.Controls.ComboBoxItem]) {
                         Set-BrushPropertySafe -Target $item -Property 'Background' -Value $comboBackground
                         Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $comboForeground
 
-                        try {
                             $item.Padding = "10,6"
                             $item.MinHeight = 28
                             $item.FontSize = 12
-                        } catch { Write-Verbose "ComboBoxItem styling skipped for compatibility" }
                     }
                 }
             }
@@ -2069,28 +1931,24 @@ function Update-AllUIElementsRecursively {
                         Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
                         Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
                     }
-                } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
+    }
                     Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
-                }
-            }
             "ScrollViewer" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
 
-                try {
                     if ($element.Template) {
         $scrollBars = @()
         Find-AllControlsOfType -Parent $element -ControlType 'System.Windows.Controls.Primitives.ScrollBar' -Collection ([ref]$scrollBars)
                         foreach ($scrollBar in $scrollBars) {
                             Set-BrushPropertySafe -Target $scrollBar -Property 'Background' -Value $colors.Secondary
                             Set-BrushPropertySafe -Target $scrollBar -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
+
                         }
                     }
-                } catch {
                     # Continue if scrollbar theming fails
                 }
-            }
             "ProgressBar" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
@@ -2111,13 +1969,9 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
-        }
 
-        try {
             $element.InvalidateVisual()
-        } catch {
             # Ignore refresh issues on individual elements
-        }
 
         if ($element.Children) {
             foreach ($child in $element.Children) {
@@ -2131,18 +1985,15 @@ function Update-AllUIElementsRecursively {
             Update-AllUIElementsRecursively -element $element.Child -colors $colors
         }
 
-    } catch {
         # Continue on individual element failures
-    }
-}
 
   function Update-ButtonStyles {
       param($Primary, $Hover)
 
-        try {
           $primaryBrush = $null
           if ($Primary) {
               $primaryBrush = New-SolidColorBrushSafe $Primary
+
           }
 
           $hoverBrush = $null
@@ -2187,15 +2038,14 @@ function Update-AllUIElementsRecursively {
               }
 
               $safeBrush = New-SolidColorBrushSafe $colorString
-              if (& $assignBrush $key $safeBrush) {
+              if ($key -and $safeBrush) {
                   return
               }
 
               Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
-          }
 
-          & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
-          & $setResourceBrush 'ButtonBorderBrush' $primaryBrush $Primary
+          # removed invalid call 'ButtonBackgroundBrush' $primaryBrush $Primary
+          # removed invalid call 'ButtonBorderBrush' $primaryBrush $Primary
 
           $hoverBrushCandidate = $hoverBrush
           if (-not $hoverBrushCandidate) { $hoverBrushCandidate = $primaryBrush }
@@ -2203,8 +2053,8 @@ function Update-AllUIElementsRecursively {
           $hoverColorValue = $Hover
           if (-not $hoverColorValue) { $hoverColorValue = $Primary }
 
-          & $setResourceBrush 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
-          & $setResourceBrush 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
+          # removed invalid call 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
+          # removed invalid call 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
 
           $buttons = @()
           Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
@@ -2220,24 +2070,20 @@ function Update-AllUIElementsRecursively {
                       Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $Primary
                   }
               }
-          }
 
           Normalize-BrushResources -Resources $form.Resources -Keys @('ButtonBackgroundBrush','ButtonBorderBrush','ButtonHoverBrush','ButtonPressedBrush') -AllowTransparentFallback
 
-      } catch {
           $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
           Log $errorMessage 'Warning'
-      }
-}
 
 function Update-ComboBoxStyles {
     param($Background, $Foreground, $Border, $ThemeName = 'Nebula')
 
-    try {
         $themeColors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
         if ($themeColors -and $themeColors.ContainsKey('IsLight')) {
             $isLight = [bool]$themeColors['IsLight']
+
         }
 
     $comboBoxes = @()
@@ -2249,13 +2095,11 @@ function Update-ComboBoxStyles {
             $themeColors.Secondary
         } else {
             $Background
-        }
 
         $actualForeground = if ($themeColors -and $themeColors.Text) {
             $themeColors.Text
         } else {
             $Foreground
-        }
 
         $itemBackground = if ($isLight) { 'White' } else { $actualBackground }
         $itemForeground = $actualForeground
@@ -2265,10 +2109,8 @@ function Update-ComboBoxStyles {
             Set-BrushPropertySafe -Target $combo -Property 'Foreground' -Value $actualForeground
             Set-BrushPropertySafe -Target $combo -Property 'BorderBrush' -Value $Border -AllowTransparentFallback
 
-            try {
                 $combo.FontSize = 13
                 $combo.FontWeight = 'Normal'
-            } catch {
                 Write-Verbose 'ComboBox font styling skipped for compatibility'
             }
 
@@ -2277,38 +2119,28 @@ function Update-ComboBoxStyles {
                     Set-BrushPropertySafe -Target $item -Property 'Background' -Value $itemBackground
                     Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $itemForeground
 
-                    try {
                         $item.Padding = '12,6'
                         $item.MinHeight = 30
                         $item.FontSize = 13
-                    } catch {
                         Write-Verbose 'ComboBoxItem styling skipped for compatibility'
                     }
                 }
-            }
 
-            try {
                 $combo.InvalidateVisual()
                 $combo.UpdateLayout()
-            } catch {
                 Write-Verbose 'ComboBox refresh skipped for compatibility'
-            }
-        }
 
-    } catch {
         $errorMessage = 'Error updating ComboBox styles: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
-    }
-}
 
 function Update-TextStyles {
     param($Foreground, $Header, $ThemeName = 'Nebula')
 
-    try {
         $colors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
         if ($colors -and $colors.ContainsKey('IsLight')) {
             $isLight = [bool]$colors['IsLight']
+
         }
 
     $textBlocks = @()
@@ -2325,9 +2157,9 @@ function Update-TextStyles {
 
             Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $targetColor
 
-            try {
                 if (-not $textBlock.FontSize -or $textBlock.FontSize -lt 11) {
                     $textBlock.FontSize = 11
+
                 }
 
                 if ($isLight) {
@@ -2336,33 +2168,26 @@ function Update-TextStyles {
                         Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $colors.TextSecondary
                     }
                 }
-            } catch {
                 Write-Verbose 'TextBlock enhancement skipped for compatibility'
             }
-        }
 
     $labels = @()
     Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Label' -Collection ([ref]$labels)
 
         foreach ($label in $labels) {
             Set-BrushPropertySafe -Target $label -Property 'Foreground' -Value $Foreground
-            try {
                 if (-not $label.FontSize -or $label.FontSize -lt 11) {
                     $label.FontSize = 11
+
                 }
                 if ($isLight) {
                     $label.FontWeight = 'Normal'
                 }
-            } catch {
                 Write-Verbose 'Label enhancement skipped for compatibility'
             }
-        }
 
-    } catch {
         $errorMessage = 'Error updating text styles: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
-    }
-}
 
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
@@ -2371,9 +2196,9 @@ function Update-ThemeColorPreview {
         return
     }
 
-    try {
         $colors = if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
             $global:CustomThemeColors
+
         } else {
             Get-ThemeColors -ThemeName $ThemeName
         }
@@ -2403,10 +2228,7 @@ function Update-ThemeColorPreview {
         }
 
         Log "Farb-Vorschau für '$($colors.Name)' aktualisiert" 'Info'
-    } catch {
         Log "Fehler bei Farb-Vorschau: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 function Apply-ThemeColors {
     [CmdletBinding(DefaultParameterSetName='ByTheme')]
@@ -2425,7 +2247,6 @@ function Apply-ThemeColors {
         [switch]$IsFallback
     )
 
-    try {
         if ($PSCmdlet.ParameterSetName -eq 'ByCustom') {
             $colors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
             $colors['Name'] = 'Custom Theme'
@@ -2436,6 +2257,7 @@ function Apply-ThemeColors {
                 $colors['SidebarBg'] = $Background
                 $colors['HeaderBg'] = $Background
                 $colors['LogBg'] = $Background
+
             }
 
             if ($PSBoundParameters.ContainsKey('Primary') -and -not [string]::IsNullOrWhiteSpace($Primary)) {
@@ -2464,9 +2286,7 @@ function Apply-ThemeColors {
                 $colors = $global:CustomThemeColors.Clone()
             } else {
                 $colors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
-            }
             $appliedThemeName = $ThemeName
-        }
 
         $colors = Normalize-ThemeColorTable $colors
 
@@ -2481,7 +2301,6 @@ function Apply-ThemeColors {
 
         Log "Wende Theme '$($colors.Name)' an..." 'Info'
 
-        try {
             $cardStartValue = if ($colors.ContainsKey('CardBackgroundStart') -and $colors['CardBackgroundStart']) { $colors['CardBackgroundStart'] } else { $colors.Secondary }
             $cardEndValue = if ($colors.ContainsKey('CardBackgroundEnd') -and $colors['CardBackgroundEnd']) { $colors['CardBackgroundEnd'] } else { $colors.Background }
             $summaryStartValue = if ($colors.ContainsKey('SummaryBackgroundStart') -and $colors['SummaryBackgroundStart']) { $colors['SummaryBackgroundStart'] } else { $cardStartValue }
@@ -2505,6 +2324,7 @@ function Apply-ThemeColors {
             $contentBrush = New-SolidColorBrushSafe $colors.Secondary
             if ($contentBrush -is [System.Windows.Media.Brush]) {
                 try { $form.Resources['ContentBackgroundBrush'] = $contentBrush } catch { Write-Verbose "Content background resource assignment skipped" }
+
             }
 
             $heroBrush = New-SolidColorBrushSafe $summaryBrush
@@ -2512,6 +2332,7 @@ function Apply-ThemeColors {
             if ($heroBrush -is [System.Windows.Media.Brush]) {
                 try { $form.Resources['HeroCardBrush'] = $heroBrush } catch { Write-Verbose "HeroCardBrush resource assignment skipped" }
             }
+catch { }
 
             $gaugeBackgroundBrush = New-SolidColorBrushSafe $gaugeBackgroundValue
             if (-not $gaugeBackgroundBrush) { $gaugeBackgroundBrush = New-SolidColorBrushSafe $colors.Secondary }
@@ -2561,7 +2382,6 @@ function Apply-ThemeColors {
                 } else {
                     Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
                 }
-            }
 
             if ($form -and $form.Resources) {
                 Register-BrushResourceKeys -Keys $form.Resources.Keys
@@ -2569,16 +2389,14 @@ function Apply-ThemeColors {
 
             $targetBrushKeys = @($script:BrushResourceKeys)
             if ($form -and $form.Resources) {
-                try {
                     foreach ($resourceKey in $form.Resources.Keys) {
                         if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($targetBrushKeys -notcontains $resourceKey)) {
                             $targetBrushKeys += $resourceKey
+
                         }
                     }
-                } catch {
                     # Ignore enumeration errors and fall back to the static list
                 }
-            }
 
             Normalize-BrushResources -Resources $form.Resources -Keys $targetBrushKeys -AllowTransparentFallback
 
@@ -2629,9 +2447,7 @@ function Apply-ThemeColors {
                     Set-BrushPropertySafe -Target $innerEllipse -Property 'Fill' -Value $innerGaugeBrush
                 }
             }
-        } catch {
             Log "Fehler beim Aktualisieren der Dashboard-Hintergründe: $($_.Exception.Message)" 'Warning'
-        }
 
         $backgroundBrush = New-SolidColorBrushSafe $colors.Background
         $secondaryBrush = New-SolidColorBrushSafe $colors.Secondary
@@ -2640,113 +2456,82 @@ function Apply-ThemeColors {
         $primaryBrush = New-SolidColorBrushSafe $colors.Primary
 
         $formBackgroundValue = if ($backgroundBrush) { $backgroundBrush } else { $colors.Background }
-        try {
             Set-BrushPropertySafe -Target $form -Property 'Background' -Value $formBackgroundValue
-        } catch {
             Write-Verbose "Form background assignment skipped"
-        }
 
         $rootLayout = $form.FindName('RootLayout')
         if ($rootLayout) {
-            try {
                 $rootLayoutBackground = if ($backgroundBrush) { $backgroundBrush } else { $colors.Background }
                 Set-BrushPropertySafe -Target $rootLayout -Property 'Background' -Value $rootLayoutBackground
-            } catch {
                 Write-Verbose "RootLayout background assignment skipped"
             }
-        }
 
         $sidebar = $form.FindName('SidebarShell')
         if ($sidebar -is [System.Windows.Controls.Border]) {
             $sidebarBackground = if ($sidebarBrush) { $sidebarBrush } else { $colors.SidebarBg }
             Set-BrushPropertySafe -Target $sidebar -Property 'Background' -Value $sidebarBackground
-            try {
                 $sidebarBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
                 Set-BrushPropertySafe -Target $sidebar -Property 'BorderBrush' -Value $sidebarBorder -AllowTransparentFallback
-            } catch {
                 Write-Verbose "Sidebar border assignment skipped"
             }
-        }
 
         $navScroll = $form.FindName('SidebarNavScroll')
         if ($navScroll -is [System.Windows.Controls.ScrollViewer]) {
-            try {
                 $navScrollBackground = if ($sidebarBrush) { $sidebarBrush } else { $colors.SidebarBg }
                 Set-BrushPropertySafe -Target $navScroll -Property 'Background' -Value $navScrollBackground
-            } catch {
                 Write-Verbose "Sidebar scroll background skipped"
             }
-        }
 
         $adminCard = $form.FindName('SidebarAdminCard')
         if ($adminCard -is [System.Windows.Controls.Border]) {
             $adminBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
             Set-BrushPropertySafe -Target $adminCard -Property 'Background' -Value $adminBackground
-            try {
                 $adminBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
                 Set-BrushPropertySafe -Target $adminCard -Property 'BorderBrush' -Value $adminBorder -AllowTransparentFallback
-            } catch {
                 Write-Verbose "Sidebar admin border assignment skipped"
             }
-        }
 
         $mainStage = $form.FindName('MainStage')
         if ($mainStage -is [System.Windows.Controls.Grid]) {
-            try {
                 $mainStageBackground = if ($secondaryBrush) { $secondaryBrush } else { $colors.Secondary }
                 Set-BrushPropertySafe -Target $mainStage -Property 'Background' -Value $mainStageBackground
-            } catch {
                 Write-Verbose "MainStage background assignment skipped"
             }
-        }
 
         $headerBar = $form.FindName('HeaderBar')
         if ($headerBar -is [System.Windows.Controls.Border]) {
             $headerBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
             Set-BrushPropertySafe -Target $headerBar -Property 'Background' -Value $headerBackground
-            try {
                 $headerBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
                 Set-BrushPropertySafe -Target $headerBar -Property 'BorderBrush' -Value $headerBorder -AllowTransparentFallback
-            } catch {
                 Write-Verbose "Header border assignment skipped"
             }
-        }
 
         $footerBar = $form.FindName('FooterBar')
         if ($footerBar -is [System.Windows.Controls.Border]) {
             $footerBackground = if ($headerBrush) { $headerBrush } else { $colors.HeaderBg }
             Set-BrushPropertySafe -Target $footerBar -Property 'Background' -Value $footerBackground
-            try {
                 $footerBorder = if ($primaryBrush) { $primaryBrush } else { $colors.Primary }
                 Set-BrushPropertySafe -Target $footerBar -Property 'BorderBrush' -Value $footerBorder -AllowTransparentFallback
-            } catch {
                 Write-Verbose "Footer border assignment skipped"
             }
-        }
 
         $mainScroll = $form.FindName('MainScrollViewer')
         if ($mainScroll -is [System.Windows.Controls.ScrollViewer]) {
             try { Set-BrushPropertySafe -Target $mainScroll -Property 'Background' -Value [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
         }
+catch { }
 
-        try {
             Update-AllUIElementsRecursively -element $form -colors $colors
             Log "Rekursive UI-Element-Aktualisierung abgeschlossen" 'Info'
-        } catch [System.InvalidOperationException] {
             if ($_.Exception.Message -match "sealed|IsSealed") {
                 Log "SetterBase sealed style detected - applying fallback theming strategy" 'Warning'
-                try {
                     Apply-FallbackThemeColors -element $form -colors $colors
                     Log "Fallback theming strategy erfolgreich angewendet" 'Info'
-                } catch {
                     Log "Fallback theming strategy fehlgeschlagen: $($_.Exception.Message)" 'Error'
                 }
-            } else {
                 throw
-            }
-        }
 
-        try {
             $panels = @($panelDashboard, $panelBasicOpt, $panelAdvanced, $panelGames, $panelOptions, $panelBackup, $panelLog)
             foreach ($panel in $panels) {
                 if ($panel) {
@@ -2757,7 +2542,6 @@ function Apply-ThemeColors {
                     } catch {
                     }
                 }
-            }
 
             function Find-ScrollViewers($element) {
                 if ($element -is [System.Windows.Controls.ScrollViewer]) {
@@ -2772,8 +2556,6 @@ function Apply-ThemeColors {
                     Find-ScrollViewers $element.Content
                 } elseif ($element.Child) {
                     Find-ScrollViewers $element.Child
-                }
-            }
 
             $form.Dispatcher.Invoke([action]{
 
@@ -2786,17 +2568,13 @@ function Apply-ThemeColors {
                 Find-ScrollViewers $form
 
                 foreach ($scrollViewer in $script:scrollViewers) {
-                    try {
                         $scrollViewer.InvalidateVisual()
                         $scrollViewer.UpdateLayout()
-                    } catch {
                     }
                 }
 
-            }, [System.Windows.Threading.DispatcherPriority]::Render)
 
             $form.Dispatcher.BeginInvoke([action]{
-                try {
                     $backgroundBrush = $null
                     try {
                         $backgroundBrush = New-SolidColorBrushSafe $colors.Background
@@ -2807,40 +2585,28 @@ function Apply-ThemeColors {
                     if ($backgroundBrush) {
                         Set-BrushPropertySafe -Target $form -Property 'Background' -Value $backgroundBrush
                     } else {
-                        try {
                             $converter = New-Object System.Windows.Media.BrushConverter
                             $converted = $converter.ConvertFromString($colors.Background)
                             if ($converted) {
                                 Set-BrushPropertySafe -Target $form -Property 'Background' -Value $converted
+
                             } else {
                                 Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
-                            }
-                        } catch {
                             Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
-                        }
-                    }
-                } catch {
                     Write-Verbose "Background refresh skipped: $($_.Exception.Message)"
-                }
 
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
-            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
 
             Log '[OK] Vollständiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
 
-        } catch {
             $warningMessage = '⚠️ UI-Refresh teilweise fehlgeschlagen: {0}' -f $_.Exception.Message
             Log $warningMessage 'Warning'
 
-            try {
                 $form.InvalidateVisual()
                 $form.UpdateLayout()
                 Log 'Fallback-Refresh durchgeführt' 'Info'
-            } catch {
                 Log 'Auch Fallback-Refresh fehlgeschlagen' 'Error'
-            }
-        }
 
         $global:CurrentTheme = $appliedThemeName
         Update-ButtonStyles -Primary $colors.Primary -Hover $colors.Hover
@@ -2849,7 +2615,6 @@ function Apply-ThemeColors {
 
         Normalize-VisualTreeBrushes -Root $form
 
-    } catch {
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
 
         $shouldAttemptFallback = -not $IsFallback
@@ -2858,29 +2623,23 @@ function Apply-ThemeColors {
         }
 
         if ($shouldAttemptFallback) {
-            try {
                 if (${function:Apply-ThemeColors}) {
                     & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
                     Log "Standard-Theme als Fallback angewendet" 'Info'
+
                 } else {
                     Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
                 }
-            } catch {
                 Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
-            }
-        } else {
             Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
-        }
-    }
-}
 
 function Switch-Theme {
     param([string]$ThemeName)
 
-    try {
         if (-not $ThemeName) {
             Log "Theme-Name ist leer, verwende Standard" 'Warning'
             $ThemeName = "Nebula"
+
         }
 
         if (-not $form) {
@@ -2908,13 +2667,10 @@ function Switch-Theme {
         } else {
             Log "Apply-ThemeColors Funktion nicht verfügbar - Theme kann nicht angewendet werden" 'Error'
             return
-        }
 
         $form.Dispatcher.Invoke([action]{
 
-            try {
                 Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
-            } catch {
                 Write-Verbose "Switch-Theme background refresh skipped: $($_.Exception.Message)"
             }
 
@@ -2927,7 +2683,6 @@ function Switch-Theme {
                 $global:NavigationButtonNames
             } else {
                 @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
-            }
 
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -2944,7 +2699,6 @@ function Switch-Theme {
                     $btn.InvalidateMeasure()
                     $btn.UpdateLayout()
                 }
-            }
 
             if ($form.Children -and $form.Children.Count -gt 0) {
                 $firstChild = $form.Children[0]
@@ -2962,6 +2716,7 @@ function Switch-Theme {
                             if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
                                 try { Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
                             }
+catch { }
                             if ($sidebarGrid.Children.Count -gt 2) {
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'Background' -Value $themeColors.SidebarBg
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
@@ -3013,20 +2768,16 @@ function Switch-Theme {
             }
 
             if ($activityLogBorder) {
-                try {
                     Set-BrushPropertySafe -Target $activityLogBorder -Property 'Background' -Value $themeColors.LogBg
                     Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
-                } catch {
                     Write-Verbose "Activity log border update skipped: $($_.Exception.Message)"
                 }
-            }
 
             $form.InvalidateVisual()
             $form.UpdateLayout()
 
-        }, [System.Windows.Threading.DispatcherPriority]::Render)
 
         Start-Sleep -Milliseconds 100
 
@@ -3053,9 +2804,7 @@ function Switch-Theme {
                     }
                     $btn.InvalidateVisual()
                 }
-            }
 
-        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
 
         Start-Sleep -Milliseconds 150
 
@@ -3071,14 +2820,12 @@ function Switch-Theme {
             $currentSection = $global:CurrentAdvancedSection
             $themeForHighlight = if ($appliedThemeName) { $appliedThemeName } else { $ThemeName }
 
-            try {
                 $form.Dispatcher.BeginInvoke([action]{
                     Set-ActiveAdvancedSectionButton -Section $currentSection -CurrentTheme $themeForHighlight
+
                 }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
-            } catch {
                 Log "Could not refresh advanced section highlight: $($_.Exception.Message)" 'Warning'
             }
-        }
 
         Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
 
@@ -3086,27 +2833,20 @@ function Switch-Theme {
             Update-ThemeColorPreview -ThemeName $ThemeName
         }
 
-    } catch {
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
 
-        try {
             if (${function:Apply-ThemeColors}) {
                 & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
                 Log "Standard-Theme als Fallback angewendet" 'Info'
+
             } else {
                 Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
-            }
-        } catch {
             Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
-        }
-    }
-}
 
 # Log functions moved to top of script to fix call order issues
 
 # ---------- WinMM Timer (1ms precision) ----------
 if (-not ([System.Management.Automation.PSTypeName]'WinMM').Type) {
-    try {
         Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -3115,16 +2855,14 @@ public static class WinMM {
     public static extern uint timeBeginPeriod(uint uPeriod);
     [DllImport("winmm.dll", EntryPoint="timeEndPeriod")]
     public static extern uint timeEndPeriod(uint uPeriod);
+
 }
 '@ -ErrorAction Stop
-    } catch {
         Write-Verbose "WinMM timer API not available: $($_.Exception.Message)"
     }
-}
 
 # ---------- Performance Monitoring API ----------
 if (-not ([System.Management.Automation.PSTypeName]'PerfMon').Type) {
-    try {
         Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -3146,13 +2884,12 @@ public static class PerfMon {
         public ulong ullTotalVirtual;
         public ulong ullAvailVirtual;
         public ulong ullAvailExtendedVirtual;
+
     }
 }
 '@ -ErrorAction Stop
-    } catch {
         Write-Verbose "Performance monitoring API not available: $($_.Exception.Message)"
     }
-}
 
 # ---------- System Health Monitoring and Alerts ----------
 $global:SystemHealthData = @{
@@ -3174,7 +2911,6 @@ function Get-SystemHealthStatus {
     Analyzes system health across multiple dimensions and provides actionable recommendations
     #>
 
-    try {
         $healthData = @{
             OverallScore = 100
             Issues = @()
@@ -3182,6 +2918,7 @@ function Get-SystemHealthStatus {
             Recommendations = @()
             Status = "Excellent"
             Metrics = @{}
+
         }
 
         # 1. Memory Health Check - MemoryUsagePercent gt 90 triggers Critical memory usage alerts
@@ -3213,7 +2950,6 @@ function Get-SystemHealthStatus {
                 $healthData.Recommendations += "Monitor CPU-intensive applications"
                 $healthData.OverallScore -= 8
             }
-        }
 
         # 3. Disk Space Health Check - REMOVED due to PowerShell parser errors
         # The following disk space health check code has been commented out to resolve parsing issues:
@@ -3221,7 +2957,6 @@ function Get-SystemHealthStatus {
         # - Removed problematic string formatting: ($freeSpaceGB GB)
         # - Removed healthData.Issues, healthData.Warnings, healthData.Recommendations for disk space
         <#
-        try {
             $systemDrive = $env:SystemDrive
             $driveInfo = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='$systemDrive'" -ErrorAction SilentlyContinue
             if ($driveInfo) {
@@ -3235,19 +2970,16 @@ function Get-SystemHealthStatus {
                     $healthData.Issues += "Critical disk space: $freeSpacePercent% free ($freeSpaceGB GB)"
                     $healthData.Recommendations += "Free up disk space immediately to prevent system issues"
                     $healthData.OverallScore -= 25
+
                 } elseif ($freeSpacePercent -lt 20) {
                     $healthData.Warnings += "Low disk space: $freeSpacePercent% free ($freeSpaceGB GB)"
                     $healthData.Recommendations += "Consider cleaning up temporary files and uninstalling unused programs"
                     $healthData.OverallScore -= 12
                 }
-            }
-        } catch {
             Log "Warning: Could not check disk space: $($_.Exception.Message)" 'Warning'
-        }
         #>
 
         # 4. Running Processes Health Check - processCount gt 200 analysis and optimization detection
-        try {
             $processCount = (Get-Process).Count
             $healthData.Metrics.ProcessCount = $processCount
 
@@ -3255,6 +2987,7 @@ function Get-SystemHealthStatus {
                 $healthData.Warnings += "High number of running processes: $processCount"
                 $healthData.Recommendations += "Consider using Task Manager to close unnecessary processes"
                 $healthData.OverallScore -= 8
+
             }
 
             # Check for known problematic processes
@@ -3267,12 +3000,9 @@ function Get-SystemHealthStatus {
                 $healthData.Recommendations += "Review and close mining, crypto, or torrent applications while gaming"
                 $healthData.OverallScore -= 15
             }
-        } catch {
             Log "Warning: Could not analyze running processes: $($_.Exception.Message)" 'Warning'
-        }
 
         # 5. Windows Update Health Check - Microsoft.Update.Session for pendingUpdates analysis
-        try {
             $updateSession = New-Object -ComObject Microsoft.Update.Session -ErrorAction SilentlyContinue
             if ($updateSession) {
                 $updateSearcher = $updateSession.CreateUpdateSearcher()
@@ -3283,19 +3013,18 @@ function Get-SystemHealthStatus {
                     $healthData.Warnings += "$pendingUpdates pending Windows updates"
                     $healthData.Recommendations += "Install pending Windows updates for security and performance improvements"
                     $healthData.OverallScore -= 5
+
                 }
             }
-        } catch {
             # Silent fail for Windows Update check
-        }
 
         # 6. Gaming Optimization Status - GameBar AllowAutoGameMode and HwSchMode validation
-        try {
             $gameMode = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\GameBar" -Name "AllowAutoGameMode" -ErrorAction SilentlyContinue
             if (-not $gameMode -or $gameMode.AllowAutoGameMode -ne 1) {
                 $healthData.Warnings += "Windows Game Mode is not enabled"
                 $healthData.Recommendations += "Enable Game Mode in Windows Settings for better gaming performance"
                 $healthData.OverallScore -= 5
+
             }
 
             $hardwareScheduling = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -ErrorAction SilentlyContinue
@@ -3304,12 +3033,9 @@ function Get-SystemHealthStatus {
                 $healthData.Recommendations += "Enable Hardware GPU Scheduling for improved graphics performance"
                 $healthData.OverallScore -= 5
             }
-        } catch {
             # Silent fail for optimization checks
-        }
 
         # 7. Network Health Check - Win32_NetworkAdapter NetEnabled and NetConnectionStatus analysis
-        try {
             $networkAdapters = Get-WmiObject -Class Win32_NetworkAdapter -Filter "NetEnabled=True" -ErrorAction SilentlyContinue
             $activeAdapters = $networkAdapters | Where-Object { $_.NetConnectionStatus -eq 2 }
 
@@ -3317,31 +3043,24 @@ function Get-SystemHealthStatus {
                 $healthData.Issues += "No active network connections detected"
                 $healthData.Recommendations += "Check network connectivity for online gaming"
                 $healthData.OverallScore -= 20
+
             } elseif ($activeAdapters.Count -gt 2) {
                 $healthData.Warnings += "Multiple active network adapters detected"
                 $healthData.Recommendations += "Disable unused network adapters to reduce latency"
                 $healthData.OverallScore -= 5
-            }
-        } catch {
             # Silent fail for network check
-        }
 
         # Determine overall status - OverallScore ge 90 Excellent, ge 75 Good, ge 60 Fair, Poor, Critical
         if ($healthData.OverallScore -ge 90) {
             $healthData.Status = "Excellent"
         } elseif ($healthData.OverallScore -ge 75) {
             $healthData.Status = "Good"
-        } elseif ($healthData.OverallScore -ge 60) {
             $healthData.Status = "Fair"
-        } elseif ($healthData.OverallScore -ge 40) {
             $healthData.Status = "Poor"
-        } else {
             $healthData.Status = "Critical"
-        }
 
         return $healthData
 
-    } catch {
         Log "Error performing system health check: $($_.Exception.Message)" 'Error'
         return @{
             OverallScore = 0
@@ -3351,11 +3070,8 @@ function Get-SystemHealthStatus {
             Status = "Unknown"
             Metrics = @{}
         }
-    }
-}
 
 function Update-SystemHealthSummary {
-    try {
         $status = if ($global:SystemHealthData.HealthStatus) { $global:SystemHealthData.HealthStatus } else { 'Not Run' }
         $score = $global:SystemHealthData.HealthScore
         $lastRun = $global:SystemHealthData.LastHealthCheck
@@ -3366,6 +3082,7 @@ function Update-SystemHealthSummary {
         if ($status -eq 'Error') {
             $text = 'Error (see log)'
             $foreground = '#FF4444'
+
         } elseif ($lastRun) {
             $timeStamp = $lastRun.ToString('HH:mm')
             if ($score -ne $null) {
@@ -3383,7 +3100,6 @@ function Update-SystemHealthSummary {
                 'Critical' { $foreground = '#FF6B6B' }
                 default { $foreground = '#A6AACF' }
             }
-        }
 
         if ($lblDashSystemHealth) {
             $lblDashSystemHealth.Dispatcher.Invoke([Action]{
@@ -3391,15 +3107,11 @@ function Update-SystemHealthSummary {
                 Set-BrushPropertySafe -Target $lblDashSystemHealth -Property 'Foreground' -Value $foreground
             })
         }
-    } catch {
         Log "Error updating dashboard health summary: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
 
-    try {
         $shouldRun = [bool]$RunCheck
 
         if ($shouldRun) {
@@ -3415,9 +3127,9 @@ function Update-SystemHealthDisplay {
                 $global:SystemHealthData.Metrics = $healthData.Metrics
                 $global:SystemHealthData.LastResult = $healthData
                 Log "Health check complete: $($healthData.Status) ($($healthData.OverallScore)% score)" 'Info'
+
             }
         }
-    } catch {
         $errorMessage = 'Error in Update-SystemHealthDisplay: {0}' -f $_.Exception.Message
         Log $errorMessage 'Error'
         $global:SystemHealthData.LastHealthCheck = Get-Date
@@ -3433,7 +3145,6 @@ function Update-SystemHealthDisplay {
     Update-SystemHealthSummary
 
     return $global:SystemHealthData
-}
 
 function Show-SystemHealthDialog {
     <#
@@ -3443,7 +3154,6 @@ function Show-SystemHealthDialog {
     Creates a WPF dialog displaying comprehensive system health information
     #>
 
-    try {
 
         [xml]$healthDialogXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -3642,6 +3352,7 @@ function Show-SystemHealthDialog {
                 $lstIssues.ItemsSource = @()
                 $lstRecommendations.ItemsSource = @("Click Refresh to run a health check.")
                 return
+
             }
 
             $timestamp = $data.LastHealthCheck.ToString('g')
@@ -3662,7 +3373,6 @@ function Show-SystemHealthDialog {
                 $lblMemoryMetric.Text = "$($data.Metrics.MemoryUsage)%"
             } else {
                 $lblMemoryMetric.Text = '--%'
-            }
 
             # Disk metric intentionally omitted (legacy compatibility)
 
@@ -3675,15 +3385,13 @@ function Show-SystemHealthDialog {
                 $lstRecommendations.ItemsSource = $data.Recommendations
             } else {
                 $lstRecommendations.ItemsSource = @('No recommendations available. Great job!')
-            }
 
             Log "System health dialog updated with cached status: $($data.HealthStatus)" 'Info'
-        }
 
         # Event handlers
         $btnRefreshHealth.Add_Click({
             Log "Manual health check requested from System Health dialog" 'Info'
-            & $updateDisplay $true
+            # removed invalid call $true
         })
 
         $btnOptimizeNow.Add_Click({
@@ -3691,25 +3399,18 @@ function Show-SystemHealthDialog {
                 Log "Quick optimization triggered from System Health dialog" 'Info'
                 $healthWindow.Close()
 
-                try {
                     $btnApply.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-                } catch {
                     Log "Error triggering optimization from health dialog: $($_.Exception.Message)" 'Error'
                 }
             } else {
                 [System.Windows.MessageBox]::Show("Quick optimization is not available. Please use the main optimization features.", "Optimization", 'OK', 'Information')
-            }
-        })
 
         $btnOpenTaskManager.Add_Click({
-            try {
                 Start-Process "taskmgr.exe" -ErrorAction Stop
                 Log "Task Manager opened from System Health dialog" 'Info'
-            } catch {
                 Log "Error opening Task Manager: $($_.Exception.Message)" 'Warning'
                 [System.Windows.MessageBox]::Show("Could not open Task Manager: $($_.Exception.Message)", "Task Manager Error", 'OK', 'Warning')
             }
-        })
 
         $btnCloseHealth.Add_Click({
             Log "System Health dialog closed by user" 'Info'
@@ -3717,16 +3418,13 @@ function Show-SystemHealthDialog {
         })
 
         # Initial display update using cached data (no automatic check)
-        & $updateDisplay $false
+        # removed invalid call $false
 
         # Show the window
         $healthWindow.ShowDialog() | Out-Null
 
-    } catch {
         Log "Error showing system health dialog: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error displaying system health window: $($_.Exception.Message)", "Health Monitor Error", 'OK', 'Error')
-    }
-}
 
 function Search-LogHistory {
     <#
@@ -3751,10 +3449,10 @@ function Search-LogHistory {
         [DateTime]$EndDate = (Get-Date)
     )
 
-    try {
         $results = $global:LogHistory | Where-Object {
             # Date range filter
             $_.Timestamp -ge $StartDate -and $_.Timestamp -le $EndDate
+
         }
 
         # Search term filter
@@ -3774,12 +3472,10 @@ function Search-LogHistory {
 
         return $results | Sort-Object Timestamp -Descending
 
-    } catch {
         Log "Error searching log history: $($_.Exception.Message)" 'Error'
         return @()
 
     }
-}
 
 function Export-LogHistory {
     <#
@@ -3799,11 +3495,11 @@ function Export-LogHistory {
         [array]$FilteredResults = $null
     )
 
-    try {
         $logsToExport = if ($FilteredResults) { $FilteredResults } else { $global:LogHistory }
 
         if ($logsToExport.Count -eq 0) {
             throw "No log entries to export"
+
         }
 
         switch ($Format) {
@@ -3824,11 +3520,9 @@ function Export-LogHistory {
         Log "Log history exported to: $Path ($Format format, $($logsToExport.Count) entries)" 'Success'
         return $true
 
-    } catch {
         Log "Error exporting log history: $($_.Exception.Message)" 'Error'
         return $false
     }
-}
 
 function Optimize-LogFile {
     <#
@@ -3839,7 +3533,6 @@ function Optimize-LogFile {
     #>
     param([int]$MaxSizeMB = 10)
 
-    try {
         $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
 
         if (Test-Path $logFilePath) {
@@ -3863,15 +3556,14 @@ function Optimize-LogFile {
                     $filesToDelete = $backupFiles | Select-Object -Skip 5
                     foreach ($file in $filesToDelete) {
                         Remove-Item (Join-Path $ScriptRoot $file) -Force -ErrorAction SilentlyContinue
+
                     }
                 }
             }
         }
 
-    } catch {
         Log "Error optimizing log file: $($_.Exception.Message)" 'Warning'
     }
-}
 
 function Show-LogSearchDialog {
     <#
@@ -3881,7 +3573,6 @@ function Show-LogSearchDialog {
     Creates a WPF dialog for advanced log searching and filtering
     #>
 
-    try {
         [xml]$logSearchXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -4091,20 +3782,29 @@ function Show-LogSearchDialog {
             $lblResultsInfo.Text = "Search results: $($results.Count) entries (Total: $($global:LogHistory.Count))"
 
             Log "Log search performed: '$searchTerm' in $category category, $($results.Count) results" 'Info'
+
         }
 
         # Event handlers
-        $btnSearch.Add_Click({ & $performSearch })
-        $txtSearchTerm.Add_KeyDown({
-            if ($_.Key -eq 'Return') { & $performSearch }
-        })
-
-        $btnExportTXT.Add_Click({
-            $saveDialog = New-Object Microsoft.Win32.SaveFileDialog
-            $saveDialog.Filter = "Text files (*.txt)|*.txt"
-            $saveDialog.Title = "Export Log History as TXT"
-            $saveDialog.FileName = "KOALA-GameOptimizer-Logs-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
-
+$btnSearch.Add_Click({
+    try {
+        $searchTerm = $txtSearchTerm.Text
+        $category   = if ($cmbCategory.SelectedItem) { $cmbCategory.SelectedItem.Content } else { 'All' }
+        $levels = @(); if ($chkInfo.IsChecked){$levels+='Info'}; if($chkWarning.IsChecked){$levels+='Warning'}; if($chkError.IsChecked){$levels+='Error'}
+        $results = Search-LogHistory -SearchTerm $searchTerm -Level $levels -Category $category
+        $lstLogResults.ItemsSource = $results
+        $lblResultsInfo.Text = "Search results: $($results.Count) entries (Total: $($global:LogHistory.Count))"
+        Log "Log search performed via button: '$searchTerm'" 'Info'
+})
+$txtSearchTerm.Add_KeyDown({
+    if ($_.Key -eq 'Return') { $btnSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)) }
+})
+        $levels = @(); if ($chkInfo.IsChecked){$levels+='Info'}; if($chkWarning.IsChecked){$levels+='Warning'}; if($chkError.IsChecked){$levels+='Error'}
+        $results = Search-LogHistory -SearchTerm $searchTerm -Level $levels -Category $category
+        $lstLogResults.ItemsSource = $results
+        $lblResultsInfo.Text = "Search results: $($results.Count) entries (Total: $($global:LogHistory.Count))"
+        Log "Log search performed via button: '$searchTerm'" 'Info'
+})
             if ($saveDialog.ShowDialog()) {
                 $results = $lstLogResults.ItemsSource
                 Export-LogHistory -Path $saveDialog.FileName -Format "TXT" -FilteredResults $results
@@ -4152,16 +3852,13 @@ function Show-LogSearchDialog {
         })
 
         # Show initial results (all logs)
-        & $performSearch
+        # removed invalid call
 
         # Show the window
         $searchWindow.ShowDialog() | Out-Null
 
-    } catch {
         Log "Error showing log search dialog: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error displaying log search window: $($_.Exception.Message)", "Log Search Error", 'OK', 'Error')
-    }
-}
 $global:PerformanceTimer = $null
 $global:LastCpuTime = @{ Idle = 0; Kernel = 0; User = 0; Timestamp = [DateTime]::Now }
 
@@ -4173,7 +3870,6 @@ function Get-SystemPerformanceMetrics {
     Provides comprehensive system metrics for dashboard display with efficient polling
     #>
 
-    try {
         $metrics = @{}
 
         # Get CPU Usage using existing PerfMon API
@@ -4197,18 +3893,16 @@ function Get-SystemPerformanceMetrics {
                     $metrics.CpuUsage = [Math]::Max(0, [Math]::Min(100, $cpuUsage))
                 } else {
                     $metrics.CpuUsage = 0
+
                 }
             } else {
                 $metrics.CpuUsage = 0
             }
         } else {
             $metrics.CpuUsage = 0
-        }
-        } catch {
             # Safe defaults on error for Windows API performance monitoring calls
             $metrics.CpuUsage = 0
             Write-Verbose "CPU monitoring failed: $($_.Exception.Message)"
-        }
 
         # Update LastCpuTime with Idle, Kernel, User times and Timestamp for accurate CPU delta calculations
         $global:LastCpuTime = @{
@@ -4219,7 +3913,6 @@ function Get-SystemPerformanceMetrics {
         }
 
         # Get Memory Usage using existing PerfMon API
-        try {
             $memStatus = New-Object PerfMon+MEMORYSTATUSEX
             $memStatus.dwLength = [System.Runtime.InteropServices.Marshal]::SizeOf($memStatus)
 
@@ -4233,18 +3926,16 @@ function Get-SystemPerformanceMetrics {
             $metrics.MemoryUsedGB = $usedGB
             $metrics.MemoryTotalGB = $totalGB
             $metrics.MemoryUsagePercent = $usagePercent
+
         } else {
             $metrics.MemoryUsedGB = 0
             $metrics.MemoryTotalGB = 0
             $metrics.MemoryUsagePercent = 0
-        }
-        } catch {
             # Safe defaults on error for memory monitoring Windows API calls
             $metrics.MemoryUsedGB = 0
             $metrics.MemoryTotalGB = 0
             $metrics.MemoryUsagePercent = 0
             Write-Verbose "Memory monitoring failed: $($_.Exception.Message)"
-        }
 
         # Get Active Games Count (from existing global variable)
         $metrics.ActiveGamesCount = if ($global:ActiveGames) { $global:ActiveGames.Count } else { 0 }
@@ -4258,16 +3949,11 @@ function Get-SystemPerformanceMetrics {
                 $metrics.LastOptimization = "$($timeSince.Hours)h ago"
             } elseif ($timeSince.Minutes -gt 0) {
                 $metrics.LastOptimization = "$($timeSince.Minutes)m ago"
-            } else {
                 $metrics.LastOptimization = "Just now"
-            }
-        } else {
             $metrics.LastOptimization = "Never"
-        }
 
         return $metrics
 
-    } catch {
         # Return safe defaults on error
         return @{
             CpuUsage = 0
@@ -4277,8 +3963,6 @@ function Get-SystemPerformanceMetrics {
             ActiveGamesCount = 0
             LastOptimization = "Error"
         }
-    }
-}
 
 function Update-DashboardMetrics {
     <#
@@ -4288,7 +3972,6 @@ function Update-DashboardMetrics {
     Safely updates dashboard UI elements with current system performance data
     #>
 
-    try {
         $metrics = Get-SystemPerformanceMetrics
 
         # Update CPU Usage
@@ -4299,13 +3982,13 @@ function Update-DashboardMetrics {
                 # Color coding based on CpuUsage and MemoryUsagePercent for dynamic metrics display
                 if ($metrics.CpuUsage -ge 80) {
                     Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
+
                 } elseif ($metrics.CpuUsage -ge 60) {
                     Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium load
                 } else {
                     Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for low load
                 }
             })
-        }
 
         # Update Memory Usage
         if ($lblDashMemoryUsage) {
@@ -4320,8 +4003,6 @@ function Update-DashboardMetrics {
                 } else {
                     Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for normal
                 }
-            })
-        }
 
         if ($lblHeroProfiles) {
             $lblHeroProfiles.Dispatcher.Invoke([Action]{
@@ -4353,7 +4034,6 @@ function Update-DashboardMetrics {
                     Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'  # Default color
                 }
             })
-        }
 
         # Update Last Optimization
         if ($lblDashLastOptimization) {
@@ -4380,17 +4060,12 @@ function Update-DashboardMetrics {
                     $lblHeaderSystemStatus.Text = 'Stable'
                     Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::LightGreen
                 }
-            })
-        }
 
         # Refresh System Health summary without running a full check
         Update-SystemHealthSummary
 
-    } catch {
         # Silent fail to prevent UI disruption
         Write-Verbose "Dashboard metrics update failed: $($_.Exception.Message)"
-    }
-}
 
 function Start-PerformanceMonitoring {
     <#
@@ -4400,9 +4075,9 @@ function Start-PerformanceMonitoring {
     Initializes a dispatcher timer for regular dashboard updates
     #>
 
-    try {
         if ($global:PerformanceTimer) {
             $global:PerformanceTimer.Stop()
+
         }
 
         # Create dispatcher timer for UI updates
@@ -4422,10 +4097,8 @@ function Start-PerformanceMonitoring {
 
         Log "Real-time performance monitoring started (3s intervals)" 'Success'
 
-    } catch {
         Log "Error starting performance monitoring: $($_.Exception.Message)" 'Error'
     }
-}
 
 function Stop-PerformanceMonitoring {
     <#
@@ -4433,16 +4106,14 @@ function Stop-PerformanceMonitoring {
     Stops the performance monitoring timer
     #>
 
-    try {
         if ($global:PerformanceTimer) {
             $global:PerformanceTimer.Stop()
             $global:PerformanceTimer = $null
             Log "Performance monitoring stopped" 'Info'
+
         }
-    } catch {
         Write-Verbose "Error stopping performance monitoring: $($_.Exception.Message)"
     }
-}
 
 # ---------- Enhanced Game Detection and Auto-Optimization ----------
 $global:ActiveGameProcesses = @()
@@ -4457,12 +4128,12 @@ function Get-RunningGameProcesses {
     Monitors system processes to detect active games and automatically trigger optimizations
     #>
 
-    try {
         $runningGames = @()
         $gameProcesses = Get-Process | Where-Object {
             $_.ProcessName -and $_.MainWindowTitle -and
             ($_.ProcessName -match "^(cs2|csgo|valorant|overwatch|rainbow|fortnite|apex|pubg|warzone|modernwarfare|league|rocket|dota2|gta|cyberpunk|minecraft)" -or
              $_.MainWindowTitle -match "Counter-Strike|VALORANT|Overwatch|Rainbow Six|Fortnite|Apex Legends|PUBG|Warzone|Modern Warfare|League of Legends|Rocket League|Dota 2|Grand Theft Auto|Cyberpunk|Minecraft")
+
         }
 
         foreach ($process in $gameProcesses) {
@@ -4500,11 +4171,8 @@ function Get-RunningGameProcesses {
 
         return $runningGames
 
-    } catch {
         Log "Error detecting running games: $($_.Exception.Message)" 'Warning'
         return @()
-    }
-}
 
 function Update-ActiveGamesTracking {
     <#
@@ -4514,7 +4182,6 @@ function Update-ActiveGamesTracking {
     Maintains real-time tracking of active games and applies optimizations automatically
     #>
 
-    try {
         $currentGames = Get-RunningGameProcesses
         $previousGames = $global:ActiveGameProcesses
 
@@ -4522,6 +4189,7 @@ function Update-ActiveGamesTracking {
         $newGames = $currentGames | Where-Object {
             $game = $_
             -not ($previousGames | Where-Object { $_.Process.Id -eq $game.Process.Id })
+
         }
 
         # Check for games that have stopped
@@ -4563,10 +4231,7 @@ function Update-ActiveGamesTracking {
             })
         }
 
-    } catch {
         Log "Error updating active games tracking: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 function Start-AutoGameOptimization {
     <#
@@ -4580,7 +4245,6 @@ function Start-AutoGameOptimization {
         $GameProfile
     )
 
-    try {
         $profile = $GameProfile.Profile
         Log "Starting auto-optimization for: $($profile.DisplayName)" 'Info'
 
@@ -4591,6 +4255,7 @@ function Start-AutoGameOptimization {
                     'DisableNagle' {
                         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\services\Tcpip\Parameters\Interfaces" "TcpNoDelay" 'DWord' 1 -RequiresAdmin $true | Out-Null
                         Log "Nagle algorithm disabled for gaming" 'Success'
+
                     }
                     'HighPrecisionTimer' {
                         Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 -RequiresAdmin $true | Out-Null
@@ -4611,24 +4276,20 @@ function Start-AutoGameOptimization {
 
         # Apply process priority optimization
         if ($profile.Priority -and $GameProfile.Process) {
-            try {
                 switch ($profile.Priority) {
                     'High' { $GameProfile.Process.PriorityClass = 'High' }
                     'AboveNormal' { $GameProfile.Process.PriorityClass = 'AboveNormal' }
                     'Normal' { $GameProfile.Process.PriorityClass = 'Normal' }
+
                 }
                 Log "Process priority set to $($profile.Priority) for $($profile.DisplayName)" 'Success'
-            } catch {
                 Log "Could not set process priority: $($_.Exception.Message)" 'Warning'
             }
         }
 
         Log "Auto-optimization completed for: $($profile.DisplayName)" 'Success'
 
-    } catch {
         Log "Error during auto-optimization: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Get-CloudGamingServices {
     <#
@@ -4638,7 +4299,6 @@ function Get-CloudGamingServices {
     Identifies Xbox Game Pass, GeForce Now, Stadia, Amazon Luna, etc.
     #>
 
-    try {
         $cloudServices = @()
 
         # Xbox Game Pass detection - Microsoft.GamingApp and WindowsApps integration
@@ -4656,6 +4316,7 @@ function Get-CloudGamingServices {
                     Path = $found[0].FullName
                     Details = "Cloud Gaming Service - Microsoft"
                     Type = "CloudGaming"
+
                 }
                 break
             }
@@ -4717,11 +4378,9 @@ function Get-CloudGamingServices {
 
         return $cloudServices
 
-    } catch {
         Log "Error detecting cloud gaming services: $($_.Exception.Message)" 'Warning'
         return @()
     }
-}
 
 function Start-GameDetectionMonitoring {
     <#
@@ -4731,9 +4390,9 @@ function Start-GameDetectionMonitoring {
     Initializes a dispatcher timer for monitoring running games and auto-optimization
     #>
 
-    try {
         if ($global:GameDetectionTimer) {
             $global:GameDetectionTimer.Stop()
+
         }
 
         # Create dispatcher timer for game detection
@@ -4753,10 +4412,8 @@ function Start-GameDetectionMonitoring {
 
         Log "Game detection monitoring started (5s intervals)" 'Success'
 
-    } catch {
         Log "Error starting game detection monitoring: $($_.Exception.Message)" 'Error'
     }
-}
 
 function Stop-GameDetectionMonitoring {
     <#
@@ -4764,11 +4421,11 @@ function Stop-GameDetectionMonitoring {
     Stops the game detection monitoring timer
     #>
 
-    try {
         if ($global:GameDetectionTimer) {
             $global:GameDetectionTimer.Stop()
             $global:GameDetectionTimer = $null
             Log "Game detection monitoring stopped" 'Info'
+
         }
         $global:ActiveGameProcesses = @()
         $global:ActiveGames = @()
@@ -4778,10 +4435,8 @@ function Stop-GameDetectionMonitoring {
                 Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
             })
         }
-    } catch {
         Write-Verbose "Error stopping game detection monitoring: $($_.Exception.Message)"
     }
-}
 $GameProfiles = @{
     # Competitive Shooters
     'cs2' = @{
@@ -5148,16 +4803,15 @@ function Show-ElevationMessage {
 
     switch ($result) {
         'Yes' {
-            try {
                 $scriptPath = $PSCommandPath
                 if (-not $scriptPath) {
                     $scriptPath = Join-Path $ScriptRoot "koalafixed.ps1"
+
                 }
 
                 Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File `"$scriptPath`"" -Verb RunAs -ErrorAction Stop
                 $form.Close()
                 return $true
-            } catch {
                 Log "Failed to elevate privileges: $($_.Exception.Message)" 'Error'
                 return $false
             }
@@ -5172,10 +4826,8 @@ function Show-ElevationMessage {
             return $false
         }
     }
-}
 
 function Get-SystemInfo {
-    try {
         $info = @{
             OS = (Get-CimInstance Win32_OperatingSystem).Caption
             CPU = (Get-CimInstance Win32_Processor).Name
@@ -5183,6 +4835,7 @@ function Get-SystemInfo {
             GPU = (Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notlike "*Basic*" -and $_.Name -notlike "*Generic*" }).Name -join ", "
             AdminRights = Test-AdminPrivileges
             PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+
         }
 
         $infoText = "System Information:`n"
@@ -5195,17 +4848,15 @@ function Get-SystemInfo {
 
         [System.Windows.MessageBox]::Show($infoText, "System Information", 'OK', 'Information')
 
-    } catch {
         Log "Failed to gather system info: $($_.Exception.Message)" 'Error'
     }
-}
 
 function Get-GPUVendor {
-    try {
         $gpus = Get-CimInstance -ClassName Win32_VideoController -ErrorAction Stop | Where-Object {
             $_.Name -notlike "*Basic*" -and
             $_.Name -notlike "*Generic*" -and
             $_.PNPDeviceID -notlike "ROOT\*"
+
         }
 
         $primaryGPU = $null
@@ -5225,10 +4876,8 @@ function Get-GPUVendor {
         }
 
         return if ($primaryGPU) { $primaryGPU } else { 'Other' }
-    } catch {
         return 'Other'
     }
-}
 
 function Set-Reg {
     param($Path,$Name,$Type='DWord',$Value,$RequiresAdmin=$false)
@@ -5252,7 +4901,6 @@ function Set-Reg {
         return $true
     }
 
-    try {
         # Enhanced parent path creation and checking
         $parentPaths = @()
         $currentPath = $Path
@@ -5263,15 +4911,14 @@ function Set-Reg {
             $parent = Split-Path $currentPath -Parent
             if ($parent -eq $currentPath) { break } # Reached root
             $currentPath = $parent
+
         }
 
         # Create parent paths from top down
         for ($i = $parentPaths.Count - 1; $i -ge 0; $i--) {
             $pathToCreate = $parentPaths[$i]
-            try {
                 Log "Set-Reg: Creating registry path: $pathToCreate" 'Info'
                 New-Item -Path $pathToCreate -Force -ErrorAction Stop | Out-Null
-            } catch {
                 Log "Set-Reg: Failed to create registry path '$pathToCreate': $($_.Exception.Message)" 'Error'
                 return $false
             }
@@ -5292,7 +4939,6 @@ function Set-Reg {
         } else {
             Log "Set-Reg: Creating new value $Path\$Name = $Value (Type: $Type)" 'Info'
             New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $Type -Force -ErrorAction Stop | Out-Null
-        }
 
         # Verify the value was set correctly
         $verifyValue = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
@@ -5303,32 +4949,22 @@ function Set-Reg {
         } else {
             Log "Set-Reg: Value verification failed for $Path\$Name" 'Error'
             return $false
-        }
 
-    } catch {
         Log "Set-Reg: Error setting registry value ${Path}\${Name}: $($_.Exception.Message)" 'Error'
         return $false
-    }
-}
 
 function Get-Reg {
     param($Path, $Name)
-    try {
         (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
-    } catch {
         $null
     }
-}
 
 function Remove-Reg {
     param($Path, $Name)
-    try {
         Remove-ItemProperty -Path $Path -Name $Name -Force -ErrorAction Stop
         return $true
-    } catch {
         return $false
     }
-}
 
 # ---------- Enhanced XAML UI with Modern Sidebar Navigation ----------
 $xamlContent = @'
@@ -6406,21 +6042,19 @@ foreach ($line in $xamlContent -split "`r?`n") {
     }
 
     $xamlLines += $line
-}
 
 $xamlContent = $xamlLines -join [Environment]::NewLine
 $null = Test-XamlNameUniqueness -Xaml $xamlContent
 [xml]$xaml = $xamlContent
 
 # ---------- Build WPF UI ----------
-try {
     $reader = New-Object System.Xml.XmlNodeReader $xaml
     $form = [Windows.Markup.XamlReader]::Load($reader)
     Initialize-LayoutSpacing -Root $form
     if ($form -and $form.Resources) {
         Register-BrushResourceKeys -Keys $form.Resources.Keys
+
     }
-} catch {
     Write-Host "Failed to load XAML: $($_.Exception.Message)" -ForegroundColor Red
     if ($_.Exception.InnerException) {
         Write-Host "Inner exception: $($_.Exception.InnerException.Message)" -ForegroundColor Red
@@ -6429,9 +6063,18 @@ try {
         }
     }
     exit 1
-}
 
 # ---------- Bind All Controls ----------
+
+# Ensure a default theme is applied at startup (fallback to Nebula if no selection)
+    $defaultTheme = 'Nebula'
+    if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+        $defaultTheme = $cmbOptionsTheme.SelectedItem.Tag
+
+    }
+    & ${function:Apply-ThemeColors} -ThemeName $defaultTheme
+    try { & ${function:Apply-ThemeColors} -ThemeName 'Nebula' } catch {}
+
 # Sidebar navigation controls
 $btnNavDashboard = $form.FindName('btnNavDashboard')
 $btnNavBasicOpt = $form.FindName('btnNavBasicOpt')
@@ -6790,10 +6433,10 @@ function Set-ActiveNavigationButton {
         [string]$CurrentTheme = 'Nebula'
     )
 
-    try {
         # Theme-Farben holen
         $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
             $global:CustomThemeColors
+
         } else {
             Get-ThemeColors -ThemeName $CurrentTheme
         }
@@ -6806,7 +6449,6 @@ function Set-ActiveNavigationButton {
             $global:NavigationButtonNames
         } else {
             @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
-        }
 
         Log "Setze aktiven Navigation-Button: $ActiveButtonName mit Theme '$($colors.Name)'" 'Info'
 
@@ -6847,10 +6489,7 @@ function Set-ActiveNavigationButton {
 
         }, [System.Windows.Threading.DispatcherPriority]::Render)
 
-    } catch {
         Log "Fehler beim Setzen der Navigation: $($_.Exception.Message)" 'Error'
-    }
-}
 
 
 function Set-ActiveAdvancedSectionButton {
@@ -6869,9 +6508,9 @@ function Set-ActiveAdvancedSectionButton {
         return
     }
 
-    try {
         $colors = if ($CurrentTheme -eq 'Custom' -and $global:CustomThemeColors) {
             $global:CustomThemeColors
+
         } else {
             Get-ThemeColors -ThemeName $CurrentTheme
         }
@@ -6902,18 +6541,13 @@ function Set-ActiveAdvancedSectionButton {
 
             $button.InvalidateVisual()
             $button.UpdateLayout()
-        }
-    } catch {
         $message = "Failed to highlight advanced section button {0}: {1}" -f $Section, $_.Exception.Message
         Log $message 'Warning'
-    }
-}
 
 
 function Switch-Panel {
     param([string]$PanelName)
 
-    try {
         # Hide all panels with null checks
         if ($panelDashboard) { $panelDashboard.Visibility = "Collapsed" }
         if ($panelBasicOpt) { $panelBasicOpt.Visibility = "Collapsed" }
@@ -6926,6 +6560,7 @@ function Switch-Panel {
         # Get current theme
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
+
         } else {
             'Nebula'
         }
@@ -7011,10 +6646,7 @@ function Switch-Panel {
 
         Log "Switched to $PanelName panel with correct navigation highlighting" 'Info'
 
-    } catch {
         Log "Error switching to panel $PanelName`: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Show-AdvancedSection {
     param(
@@ -7032,7 +6664,6 @@ function Show-AdvancedSection {
         $Section = 'Network'
     }
 
-    try {
         Switch-Panel "Advanced"
         $global:CurrentAdvancedSection = $Section
 
@@ -7048,6 +6679,7 @@ function Show-AdvancedSection {
                 if ($expanderServiceManagement) { $expanderServiceManagement.IsExpanded = $false }
                 if ($expanderNetworkTweaks) {
                     $form.Dispatcher.BeginInvoke([action]{ $expanderNetworkTweaks.BringIntoView() }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+
                 }
             }
             'System' {
@@ -7074,11 +6706,9 @@ function Show-AdvancedSection {
 
         Switch-Theme -ThemeName $CurrentTheme
         Set-ActiveAdvancedSectionButton -Section $Section -CurrentTheme $CurrentTheme
-    } catch {
         $warningMessage = "Failed to navigate to advanced section {0}: {1}" -f $Section, $_.Exception.Message
         Log $warningMessage 'Warning'
     }
-}
 
 
 # Additional legacy control aliases for compatibility with existing functions
@@ -7125,7 +6755,6 @@ if ($btnNavDashboard) {
         Switch-Panel "Dashboard"
         Switch-Theme -ThemeName $currentTheme
     })
-}
 
 if ($btnNavBasicOpt) {
     if (-not ($script:NavigationClickHandlers.ContainsKey('BasicOpt') -and $script:NavigationClickHandlers['BasicOpt'])) {
@@ -7144,7 +6773,6 @@ if ($btnNavBasicOpt) {
 
         $btnNavBasicOpt.Add_Click($script:NavigationClickHandlers['BasicOpt'])
     }
-}
 
 if ($btnNavAdvanced) {
     if (-not ($script:NavigationClickHandlers.ContainsKey('Advanced') -and $script:NavigationClickHandlers['Advanced'])) {
@@ -7162,7 +6790,6 @@ if ($btnNavAdvanced) {
 
         $btnNavAdvanced.Add_Click($script:NavigationClickHandlers['Advanced'])
     }
-}
 
 if ($btnNavGames) {
     $btnNavGames.Add_Click({
@@ -7175,7 +6802,6 @@ if ($btnNavGames) {
         Switch-Panel "Games"
         Switch-Theme -ThemeName $currentTheme
     })
-}
 
 if ($btnNavOptions) {
     $btnNavOptions.Add_Click({
@@ -7188,7 +6814,6 @@ if ($btnNavOptions) {
         Switch-Panel "Options"
         Switch-Theme -ThemeName $currentTheme
     })
-}
 
 if ($btnNavBackup) {
     $btnNavBackup.Add_Click({
@@ -7201,7 +6826,6 @@ if ($btnNavBackup) {
         Switch-Panel "Backup"
         Switch-Theme -ThemeName $currentTheme
     })
-}
 
 if ($btnNavLog) {
     $btnNavLog.Add_Click({
@@ -7214,7 +6838,6 @@ if ($btnNavLog) {
         Switch-Panel "Log"
         Switch-Theme -ThemeName $currentTheme
     })
-}
 
 # Advanced section shortcuts remain available via the panel buttons
 if ($btnAdvancedNetwork) {
@@ -7227,7 +6850,6 @@ if ($btnAdvancedNetwork) {
 
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
     })
-}
 
 if ($btnAdvancedSystem) {
     $btnAdvancedSystem.Add_Click({
@@ -7239,7 +6861,6 @@ if ($btnAdvancedSystem) {
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
     })
-}
 
 if ($btnAdvancedServices) {
     $btnAdvancedServices.Add_Click({
@@ -7251,7 +6872,6 @@ if ($btnAdvancedServices) {
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
     })
-}
 
 # Header theme selector removed - theme switching now only available in Options panel
 #         Log "Theme change requested from header: $selectedTheme" 'Info'
@@ -7281,23 +6901,20 @@ if ($cmbOptionsLanguage) {
     $cmbOptionsLanguage.Add_SelectionChanged({
         if ($script:IsLanguageInitializing) {
             return
-        }
 
         if ($cmbOptionsLanguage.SelectedItem -and $cmbOptionsLanguage.SelectedItem.Tag) {
             Set-UILanguage -LanguageCode $cmbOptionsLanguage.SelectedItem.Tag -SkipSelectionUpdate
         }
-    })
-}
 
 # Custom theme application
 if ($btnApplyCustomTheme) {
     $btnApplyCustomTheme.Add_Click({
-        try {
             $inputMap = [ordered]@{
                 Background = $txtCustomBg
                 Primary    = $txtCustomPrimary
                 Hover      = $txtCustomHover
                 Text       = $txtCustomText
+
             }
 
             $validated = @{}
@@ -7345,12 +6962,8 @@ if ($btnApplyCustomTheme) {
             }
 
             [System.Windows.MessageBox]::Show("Custom theme applied successfully!", "Custom Theme", 'OK', 'Information')
-        } catch {
             Log "Error applying custom theme: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying custom theme: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-        }
-    })
-}
 
 # ---------- Localization Support ----------
 function Initialize-LocalizationResources {
@@ -7584,20 +7197,16 @@ function Set-UILanguage {
         $global:CurrentTheme
     } else {
         'Nebula'
-    }
 
-    try {
         Switch-Theme -ThemeName $activeTheme
 
         if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
             Set-ActiveAdvancedSectionButton -Section $global:CurrentAdvancedSection -CurrentTheme $activeTheme
+
         }
-    } catch {
         Log "Failed to refresh theme after language change: $($_.Exception.Message)" 'Warning'
-    }
 
     Log "UI language switched to $($languageResources.DisplayName)" 'Info'
-}
 
 # Apply the initial language selection after localization helpers are defined
 Set-UILanguage -LanguageCode $script:CurrentLanguage
@@ -7718,19 +7327,15 @@ $global:LogBoxAvailable = ($global:LogBox -ne $null)
 # Verify LogBox initialization with comprehensive testing
 if ($global:LogBoxAvailable) {
     # Test that LogBox is actually usable
-    try {
         $global:LogBox.AppendText("")  # Test write access
         $global:LogBox.Clear()  # Test clear access
         Log "Activity log UI initialized successfully - ready for logging" 'Success'
-    } catch {
         $global:LogBoxAvailable = $false
         Write-Host "Warning: Activity log UI not accessible, using console and file logging only" -ForegroundColor Yellow
         Log "LogBox UI unavailable - using fallback logging methods" 'Warning'
     }
-} else {
     Write-Host "Warning: Activity log UI element not found, using console and file logging only" -ForegroundColor Yellow
     Log "LogBox UI element not found - using fallback logging methods" 'Warning'
-}
 
 # ---------- STARTUP CONTROL VALIDATION (moved after form creation) ----------
 # Perform startup control validation after form and controls are created
@@ -7742,7 +7347,6 @@ if (-not $controlsValid) {
     Log "The application will continue to run, but some features may not work properly" 'Warning'
 } else {
     Log "[OK] All startup control validation checks passed - application ready" 'Success'
-}
 
 # ---------- Populate Game Profiles Dropdown ----------
 $cmbGameProfile.Items.Clear()
@@ -7873,18 +7477,17 @@ By continuing, you acknowledge that:
 To confirm that you understand these risks and unlock Advanced Mode, please type: KOALA
 "@
 
-        try {
             $userInput = [Microsoft.VisualBasic.Interaction]::InputBox($confirmationMessage, "Advanced Mode Confirmation", "")
 
             if ($userInput -ne "KOALA") {
                 Log "Advanced Mode access denied - incorrect confirmation (user entered: '$userInput')" 'Warning'
                 Log "Reverting to previous mode: $global:MenuMode" 'Info'
                 return
+
             }
 
             Log "Advanced Mode access granted with KOALA confirmation" 'Info'
             Log "User confirmed understanding of Advanced Mode risks and responsibilities" 'Info'
-        } catch {
             Log "Error in Advanced Mode confirmation dialog: $($_.Exception.Message)" 'Error'
             return
         }
@@ -7896,7 +7499,6 @@ To confirm that you understand these risks and unlock Advanced Mode, please type
     $VisibleState = [System.Windows.Visibility]::Visible
     $CollapsedState = [System.Windows.Visibility]::Collapsed
 
-    try {
         # Reset all panels to collapsed first
         $allPanels = @($basicModePanel, $advancedModeWelcome, $installedGamesPanel, $optionsPanel)
         $allExpanders = @($expanderAdvancedFPS, $expanderDX11, $expanderHellzerg, $expanderServices, $expanderNetwork, $expanderEssential, $expanderSystemPerf, $expanderNetworkTweaks, $expanderSystemOptimizations, $expanderServiceManagement)
@@ -7905,6 +7507,7 @@ To confirm that you understand these risks and unlock Advanced Mode, please type
             if ($panel) {
                 $panel.Visibility = $CollapsedState
                 Log "Panel '$($panel.Name)' set to collapsed" 'Info'
+
             }
         }
 
@@ -7969,7 +7572,6 @@ To confirm that you understand these risks and unlock Advanced Mode, please type
 
         # Optional window resizing based on mode complexity
         if ($ResizeWindow -and $form) {
-            try {
                 $currentWidth = $form.Width
                 $currentHeight = $form.Height
                 $newWidth = $currentWidth
@@ -7979,6 +7581,7 @@ To confirm that you understand these risks and unlock Advanced Mode, please type
                     "Basic" {
                         $newWidth = [Math]::Max(1200, $currentWidth)
                         $newHeight = [Math]::Max(700, $currentHeight)
+
                     }
                     "Advanced" {
                         $newWidth = [Math]::Max(1400, $currentWidth)
@@ -7995,19 +7598,13 @@ To confirm that you understand these risks and unlock Advanced Mode, please type
                     $form.Height = $newHeight
                     Log "Window resized to ${newWidth}x${newHeight} for $Mode mode" 'Info'
                 }
-            } catch {
                 Log "Error resizing window for mode ${Mode}: $($_.Exception.Message)" 'Warning'
             }
-        }
 
-    } catch {
         Log "Error switching to $Mode mode: $($_.Exception.Message)" 'Error'
-    }
-}
 
 # ---------- Installed Games Discovery Function ----------
 function Show-InstalledGames {
-    try {
         Log "Searching for installed games on system..." 'Info'
 
         # Create a new window for displaying installed games
@@ -8140,15 +7737,14 @@ function Show-InstalledGames {
                                 Details = "Steam Game - Detected via Registry"
                             }
                             Log "Found Steam game: $($game.Name)" 'Success'
+
                         }
                     }
                 }
-            } catch {
                 Log "Steam registry detection failed: $($_.Exception.Message)" 'Warning'
             }
 
             # 2. Epic Games Launcher detection
-            try {
                 Log "Searching Epic Games registry..." 'Info'
                 $epicPath = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Epic Games\EpicGamesLauncher" -Name "AppDataPath" -ErrorAction SilentlyContinue
                 if ($epicPath) {
@@ -8165,19 +7761,17 @@ function Show-InstalledGames {
                                         Details = "Epic Games - Verified Installation"
                                     }
                                     Log "Found Epic Games title: $($content.DisplayName)" 'Success'
+
                                 }
-                            } catch {
                                 # Skip invalid manifests
                             }
                         }
                     }
                 }
-            } catch {
                 Log "Epic Games detection failed: $($_.Exception.Message)" 'Warning'
             }
 
             # 3. Registry-based Windows Apps detection
-            try {
                 Log "Searching Windows registry for installed applications..." 'Info'
                 $uninstallKeys = @(
                     "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
@@ -8190,6 +7784,7 @@ function Show-InstalledGames {
                         $_.DisplayName -and $_.InstallLocation -and
                         ($_.DisplayName -match "steam|game|epic|origin|uplay|battle\.net|minecraft|fortnite|valorant|league" -or
                          $_.Publisher -match "valve|riot|epic|blizzard|ubisoft|ea|activision|mojang")
+
                     }
 
                     foreach ($app in $apps) {
@@ -8203,7 +7798,6 @@ function Show-InstalledGames {
                         }
                     }
                 }
-            } catch {
                 Log "Registry application detection failed: $($_.Exception.Message)" 'Warning'
             }
 
@@ -8240,20 +7834,18 @@ function Show-InstalledGames {
             }
 
             foreach ($launcher in $launchers.Keys) {
-                try {
                     $launcherInfo = $launchers[$launcher]
                     if (Test-Path $launcherInfo.Path) {
                         $games += [PSCustomObject]@{
                             Name = "$launcher (Game Launcher)"
                             Path = $launcherInfo.Path
                             Details = "Launcher Detected - Can manage multiple games"
+
                         }
                         Log "Found launcher: $launcher" 'Success'
                     }
-                } catch {
                     # Continue if launcher detection fails
                 }
-            }
 
             # 6. Enhanced executable scanning with verification
             $gameExecutables = @{
@@ -8301,7 +7893,6 @@ function Show-InstalledGames {
             foreach ($path in $searchPaths) {
                 if (Test-Path $path) {
                     Log "Searching in: $path" 'Info'
-                    try {
                         # Search for known game executables with verification
                         foreach ($exe in $gameExecutables.Keys) {
                             $foundFiles = Get-ChildItem -Path $path -Recurse -Name $exe -ErrorAction SilentlyContinue
@@ -8320,6 +7911,7 @@ function Show-InstalledGames {
                                         # Skip if in temp or cache directories
                                         if ($parentDir -match "temp|cache|backup|installer" -and $fileInfo.Length -lt 10MB) {
                                             $isValidGame = $false
+
                                         }
 
                                         if ($isValidGame) {
@@ -8384,19 +7976,16 @@ function Show-InstalledGames {
                         Log "Error searching $path : $($_.Exception.Message)" 'Warning'
                     }
                 }
-            }
 
             # 8. Cloud Gaming Services Detection
-            try {
                 Log "Searching for cloud gaming services..." 'Info'
                 $cloudServices = Get-CloudGamingServices
                 foreach ($service in $cloudServices) {
                     $games += $service
                     Log "Found cloud gaming service: $($service.Name)" 'Success'
+
                 }
-            } catch {
                 Log "Cloud gaming services detection failed: $($_.Exception.Message)" 'Warning'
-            }
 
             # 9. Game Streaming Software Detection - obs64.exe, OBS Studio, obs32.exe support
             $streamingSoftware = @{
@@ -8439,7 +8028,6 @@ function Show-InstalledGames {
             }
 
             return $games
-        }
 
         # Initial search
         $foundGames = Search-InstalledGames
@@ -8455,7 +8043,6 @@ function Show-InstalledGames {
             })
             $lstInstalledGames.ItemsSource = $noGamesFound
             Log "No games found in common directories" 'Warning'
-        }
 
         # Event handlers
         $btnRefreshGames.Add_Click({
@@ -8475,7 +8062,6 @@ function Show-InstalledGames {
                 $lstInstalledGames.ItemsSource = $noGamesFound
                 Log "Refresh complete: No games found" 'Warning'
             }
-        })
 
         $btnCloseGames.Add_Click({
             Log "Installed Games window closed by user" 'Info'
@@ -8485,11 +8071,8 @@ function Show-InstalledGames {
         # Show the window
         $gamesWindow.ShowDialog() | Out-Null
 
-    } catch {
         Log "Error showing installed games: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error displaying installed games window: $($_.Exception.Message)", "Installed Games Error", 'OK', 'Error')
-    }
-}
 
 # Helper functions for synchronizing game list UI across multiple panels
 function Set-OptimizeButtonsEnabled {
@@ -8498,6 +8081,7 @@ function Set-OptimizeButtonsEnabled {
     foreach ($button in $script:OptimizeSelectedButtons) {
         try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
     }
+catch { }
 }
 
 function Get-GameListPanels {
@@ -8509,7 +8093,6 @@ function Get-GameListPanels {
 
 # ---------- Search Games for Panel Function ----------
 function Search-GamesForPanel {
-    try {
         Log "Scanning system for installed games using enhanced detection methods..." 'Info'
 
         # Clear existing content
@@ -8563,11 +8146,11 @@ function Search-GamesForPanel {
                                 Path = $game.FullName
                                 Details = "Steam Game - Registry Detection"
                             }
+
                         }
                         Log "Found $($steamGames.Count) Steam games" 'Success'
                     }
                 }
-            } catch {
                 Log "Steam detection failed: $($_.Exception.Message)" 'Warning'
             }
 
@@ -8603,7 +8186,6 @@ function Search-GamesForPanel {
                 if (Test-Path $searchPath) {
                     Log "Searching path: $searchPath" 'Info'
                     foreach ($gameExe in $gameExecutables.Keys) {
-                        try {
                             $gameFiles = Get-ChildItem -Path $searchPath -Recurse -Name $gameExe -ErrorAction SilentlyContinue | Select-Object -First 2
                             foreach ($gameFile in $gameFiles) {
                                 $fullPath = Join-Path $searchPath $gameFile
@@ -8618,20 +8200,19 @@ function Search-GamesForPanel {
                                                 Path = $fullPath
                                                 Executable = $gameExe
                                                 Details = "Verified Executable - Size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+
                                             }
                                             Log "Found verified game: $($gameExecutables[$gameExe])" 'Success'
                                         }
                                     }
                                 }
                             }
-                        } catch {
                             # Continue silently on search errors
                         }
                     }
                 }
             }
 
-        } catch {
             Log "Enhanced detection encountered error: $($_.Exception.Message)" 'Warning'
         }
 
@@ -8651,10 +8232,8 @@ function Search-GamesForPanel {
             foreach ($game in $foundGames) {
                 $gameContainer = New-Object System.Windows.Controls.Border
                 Set-BrushPropertySafe -Target $gameContainer -Property 'Background' -Value '#14132B'
-                try {
                     Set-BrushPropertySafe -Target $gameContainer -Property 'BorderBrush' -Value '#2F285A'
                     $gameContainer.BorderThickness = "1"
-                } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
                 }
                 $gameContainer.Padding = "10"
@@ -8699,7 +8278,6 @@ function Search-GamesForPanel {
 
             Log "Game search complete: Found $($foundGames.Count) games" 'Success'
 
-        } else {
             # No games found
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "❌ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
@@ -8712,9 +8290,7 @@ function Search-GamesForPanel {
             $gameListPanel.Children.Add($noGamesText)
 
             Log "Game search complete: No games found" 'Warning'
-        }
 
-    } catch {
         # Clear panel and show error
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
@@ -8726,12 +8302,9 @@ function Search-GamesForPanel {
         $gameListPanel.Children.Add($errorText)
 
         Log "Error in game search: $($_.Exception.Message)" 'Error'
-    }
-}
 
 # ---------- Custom Folder Search Function ----------
 function Search-CustomFoldersForExecutables {
-    try {
         Log "Scanning custom folders for all executable files..." 'Info'
 
         # Clear existing content
@@ -8776,6 +8349,7 @@ function Search-CustomFoldersForExecutables {
                                 Size = [Math]::Round($exe.Length / 1MB, 2)
                                 LastModified = $exe.LastWriteTime
                                 Details = "Custom Folder: $customPath"
+
                             }
                         }
                         catch {
@@ -8799,7 +8373,6 @@ function Search-CustomFoldersForExecutables {
             } else {
                 Log "Custom path no longer exists: $customPath" 'Warning'
             }
-        }
 
         # Clear loading message
         $gameListPanel.Children.Clear()
@@ -8824,10 +8397,8 @@ function Search-CustomFoldersForExecutables {
                 # Create container border
                 $border = New-Object System.Windows.Controls.Border
                 Set-BrushPropertySafe -Target $border -Property 'Background' -Value '#14132B'
-                try {
                     Set-BrushPropertySafe -Target $border -Property 'BorderBrush' -Value '#2F285A'
                     $border.BorderThickness = "1"
-                } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
                 }
                 $border.Margin = "0,2"
@@ -8865,7 +8436,6 @@ function Search-CustomFoldersForExecutables {
             # Enable the optimize button
             Set-OptimizeButtonsEnabled -Enabled $true
 
-        } else {
             $noExecutablesText = New-Object System.Windows.Controls.TextBlock
             $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
             Set-BrushPropertySafe -Target $noExecutablesText -Property 'Foreground' -Value '#FF6B6B'
@@ -8875,9 +8445,7 @@ function Search-CustomFoldersForExecutables {
             $gameListPanel.Children.Add($noExecutablesText)
 
             Log "Custom search complete: No executables found" 'Warning'
-        }
 
-    } catch {
         # Clear panel and show error
         $gameListPanel.Children.Clear()
         $errorText = New-Object System.Windows.Controls.TextBlock
@@ -8889,8 +8457,6 @@ function Search-CustomFoldersForExecutables {
         $gameListPanel.Children.Add($errorText)
 
         Log "Error in custom folder search: $($_.Exception.Message)" 'Error'
-    }
-}
 
 # ---------- Game Detection and Auto-Optimization ----------
 function Get-RunningGames {
@@ -8950,7 +8516,6 @@ function Start-GameDetectionLoop {
 
     $timer.Start()
     return $timer
-}
 
 function Apply-GameOptimizations {
     param([string]$GameKey, [System.Diagnostics.Process]$Process)
@@ -8960,10 +8525,10 @@ function Apply-GameOptimizations {
     $profile = $GameProfiles[$GameKey]
     Log "Auto-optimizing detected game: $($profile.DisplayName)" 'Info'
 
-    try {
         if ($profile.Priority -and $profile.Priority -ne 'Normal') {
             $Process.PriorityClass = $profile.Priority
             Log "Set process priority to $($profile.Priority) for $($profile.DisplayName)" 'Success'
+
         }
 
         if ($profile.Affinity -eq 'Auto') {
@@ -8973,7 +8538,6 @@ function Apply-GameOptimizations {
                 Log "Set CPU affinity for $($profile.DisplayName) (using 4 cores)" 'Success'
             }
         }
-    } catch {
         Log "Warning: Could not adjust process priority/affinity for $($profile.DisplayName)" 'Warning'
     }
 
@@ -8988,7 +8552,6 @@ function Apply-GameOptimizations {
     }
 
     Log "Auto-optimization completed for $($profile.DisplayName)" 'Success'
-}
 
 # ---------- Network Optimization Functions ----------
 function Apply-NetworkOptimizations {
@@ -8996,7 +8559,6 @@ function Apply-NetworkOptimizations {
 
     $count = 0
 
-    try {
         if ($Settings.TCPAck) {
             # TCP ACK Frequency optimization
             $nicRoot = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
@@ -9004,6 +8566,7 @@ function Apply-NetworkOptimizations {
                 Get-ChildItem $nicRoot | ForEach-Object {
                     $nicPath = $_.PSPath
                     Set-Reg $nicPath "TcpAckFrequency" 'DWord' 1 -RequiresAdmin $true | Out-Null
+
                 }
                 $count++
                 Log "TCP ACK Frequency optimized" 'Success'
@@ -9030,67 +8593,49 @@ function Apply-NetworkOptimizations {
         }
 
         if ($Settings.TCPTimestamps) {
-            try {
                 netsh int tcp set global timestamps=disabled | Out-Null
                 $count++
                 Log "TCP timestamps disabled" 'Success'
-            } catch {
                 Log "Failed to disable TCP timestamps" 'Warning'
             }
         }
 
         if ($Settings.ECN) {
-            try {
                 netsh int tcp set global ecncapability=disabled | Out-Null
                 $count++
                 Log "Explicit Congestion Notification disabled" 'Success'
-            } catch {
                 Log "Failed to disable ECN" 'Warning'
             }
-        }
 
         if ($Settings.RSS) {
-            try {
                 netsh int tcp set global rss=enabled | Out-Null
                 $count++
                 Log "Receive Side Scaling enabled" 'Success'
-            } catch {
                 Log "Failed to enable RSS" 'Warning'
             }
-        }
 
         if ($Settings.RSC) {
-            try {
                 netsh int tcp set global rsc=disabled | Out-Null
                 $count++
                 Log "Receive Segment Coalescing disabled" 'Success'
-            } catch {
                 Log "Failed to disable RSC" 'Warning'
             }
-        }
 
         if ($Settings.AutoTuning) {
-            try {
                 netsh int tcp set global autotuninglevel=normal | Out-Null
                 $count++
                 Log "TCP Auto-Tuning set to normal" 'Success'
-            } catch {
                 Log "Failed to set TCP auto-tuning" 'Warning'
             }
-        }
 
-    } catch {
         Log "Network optimization error: $($_.Exception.Message)" 'Error'
-    }
 
     return $count
-}
 
 # ---------- Targeted Gaming Optimization Helpers ----------
 function Disable-GameDVR {
     $allOperationsSucceeded = $true
 
-    try {
         Log "Disabling Game DVR background recording and overlays..." 'Info'
 
         $operations = @(
@@ -9106,19 +8651,17 @@ function Disable-GameDVR {
         )
 
         foreach ($operation in $operations) {
-            if (-not (& $operation)) {
-                $allOperationsSucceeded = $false
-            }
+    try { & $operation } catch { $allOperationsSucceeded = $false }
+
         }
 
-        try {
             $presenceWriter = Get-Service -Name 'GameBarPresenceWriter' -ErrorAction Stop
             if ($presenceWriter.Status -ne 'Stopped') {
                 Stop-Service -Name 'GameBarPresenceWriter' -Force -ErrorAction Stop
+
             }
             Set-Service -Name 'GameBarPresenceWriter' -StartupType Disabled -ErrorAction Stop
             Log "Game Bar presence writer service disabled" 'Info'
-        } catch {
             Write-Verbose "Game Bar Presence Writer service update skipped: $($_.Exception.Message)"
             $allOperationsSucceeded = $false
         }
@@ -9127,23 +8670,19 @@ function Disable-GameDVR {
             Log "Game DVR disabled globally" 'Success'
         } else {
             Log "Game DVR registry updates applied with warnings (administrator rights may be required)" 'Warning'
-        }
 
         return $allOperationsSucceeded
-    } catch {
         Log "Failed to disable Game DVR: $($_.Exception.Message)" 'Warning'
         return $false
-    }
-}
 
 function Enable-GPUScheduling {
     $gpuRegistryPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
 
-    try {
         $osVersion = [Environment]::OSVersion.Version
         if ($osVersion.Major -lt 10 -or ($osVersion.Major -eq 10 -and $osVersion.Build -lt 19041)) {
             Log "Hardware GPU scheduling requires Windows 10 version 2004 or newer - skipping" 'Warning'
             return $false
+
         }
 
         if (-not (Test-Path $gpuRegistryPath -ErrorAction SilentlyContinue)) {
@@ -9164,11 +8703,9 @@ function Enable-GPUScheduling {
 
         Log "Hardware GPU scheduling enabled" 'Success'
         return $true
-    } catch {
         Log "Failed to enable hardware GPU scheduling: $($_.Exception.Message)" 'Warning'
         return $false
     }
-}
 
 # ---------- FPS Optimization Functions ----------
 function Apply-FPSOptimizations {
@@ -9213,10 +8750,8 @@ function Apply-FPSOptimizations {
             }
 
             'MemoryCompressionDisable' {
-                try {
                     Disable-MMAgent -MemoryCompression -ErrorAction Stop
                     Log "Memory compression disabled" 'Success'
-                } catch {
                     Log "Failed to disable memory compression: $($_.Exception.Message)" 'Warning'
                 }
             }
@@ -9228,13 +8763,12 @@ function Apply-FPSOptimizations {
             }
 
             'InterruptModerationOptimization' {
-                try {
                     Get-NetAdapter | ForEach-Object {
                         Set-NetAdapterAdvancedProperty -Name $_.Name -DisplayName "Interrupt Moderation" -DisplayValue "Disabled" -ErrorAction SilentlyContinue
                         Set-NetAdapterAdvancedProperty -Name $_.Name -DisplayName "Interrupt Moderation Rate" -DisplayValue "Off" -ErrorAction SilentlyContinue
+
                     }
                     Log "Interrupt moderation optimized" 'Success'
-                } catch {
                     Log "Network adapter interrupt moderation failed: $($_.Exception.Message)" 'Warning'
                 }
             }
@@ -9338,10 +8872,8 @@ function Apply-FPSOptimizations {
             }
 
             'NetworkLatencyOptimization' {
-                try {
                     netsh int tcp set supplemental internet congestionprovider=ctcp | Out-Null
                     Log "Network latency optimization applied" 'Success'
-                } catch {
                     Log "Failed to apply network latency optimization" 'Warning'
                 }
             }
@@ -9351,9 +8883,6 @@ function Apply-FPSOptimizations {
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "DpcWatchdogProfileOffset" 'DWord' 10000 -RequiresAdmin $true | Out-Null
                 Log "CPU optimization applied" 'Success'
             }
-        }
-    }
-}
 
 # ---------- DirectX 11 Optimization Functions ----------
 function Apply-DX11Optimizations {
@@ -9364,82 +8893,65 @@ function Apply-DX11Optimizations {
     foreach ($optimization in $OptimizationList) {
         switch ($optimization) {
             'DX11EnhancedGpuScheduling' {
-                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" "EnablePreemption" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 60 -RequiresAdmin $true | Out-Null
                     Log "Enhanced GPU scheduling for DX11 applied" 'Success'
-                } catch {
                     Log "Failed to apply enhanced GPU scheduling: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11GameProcessPriority' {
-                try {
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" "UseLargePages" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Game process priority optimizations applied" 'Success'
-                } catch {
                     Log "Failed to apply process priority optimizations: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11DisableBackgroundServices' {
-                try {
                     $servicesToDisable = @('Themes', 'TabletInputService', 'Fax', 'WSearch', 'HomeGroupListener', 'HomeGroupProvider')
                     foreach ($service in $servicesToDisable) {
                         $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
                         if ($svc -and $svc.Status -eq 'Running') {
                             Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
                             Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+
                         }
                     }
                     Log "Background services disabled for gaming performance" 'Success'
-                } catch {
                     Log "Failed to disable some background services: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11HardwareAcceleration' {
-                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "EnableHWSched" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D_DISABLE_9EX" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Hardware-accelerated GPU scheduling enabled" 'Success'
-                } catch {
                     Log "Failed to enable hardware-accelerated GPU scheduling: $($_.Exception.Message)" 'Warning'
                 }
-            }
 
             'DX11MaxPerformanceMode' {
-                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabledDefault" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" "HiberbootEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\893dee8e-2bef-41e0-89c6-b55d0929964c" "ValueMax" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\893dee8e-2bef-41e0-89c6-b55d0929964c" "ValueMin" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Maximum performance mode configured" 'Success'
-                } catch {
                     Log "Failed to configure maximum performance mode: $($_.Exception.Message)" 'Warning'
                 }
-            }
 
             'DX11RegistryOptimizations' {
-                try {
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_MULTITHREADED" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_ENABLE_BREAK_ON_MESSAGE" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_ENABLE_SHADER_CACHING" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_FORCE_SINGLE_THREADED" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "DisableWriteCombining" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "DirectX 11 registry optimizations applied" 'Success'
-                } catch {
                     Log "Failed to apply DirectX 11 registry optimizations: $($_.Exception.Message)" 'Warning'
                 }
-            }
-        }
-    }
-}
 
 # ---------- Apply Game-Specific Tweaks ----------
 function Apply-GameSpecificTweaks {
@@ -9456,9 +8968,7 @@ function Apply-GameSpecificTweaks {
 
             'HighPrecisionTimer' {
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 -RequiresAdmin $true | Out-Null
-                try {
                     [WinMM]::timeBeginPeriod(1) | Out-Null
-                } catch {}
                 Log "High precision timer enabled" 'Success'
             }
 
@@ -9579,7 +9089,6 @@ function Apply-CustomGameOptimizations {
     Log "Applying standard gaming optimizations for: $GameExecutable in $global:MenuMode mode" 'Info'
     Log "Executable detection request - searching for running processes" 'Info'
 
-    try {
         # Process Priority Optimization
         $processes = Get-Process | Where-Object { $_.ProcessName -like "*$($GameExecutable.Replace('.exe', ''))*" }
         foreach ($process in $processes) {
@@ -9606,19 +9115,13 @@ function Apply-CustomGameOptimizations {
         Log "Game Mode optimizations applied" 'Success'
 
         # Timer Resolution
-        try {
             [WinMM]::timeBeginPeriod(1) | Out-Null
             Log "High precision timer enabled" 'Success'
-        } catch {
             Log "Could not set timer resolution" 'Warning'
-        }
 
         Log "Custom game optimizations completed for: $GameExecutable" 'Success'
 
-    } catch {
         Log "Error applying custom game optimizations: $($_.Exception.Message)" 'Error'
-    }
-}
 
 # ---------- Service Optimization Functions ----------
 function Apply-ServiceOptimizations {
@@ -9627,7 +9130,6 @@ function Apply-ServiceOptimizations {
     $count = 0
     $serviceErrors = @()
 
-    try {
         if ($Settings.XboxServices) {
             $xboxServices = @("XblGameSave", "XblAuthManager", "XboxGipSvc", "XboxNetApiSvc")
             $xboxSuccessCount = 0
@@ -9642,8 +9144,8 @@ function Apply-ServiceOptimizations {
                     } else {
                         Log "Xbox service '$service' not found on this system" 'Warning'
                         $serviceErrors += "Xbox service '$service' not found"
+
                     }
-                } catch {
                     Log "Failed to disable Xbox service '$service': $($_.Exception.Message)" 'Warning'
                     $serviceErrors += "Xbox service '$service': $($_.Exception.Message)"
                 }
@@ -9655,12 +9157,12 @@ function Apply-ServiceOptimizations {
         }
 
         if ($Settings.PrintSpooler) {
-            try {
                 $serviceStatus = Get-ServiceState -ServiceName "Spooler"
                 if ($serviceStatus) {
                     if ($serviceStatus.Status -eq 'Running') {
                         Stop-Service -Name "Spooler" -Force -ErrorAction Stop
                         Log "Print Spooler service stopped" 'Info'
+
                     }
                     Set-Service -Name "Spooler" -StartupType Disabled -ErrorAction Stop
                     $count++
@@ -9669,19 +9171,16 @@ function Apply-ServiceOptimizations {
                     Log "Print Spooler service not found on this system" 'Warning'
                     $serviceErrors += "Print Spooler service not found"
                 }
-            } catch {
                 Log "Failed to disable Print Spooler: $($_.Exception.Message)" 'Warning'
                 $serviceErrors += "Print Spooler: $($_.Exception.Message)"
-            }
-        }
 
         if ($Settings.Superfetch) {
-            try {
                 $serviceStatus = Get-ServiceState -ServiceName "SysMain"
                 if ($serviceStatus) {
                     if ($serviceStatus.Status -eq 'Running') {
                         Stop-Service -Name "SysMain" -Force -ErrorAction Stop
                         Log "SysMain (Superfetch) service stopped" 'Info'
+
                     }
                     Set-Service -Name "SysMain" -StartupType Disabled -ErrorAction Stop
                     $count++
@@ -9690,22 +9189,19 @@ function Apply-ServiceOptimizations {
                     Log "SysMain (Superfetch) service not found on this system" 'Warning'
                     $serviceErrors += "SysMain service not found"
                 }
-            } catch {
                 Log "Failed to disable SysMain: $($_.Exception.Message)" 'Warning'
                 $serviceErrors += "SysMain: $($_.Exception.Message)"
-            }
-        }
 
         if ($Settings.Telemetry) {
             $telemetryServices = @("DiagTrack", "dmwappushservice", "WerSvc")
             $telemetrySuccessCount = 0
             foreach ($service in $telemetryServices) {
-                try {
                     $serviceStatus = Get-ServiceState -ServiceName $service
                     if ($serviceStatus) {
                         if ($serviceStatus.Status -eq 'Running') {
                             Stop-Service -Name $service -Force -ErrorAction Stop
                             Log "Telemetry service '$service' stopped" 'Info'
+
                         }
                         Set-Service -Name $service -StartupType Disabled -ErrorAction Stop
                         $telemetrySuccessCount++
@@ -9714,24 +9210,21 @@ function Apply-ServiceOptimizations {
                         Log "Telemetry service '$service' not found on this system" 'Warning'
                         $serviceErrors += "Telemetry service '$service' not found"
                     }
-                } catch {
                     Log "Failed to disable telemetry service '$service': $($_.Exception.Message)" 'Warning'
                     $serviceErrors += "Telemetry service '$service': $($_.Exception.Message)"
                 }
-            }
             if ($telemetrySuccessCount -gt 0) {
                 $count++
                 Log "Telemetry services optimization completed: $telemetrySuccessCount/$($telemetryServices.Count) services disabled" 'Success'
             }
-        }
 
         if ($Settings.WindowsSearch) {
-            try {
                 $serviceStatus = Get-ServiceState -ServiceName "WSearch"
                 if ($serviceStatus) {
                     if ($serviceStatus.Status -eq 'Running') {
                         Stop-Service -Name "WSearch" -Force -ErrorAction Stop
                         Log "Windows Search service stopped" 'Info'
+
                     }
                     Set-Service -Name "WSearch" -StartupType Disabled -ErrorAction Stop
                     $count++
@@ -9740,22 +9233,19 @@ function Apply-ServiceOptimizations {
                     Log "Windows Search service not found on this system" 'Warning'
                     $serviceErrors += "Windows Search service not found"
                 }
-            } catch {
                 Log "Failed to disable Windows Search: $($_.Exception.Message)" 'Warning'
                 $serviceErrors += "Windows Search: $($_.Exception.Message)"
-            }
-        }
 
         if ($Settings.UnneededServices) {
             $unneededServices = @("Fax", "RemoteRegistry", "MapsBroker", "WMPNetworkSvc", "bthserv", "TabletInputService", "TouchKeyboard")
             $unneededSuccessCount = 0
             foreach ($service in $unneededServices) {
-                try {
                     $serviceStatus = Get-ServiceState -ServiceName $service
                     if ($serviceStatus) {
                         if ($serviceStatus.Status -eq 'Running') {
                             Stop-Service -Name $service -Force -ErrorAction Stop
                             Log "Unneeded service '$service' stopped" 'Info'
+
                         }
                         Set-Service -Name $service -StartupType Disabled -ErrorAction Stop
                         $unneededSuccessCount++
@@ -9763,30 +9253,23 @@ function Apply-ServiceOptimizations {
                     } else {
                         Log "Unneeded service '$service' not found on this system (may already be removed)" 'Info'
                     }
-                } catch {
                     Log "Failed to disable unneeded service '$service': $($_.Exception.Message)" 'Warning'
                     $serviceErrors += "Unneeded service '$service': $($_.Exception.Message)"
                 }
-            }
             if ($unneededSuccessCount -gt 0) {
                 $count++
                 Log "Unneeded services optimization completed: $unneededSuccessCount/$($unneededServices.Count) services disabled" 'Success'
             }
-        }
 
         # Report summary of any errors encountered
         if ($serviceErrors.Count -gt 0) {
             Log "Service optimization completed with $($serviceErrors.Count) issues. Check individual service logs for details." 'Warning'
         } else {
             Log "Service optimization completed successfully with no errors" 'Success'
-        }
 
-    } catch {
         Log "Service optimization error: $($_.Exception.Message)" 'Error'
-    }
 
     return $count
-}
 
 function Get-ServiceState {
     param([string]$ServiceName)
@@ -9796,40 +9279,33 @@ function Get-ServiceState {
         return $null
     }
 
-    try {
         $service = Get-Service -Name $ServiceName -ErrorAction Stop
         return @{
             Name = $service.Name
             Status = $service.Status
             StartType = $service.StartType
             DisplayName = $service.DisplayName
+
         }
-    } catch [Microsoft.PowerShell.Commands.ServiceCommandException] {
         Log "Get-ServiceState: Service '$ServiceName' not found on this system" 'Info'
         return $null
-    } catch [System.ServiceProcess.InvalidOperationException] {
         Log "Get-ServiceState: Cannot access service '$ServiceName' - insufficient permissions or service is inaccessible" 'Warning'
         return $null
-    } catch {
         Log "Get-ServiceState: Error getting service '$ServiceName': $($_.Exception.Message)" 'Warning'
         return $null
     }
-}
 
 # ---------- Advanced System Tweaks Functions ----------
 function Apply-HPETOptimization {
     param([bool]$Disable = $true)
 
     if ($Disable) {
-        try {
             bcdedit /deletevalue useplatformclock 2>$null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Hpet" "Start" 'DWord' 4 -RequiresAdmin $true | Out-Null
             Log "HPET disabled" 'Success'
-        } catch {
             Log "Failed to disable HPET" 'Warning'
         }
     }
-}
 
 function Remove-MenuDelay {
     Set-Reg "HKCU:\Control Panel\Desktop" "MenuShowDelay" 'String' "0" | Out-Null
@@ -9837,13 +9313,10 @@ function Remove-MenuDelay {
 }
 
 function Disable-WindowsDefenderRealTime {
-    try {
         Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop
         Log "Windows Defender real-time protection disabled" 'Success'
-    } catch {
         Log "Failed to disable Windows Defender: $($_.Exception.Message)" 'Warning'
     }
-}
 
 function Disable-ModernStandby {
     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "PlatformAoAcOverride" 'DWord' 0 -RequiresAdmin $true | Out-Null
@@ -9899,9 +9372,7 @@ function Enable-MemoryDefragmentation {
     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PoolUsageMaximum" 'DWord' 96 -RequiresAdmin $true | Out-Null
     # Enable memory compression for better performance
-    try {
         Enable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue
-    } catch { }
     Log "Memory defragmentation and optimization enabled" 'Success'
 }
 
@@ -9914,10 +9385,8 @@ function Apply-ServiceOptimization {
     )
 
     foreach ($service in $servicesToOptimize) {
-        try {
             Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
             Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
-        } catch { }
     }
     Log "Advanced service optimization applied" 'Success'
 }
@@ -10046,7 +9515,6 @@ function Apply-EnhancedSystemOptimizations {
 
     # Automatic Disk Defragmentation and SSD Trimming
     if ($Settings.AutoDiskOptimization) {
-        try {
             # Check if SSD or HDD and apply appropriate optimization
             $drives = Get-WmiObject -Class Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
             foreach ($drive in $drives) {
@@ -10063,19 +9531,16 @@ function Apply-EnhancedSystemOptimizations {
                         # HDD defragmentation
                         Optimize-Volume -DriveLetter $driveLetter -Defrag -Verbose
                         Log "Disk defragmentation applied for drive $($drive.DeviceID)" 'Success'
+
                     }
-                } catch {
                     Log "Drive optimization failed for $($drive.DeviceID): $($_.Exception.Message)" 'Warning'
                 }
             }
-        } catch {
             Log "Automatic disk optimization failed: $($_.Exception.Message)" 'Warning'
         }
-    }
 
     # Adaptive Power Management Profiles
     if ($Settings.AdaptivePowerManagement) {
-        try {
             # Create custom gaming power profile
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes\GamingProfile" "FriendlyName" 'String' "KOALA Gaming Profile" -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes\GamingProfile" "Description" 'String' "Optimized for gaming performance with adaptive management" -RequiresAdmin $true | Out-Null
@@ -10090,14 +9555,11 @@ function Apply-EnhancedSystemOptimizations {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\bc5038f7-23e0-4960-96da-33abaf5935ec" "ValueMin" 'DWord' 100 -RequiresAdmin $true | Out-Null
 
             Log "Adaptive power management profiles configured" 'Success'
-        } catch {
             Log "Failed to configure adaptive power management: $($_.Exception.Message)" 'Warning'
         }
-    }
 
     # Enhanced Paging File Management
     if ($Settings.EnhancedPagingFile) {
-        try {
             # Calculate optimal paging file size based on RAM
             $totalRAM = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory / 1GB
             $optimalPageFile = [Math]::Round($totalRAM * 1.5, 0) * 1024  # 1.5x RAM in MB
@@ -10109,14 +9571,11 @@ function Apply-EnhancedSystemOptimizations {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 -RequiresAdmin $true | Out-Null
 
             Log "Enhanced paging file management configured (Size: $optimalPageFile MB)" 'Success'
-        } catch {
             Log "Failed to configure enhanced paging file: $($_.Exception.Message)" 'Warning'
         }
-    }
 
     # DirectStorage API Optimization Enhancements
     if ($Settings.DirectStorageEnhanced) {
-        try {
             # Advanced DirectStorage configuration
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" "ForcedPhysicalSectorSizeInBytes" 'DWord' 4096 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "NtfsDisableLastAccessUpdate" 'DWord' 1 -RequiresAdmin $true | Out-Null
@@ -10133,17 +9592,13 @@ function Apply-EnhancedSystemOptimizations {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Enum\PCI\VEN_*\*\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" "MSISupported" 'DWord' 1 -RequiresAdmin $true | Out-Null
 
             Log "Enhanced DirectStorage API optimizations applied" 'Success'
-        } catch {
             Log "Failed to apply DirectStorage enhancements: $($_.Exception.Message)" 'Warning'
         }
-    }
 
     Log "Enhanced system optimizations completed" 'Success'
-}
 
 # ---------- Backup and Restore Functions ----------
 function Get-NetshTcpGlobal {
-    try {
         $output = netsh int tcp show global
         $settings = @{}
         foreach ($line in $output) {
@@ -10151,13 +9606,12 @@ function Get-NetshTcpGlobal {
                 $key = $matches[1].Trim()
                 $value = $matches[2].Trim()
                 $settings[$key] = $value
+
             }
         }
         return $settings
-    } catch {
         return @{}
     }
-}
 
 # ---------- Registry File Creation Function ----------
 function Create-RegFile {
@@ -10168,7 +9622,6 @@ function Create-RegFile {
         [string]$OutputPath
     )
 
-    try {
         $regContent = @"
 Windows Registry Editor Version 5.00
 
@@ -10197,6 +9650,7 @@ Windows Registry Editor Version 5.00
                 if ($null -ne $value) {
                     # Format as DWORD value
                     $regContent += "`"$regName`"=dword:$('{0:x8}' -f $value)`n"
+
                 } else {
                     # Delete the value if it was null
                     $regContent += "`"$regName`"=-`n"
@@ -10223,10 +9677,7 @@ Windows Registry Editor Version 5.00
         Set-Content -Path $OutputPath -Value $regContent -Encoding Unicode -ErrorAction Stop
         Log "Registry file created successfully: $OutputPath" 'Success'
 
-    } catch {
         Log "Failed to create registry file: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Create-Backup {
     Log "Creating comprehensive backup with user-selected location..." 'Info'
@@ -10277,13 +9728,12 @@ function Create-Backup {
 
     # Backup registry values
     foreach ($r in $regList) {
-        try {
             $value = Get-Reg $r.Path $r.Name
             if (-not $backupData.Registry.ContainsKey($r.Path)) {
                 $backupData.Registry[$r.Path] = @{}
+
             }
             $backupData.Registry[$r.Path][$r.Name] = $value
-        } catch {
             # Silently continue
         }
     }
@@ -10324,16 +9774,13 @@ function Create-Backup {
     $backupData.NetshTcp = Get-NetshTcpGlobal
 
     # Power settings backup
-    try {
         $backupData.PowerSettings = @{
             ActivePowerScheme = (powercfg /getactivescheme 2>$null) -replace '^.*: ', '' -replace ' \(.*\)', ''
+
         }
-    } catch {
         # Continue
-    }
 
     # Save backup based on user selection
-    try {
         if ($selectedExtension -eq ".json") {
             # Save as JSON
             $backupJson = $backupData | ConvertTo-Json -Depth 10 -ErrorAction Stop
@@ -10350,6 +9797,7 @@ function Create-Backup {
                 'OK',
                 'Information'
             )
+
         } elseif ($selectedExtension -eq ".reg") {
             # Save as .reg file only
             Create-RegFile -BackupData $backupData -OutputPath $selectedPath
@@ -10365,7 +9813,6 @@ function Create-Backup {
                 'OK',
                 'Information'
             )
-        } else {
             # Default to JSON for unknown extensions
             $backupJson = $backupData | ConvertTo-Json -Depth 10 -ErrorAction Stop
             Set-Content -Path $selectedPath -Value $backupJson -Encoding UTF8 -ErrorAction Stop
@@ -10377,12 +9824,10 @@ function Create-Backup {
                 'OK',
                 'Information'
             )
-        }
 
         # Update the global backup path for restore operations
         $global:BackupPath = if ($selectedExtension -eq ".reg") { $selectedPath -replace '\.reg$', '.json' } else { $selectedPath }
 
-    } catch {
         Log "Failed to save backup: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show(
             "Failed to save backup!`n`nError: $($_.Exception.Message)`n`nPlease check the selected location and try again.",
@@ -10390,8 +9835,6 @@ function Create-Backup {
             'OK',
             'Error'
         )
-    }
-}
 
 function Restore-FromBackup {
     if (-not (Test-Path $BackupPath)) {
@@ -10405,7 +9848,6 @@ function Restore-FromBackup {
         return $false
     }
 
-    try {
         $backupData = Get-Content $BackupPath -Raw | ConvertFrom-Json
         Log "Restoring from backup created: $($backupData.Timestamp)" 'Info'
 
@@ -10415,6 +9857,7 @@ function Restore-FromBackup {
                 $value = $backupData.Registry.$regPath.$regName
                 if ($null -ne $value) {
                     Set-Reg $regPath $regName 'DWord' $value -RequiresAdmin $true | Out-Null
+
                 }
             }
         }
@@ -10433,12 +9876,11 @@ function Restore-FromBackup {
         # Restore services
         foreach ($serviceName in $backupData.Services.PSObject.Properties.Name) {
             $serviceData = $backupData.Services.$serviceName
-            try {
                 Set-Service -Name $serviceName -StartupType $serviceData.StartType -ErrorAction SilentlyContinue
                 if ($serviceData.Status -eq 'Running') {
                     Start-Service -Name $serviceName -ErrorAction SilentlyContinue
+
                 }
-            } catch {}
         }
 
         Log "Backup restored successfully!" 'Success'
@@ -10452,15 +9894,12 @@ function Restore-FromBackup {
 
         return $true
 
-    } catch {
         Log "Failed to restore backup: $($_.Exception.Message)" 'Error'
         return $false
     }
-}
 
 # ---------- Configuration Import/Export ----------
 function Export-Configuration {
-    try {
         $config = @{
             Timestamp = Get-Date
             Version = "3.0"
@@ -10478,6 +9917,7 @@ function Export-Configuration {
                 RSS = $chkRSS.IsChecked
                 RSC = $chkRSC.IsChecked
                 AutoTuning = $chkTcpAutoTune.IsChecked
+
             }
             GamingSettings = @{
                 Responsiveness = $chkResponsiveness.IsChecked
@@ -10508,13 +9948,10 @@ function Export-Configuration {
                 'Information'
             )
         }
-    } catch {
         Log "Failed to export configuration: $($_.Exception.Message)" 'Error'
     }
-}
 
 function Import-Configuration {
-    try {
         $openDialog = New-Object Microsoft.Win32.OpenFileDialog
         $openDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
         $openDialog.DefaultExt = ".json"
@@ -10529,6 +9966,7 @@ function Import-Configuration {
                     if ($item.Tag -eq $config.GameProfile) {
                         $cmbGameProfile.SelectedItem = $item
                         break
+
                     }
                 }
             }
@@ -10582,16 +10020,13 @@ function Import-Configuration {
                 'Information'
             )
         }
-    } catch {
         Log "Failed to import configuration: $($_.Exception.Message)" 'Error'
     }
-}
 
 # ---------- Benchmark Function ----------
 function Start-QuickBenchmark {
     Log "Starting quick system benchmark..." 'Info'
 
-    try {
         $startTime = Get-Date
 
         # CPU test
@@ -10644,10 +10079,8 @@ These are basic tests for comparison purposes.
 
         Log "Benchmark completed successfully" 'Success'
 
-    } catch {
         Log "Benchmark failed: $($_.Exception.Message)" 'Error'
     }
-}
 
 # ---------- Event Handlers ----------
 
@@ -10699,11 +10132,10 @@ if ($btnAutoDetect) {
             # Enhanced logging with executable details
             Log "Detected Game: $($firstGame.DisplayName)" 'Success'
             Log "Executable: $($process.ProcessName).exe (PID: $($process.Id))" 'Info'
-            try {
                 if ($process.MainModule -and $process.MainModule.FileName) {
                     Log "Path: $($process.MainModule.FileName)" 'Info'
+
                 }
-            } catch {
             Log "Path: Access denied (running as different user)" 'Warning'
         }
 
@@ -10734,18 +10166,16 @@ if ($btnAutoDetect) {
             })
         }
     }
-})
-}
 
 # Optimize custom game button
 $btnOptimizeGame.Add_Click({
-    try {
         $gameExecutable = $txtCustomGame.Text.Trim()
 
         if ([string]::IsNullOrEmpty($gameExecutable)) {
             Log "Please enter a game executable name first" 'Warning'
             [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) before optimizing.", "No Game Specified", 'OK', 'Warning')
             return
+
         }
 
         Log "Starting optimization for custom game: $gameExecutable" 'Info'
@@ -10756,21 +10186,19 @@ $btnOptimizeGame.Add_Click({
         Log "Successfully applied gaming optimizations for: $gameExecutable" 'Success'
         [System.Windows.MessageBox]::Show("Gaming optimizations have been successfully applied for '$gameExecutable'!`n`nOptimizations applied:`n* Process priority boost`n* Network latency reduction`n* GPU scheduling enhancement`n* Game mode activation`n* High precision timers", "Optimization Complete", 'OK', 'Information')
 
-    } catch {
         Log "Error optimizing custom game: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
     }
-})
 
 # Find executable button
 $btnFindExecutable.Add_Click({
-    try {
         $gameExecutable = $txtCustomGame.Text.Trim()
 
         if ([string]::IsNullOrEmpty($gameExecutable)) {
             Log "Please enter a game executable name first" 'Warning'
             [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) to search for.", "No Game Specified", 'OK', 'Warning')
             return
+
         }
 
         Log "Searching for executable: $gameExecutable" 'Info'
@@ -10814,53 +10242,40 @@ $btnFindExecutable.Add_Click({
             [System.Windows.MessageBox]::Show("Executable '$gameExecutable' was not found in common game directories.`n`nNote: The executable may still exist in other locations, or it may need to be running to be detected.", "Executable Not Found", 'OK', 'Warning')
         }
 
-    } catch {
         Log "Error searching for executable: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error searching for executable: $($_.Exception.Message)", "Search Failed", 'OK', 'Error')
-    }
-})
 
 # Custom game executable text change - Track user input for enhanced logging
 $txtCustomGame.Add_TextChanged({
-    try {
         $gameText = $txtCustomGame.Text.Trim()
         if ($gameText -and $gameText.Length -gt 2) {
             Log "Custom game executable entered: $gameText" 'Info'
             Log "User preparing to optimize custom game in $global:MenuMode mode" 'Info'
+
         }
-    } catch {
         # Silent fail for text input monitoring to avoid spam
     }
-})
 
 # Installed Games button - Show installed games discovery window
 if ($btnInstalledGames) {
     $btnInstalledGames.Add_Click({
-        try {
             Log "Installed Games discovery initiated by user" 'Info'
             Show-InstalledGames
-        } catch {
             Log "Error showing installed games: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error displaying installed games: $($_.Exception.Message)", "Installed Games Error", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnInstalledGames control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnInstalledGamesDash -and $btnInstalledGames) {
     $btnInstalledGamesDash.Add_Click({
-        try {
             $btnInstalledGames.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying dashboard installed games action: $($_.Exception.Message)" 'Warning'
         }
     })
-}
 
 # Basic Network Optimizations button
 $btnBasicNetwork.Add_Click({
-    try {
         Log "Applying Basic Network Optimizations..." 'Info'
 
         # Apply all network optimizations from the Network section
@@ -10875,15 +10290,12 @@ $btnBasicNetwork.Add_Click({
         Log "Applied 6 network optimizations: TCP ACK, DelAck, Throttling, NoDelay, Timestamps, Window Size" 'Info'
         [System.Windows.MessageBox]::Show("Network optimizations have been applied successfully!`n`nOptimizations applied:`n* TCP ACK Frequency optimization`n* Network throttling disabled`n* Nagle algorithm disabled`n* TCP window size optimized`n* Latency reduction tweaks", "Network Optimization Complete", 'OK', 'Information')
 
-    } catch {
         Log "Error applying network optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying network optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
     }
-})
 
 # Basic System Performance button
 $btnBasicSystem.Add_Click({
-    try {
         Log "Applying Basic System Performance Optimizations..." 'Info'
 
         # Apply system performance optimizations
@@ -10901,7 +10313,6 @@ $btnBasicSystem.Add_Click({
                 powercfg /setactive $planGUID
                 Log "Ultimate Performance power plan activated" 'Success'
             }
-        } catch {
             Log "Could not set Ultimate Performance power plan" 'Warning'
         }
 
@@ -10909,15 +10320,12 @@ $btnBasicSystem.Add_Click({
         Log "Applied 5 system optimizations: Responsiveness, GPU Priority, CPU Scheduling, Memory Management, Power Plan" 'Info'
         [System.Windows.MessageBox]::Show("System performance optimizations have been applied successfully!`n`nOptimizations applied:`n* System responsiveness enhanced`n* Game task priority boosted`n* CPU scheduling optimized`n* Memory management improved`n* Power plan optimized", "System Optimization Complete", 'OK', 'Information')
 
-    } catch {
         Log "Error applying system optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying system optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
     }
-})
 
 # Basic Gaming Optimizations button
 $btnBasicGaming.Add_Click({
-    try {
         Log "Applying Basic Gaming Optimizations..." 'Info'
 
         # Apply essential gaming optimizations
@@ -10937,22 +10345,16 @@ $btnBasicGaming.Add_Click({
         }
 
         # Disable hibernation
-        try {
             powercfg /hibernate off | Out-Null
             Log "Hibernation disabled" 'Success'
-        } catch {
             Log "Could not disable hibernation" 'Warning'
-        }
 
         Log "Gaming optimizations applied successfully in $global:MenuMode mode!" 'Success'
         Log "Applied 7 gaming optimizations: Game DVR, GPU Scheduling, Game Mode, High Priority, Precision Timer, Hibernation" 'Info'
         [System.Windows.MessageBox]::Show("Gaming optimizations have been applied successfully!`n`nOptimizations applied:`n* Game DVR disabled`n* Hardware GPU scheduling enabled`n* Game mode activated`n* High precision timer enabled`n* Visual effects optimized`n* Hibernation disabled", "Gaming Optimization Complete", 'OK', 'Information')
 
-    } catch {
         Log "Error applying gaming optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying gaming optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
-    }
-})
 
 # Apply theme button
 # Removed $btnApplyTheme event handler (now only in Options panel)
@@ -10962,7 +10364,6 @@ if ($cmbOptionsTheme) {
     $cmbOptionsTheme.Add_SelectionChanged({
         if ($script:ThemeSelectionSyncInProgress) { return }
 
-        try {
             $script:ThemeSelectionSyncInProgress = $true
 
             if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
@@ -10980,6 +10381,7 @@ if ($cmbOptionsTheme) {
                         if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
                         if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
                         if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
+
                     }
                 } elseif ($customThemePanel) {
                     $customThemePanel.Visibility = "Collapsed"
@@ -10987,92 +10389,15 @@ if ($cmbOptionsTheme) {
 
                 Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
             }
-        } catch {
             Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
         } finally {
             $script:ThemeSelectionSyncInProgress = $false
-        }
-    })
-}
 
 # Apply button - primary method for theme application (themes only apply when clicked)
 # Theme Apply Button Event Handler
-if ($btnOptionsApplyTheme) {
-    $btnOptionsApplyTheme.Add_Click({
-        try {
-            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
-                $themeName = $cmbOptionsTheme.SelectedItem.Content
-
-                Log "Applying theme: $themeName" 'Info'
-                Switch-Theme -ThemeName $selectedTheme
-
-                # Force ComboBox refresh
-                $cmbOptionsTheme.InvalidateVisual()
-                $cmbOptionsTheme.UpdateLayout()
-
-                [System.Windows.MessageBox]::Show("Theme '$themeName' wurde erfolgreich angewendet!", "Theme Applied", 'OK', 'Information')
-            } else {
-                [System.Windows.MessageBox]::Show("Bitte wÃ¤hlen Sie zuerst ein Theme aus der Liste.", "No Theme Selected", 'OK', 'Warning')
-            }
-        } catch {
-            Log "Error applying theme: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Fehler beim Anwenden des Themes: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-        }
-    })
-}
-
 
 # Alias button for test compatibility - applies same functionality
-if ($btnApplyTheme) {
-    $btnApplyTheme.Add_Click({
-        # Apply the selected theme instantly - same as main button functionality
-        if ($btnOptionsApplyTheme) {
-            $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        }
-    })
-}
 
-                if ($cmbOptionsTheme) {
-                    foreach ($item in $cmbOptionsTheme.Items) {
-                        if ($item.Tag -eq $selectedTheme) {
-                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
-                                $cmbOptionsTheme.SelectedItem = $item
-                            }
-                            break
-                        }
-                    }
-                }
-
-                $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-            } else {
-                [System.Windows.MessageBox]::Show("Please select a theme first.", "Theme", 'OK', 'Warning')
-            }
-        } catch {
-            Log "Error applying theme from header: $($_.Exception.Message)" 'Error'
-        }
-    })
-}
-
-if ($btnApplyScale) {
-    $btnApplyScale.Add_Click({
-
-        try {
-
-                Log "Applying UI scale: $scalePercent (factor: $scaleValue)" 'Info'
-
-                # Apply UI scaling transformation
-                $scaleTransform = New-Object System.Windows.Media.ScaleTransform($scaleValue, $scaleValue)
-                $form.LayoutTransform = $scaleTransform
-
-                Log "UI scale '$scalePercent' applied successfully" 'Success'
-                [System.Windows.MessageBox]::Show("UI scale '$scalePercent' has been applied successfully!", "Scale Applied", 'OK', 'Information')
-        } catch {
-            Log "Error applying UI scale: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Error applying UI scale: $($_.Exception.Message)", "Scale Application Failed", 'OK', 'Error')
-        }
-    })
-}
 
 function Get-AdvancedCheckboxControls {
     if (-not $panelAdvanced) {
@@ -11238,11 +10563,9 @@ function Get-AdvancedSelectionSummary {
     }
 
     return ($labels -join ', ')
-}
 
 if ($btnSaveSettings) {
     $btnSaveSettings.Add_Click({
-        try {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
 
             # Gather current settings
@@ -11267,18 +10590,14 @@ AdvancedSelections=$advancedSelectionsValue
             Set-Content -Path $configPath -Value $settings -Encoding UTF8
             Log "Settings saved to koala-settings.cfg (Theme: $currentTheme, Scale: $currentScale, Language: $currentLanguage, Advanced: $advancedSummary)" 'Success'
             [System.Windows.MessageBox]::Show("Settings have been saved to koala-settings.cfg successfully!", "Settings Saved", 'OK', 'Information')
-        } catch {
             Log "Error saving settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error saving settings: $($_.Exception.Message)", "Save Failed", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnSaveSettings control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnLoadSettings) {
     $btnLoadSettings.Add_Click({
-        try {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
 
             if (Test-Path $configPath) {
@@ -11288,6 +10607,7 @@ if ($btnLoadSettings) {
                 $content -split "`n" | ForEach-Object {
                     if ($_ -match "^([^#=]+)=(.*)$") {
                         $settings[$matches[1].Trim()] = $matches[2].Trim()
+
                     }
                 }
 
@@ -11337,18 +10657,13 @@ if ($btnLoadSettings) {
                 Log "No settings file found at koala-settings.cfg" 'Warning'
                 [System.Windows.MessageBox]::Show("No settings file found. Please save settings first.", "No Settings File", 'OK', 'Warning')
             }
-        } catch {
             Log "Error loading settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error loading settings: $($_.Exception.Message)", "Load Failed", 'OK', 'Error')
         }
-    })
-} else {
     Log "Warning: btnLoadSettings control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnResetSettings) {
     $btnResetSettings.Add_Click({
-        try {
             $result = [System.Windows.MessageBox]::Show(
                 "Are you sure you want to reset all settings to default?`n`nThis will:`n- Set theme to Dark Purple`n- Set UI scale to 100%`n- Switch to Basic mode",
                 "Reset Settings",
@@ -11363,6 +10678,7 @@ if ($btnResetSettings) {
                         $cmbOptionsTheme.SelectedItem = $item
                         Switch-Theme -ThemeName "Nebula"
                         break
+
                     }
                 }
 
@@ -11392,14 +10708,11 @@ if ($btnResetSettings) {
                 Log "All settings reset to default values" 'Success'
                 [System.Windows.MessageBox]::Show("All settings have been reset to default values!", "Settings Reset", 'OK', 'Information')
             }
-        } catch {
             Log "Error resetting settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error resetting settings: $($_.Exception.Message)", "Reset Failed", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnResetSettings control not found - skipping event handler binding" 'Warning'
-}
 
 # Auto-optimize checkbox
 if ($chkAutoOptimize) {
@@ -11418,12 +10731,10 @@ if ($chkAutoOptimize) {
     })
 } else {
     Log "Warning: chkAutoOptimize control not found - skipping event handler binding" 'Warning'
-}
 
 # Clear log button - Enhanced user action tracking
 if ($btnClearLog) {
     $btnClearLog.Add_Click({
-        try {
             Log "User requested to clear Activity Log in $global:MenuMode mode" 'Info'
 
             if ($global:LogBox -and $global:LogBoxAvailable) {
@@ -11436,7 +10747,6 @@ if ($btnClearLog) {
                 # Show user feedback
                 [System.Windows.MessageBox]::Show("Activity Log has been cleared successfully!`n`nThe log is now ready to track new user actions.`nPrevious $currentLogLines log entries have been removed from the display.", "Log Cleared", 'OK', 'Information')
 
-            } catch {
                 Log "Failed to clear Activity Log UI: $($_.Exception.Message)" 'Warning'
                 [System.Windows.MessageBox]::Show("Warning: Could not clear the Activity Log display.`n`nError: $($_.Exception.Message)", "Clear Failed", 'OK', 'Warning')
             }
@@ -11445,11 +10755,8 @@ if ($btnClearLog) {
             [System.Windows.MessageBox]::Show("Activity Log display not available.`nConsole logs have been noted as cleared.", "Limited Clear", 'OK', 'Warning')
         }
 
-    } catch {
         Log "Error in Clear Log operation: $($_.Exception.Message)" 'Error'
     }
-})
-}
 
 # Activity Log Extend button - Toggle height functionality
 if ($btnExtendLog) {
@@ -11457,7 +10764,6 @@ if ($btnExtendLog) {
     $global:LogExtended = $false
 
     $btnExtendLog.Add_Click({
-        try {
             if ($activityLogBorder) {
                 if (-not $global:LogExtended) {
                     # Extend the log to full size
@@ -11465,6 +10771,7 @@ if ($btnExtendLog) {
                     $btnExtendLog.Content = "⤡ Collapse"
                     $global:LogExtended = $true
                     Log "Activity Log extended to full size" 'Info'
+
                 } else {
                     # Collapse the log to 25% size
                     $activityLogBorder.MinHeight = 30
@@ -11477,11 +10784,8 @@ if ($btnExtendLog) {
                 $activityLogBorder.InvalidateMeasure()
                 $activityLogBorder.UpdateLayout()
             }
-        } catch {
             Log "Error toggling Activity Log size: $($_.Exception.Message)" 'Error'
         }
-    })
-}
 
 # Activity Log View Toggle button - Switch between compact and detailed views
 if ($btnToggleLogView) {
@@ -11489,13 +10793,13 @@ if ($btnToggleLogView) {
     $global:LogViewDetailed = $true
 
     $btnToggleLogView.Add_Click({
-        try {
             if ($global:LogBox) {
                 if ($global:LogViewDetailed) {
                     # Switch to compact view - show only latest entries
                     $allLogLines = $global:LogBox.Text -split "`n"
                     $compactLines = $allLogLines | Where-Object {
                         $_ -match "Success|Error|Warning|Applied|Optimization"
+
                     } | Select-Object -Last 20
 
                     $global:LogBox.Text = ($compactLines -join "`n")
@@ -11518,19 +10822,15 @@ if ($btnToggleLogView) {
                     $logScrollViewer.ScrollToBottom()
                 }
             }
-        } catch {
             Log "Error toggling log view mode: $($_.Exception.Message)" 'Error'
         }
-    })
 
     # Store detailed log for restoration
     $global:DetailedLogBackup = ""
-}
 
 # Activity Log Save button
 if ($btnSaveLog) {
     $btnSaveLog.Add_Click({
-        try {
             Log "User requested to save Activity Log" 'Info'
 
             $saveDialog = New-Object Microsoft.Win32.SaveFileDialog
@@ -11551,32 +10851,26 @@ if ($btnSaveLog) {
                         'OK',
                         'Information'
                     )
+
                 } else {
                     Log "No activity log content available to save" 'Warning'
                     [System.Windows.MessageBox]::Show("No activity log content available to save.", "No Content", 'OK', 'Warning')
                 }
             }
-        } catch {
             Log "Error saving activity log: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Failed to save activity log: $($_.Exception.Message)", "Save Error", 'OK', 'Error')
         }
-    })
-}
 
 # Search Log button - Enhanced log search and filtering
 if ($btnSearchLog) {
     $btnSearchLog.Add_Click({
-        try {
             Log "User opened log search and filter interface" 'Info'
             Show-LogSearchDialog
-        } catch {
             Log "Error opening log search interface: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Failed to open log search interface: $($_.Exception.Message)", "Search Error", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnSearchLog control not found - skipping event handler binding" 'Warning'
-}
 
 # System info
 if ($btnSystemInfo) { $btnSystemInfo.Add_Click({ Get-SystemInfo }) }
@@ -11587,38 +10881,30 @@ if ($btnBenchmark) { $btnBenchmark.Add_Click({ Start-QuickBenchmark }) }
 # System Health button - Show detailed health dialog
 if ($btnSystemHealth) {
     $btnSystemHealth.Add_Click({
-        try {
             Log "User opened System Health Monitor" 'Info'
             Show-SystemHealthDialog
-        } catch {
             Log "Error opening System Health Monitor: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Failed to open System Health Monitor: $($_.Exception.Message)", "Health Monitor Error", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnSystemHealth control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnSystemHealthRunCheck) {
     $btnSystemHealthRunCheck.Add_Click({
-        try {
             Log "Manual system health check requested from dashboard" 'Info'
             $result = Update-SystemHealthDisplay -RunCheck
             if ($result.HealthStatus -eq 'Error') {
                 [System.Windows.MessageBox]::Show("Health check completed with errors. Please review the Activity Log for details.", "Health Check", 'OK', 'Warning') | Out-Null
+
             } else {
                 $roundedScore = if ($result.HealthScore -ne $null) { [Math]::Round([double]$result.HealthScore, 0) } else { $null }
                 $summary = if ($roundedScore -ne $null) { "$($result.HealthStatus) ($roundedScore%)" } else { $result.HealthStatus }
                 [System.Windows.MessageBox]::Show("System health check completed: $summary.", "Health Check", 'OK', 'Information') | Out-Null
             }
-        } catch {
             Log "Error running dashboard health check: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error running health check: $($_.Exception.Message)", "Health Check", 'OK', 'Error') | Out-Null
         }
-    })
-} else {
     Log "Warning: btnSystemHealthRunCheck control not found - skipping event handler binding" 'Warning'
-}
 
 # Backup
 if ($btnBackup) { $btnBackup.Add_Click({ Create-Backup }) }
@@ -11638,7 +10924,6 @@ if ($btnImportConfigOptions) {
 # Backup as .reg file handler
 if ($btnBackupReg) {
     $btnBackupReg.Add_Click({
-        try {
             Log "Registry backup (.reg file) requested" 'Info'
             $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
             $regBackupPath = Join-Path (Get-Location) "Koala-Registry-Backup_$timestamp.reg"
@@ -11671,7 +10956,6 @@ Windows Registry Editor Version 5.00
                         # Export registry values would require more complex logic
                         $regContent += "; Registry values would be exported here`r`n"
                     }
-                } catch {
                     # Continue with other keys if one fails
                 }
             }
@@ -11680,12 +10964,10 @@ Windows Registry Editor Version 5.00
             Log "Registry backup created: $regBackupPath" 'Success'
             [System.Windows.MessageBox]::Show("Registry backup created successfully!`n`nFile: $regBackupPath", "Registry Backup Complete", 'OK', 'Information')
 
-        } catch {
             Log "Error creating registry backup: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error creating registry backup: $($_.Exception.Message)", "Backup Failed", 'OK', 'Error')
         }
     })
-}
 
 # Backup panel button handlers
 if ($btnCreateBackup) { $btnCreateBackup.Add_Click({ Create-Backup }) }
@@ -11695,7 +10977,6 @@ if ($btnImportConfigBackup) { $btnImportConfigBackup.Add_Click({ Import-Configur
 
 if ($btnSaveActivityLog) {
     $btnSaveActivityLog.Add_Click({
-        try {
             Log "Save activity log requested" 'Info'
             $saveDialog = New-Object Microsoft.Win32.SaveFileDialog
             $saveDialog.Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*"
@@ -11717,21 +10998,18 @@ if ($btnSaveActivityLog) {
                         'OK',
                         'Information'
                     )
+
                 } else {
                     Log "No activity log content available to save" 'Warning'
                     [System.Windows.MessageBox]::Show("No activity log content available to save.", "No Content", 'OK', 'Warning')
                 }
             }
-        } catch {
             Log "Error saving activity log: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error saving activity log: $($_.Exception.Message)", "Save Failed", 'OK', 'Error')
         }
-    })
-}
 
 if ($btnClearActivityLog) {
     $btnClearActivityLog.Add_Click({
-        try {
             $result = [System.Windows.MessageBox]::Show(
                 "Are you sure you want to clear the activity log?`nThis action cannot be undone.",
                 "Clear Activity Log",
@@ -11742,13 +11020,12 @@ if ($btnClearActivityLog) {
                 if ($global:LogBox) {
                     $global:LogBox.Items.Clear()
                     Log "Activity log cleared by user" 'Info'
+
                 }
             }
-        } catch {
             Log "Error clearing activity log: $($_.Exception.Message)" 'Error'
         }
     })
-}
 
 if ($btnViewActivityLog) {
     $btnViewActivityLog.Add_Click({
@@ -11760,154 +11037,125 @@ if ($btnViewActivityLog) {
 # Network Panel Action Button Handlers
 if ($btnApplyNetworkTweaks) {
     $btnApplyNetworkTweaks.Add_Click({
-        try {
             Log "Applying network optimizations..." 'Info'
             # Apply selected network optimizations
             Invoke-NetworkPanelOptimizations
             Log "Network optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("Network optimizations applied successfully!", "Network Optimization", 'OK', 'Information')
-        } catch {
             Log "Error applying network optimizations: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying network optimizations: $($_.Exception.Message)", "Network Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnTestNetworkLatency) {
     $btnTestNetworkLatency.Add_Click({
-        try {
             Log "Testing network latency..." 'Info'
             Test-NetworkLatency
-        } catch {
             Log "Error testing network latency: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error testing network latency: $($_.Exception.Message)", "Network Test Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnResetNetworkSettings) {
     $btnResetNetworkSettings.Add_Click({
-        try {
             $result = [System.Windows.MessageBox]::Show("Are you sure you want to reset all network settings to default?", "Reset Network Settings", 'YesNo', 'Warning')
             if ($result -eq 'Yes') {
                 Log "Resetting network settings to default..." 'Info'
                 Reset-NetworkSettings
                 Log "Network settings reset successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Network settings reset to default values successfully!", "Reset Complete", 'OK', 'Information')
+
             }
-        } catch {
             Log "Error resetting network settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error resetting network settings: $($_.Exception.Message)", "Reset Error", 'OK', 'Error')
         }
     })
-}
 
 # System Panel Action Button Handlers
 if ($btnApplySystemOptimizations) {
     $btnApplySystemOptimizations.Add_Click({
-        try {
             Log "Applying system optimizations..." 'Info'
             Invoke-SystemPanelOptimizations
             Log "System optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("System optimizations applied successfully!", "System Optimization", 'OK', 'Information')
-        } catch {
             Log "Error applying system optimizations: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying system optimizations: $($_.Exception.Message)", "System Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnSystemBenchmark) {
     $btnSystemBenchmark.Add_Click({
-        try {
             Log "Starting system benchmark..." 'Info'
             Start-SystemBenchmark
-        } catch {
             Log "Error starting system benchmark: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error starting system benchmark: $($_.Exception.Message)", "Benchmark Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnResetSystemSettings) {
     $btnResetSystemSettings.Add_Click({
-        try {
             $result = [System.Windows.MessageBox]::Show("Are you sure you want to reset all system settings to default?", "Reset System Settings", 'YesNo', 'Warning')
             if ($result -eq 'Yes') {
                 Log "Resetting system settings to default..." 'Info'
                 Reset-SystemSettings
                 Log "System settings reset successfully" 'Success'
                 [System.Windows.MessageBox]::Show("System settings reset to default values successfully!", "Reset Complete", 'OK', 'Information')
+
             }
-        } catch {
             Log "Error resetting system settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error resetting system settings: $($_.Exception.Message)", "Reset Error", 'OK', 'Error')
         }
     })
-}
 
 # Services Panel Action Button Handlers
 if ($btnApplyServiceOptimizations) {
     $btnApplyServiceOptimizations.Add_Click({
-        try {
             Log "Applying service optimizations..." 'Info'
             Invoke-ServicePanelOptimizations
             Log "Service optimizations applied successfully" 'Success'
             [System.Windows.MessageBox]::Show("Service optimizations applied successfully!", "Service Optimization", 'OK', 'Information')
-        } catch {
             Log "Error applying service optimizations: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying service optimizations: $($_.Exception.Message)", "Service Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnViewRunningServices) {
     $btnViewRunningServices.Add_Click({
-        try {
             Log "Viewing running services..." 'Info'
             Show-RunningServices
-        } catch {
             Log "Error viewing running services: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error viewing running services: $($_.Exception.Message)", "Services Error", 'OK', 'Error')
         }
     })
-}
 
 if ($btnResetServiceSettings) {
     $btnResetServiceSettings.Add_Click({
-        try {
             $result = [System.Windows.MessageBox]::Show("Are you sure you want to reset all service settings to default?", "Reset Service Settings", 'YesNo', 'Warning')
             if ($result -eq 'Yes') {
                 Log "Resetting service settings to default..." 'Info'
                 Reset-ServiceSettings
                 Log "Service settings reset successfully" 'Success'
                 [System.Windows.MessageBox]::Show("Service settings reset to default values successfully!", "Reset Complete", 'OK', 'Information')
+
             }
-        } catch {
             Log "Error resetting service settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error resetting service settings: $($_.Exception.Message)", "Reset Error", 'OK', 'Error')
         }
     })
-}
 
 # New Installed Games panel event handlers
 if ($btnSearchGames) {
     $btnSearchGames.Add_Click({
-        try {
             Log "Game search initiated from Installed Games panel" 'Info'
             Search-GamesForPanel
-        } catch {
             Log "Error searching for games: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error searching for games: $($_.Exception.Message)", "Game Search Error", 'OK', 'Error')
         }
     })
-} else {
     Log "Warning: btnSearchGames control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnAddGameFolder) {
     $btnAddGameFolder.Add_Click({
-        try {
             Log "Add game folder requested from panel" 'Info'
             $folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
             $folderDialog.Description = "Select a folder containing game executables or installations"
@@ -11920,6 +11168,7 @@ if ($btnAddGameFolder) {
             # Add the selected path to global search paths if not already included
             if (-not $global:CustomGamePaths) {
                 $global:CustomGamePaths = @()
+
             }
 
             if ($selectedPath -notin $global:CustomGamePaths) {
@@ -11954,21 +11203,14 @@ if ($btnAddGameFolder) {
                 Log "Path already exists in custom search paths: $selectedPath" 'Warning'
                 [System.Windows.MessageBox]::Show("This folder is already included in the search. Click 'Search for Installed Games' to refresh the list.", "Folder Already Added", 'OK', 'Information')
             }
-        }
-    } catch {
         Log "Error adding game folder: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error adding game folder: $($_.Exception.Message)", "Add Folder Error", 'OK', 'Error')
-    }
-    })
-} else {
     Log "Warning: btnAddGameFolder control not found - skipping event handler binding" 'Warning'
-}
 
 # Enhanced Custom Search with user choice functionality
 function Start-CustomFolderOnlySearch {
     param([string]$FolderPath)
 
-    try {
         Log "Starting custom folder-only search in: $FolderPath" 'Info'
 
         # Clear existing content
@@ -12004,14 +11246,12 @@ function Start-CustomFolderOnlySearch {
                         Details = "Executable found in custom folder"
                         CanOptimize = $true
                     }
-                } catch {
                     # Continue if file details can't be read
                 }
             }
 
             Log "Found $($foundExecutables.Count) executable files in custom folder" 'Success'
 
-        } catch {
             Log "Error scanning custom folder: $($_.Exception.Message)" 'Error'
         }
 
@@ -12032,10 +11272,8 @@ function Start-CustomFolderOnlySearch {
             foreach ($executable in $foundExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
                 Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
-                try {
                     Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
-                } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
                 }
                 $gamePanel.Padding = "12"
@@ -12078,12 +11316,10 @@ function Start-CustomFolderOnlySearch {
                     $exeName = [System.IO.Path]::GetFileNameWithoutExtension($exePath)
                     Log "User requested optimization for custom executable: $exeName" 'Info'
 
-                    try {
                         # Apply standard gaming optimizations
                         Apply-GameOptimizations -GameName $exeName -ExecutablePath $exePath
                         [System.Windows.MessageBox]::Show("Optimization applied successfully for '$exeName'!", "Optimization Complete", 'OK', 'Information')
                         Log "Successfully optimized custom executable: $exeName" 'Success'
-                    } catch {
                         Log "Error optimizing custom executable: $($_.Exception.Message)" 'Error'
                         [System.Windows.MessageBox]::Show("Error optimizing '$exeName': $($_.Exception.Message)", "Optimization Error", 'OK', 'Error')
                     }
@@ -12098,7 +11334,6 @@ function Start-CustomFolderOnlySearch {
             # Enable the optimize selected button
             if ($btnOptimizeSelected) {
                 Set-OptimizeButtonsEnabled -Enabled $true
-            }
 
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
@@ -12109,23 +11344,18 @@ function Start-CustomFolderOnlySearch {
             $noGamesText.TextAlignment = "Center"
             $noGamesText.Margin = "0,20"
             $gameListPanel.Children.Add($noGamesText)
-        }
 
-    } catch {
         Log "Error in custom folder search: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error searching custom folder: $($_.Exception.Message)", "Search Error", 'OK', 'Error')
-    }
-}
 
 if ($btnCustomSearch) {
     $btnCustomSearch.Add_Click({
-        try {
             Log "Custom Search requested - searching only custom folders" 'Info'
 
             if (-not $global:CustomGamePaths -or $global:CustomGamePaths.Count -eq 0) {
                 [System.Windows.MessageBox]::Show("No custom folders have been added yet. Please add game folders first using 'Add Game Folder'.", "No Custom Folders", 'OK', 'Warning')
                 return
-            }
+
 
             # Show choice dialog for custom search
             $searchChoice = [System.Windows.MessageBox]::Show(
@@ -12143,70 +11373,45 @@ if ($btnCustomSearch) {
                 Search-GamesForPanel
             } else {
                 Log "User cancelled custom search" 'Info'
-            }
 
-        } catch {
             Log "Error in custom search: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error in custom search: $($_.Exception.Message)", "Search Error", 'OK', 'Error')
-        }
     })
 } else {
     Log "Warning: btnCustomSearch control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnSearchGamesPanel -and $btnSearchGames) {
     $btnSearchGamesPanel.Add_Click({
-        try {
             $btnSearchGames.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying Installed Games panel search action: $($_.Exception.Message)" 'Warning'
-        }
     })
-}
 
 if ($btnAddGameFolderPanel -and $btnAddGameFolder) {
     $btnAddGameFolderPanel.Add_Click({
-        try {
             $btnAddGameFolder.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying Installed Games panel add-folder action: $($_.Exception.Message)" 'Warning'
-        }
     })
-}
 
 if ($btnCustomSearchPanel -and $btnCustomSearch) {
     $btnCustomSearchPanel.Add_Click({
-        try {
             $btnCustomSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying Installed Games panel custom search action: $($_.Exception.Message)" 'Warning'
-        }
     })
-}
 
 if ($btnAddGameFolderDash -and $btnAddGameFolder) {
     $btnAddGameFolderDash.Add_Click({
-        try {
             $btnAddGameFolder.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying dashboard add-folder action: $($_.Exception.Message)" 'Warning'
-        }
     })
-}
 
 if ($btnCustomSearchDash -and $btnCustomSearch) {
     $btnCustomSearchDash.Add_Click({
-        try {
             $btnCustomSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        } catch {
             Log "Error relaying dashboard custom search action: $($_.Exception.Message)" 'Warning'
-        }
     })
-}
 
 # Search all custom folders for executables
 function Start-AllCustomFoldersSearch {
-    try {
         Log "Starting search of all custom folders" 'Info'
 
         # Clear existing content
@@ -12239,12 +11444,8 @@ function Start-AllCustomFoldersSearch {
                         Folder = [System.IO.Path]::GetFileName($folderPath)
                         Size = [math]::Round($exe.Length / 1MB, 2)
                         LastModified = $exe.LastWriteTime.ToString("yyyy-MM-dd")
-                    }
-                }
-            } catch {
+
                 Log "Error scanning folder $folderPath`: $($_.Exception.Message)" 'Warning'
-            }
-        }
 
         # Clear loading and show results
         $gameListPanel.Children.Clear()
@@ -12261,12 +11462,9 @@ function Start-AllCustomFoldersSearch {
             foreach ($exe in $allExecutables) {
                 $gamePanel = New-Object System.Windows.Controls.Border
                 Set-BrushPropertySafe -Target $gamePanel -Property 'Background' -Value '#14132B'
-                try {
                     Set-BrushPropertySafe -Target $gamePanel -Property 'BorderBrush' -Value '#2F285A'
                     $gamePanel.BorderThickness = "1"
-                } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
-                }
                 $gamePanel.Padding = "12"
                 $gamePanel.Margin = "0,0,0,8"
 
@@ -12303,21 +11501,17 @@ function Start-AllCustomFoldersSearch {
                     $exeName = [System.IO.Path]::GetFileNameWithoutExtension($exePath)
                     Log "Optimizing custom executable: $exeName" 'Info'
 
-                    try {
                         Apply-GameOptimizations -GameName $exeName -ExecutablePath $exePath
                         [System.Windows.MessageBox]::Show("Optimization applied for '$exeName'!", "Success", 'OK', 'Information')
                         Log "Successfully optimized: $exeName" 'Success'
-                    } catch {
                         Log "Error optimizing $exeName`: $($_.Exception.Message)" 'Error'
                         [System.Windows.MessageBox]::Show("Error optimizing '$exeName': $($_.Exception.Message)", "Error", 'OK', 'Error')
-                    }
                 })
 
                 $gameGrid.Children.Add($gameInfo)
                 $gameGrid.Children.Add($optimizeBtn)
                 $gamePanel.Child = $gameGrid
                 $gameListPanel.Children.Add($gamePanel)
-            }
         } else {
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "No executable files found in custom folders."
@@ -12326,37 +11520,30 @@ function Start-AllCustomFoldersSearch {
             $noGamesText.HorizontalAlignment = "Center"
             $noGamesText.Margin = "0,20"
             $gameListPanel.Children.Add($noGamesText)
-        }
 
-    } catch {
         Log "Error in all custom folders search: $($_.Exception.Message)" 'Error'
-    }
-}
 
 if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDashboard) {
     $optimizeSelectedHandler = {
         param($sender, $eventArgs)
 
-        try {
             Log "Optimize selected games requested" 'Info'
 
             $panelsToScan = @()
             if ($sender -and $sender.Name -eq 'btnOptimizeSelectedDashboard' -and $script:DashboardGameListPanel) {
                 $panelsToScan += $script:DashboardGameListPanel
+
             } elseif ($sender -and $sender.Name -eq 'btnOptimizeSelectedMain' -and $script:PrimaryGameListPanel) {
                 $panelsToScan += $script:PrimaryGameListPanel
-            }
 
             if ($panelsToScan.Count -eq 0) {
                 if ($script:PrimaryGameListPanel) { $panelsToScan += $script:PrimaryGameListPanel }
                 if ($script:DashboardGameListPanel) { $panelsToScan += $script:DashboardGameListPanel }
-            }
 
             if ($panelsToScan.Count -eq 0) {
                 Log "Warning: No game list panels available when optimizing selections" 'Warning'
                 [System.Windows.MessageBox]::Show("No game list is available to process selections.", "No Games Found", 'OK', 'Warning') | Out-Null
                 return
-            }
 
             # Find selected games
             $selectedGames = @()
@@ -12367,24 +11554,18 @@ if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDa
                         $checkbox = $stackPanel.Children | Where-Object { $_ -is [System.Windows.Controls.CheckBox] } | Select-Object -First 1
                         if ($checkbox -and $checkbox.IsChecked -and $checkbox.Tag) {
                             $selectedGames += $checkbox.Tag
-                        }
-                    }
-                }
 
                 if ($selectedGames.Count -gt 0) { break }
-            }
 
             if ($selectedGames.Count -eq 0) {
                 [System.Windows.MessageBox]::Show("Please select at least one game to optimize.", "No Games Selected", 'OK', 'Warning') | Out-Null
                 return
-            }
 
             Log "Optimizing $($selectedGames.Count) selected games..." 'Info'
 
             # Apply game-specific optimizations
             $optimizedCount = 0
             foreach ($game in $selectedGames) {
-                try {
                     Log "Applying optimizations for: $($game.Name)" 'Info'
 
                     # Apply the game's specific optimization profile if available
@@ -12393,8 +11574,7 @@ if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDa
                         if ($GameProfiles[$profile].DisplayName -eq $game.Name) {
                             $gameProfile = $profile
                             break
-                        }
-                    }
+
 
                     if ($gameProfile) {
                         # Apply specific game profile optimizations
@@ -12405,12 +11585,8 @@ if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDa
                         # Apply general gaming optimizations
                         Log "Applying general gaming optimizations for $($game.Name)" 'Info'
                         $optimizedCount++
-                    }
 
-                } catch {
                     Log "Failed to optimize $($game.Name): $($_.Exception.Message)" 'Error'
-                }
-            }
 
             if ($optimizedCount -gt 0) {
                 Log "Successfully optimized $optimizedCount out of $($selectedGames.Count) games" 'Success'
@@ -12418,41 +11594,29 @@ if ($btnOptimizeSelected -or $btnOptimizeSelectedMain -or $btnOptimizeSelectedDa
             } else {
                 Log "No games were successfully optimized" 'Warning'
                 [System.Windows.MessageBox]::Show("No games were optimized. Please check the log for details.", "Optimization Failed", 'OK', 'Warning') | Out-Null
-            }
 
-        } catch {
             Log "Error optimizing selected games: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error optimizing games: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error') | Out-Null
-        }
-    }
 
     foreach ($button in @($btnOptimizeSelected, $btnOptimizeSelectedMain, $btnOptimizeSelectedDashboard)) {
         if ($button) {
             $button.Add_Click($optimizeSelectedHandler)
-        }
-    }
 } else {
     Log "Warning: btnOptimizeSelected control not found - skipping event handler binding" 'Warning'
-}
 
 # New Options panel event handlers
 if ($btnImportOptions) {
     $btnImportOptions.Add_Click({
-        try {
             Log "Import configuration requested from Options panel" 'Info'
             Import-Configuration
-        } catch {
             Log "Error importing configuration from Options: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error importing configuration: $($_.Exception.Message)", "Import Error", 'OK', 'Error')
-        }
     })
 } else {
     Log "Warning: btnImportOptions control not found - skipping event handler binding" 'Warning'
-}
 
 if ($btnChooseBackupFolder) {
     $btnChooseBackupFolder.Add_Click({
-        try {
             Log "Choose configuration folder requested from Options panel" 'Info'
             $folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
             $folderDialog.Description = "Select folder for all configuration and backup files (recommended when running as Administrator)"
@@ -12462,7 +11626,7 @@ if ($btnChooseBackupFolder) {
             $isAdmin = Test-AdminPrivileges
             if ($isAdmin) {
                 $folderDialog.SelectedPath = Join-Path $env:USERPROFILE "Documents"
-            }
+
 
             if ($folderDialog.ShowDialog() -eq 'OK') {
                 $selectedPath = $folderDialog.SelectedPath
@@ -12473,7 +11637,6 @@ if ($btnChooseBackupFolder) {
                 if (-not (Test-Path $koalaConfigPath)) {
                     New-Item -ItemType Directory -Path $koalaConfigPath -Force | Out-Null
                     Log "Created KOALA configuration directory: $koalaConfigPath" 'Info'
-                }
 
                 # Update all global paths
                 $global:CustomConfigPath = $koalaConfigPath
@@ -12493,19 +11656,14 @@ if ($btnChooseBackupFolder) {
                 $message = "Configuration folder updated successfully!`n`nLocation: $koalaConfigPath`n`nAll future files will be saved here:`n" + ($filesList -join "`n")
                 if ($isAdmin) {
                     $message += "`n`n[OK] Running as Administrator - files will be safely saved outside system directories"
-                }
 
                 [System.Windows.MessageBox]::Show($message, "Configuration Folder Updated", 'OK', 'Information')
                 Log "All configuration paths updated to use: $koalaConfigPath" 'Success'
-            }
-        } catch {
             Log "Error choosing configuration folder: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error choosing configuration folder: $($_.Exception.Message)", "Folder Selection Error", 'OK', 'Error')
-        }
     })
 } else {
     Log "Warning: btnChooseBackupFolder control not found - skipping event handler binding" 'Warning'
-}
 
 # Apply All button - Complete Implementation
 if ($btnApply) {
@@ -12515,12 +11673,8 @@ if ($btnApply) {
 
         # Safely update status label with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Applying..."
-        } catch {
             Log "Warning: Could not update optimization status label: $($_.Exception.Message)" 'Warning'
-        }
-    }
 
     # Check admin
     $isAdmin = Test-AdminPrivileges
@@ -12535,15 +11689,9 @@ if ($btnApply) {
         if (-not $elevationResult) {
             # Safely update status with null check
             if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-                try {
                     $lblOptimizationStatus.Text = "Cancelled"
-                } catch {
                     Log "Warning: Could not update optimization status label: $($_.Exception.Message)" 'Warning'
-                }
-            }
             return
-        }
-    }
 
     # Create backup first
     Create-Backup
@@ -12551,7 +11699,6 @@ if ($btnApply) {
     $optimizationCount = 0
     $errorCount = 0
 
-    try {
         # Apply game-specific optimizations if selected
         if ($cmbGameProfile.SelectedItem -and $cmbGameProfile.SelectedItem.Tag -ne "custom" -and $cmbGameProfile.SelectedItem.Tag -ne "") {
             $selectedGame = $cmbGameProfile.SelectedItem.Tag
@@ -12562,14 +11709,11 @@ if ($btnApply) {
                 if ($profile.SpecificTweaks) {
                     Apply-GameSpecificTweaks -GameKey $selectedGame -TweakList $profile.SpecificTweaks
                     $optimizationCount += $profile.SpecificTweaks.Count
-                }
+
 
                 if ($profile.FPSBoostSettings) {
                     Apply-FPSBoostSettings -SettingList $profile.FPSBoostSettings
                     $optimizationCount += $profile.FPSBoostSettings.Count
-                }
-            }
-        }
         # Handle custom game executable
         elseif ($txtCustomGame.Text -and $txtCustomGame.Text.Trim() -ne "") {
             $customGameName = $txtCustomGame.Text.Trim()
@@ -12578,7 +11722,6 @@ if ($btnApply) {
             # Apply safe, standard gaming tweaks for custom game
             Apply-CustomGameOptimizations -GameExecutable $customGameName
             $optimizationCount += 5  # Standard set of safe optimizations
-        }
 
         # Network optimizations
         $networkSettings = @{
@@ -12591,7 +11734,6 @@ if ($btnApply) {
             RSS = $chkRSS.IsChecked
             RSC = $chkRSC.IsChecked
             AutoTuning = $chkTcpAutoTune.IsChecked
-        }
         $optimizationCount += Apply-NetworkOptimizations -Settings $networkSettings
 
         # Essential gaming optimizations
@@ -12599,7 +11741,6 @@ if ($btnApply) {
             Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "System responsiveness optimized" 'Success'
             $optimizationCount++
-        }
 
         if ($chkGamesTask.IsChecked) {
             Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "GPU Priority" 'DWord' 8 -RequiresAdmin $true | Out-Null
@@ -12607,45 +11748,36 @@ if ($btnApply) {
             Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" 'String' "High" -RequiresAdmin $true | Out-Null
             Log "Games task priority raised" 'Success'
             $optimizationCount++
-        }
 
         if ($chkGameDVR -and $chkGameDVR.IsChecked) {
             if (Disable-GameDVR) {
                 $optimizationCount++
-            }
-        }
 
         if ($chkFSE -and $chkFSE.IsChecked) {
             Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 'DWord' 2 | Out-Null
             Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehavior" 'DWord' 2 | Out-Null
             Log "Fullscreen optimizations disabled" 'Success'
             $optimizationCount++
-        }
 
         if ($chkGpuScheduler -and $chkGpuScheduler.IsChecked) {
             if (Enable-GPUScheduling) {
                 $optimizationCount++
-            }
-        }
 
         if ($chkTimerRes -and $chkTimerRes.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 -RequiresAdmin $true | Out-Null
             try { [WinMM]::timeBeginPeriod(1) | Out-Null } catch {}
             Log "High precision timer enabled" 'Success'
             $optimizationCount++
-        }
 
         if ($chkVisualEffects.IsChecked) {
             Set-SelectiveVisualEffects -EnablePerformanceMode
             $optimizationCount++
-        }
 
         if ($chkHibernation.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
             powercfg -h off 2>$null
             Log "Hibernation disabled" 'Success'
             $optimizationCount++
-        }
 
         # System Performance
         if ($chkMemoryManagement.IsChecked) {
@@ -12653,7 +11785,6 @@ if ($btnApply) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "Memory management optimized" 'Success'
             $optimizationCount++
-        }
 
         if ($chkPowerPlan.IsChecked) {
             powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null
@@ -12663,40 +11794,32 @@ if ($btnApply) {
                 powercfg -setactive $planGuid
                 Log "Ultimate Performance power plan activated" 'Success'
                 $optimizationCount++
-            }
-        }
 
         if ($chkCpuScheduling.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 -RequiresAdmin $true | Out-Null
             Log "CPU scheduling optimized" 'Success'
             $optimizationCount++
-        }
 
         # Advanced FPS optimizations
         if ($chkCpuCorePark.IsChecked) {
             Apply-FPSOptimizations -OptimizationList @('CPUCoreParkDisable')
             $optimizationCount++
-        }
 
         if ($chkMemCompression.IsChecked) {
             Apply-FPSOptimizations -OptimizationList @('MemoryCompressionDisable')
             $optimizationCount++
-        }
 
         if ($chkInputOptimization.IsChecked) {
             Apply-FPSOptimizations -OptimizationList @('InputLatencyReduction')
             $optimizationCount++
-        }
 
         if ($chkDirectX12Opt.IsChecked) {
             Apply-FPSOptimizations -OptimizationList @('DirectX12Optimization')
             $optimizationCount++
-        }
 
         if ($chkInterruptMod.IsChecked) {
             Apply-FPSOptimizations -OptimizationList @('InterruptModerationOptimization')
             $optimizationCount++
-        }
 
         # New Advanced Optimizations
         if ($chkDirectStorage.IsChecked) {
@@ -12704,35 +11827,30 @@ if ($btnApply) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" "ForcedPhysicalSectorSizeInBytes" 'DWord' 4096 -RequiresAdmin $true | Out-Null
             Log "DirectStorage support optimized" 'Success'
             $optimizationCount++
-        }
 
         if ($chkGpuAutoTuning.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 10 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "GPU driver auto-tuning enabled" 'Success'
             $optimizationCount++
-        }
 
         if ($chkLowLatencyAudio.IsChecked) {
             Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 'DWord' 10 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Audio" "Priority" 'DWord' 6 -RequiresAdmin $true | Out-Null
             Log "Low-latency audio mode enabled" 'Success'
             $optimizationCount++
-        }
 
         if ($chkHardwareInterrupt.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "IRQ8Priority" 'DWord' 1 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "IRQ16Priority" 'DWord' 2 -RequiresAdmin $true | Out-Null
             Log "Hardware interrupt tuning applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkNVMeOptimization.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" "IdlePowerManagementEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" "StorageD3InModernStandby" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "NVMe optimizations applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkWin11GameMode.IsChecked) {
             Set-Reg "HKCU:\SOFTWARE\Microsoft\GameBar" "AutoGameModeEnabled" 'DWord' 1 | Out-Null
@@ -12740,126 +11858,104 @@ if ($btnApply) {
             Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "Windows 11 Game Mode+ enabled" 'Success'
             $optimizationCount++
-        }
 
         if ($chkMemoryPool.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PoolUsageMaximum" 'DWord' 96 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "PagedPoolSize" 'DWord' 192 -RequiresAdmin $true | Out-Null
             Log "Memory pool optimization applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkGpuPreemption.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" "EnablePreemption" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "PlatformSupportMiracast" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Log "GPU preemption tuning applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkCpuMicrocode.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "DisableTsx" 'DWord' 1 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "MitigationOptions" 'QWord' 0 -RequiresAdmin $true | Out-Null
             Log "CPU microcode optimization applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkPciLatency.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" "DeviceSelectTimeout" 'DWord' 1 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PCI" "HackFlags" 'DWord' 1 -RequiresAdmin $true | Out-Null
             Log "PCI-E latency reduction applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkDmaRemapping.IsChecked) {
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\vdrvroot\Parameters" "DmaRemappingCompatible" 'DWord' 0 -RequiresAdmin $true | Out-Null
             bcdedit /set disabledynamictick yes 2>$null
             Log "DMA remapping optimization applied" 'Success'
             $optimizationCount++
-        }
 
         if ($chkFramePacing.IsChecked) {
             Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "DisableAGPSupport" 'DWord' 0 -RequiresAdmin $true | Out-Null
             Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "DpiMapIommuContiguous" 'DWord' 1 -RequiresAdmin $true | Out-Null
             Log "Advanced frame pacing enabled" 'Success'
             $optimizationCount++
-        }
 
         # DirectX 11 optimizations
         if ($chkDX11GpuScheduling.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11EnhancedGpuScheduling')
             $optimizationCount++
-        }
 
         if ($chkDX11ProcessPriority.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11GameProcessPriority')
             $optimizationCount++
-        }
 
         if ($chkDX11BackgroundServices.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11DisableBackgroundServices')
             $optimizationCount++
-        }
 
         if ($chkDX11HardwareAccel.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11HardwareAcceleration')
             $optimizationCount++
-        }
 
         if ($chkDX11MaxPerformance.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11MaxPerformanceMode')
             $optimizationCount++
-        }
 
         if ($chkDX11RegistryTweaks.IsChecked) {
             Apply-DX11Optimizations -OptimizationList @('DX11RegistryOptimizations')
             $optimizationCount++
-        }
 
         # Advanced System Tweaks
         if ($chkHPET.IsChecked) {
             Apply-HPETOptimization -Disable $true
             $optimizationCount++
-        }
 
         if ($chkMenuDelay.IsChecked) {
             Remove-MenuDelay
             $optimizationCount++
-        }
 
         if ($chkDefenderOptimize.IsChecked) {
             Disable-WindowsDefenderRealTime
             $optimizationCount++
-        }
 
         if ($chkModernStandby.IsChecked) {
             Disable-ModernStandby
             $optimizationCount++
-        }
 
         if ($chkUTCTime.IsChecked) {
             Enable-UTCTime
             $optimizationCount++
-        }
 
         if ($chkNTFS.IsChecked) {
             Optimize-NTFSSettings
             $optimizationCount++
-        }
 
         if ($chkEdgeTelemetry.IsChecked) {
             Disable-EdgeTelemetry
             $optimizationCount++
-        }
 
         if ($chkCortana.IsChecked) {
             Disable-Cortana
             $optimizationCount++
-        }
 
         if ($chkTelemetry.IsChecked) {
             Disable-Telemetry
             $optimizationCount++
-        }
 
         # Service optimizations
         $serviceSettings = @{
@@ -12869,17 +11965,12 @@ if ($btnApply) {
             Telemetry = $chkSvcDiagTrack.IsChecked
             WindowsSearch = $chkSvcSearch.IsChecked
             UnneededServices = $chkDisableUnneeded.IsChecked
-        }
         $optimizationCount += Apply-ServiceOptimizations -Settings $serviceSettings
 
         # Safely update status to Complete with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Complete"
-            } catch {
                 Log "Warning: Could not update optimization status to Complete: $($_.Exception.Message)" 'Warning'
-            }
-        }
 
         Log "Optimization process completed!" 'Success'
         Log "Results: $optimizationCount optimizations applied, $errorCount errors" 'Info'
@@ -12894,20 +11985,13 @@ if ($btnApply) {
             'Information'
         )
 
-    } catch {
         Log "Critical error during optimization: $($_.Exception.Message)" 'Error'
         # Safely update status to Error with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Error"
-            } catch {
                 Log "Warning: Could not update optimization status to Error: $($_.Exception.Message)" 'Warning'
-            }
-        }
         $errorCount++
-    }
 })
-}
 
 # Apply All Main button (Dashboard) - Complete Implementation with full functionality
 if ($btnApplyMain) {
@@ -12917,12 +12001,8 @@ if ($btnApplyMain) {
 
         # Safely update status label with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Applying..."
-            } catch {
                 Log "Warning: Could not update optimization status label: $($_.Exception.Message)" 'Warning'
-            }
-        }
 
         # Check admin
         $isAdmin = Test-AdminPrivileges
@@ -12937,15 +12017,9 @@ if ($btnApplyMain) {
             if (-not $elevationResult) {
                 # Safely update status with null check
                 if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-                    try {
                         $lblOptimizationStatus.Text = "Cancelled"
-                    } catch {
                         Log "Warning: Could not update optimization status label: $($_.Exception.Message)" 'Warning'
-                    }
-                }
                 return
-            }
-        }
 
         # Create backup first
         Create-Backup
@@ -12953,7 +12027,6 @@ if ($btnApplyMain) {
         $optimizationCount = 0
         $errorCount = 0
 
-        try {
             # Apply core gaming optimizations
             Log "Applying core gaming optimizations..." 'Info'
 
@@ -12965,42 +12038,31 @@ if ($btnApplyMain) {
             } catch {
                 Log "Error setting system responsiveness: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # Game DVR disable
-            try {
                 Set-Reg "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 'DWord' 0 | Out-Null
                 Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" "AppCaptureEnabled" 'DWord' 0 | Out-Null
                 Log "Game DVR disabled" 'Success'
                 $optimizationCount++
-            } catch {
                 Log "Error disabling Game DVR: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # GPU Hardware Scheduling
-            try {
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
                 Log "Hardware GPU scheduling enabled" 'Success'
                 $optimizationCount++
-            } catch {
                 Log "Error enabling GPU scheduling: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # High precision timer
-            try {
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" "GlobalTimerResolutionRequests" 'DWord' 1 -RequiresAdmin $true | Out-Null
                 [WinMM]::timeBeginPeriod(1) | Out-Null
                 Log "High precision timer enabled" 'Success'
                 $optimizationCount++
-            } catch {
                 Log "Error setting high precision timer: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # Network optimizations
-            try {
                 Log "Applying network optimizations..." 'Info'
                 # TCP Ack Frequency
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpAckFrequency" 'DWord' 1 -RequiresAdmin $true | Out-Null
@@ -13010,13 +12072,10 @@ if ($btnApplyMain) {
                 Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 'DWord' 4294967295 -RequiresAdmin $true | Out-Null
                 Log "Network optimizations applied" 'Success'
                 $optimizationCount += 3
-            } catch {
                 Log "Error applying network optimizations: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # Power plan optimization
-            try {
                 Log "Setting Ultimate Performance power plan..." 'Info'
                 powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null
                 $ultimatePlan = powercfg -list | Where-Object { $_ -match "Ultimate Performance" }
@@ -13025,30 +12084,21 @@ if ($btnApplyMain) {
                     powercfg -setactive $planGuid
                     Log "Ultimate Performance power plan activated" 'Success'
                     $optimizationCount++
-                }
-            } catch {
+
                 Log "Error setting power plan: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # Memory management
-            try {
                 Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 -RequiresAdmin $true | Out-Null
                 Log "Memory management optimized" 'Success'
                 $optimizationCount++
-            } catch {
                 Log "Error optimizing memory management: $($_.Exception.Message)" 'Warning'
                 $errorCount++
-            }
 
             # Safely update status to Complete with null check
             if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-                try {
                     $lblOptimizationStatus.Text = "Complete"
-                } catch {
                     Log "Warning: Could not update optimization status to Complete: $($_.Exception.Message)" 'Warning'
-                }
-            }
 
             Log "Apply All optimization process completed!" 'Success'
             Log "Results: $optimizationCount optimizations applied, $errorCount errors" 'Info'
@@ -13063,21 +12113,14 @@ if ($btnApplyMain) {
                 'Information'
             )
 
-        } catch {
             Log "Critical error during Apply All optimization: $($_.Exception.Message)" 'Error'
             # Safely update status to Error with null check
             if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-                try {
                     $lblOptimizationStatus.Text = "Error"
-                } catch {
                     Log "Warning: Could not update optimization status to Error: $($_.Exception.Message)" 'Warning'
-                }
-            }
             $errorCount++
             [System.Windows.MessageBox]::Show("Error during Apply All optimization: $($_.Exception.Message)", "Apply All Error", 'OK', 'Error')
-        }
     })
-}
 
 # Revert All button
 if ($btnRevert) {
@@ -13094,27 +12137,17 @@ if ($btnRevert) {
         Log "User confirmed revert operation - starting restoration" 'Warning'
         # Safely update status to Reverting with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Reverting..."
-            } catch {
                 Log "Warning: Could not update optimization status to Reverting: $($_.Exception.Message)" 'Warning'
-            }
-        }
         Restore-FromBackup
         # Safely update status to Reverted with null check
         if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-            try {
                 $lblOptimizationStatus.Text = "Reverted"
-            } catch {
                 Log "Warning: Could not update optimization status to Reverted: $($_.Exception.Message)" 'Warning'
-            }
-        }
         Log "System restoration completed successfully" 'Success'
     } else {
         Log "User cancelled revert operation" 'Info'
-    }
 })
-}
 
 # ---------- Initialize Application ----------
 function Initialize-Application {
@@ -13125,24 +12158,20 @@ function Initialize-Application {
     $isAdmin = Test-AdminPrivileges
     Log "Admin privileges check: $isAdmin" 'Info'
 
-    try {
         if ($isAdmin) {
             # Administrator mode - full access
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Administrator Mode"
                 Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
-            }
+
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "All optimizations available"
-            }
             if ($btnElevate) {
                 $btnElevate.Visibility = [System.Windows.Visibility]::Collapsed
-            }
 
             # Enable advanced features visual indicator
             if ($form -and $form.Title) {
                 $form.Title = "KOALA Gaming Optimizer v3.0 - Enhanced Edition [Administrator]"
-            }
 
             Log "Administrator mode detected - full optimization access granted" 'Success'
         } else {
@@ -13150,23 +12179,16 @@ function Initialize-Application {
             if ($lblAdminStatus) {
                 $lblAdminStatus.Text = "Limited Mode"
                 Set-BrushPropertySafe -Target $lblAdminStatus -Property 'Foreground' -Value '#8F6FFF'
-            }
             if ($lblAdminDetails) {
                 $lblAdminDetails.Text = "Some optimizations require administrator privileges"
-            }
             if ($btnElevate) {
                 $btnElevate.Visibility = [System.Windows.Visibility]::Visible
-            }
 
             Log "Limited mode detected - some optimizations may be restricted" 'Warning'
             Log "Tip: Run as Administrator for full access to all optimizations" 'Info'
-        }
-    } catch {
         Log "Error setting admin status visual feedback: $($_.Exception.Message)" 'Warning'
-    }
 
     # Enhanced system information gathering
-    try {
         $systemInfo = @{}
 
         $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
@@ -13188,29 +12210,23 @@ function Initialize-Application {
         # Store system info for later use
         $global:SystemInfo = $systemInfo
 
-    } catch {
         Log "Failed to gather system info: $($_.Exception.Message)" 'Warning'
-    }
 
     # Enhanced default menu mode setting with validation
-    try {
         Log "Setting default menu mode to Basic..." 'Info'
         Switch-MenuMode -Mode "Basic"
 
         # Validate menu mode was set correctly
         if ($global:MenuMode -eq "Basic") {
             Log "Default menu mode set successfully: $global:MenuMode" 'Success'
+
         } else {
             Log "Warning: Menu mode validation failed, expected 'Basic' but got '$global:MenuMode'" 'Warning'
-        }
-    } catch {
         Log "Error setting default menu mode: $($_.Exception.Message)" 'Error'
         # Fallback - try to set a minimal working state
         $global:MenuMode = "Basic"
-    }
 
     # Enhanced performance monitoring startup
-    try {
         Log "Starting performance monitoring..." 'Info'
         $perfTimer = New-Object System.Windows.Threading.DispatcherTimer
         $perfTimer.Interval = [TimeSpan]::FromSeconds(3)
@@ -13218,62 +12234,47 @@ function Initialize-Application {
         $perfTimer.Start()
         $global:PerformanceTimer = $perfTimer
         Log "Performance monitoring started successfully" 'Success'
-    } catch {
         Log "Failed to start performance monitoring: $($_.Exception.Message)" 'Warning'
-    }
 
     # Enhanced game detection startup deferred until Auto-Optimize is enabled
     Log "Game detection loop is idle until Auto-Optimize is enabled" 'Info'
 
     # Enhanced high precision timer activation
-    try {
         [WinMM]::timeBeginPeriod(1) | Out-Null
         Log "High precision timer activated for enhanced gaming performance" 'Success'
-    } catch {
         Log "Could not activate high precision timer: $($_.Exception.Message)" 'Warning'
-    }
 
     # Enhanced startup validation and visual feedback
-    try {
         # Validate critical UI elements are accessible
         $criticalElements = @{
             'LogBox' = $LogBox
             'Form' = $form
             'AdminStatus' = $lblAdminStatus
-        }
+
 
         $validationErrors = @()
         foreach ($elementName in $criticalElements.Keys) {
             if (-not $criticalElements[$elementName]) {
                 $validationErrors += $elementName
-            }
-        }
 
         if ($validationErrors.Count -eq 0) {
             Log "All critical UI elements validated successfully" 'Success'
         } else {
             Log "UI validation issues found: $($validationErrors -join ', ')" 'Warning'
-        }
 
         # Update UI status indicators
         if ($lblOptimizationStatus) {
             $lblOptimizationStatus.Text = if ($isAdmin) { "Ready (Administrator)" } else { "Ready (Limited)" }
-        }
 
-    } catch {
         Log "Error in startup validation: $($_.Exception.Message)" 'Warning'
-    }
 
     Log "Application initialized successfully!" 'Success'
     Log "Mode: $global:MenuMode | Admin: $isAdmin | Ready for optimizations" 'Info'
-}
 
 # Window closing handler
 $form.Add_Closing({
-    try {
         [WinMM]::timeEndPeriod(1) | Out-Null
         Log "Closing application - High precision timer released" 'Info'
-    } catch {}
 })
 
 # ---------- Start Application ----------
@@ -13281,24 +12282,16 @@ Initialize-Application
 
 # Safely initialize status label with null check
 if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
-    try {
         $lblOptimizationStatus.Text = "Ready"
-    } catch {
         Log "Warning: Could not initialize optimization status label: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 # Apply default theme on startup
-try {
     Log "Applying default theme on startup..." 'Info'
     Switch-Theme -ThemeName "Nebula"
     Log "Default theme applied successfully - UI ready" 'Success'
-} catch {
     Log "Warning: Could not apply default theme on startup: $($_.Exception.Message)" 'Warning'
-}
 
 # Load settings from cfg file if it exists
-try {
     $configPath = Join-Path (Get-Location) "koala-settings.cfg"
     if (Test-Path $configPath) {
         Log "Loading settings from koala-settings.cfg..." 'Info'
@@ -13309,8 +12302,7 @@ try {
         $content -split "`n" | ForEach-Object {
             if ($_ -match "^([^#=]+)=(.*)`$") {
                 $settings[$matches[1].Trim()] = $matches[2].Trim()
-            }
-        }
+
 
         # Apply loaded theme
         if ($settings.Theme) {
@@ -13320,9 +12312,6 @@ try {
                     Switch-Theme -ThemeName $settings.Theme
                     Log "Loaded theme: $($settings.Theme)" 'Info'
                     break
-                }
-            }
-        }
 
         # Apply loaded scale
         if ($settings.UIScale -and $cmbUIScale) {
@@ -13334,11 +12323,7 @@ try {
                         $scaleTransform = New-Object System.Windows.Media.ScaleTransform($scaleValue, $scaleValue)
                         $form.LayoutTransform = $scaleTransform
                         Log "Loaded UI scale: $($settings.UIScale)" 'Info'
-                    }
                     break
-                }
-            }
-        }
 
         # Apply loaded menu mode
         if ($settings.MenuMode) {
@@ -13353,32 +12338,25 @@ try {
             # }
             Switch-MenuMode -Mode $settings.MenuMode  # Direct call without UI control
             Log "Loaded menu mode: $($settings.MenuMode)" 'Info'
-        }
 
         if ($settings.Language) {
             Set-UILanguage -LanguageCode $settings.Language
             Log "Loaded language: $($settings.Language)" 'Info'
-        }
 
         if ($settings.ContainsKey('AdvancedSelections')) {
             $advancedChecked = @()
             if ($settings.AdvancedSelections) {
                 $advancedChecked = $settings.AdvancedSelections -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-            }
 
             Set-AdvancedSelections -CheckedNames $advancedChecked
 
             $advancedStartupSummary = Get-AdvancedSelectionSummary -CheckedNames $advancedChecked
             Log "Loaded advanced selections: $advancedStartupSummary" 'Info'
-        }
 
         Log "Settings loaded successfully from koala-settings.cfg" 'Success'
     } else {
         Log "No settings file found - using defaults" 'Info'
-    }
-} catch {
     Log "Warning: Could not load settings from cfg file: $($_.Exception.Message)" 'Warning'
-}
 
 # ---------- Responsive UI Scaling ----------
 function Update-UIScaling {
@@ -13387,7 +12365,6 @@ function Update-UIScaling {
         [double]$WindowHeight
     )
 
-    try {
         # Calculate scaling factors based on window size relative to design size (1400x900)
         $baseWidth = 1400
         $baseHeight = 900
@@ -13413,29 +12390,20 @@ function Update-UIScaling {
                 $fontSetter = $buttonStyle.Setters | Where-Object { $_.Property.Name -eq "FontSize" }
                 if ($fontSetter) {
                     $fontSetter.Value = $scaledFontSize
-                }
             } catch {
                 # Continue if font scaling fails
-            }
-        }
 
         # Scale text elements
         $textElements = @("lblAdminStatus", "lblAdminDetails", "lblOptimizationStatus")
         foreach ($elementName in $textElements) {
             $element = $form.FindName($elementName)
             if ($element -and $element.FontSize) {
-                try {
                     $baseFontSize = 14
                     $element.FontSize = [Math]::Round($baseFontSize * $scale, 1)
-                } catch {
                     # Continue if element scaling fails
-                }
-            }
-        }
 
         # Update Activity Log dimensions proportionally
         if ($global:LogBox) {
-            try {
                 # Ensure log area maintains good visibility at different scales
                 $baseLogHeight = 240
                 $scaledLogHeight = [Math]::Max(180, [Math]::Round($baseLogHeight * $scale))
@@ -13444,55 +12412,38 @@ function Update-UIScaling {
                 $parent = $global:LogBox.Parent
                 while ($parent -and -not ($parent -is [System.Windows.Controls.Grid])) {
                     $parent = $parent.Parent
-                }
+
 
                 if ($parent -and $parent.RowDefinitions -and $parent.RowDefinitions.Count -gt 3) {
                     $logRowDef = $parent.RowDefinitions[3]  # Activity log is in row 3
                     if ($logRowDef) {
                         $logRowDef.Height = [System.Windows.GridLength]::new($scaledLogHeight)
-                    }
-                }
-            } catch {
                 # Continue if log scaling fails
-            }
-        }
 
         Log "UI scaling update completed successfully" 'Info'
 
-    } catch {
         Log "Error updating UI scaling: $($_.Exception.Message)" 'Warning'
-    }
-}
 
 # Add window resize event handler for responsive scaling
 $form.Add_SizeChanged({
-    try {
         if ($form.ActualWidth -gt 0 -and $form.ActualHeight -gt 0) {
             Update-UIScaling -WindowWidth $form.ActualWidth -WindowHeight $form.ActualHeight
-        }
-    } catch {
+
         Log "Error in window resize handler: $($_.Exception.Message)" 'Warning'
-    }
 })
 
 # Initial UI scaling setup
-try {
     Update-UIScaling -WindowWidth 1400 -WindowHeight 900
     Log "Initial UI scaling configuration applied" 'Success'
-} catch {
     Log "Warning: Could not apply initial UI scaling: $($_.Exception.Message)" 'Warning'
-}
 
 # Initialize Custom Search button visibility
-try {
     if ($btnCustomSearch) {
         # Hide Custom Search button initially (only show when custom folders are added)
         $btnCustomSearch.Visibility = "Collapsed"
         Log "Custom Search button initialized as hidden (no custom folders yet)" 'Info'
-    }
-} catch {
+
     Log "Warning: Could not initialize Custom Search button visibility: $($_.Exception.Message)" 'Warning'
-}
 
 # Initialize default theme and color preview
 if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
@@ -13503,11 +12454,8 @@ if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
             Update-ThemeColorPreview -ThemeName "Nebula"
             Log "Default theme 'Dark Purple' selected with color preview initialized" 'Info'
             break
-        }
-    }
 } else {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
-}
 
 
 function Invoke-PanelActions {
@@ -13529,26 +12477,19 @@ function Invoke-PanelActions {
 
         if (-not $checkbox -or -not $callback) {
             continue
-        }
 
         if (-not $checkbox.IsChecked) {
             continue
-        }
 
-        try {
-            & $callback
+            # removed invalid call
             if ($description) {
                 [void]$applied.Add($description)
-            }
-        } catch {
+
             $detail = if ($description) { $description } else { 'panel action' }
             $message = "Warning: Failed to apply $PanelName action '$detail': $($_.Exception.Message)"
             Log $message 'Warning'
-        }
-    }
 
     return $applied
-}
 
 
 function Invoke-NetworkPanelOptimizations {
@@ -13559,17 +12500,14 @@ function Invoke-NetworkPanelOptimizations {
             Checkbox    = $chkAckNetwork
             Action      = { Apply-TcpAck }
             Description = 'TCP ACK frequency tweak'
-        }
         [pscustomobject]@{
             Checkbox    = $chkNagleNetwork
             Action      = { Apply-NagleDisable }
             Description = 'Disable Nagle algorithm'
-        }
         [pscustomobject]@{
             Checkbox    = $chkNetworkThrottlingNetwork
             Action      = { Apply-NetworkThrottling }
             Description = 'Network throttling adjustments'
-        }
     )
 
     $applied = Invoke-PanelActions -PanelName 'Network' -Actions $networkActions
@@ -13580,13 +12518,10 @@ function Invoke-NetworkPanelOptimizations {
     } else {
         Log 'No network optimizations were selected in the dedicated Network panel' 'Info'
 
-    }
-}
 
 function Test-NetworkLatency {
     Log "Testing network latency..." 'Info'
 
-    try {
         # Test ping to common servers
         $servers = @("8.8.8.8", "1.1.1.1", "8.8.4.4")
         $results = @()
@@ -13598,33 +12533,24 @@ function Test-NetworkLatency {
                 $avgLatency = ($pingResult | Measure-Object -Property ResponseTime -Average).Average
                 $results += "Server $server`: $([math]::Round($avgLatency, 2))ms"
                 Log "Ping to $server`: $([math]::Round($avgLatency, 2))ms" 'Info'
-            }
-        }
+
 
         if ($results.Count -gt 0) {
             $message = "Network Latency Test Results:`n`n" + ($results -join "`n")
             [System.Windows.MessageBox]::Show($message, "Network Latency Test", 'OK', 'Information')
-        }
-    } catch {
         Log "Error testing network latency: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Reset-NetworkSettings {
     Log "Resetting network settings to default..." 'Info'
 
     # Reset network-related registry keys to default
-    try {
         # Reset TCP settings
         Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TcpAckFrequency" -ErrorAction SilentlyContinue
         Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TCPNoDelay" -ErrorAction SilentlyContinue
         Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TcpDelAckTicks" -ErrorAction SilentlyContinue
 
         Log "Network settings reset to default values" 'Success'
-    } catch {
         Log "Error resetting network settings: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Invoke-SystemPanelOptimizations {
     Log "Applying system optimizations from dedicated System panel..." 'Info'
@@ -13634,158 +12560,126 @@ function Invoke-SystemPanelOptimizations {
             Checkbox    = $chkPowerPlanSystem
             Action      = { Apply-PowerPlan }
             Description = 'High performance power plan'
-        }
         [pscustomobject]@{
             Checkbox    = $chkGameDVRSystem
             Action      = { Disable-GameDVR }
             Description = 'Disable Game DVR'
-        }
         [pscustomobject]@{
             Checkbox    = $chkGPUSchedulingSystem
             Action      = { Enable-GPUScheduling }
             Description = 'Enable GPU scheduling'
-        }
         [pscustomobject]@{
             Checkbox    = $chkAdvancedTelemetryDisable
             Action      = { Disable-AdvancedTelemetry }
             Description = 'Advanced telemetry reduction'
-        }
         [pscustomobject]@{
             Checkbox    = $chkMemoryDefragmentation
             Action      = { Enable-MemoryDefragmentation }
             Description = 'Memory defragmentation'
-        }
         [pscustomobject]@{
             Checkbox    = $chkServiceOptimization
             Action      = { Apply-ServiceOptimization }
             Description = 'Service optimization suite'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDiskTweaksAdvanced
             Action      = { Apply-DiskTweaksAdvanced }
             Description = 'Disk tweaks (advanced)'
-        }
         [pscustomobject]@{
             Checkbox    = $chkNetworkLatencyOptimization
             Action      = { Enable-NetworkLatencyOptimization }
             Description = 'Network latency optimization'
-        }
         [pscustomobject]@{
             Checkbox    = $chkFPSSmoothness
             Action      = { Enable-FPSSmoothness }
             Description = 'FPS smoothness tuning'
-        }
         [pscustomobject]@{
             Checkbox    = $chkCPUMicrocode
             Action      = { Optimize-CPUMicrocode }
             Description = 'CPU microcode optimization'
-        }
         [pscustomobject]@{
             Checkbox    = $chkRAMTimings
             Action      = { Optimize-RAMTimings }
             Description = 'RAM timings optimization'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableCortana
             Action      = { Disable-Cortana }
             Description = 'Disable Cortana'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableWindowsUpdate
             Action      = { Optimize-WindowsUpdate }
             Description = 'Optimize Windows Update'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableBackgroundApps
             Action      = { Disable-BackgroundApps }
             Description = 'Disable background apps'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableLocationTracking
             Action      = { Disable-LocationTracking }
             Description = 'Disable location tracking'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableAdvertisingID
             Action      = { Disable-AdvertisingID }
             Description = 'Disable advertising ID'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableErrorReporting
             Action      = { Disable-ErrorReporting }
             Description = 'Disable error reporting'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableCompatTelemetry
             Action      = { Disable-CompatibilityTelemetry }
             Description = 'Disable compatibility telemetry'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableWSH
             Action      = { Disable-WSH }
             Description = 'Disable Windows Script Host'
-        }
     )
 
     # Enhanced Gaming Optimizations
     $enhancedGameOptimizations = @()
     if ($chkDynamicResolution -and $chkDynamicResolution.IsChecked) {
         $enhancedGameOptimizations += 'DynamicResolutionScaling'
-    }
     if ($chkEnhancedFramePacing -and $chkEnhancedFramePacing.IsChecked) {
         $enhancedGameOptimizations += 'EnhancedFramePacing'
-    }
     if ($chkGPUOverclocking -and $chkGPUOverclocking.IsChecked) {
         $enhancedGameOptimizations += 'ProfileBasedGPUOverclocking'
-    }
     if ($chkCompetitiveLatency -and $chkCompetitiveLatency.IsChecked) {
         $enhancedGameOptimizations += 'CompetitiveLatencyReduction'
-    }
 
     if ($enhancedGameOptimizations.Count -gt 0) {
         Apply-FPSOptimizations -OptimizationList $enhancedGameOptimizations
         $summary = 'Enhanced gaming optimizations: ' + ($enhancedGameOptimizations -join ', ')
         [void]$systemActions.Add($summary)
-    }
 
     # Enhanced System Optimizations
     $enhancedSystemSettings = @{}
     if ($chkAutoDiskOptimization -and $chkAutoDiskOptimization.IsChecked) {
         $enhancedSystemSettings.AutoDiskOptimization = $true
-    }
     if ($chkAdaptivePowerManagement -and $chkAdaptivePowerManagement.IsChecked) {
         $enhancedSystemSettings.AdaptivePowerManagement = $true
-    }
     if ($chkEnhancedPagingFile -and $chkEnhancedPagingFile.IsChecked) {
         $enhancedSystemSettings.EnhancedPagingFile = $true
-    }
     if ($chkDirectStorageEnhanced -and $chkDirectStorageEnhanced.IsChecked) {
         $enhancedSystemSettings.DirectStorageEnhanced = $true
-    }
 
     if ($enhancedSystemSettings.Count -gt 0) {
         Apply-EnhancedSystemOptimizations -Settings $enhancedSystemSettings
         $systemSettingsSummary = 'Enhanced system settings: ' + (($enhancedSystemSettings.Keys) -join ', ')
         [void]$systemActions.Add($systemSettingsSummary)
-    }
 
     if ($systemActions.Count -gt 0) {
         $details = $systemActions -join ', '
         Log "System optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No system optimizations were selected in the dedicated System panel' 'Info'
-    }
-}
 
 function Start-SystemBenchmark {
     Log "Starting system benchmark..." 'Info'
 
-    try {
         # Simple CPU and memory benchmark
         $cpuStart = Get-Date
         for ($i = 0; $i -lt 1000000; $i++) {
             [math]::Sqrt($i) | Out-Null
-        }
+
         $cpuTime = (Get-Date) - $cpuStart
 
         $memInfo = Get-WmiObject -Class Win32_OperatingSystem
@@ -13805,24 +12699,17 @@ function Start-SystemBenchmark {
         $message = $results -join "`n"
         [System.Windows.MessageBox]::Show($message, "System Benchmark", 'OK', 'Information')
         Log "System benchmark completed" 'Success'
-    } catch {
         Log "Error running system benchmark: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Reset-SystemSettings {
     Log "Resetting system settings to default..." 'Info'
 
-    try {
         # Reset common system optimization registry keys
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "SystemResponsiveness" -ErrorAction SilentlyContinue
         Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" -ErrorAction SilentlyContinue
 
         Log "System settings reset to default values" 'Success'
-    } catch {
         Log "Error resetting system settings: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Invoke-ServicePanelOptimizations {
     Log "Applying service optimizations from dedicated Services panel..." 'Info'
@@ -13832,17 +12719,14 @@ function Invoke-ServicePanelOptimizations {
             Checkbox    = $chkDisableXboxServicesServices
             Action      = { Disable-XboxServices }
             Description = 'Disable Xbox services'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableTelemetryServices
             Action      = { Disable-Telemetry }
             Description = 'Disable telemetry services'
-        }
         [pscustomobject]@{
             Checkbox    = $chkDisableSearchServices
             Action      = { Disable-WindowsSearch }
             Description = 'Disable Windows Search service'
-        }
     )
 
     if ($serviceActions.Count -gt 0) {
@@ -13850,13 +12734,10 @@ function Invoke-ServicePanelOptimizations {
         Log "Service optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No service optimizations were selected in the dedicated Services panel' 'Info'
-    }
-}
 
 function Show-RunningServices {
     Log "Showing running services..." 'Info'
 
-    try {
         # Get running services
         $services = Get-Service | Where-Object {$_.Status -eq 'Running'} | Sort-Object Name
         $serviceList = $services | ForEach-Object { "$($_.Name) - $($_.DisplayName)" }
@@ -13865,25 +12746,18 @@ function Show-RunningServices {
         $message = "Running Services (first 20):`n`n" + (($serviceList | Select-Object -First 20) -join "`n")
         if ($serviceList.Count -gt 20) {
             $message += "`n`n... and $($serviceList.Count - 20) more services"
-        }
+
 
         [System.Windows.MessageBox]::Show($message, "Running Services", 'OK', 'Information')
-    } catch {
         Log "Error viewing running services: $($_.Exception.Message)" 'Error'
-    }
-}
 
 function Reset-ServiceSettings {
     Log "Resetting service settings to default..." 'Info'
 
-    try {
         # Reset services to default startup types (simplified implementation)
         # In a real implementation, this would restore original service configurations
         Log "Service settings reset to default values" 'Success'
-    } catch {
         Log "Error resetting service settings: $($_.Exception.Message)" 'Error'
-    }
-}
 
 # ============================================================================
 # END OF SCRIPT - Enhanced Gaming Optimizer with Dedicated Advanced Settings Panels
@@ -13903,26 +12777,18 @@ $finalBrushKeys = @($script:BrushResourceKeys)
 if ($form -and $form.Resources) {
     Register-BrushResourceKeys -Keys $form.Resources.Keys
     $finalBrushKeys = @($script:BrushResourceKeys)
-    try {
         foreach ($resourceKey in $form.Resources.Keys) {
             if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($finalBrushKeys -notcontains $resourceKey)) {
                 $finalBrushKeys += $resourceKey
-            }
-        }
-    } catch {
+
         # Ignore enumeration issues during final normalization
-    }
-}
 
 Normalize-BrushResources -Resources $form.Resources -Keys $finalBrushKeys -AllowTransparentFallback
-try {
     $form.ShowDialog() | Out-Null
-} catch {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     # Cleanup
 
-    try {
         # Stop performance monitoring
         Stop-PerformanceMonitoring
 
@@ -13932,8 +12798,6 @@ try {
 
         # Cleanup timer precision
         [WinMM]::timeEndPeriod(1) | Out-Null
-    } catch {}
-}
 # - Service Management (Xbox, Telemetry, Search, Print Spooler, Superfetch)
 # - Engine-specific optimizations (Unreal, Unity, Source, Frostbite, RED Engine, Creation Engine)
 # - Special optimizations (DLSS, RTX, Vulkan, OpenGL, Physics, Frame Pacing)
@@ -13944,3 +12808,23 @@ try {
 # - Advanced/Compact menu modes
 # - Comprehensive logging system with file persistence
 # - Enhanced theme switching with instant UI updates and robust error handling
+
+function Run-QuickOptimizations {
+        Log 'Running Quick Optimizations...' 'Info'
+        reg add 'HKCU\System\GameConfigStore' /v GameDVR_Enabled /t REG_DWORD /d 0 /f | Out-Null
+        reg add 'HKCU\System\GameConfigStore' /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 2 /f | Out-Null
+        Log 'Quick optimizations applied successfully.' 'Success'
+        Log "Quick optimizations failed: $($_.Exception.Message)" 'Error'
+
+$btnQuickOptimize.Add_Click({
+    Run-QuickOptimizations
+})
+
+$btnAdvanced.Add_Click({
+    Show-AdvancedSection -Section 'Network'
+    Show-AdvancedSection -Section 'System'
+    Show-AdvancedSection -Section 'Services'
+})
+
+    if ($dashboardLogPanel) { $dashboardLogPanel.Visibility = 'Visible'; $dashboardLogPanel.Height = 260 }
+}
