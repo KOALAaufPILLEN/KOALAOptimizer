@@ -1791,6 +1791,59 @@ function Test-XamlNameUniqueness {
     throw "Duplicate element names detected in XAML content."
 }
 
+function Get-XamlDuplicateNames {
+    param(
+        [Parameter(Mandatory = $true)][string]$Xaml
+    )
+
+    $pattern = [regex]'\b(?:x:)?Name\s*=\s*"([^"]+)"'
+    $occurrences = @()
+    $lineNumber = 1
+
+    foreach ($line in $Xaml -split "`r?`n") {
+        foreach ($match in $pattern.Matches($line)) {
+            $occurrences += [pscustomobject]@{
+                Name     = $match.Groups[1].Value
+                Line     = $lineNumber
+                LineText = $line.Trim()
+            }
+        }
+
+        $lineNumber++
+    }
+
+    return $occurrences |
+        Group-Object -Property Name |
+        Where-Object { $_.Count -gt 1 } |
+        ForEach-Object {
+            [pscustomobject]@{
+                Name        = $_.Name
+                Occurrences = $_.Group
+            }
+        }
+}
+
+function Test-XamlNameUniqueness {
+    param(
+        [Parameter(Mandatory = $true)][string]$Xaml
+    )
+
+    $duplicates = Get-XamlDuplicateNames -Xaml $Xaml
+    if (-not $duplicates -or $duplicates.Count -eq 0) {
+        return
+    }
+
+    Write-Host 'Duplicate x:Name/Name values detected in XAML:' -ForegroundColor Red
+    foreach ($duplicate in $duplicates) {
+        foreach ($occurrence in $duplicate.Occurrences) {
+            $lineInfo = if ($occurrence.Line -gt 0) { "line $($occurrence.Line)" } else { 'unknown line' }
+            Write-Host ("  {0} ({1}): {2}" -f $duplicate.Name, $lineInfo, $occurrence.LineText) -ForegroundColor Red
+        }
+    }
+
+    throw "Duplicate element names detected in XAML content."
+}
+
 function Apply-FallbackThemeColors {
     param($element, $colors)
 
@@ -2119,6 +2172,12 @@ function Update-AllUIElementsRecursively {
                           $finalBrush = Convert-ToBrushResource -Value $colorString -AllowTransparentFallback
                       }
                   }
+              }
+
+              if ($finalBrush -is [System.Windows.Media.Brush]) {
+                  $form.Resources[$key] = $finalBrush
+              } else {
+                  Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
               }
 
               if ($finalBrush -is [System.Windows.Media.Brush]) {
@@ -3628,14 +3687,17 @@ function Show-SystemHealthDialog {
         })
 
         $btnOptimizeNow.Add_Click({
-            try {
-                # Trigger a quick optimization if the main Apply button exists
-                if ($btnApply) {
-                    Log "Quick optimization triggered from System Health dialog" 'Info'
-                    $healthWindow.Close()
+            if ($btnApply) {
+                Log "Quick optimization triggered from System Health dialog" 'Info'
+                $healthWindow.Close()
+
+                try {
                     $btnApply.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-            } catch {
-                Log "Error triggering optimization from health dialog: $($_.Exception.Message)" 'Error'
+                } catch {
+                    Log "Error triggering optimization from health dialog: $($_.Exception.Message)" 'Error'
+                }
+            } else {
+                [System.Windows.MessageBox]::Show("Quick optimization is not available. Please use the main optimization features.", "Optimization", 'OK', 'Information')
             }
         })
 
@@ -5304,6 +5366,7 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
+
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5618,23 +5681,7 @@ $xamlContent = @'
           </StackPanel>
         </Grid>
       </Border>
-      
-      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
-            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
-            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
-          </StackPanel>
-        </StackPanel>
-      </Border>
+
       <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
@@ -5651,6 +5698,7 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </Border>
+
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6230,6 +6278,7 @@ $xamlContent = @'
               </StackPanel>
             </Border>
           </StackPanel>
+          
           <StackPanel x:Name="panelLog" Visibility="Collapsed" Tag="Spacing:16">
             <Border x:Name="activityLogBorder"
                     Background="{DynamicResource ContentBackgroundBrush}"
@@ -6308,6 +6357,7 @@ $xamlContent = @'
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
+
     </Grid>
 
     <StackPanel Visibility="Collapsed">
@@ -10911,6 +10961,101 @@ $btnBasicGaming.Add_Click({
 if ($cmbOptionsTheme) {
     $cmbOptionsTheme.Add_SelectionChanged({
         if ($script:ThemeSelectionSyncInProgress) { return }
+
+        try {
+            $script:ThemeSelectionSyncInProgress = $true
+
+            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
+                $themeName = $cmbOptionsTheme.SelectedItem.Content
+
+                # Update color preview panel only - no instant theme application
+                Update-ThemeColorPreview -ThemeName $selectedTheme
+
+                # Show/hide custom theme panel
+                if ($selectedTheme -eq "Custom" -and $customThemePanel) {
+                    $customThemePanel.Visibility = "Visible"
+                    if ($global:CustomThemeColors) {
+                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
+                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
+                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
+                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
+                    }
+                } elseif ($customThemePanel) {
+                    $customThemePanel.Visibility = "Collapsed"
+                }
+
+                Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
+            }
+        } catch {
+            Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
+        } finally {
+            $script:ThemeSelectionSyncInProgress = $false
+        }
+    })
+}
+
+# Apply button - primary method for theme application (themes only apply when clicked)
+# Theme Apply Button Event Handler
+if ($btnOptionsApplyTheme) {
+    $btnOptionsApplyTheme.Add_Click({
+        try {
+            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
+                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
+                $themeName = $cmbOptionsTheme.SelectedItem.Content
+
+                Log "Applying theme: $themeName" 'Info'
+                Switch-Theme -ThemeName $selectedTheme
+
+                # Force ComboBox refresh
+                $cmbOptionsTheme.InvalidateVisual()
+                $cmbOptionsTheme.UpdateLayout()
+
+                [System.Windows.MessageBox]::Show("Theme '$themeName' wurde erfolgreich angewendet!", "Theme Applied", 'OK', 'Information')
+            } else {
+                [System.Windows.MessageBox]::Show("Bitte wÃ¤hlen Sie zuerst ein Theme aus der Liste.", "No Theme Selected", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error applying theme: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Fehler beim Anwenden des Themes: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
+        }
+    })
+}
+
+
+# Alias button for test compatibility - applies same functionality
+if ($btnApplyTheme) {
+    $btnApplyTheme.Add_Click({
+        # Apply the selected theme instantly - same as main button functionality
+        if ($btnOptionsApplyTheme) {
+            $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+        }
+    })
+}
+
+                if ($cmbOptionsTheme) {
+                    foreach ($item in $cmbOptionsTheme.Items) {
+                        if ($item.Tag -eq $selectedTheme) {
+                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
+                                $cmbOptionsTheme.SelectedItem = $item
+                            }
+                            break
+                        }
+                    }
+                }
+
+                $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+            } else {
+                [System.Windows.MessageBox]::Show("Please select a theme first.", "Theme", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error applying theme from header: $($_.Exception.Message)" 'Error'
+        }
+    })
+}
+
+if ($btnApplyScale) {
+    $btnApplyScale.Add_Click({
 
         try {
 
