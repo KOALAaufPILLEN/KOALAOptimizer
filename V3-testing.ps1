@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+﻿﻿﻿﻿﻿﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -1791,6 +1791,59 @@ function Test-XamlNameUniqueness {
     throw "Duplicate element names detected in XAML content."
 }
 
+function Get-XamlDuplicateNames {
+    param(
+        [Parameter(Mandatory = $true)][string]$Xaml
+    )
+
+    $pattern = [regex]'\b(?:x:)?Name\s*=\s*"([^"]+)"'
+    $occurrences = @()
+    $lineNumber = 1
+
+    foreach ($line in $Xaml -split "`r?`n") {
+        foreach ($match in $pattern.Matches($line)) {
+            $occurrences += [pscustomobject]@{
+                Name     = $match.Groups[1].Value
+                Line     = $lineNumber
+                LineText = $line.Trim()
+            }
+        }
+
+        $lineNumber++
+    }
+
+    return $occurrences |
+        Group-Object -Property Name |
+        Where-Object { $_.Count -gt 1 } |
+        ForEach-Object {
+            [pscustomobject]@{
+                Name        = $_.Name
+                Occurrences = $_.Group
+            }
+        }
+}
+
+function Test-XamlNameUniqueness {
+    param(
+        [Parameter(Mandatory = $true)][string]$Xaml
+    )
+
+    $duplicates = Get-XamlDuplicateNames -Xaml $Xaml
+    if (-not $duplicates -or $duplicates.Count -eq 0) {
+        return
+    }
+
+    Write-Host 'Duplicate x:Name/Name values detected in XAML:' -ForegroundColor Red
+    foreach ($duplicate in $duplicates) {
+        foreach ($occurrence in $duplicate.Occurrences) {
+            $lineInfo = if ($occurrence.Line -gt 0) { "line $($occurrence.Line)" } else { 'unknown line' }
+            Write-Host ("  {0} ({1}): {2}" -f $duplicate.Name, $lineInfo, $occurrence.LineText) -ForegroundColor Red
+        }
+    }
+
+    throw "Duplicate element names detected in XAML content."
+}
+
 function Apply-FallbackThemeColors {
     param($element, $colors)
 
@@ -2126,6 +2179,19 @@ function Update-AllUIElementsRecursively {
               } else {
                   Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
               }
+
+              if ($finalBrush -is [System.Windows.Media.Brush]) {
+                  $form.Resources[$key] = $finalBrush
+              } else {
+                  Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
+              }
+
+              $safeBrush = New-SolidColorBrushSafe $colorString
+              if (& $assignBrush $key $safeBrush) {
+                  return
+              }
+
+              Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
           }
 
           & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
@@ -5301,7 +5367,6 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
 
-
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -6213,7 +6278,7 @@ $xamlContent = @'
               </StackPanel>
             </Border>
           </StackPanel>
-
+          
           <StackPanel x:Name="panelLog" Visibility="Collapsed" Tag="Spacing:16">
             <Border x:Name="activityLogBorder"
                     Background="{DynamicResource ContentBackgroundBrush}"
@@ -8731,8 +8796,7 @@ function Search-CustomFoldersForExecutables {
                 catch {
                     Log "Error scanning custom path $customPath : $($_.Exception.Message)" 'Warning'
                 }
-            }
-            else {
+            } else {
                 Log "Custom path no longer exists: $customPath" 'Warning'
             }
         }
@@ -10992,10 +11056,8 @@ if ($btnApplyTheme) {
 
 if ($btnApplyScale) {
     $btnApplyScale.Add_Click({
+
         try {
-            if ($cmbUIScale.SelectedItem -and $cmbUIScale.SelectedItem.Tag) {
-                $scaleValue = [double]$cmbUIScale.SelectedItem.Tag
-                $scalePercent = $cmbUIScale.SelectedItem.Content
 
                 Log "Applying UI scale: $scalePercent (factor: $scaleValue)" 'Info'
 
@@ -11005,9 +11067,6 @@ if ($btnApplyScale) {
 
                 Log "UI scale '$scalePercent' applied successfully" 'Success'
                 [System.Windows.MessageBox]::Show("UI scale '$scalePercent' has been applied successfully!", "Scale Applied", 'OK', 'Information')
-            } else {
-                [System.Windows.MessageBox]::Show("Please select a scale from the dropdown first.", "No Scale Selected", 'OK', 'Warning')
-            }
         } catch {
             Log "Error applying UI scale: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying UI scale: $($_.Exception.Message)", "Scale Application Failed", 'OK', 'Error')
