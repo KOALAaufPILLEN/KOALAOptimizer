@@ -126,12 +126,12 @@ $global:ThemeDefinitions = @{
         Primary = '#A855F7'
         Hover = '#9333EA'
         Text = '#FFFFFF'
-        Secondary = '#151517'
+        Secondary = $BrushConverter.ConvertFromString('#151517')
         Accent = '#A855F7'
         TextSecondary = '#9CA3AF'
-        LogBg = '#111111'
-        SidebarBg = '#141416'
-        HeaderBg = '#151517'
+        LogBg = $BrushConverter.ConvertFromString('#111111')
+        SidebarBg = $BrushConverter.ConvertFromString('#141416')
+        HeaderBg = $BrushConverter.ConvertFromString('#151517')
         Success = '#22C55E'
         Warning = '#F59E0B'
         Danger = '#EF4444'
@@ -157,26 +157,26 @@ $global:ThemeDefinitions = @{
         Primary = '#3FA6FF'
         Hover = '#63B8FF'
         Text = '#E6F1FF'
-        Secondary = '#0D1A33'
-        Accent = '#35D0FF'
+        Secondary = $BrushConverter.ConvertFromString('#0D1A33')
+        Accent = '#3FA6FF'
         TextSecondary = '#98B7D8'
-        LogBg = '#0D1A33'
-        SidebarBg = '#081326'
-        HeaderBg = '#0F1F3C'
+        LogBg = $BrushConverter.ConvertFromString('#0D1A33')
+        SidebarBg = $BrushConverter.ConvertFromString('#081326')
+        HeaderBg = $BrushConverter.ConvertFromString('#0F1F3C')
         Success = '#10B981'
         Warning = '#F59E0B'
         Danger = '#EF4444'
         Info = '#35D0FF'
-        CardBackgroundStart = $BrushConverter.ConvertFromString('#12284A')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#081326')
-        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#1A3C63')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#0C203A')
-        CardBorder = '#3FA6FF'
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#0D1A33')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#0D1A33')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#102845')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#102845')
+        CardBorder = '#22538A'
         GlowAccent = '#35D0FF'
         GaugeBackground = $BrushConverter.ConvertFromString('#102845')
         GaugeStroke = '#63B8FF'
         SelectedBackground = $BrushConverter.ConvertFromString('#3FA6FF')
-        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
+        UnselectedBackground = $BrushConverter.ConvertFromString('#102845')
         SelectedForeground = $BrushConverter.ConvertFromString('#031021')
         UnselectedForeground = $BrushConverter.ConvertFromString('#E6F1FF')
         HoverBackground = $BrushConverter.ConvertFromString('#1B395A')
@@ -188,26 +188,26 @@ $global:ThemeDefinitions = @{
         Primary = '#5D5FEF'
         Hover = '#4448D8'
         Text = '#161B3A'
-        Secondary = '#E7EAF5'
-        Accent = '#2EA6A6'
+        Secondary = $BrushConverter.ConvertFromString('#E7EAF5')
+        Accent = '#5D5FEF'
         TextSecondary = '#444B72'
-        LogBg = '#FFFFFF'
-        SidebarBg = '#EEF1FA'
-        HeaderBg = '#EEF1FA'
+        LogBg = $BrushConverter.ConvertFromString('#FFFFFF')
+        SidebarBg = $BrushConverter.ConvertFromString('#EEF1FA')
+        HeaderBg = $BrushConverter.ConvertFromString('#EEF1FA')
         Success = '#0EA769'
         Warning = '#C27803'
         Danger = '#C24133'
         Info = '#5D5FEF'
         CardBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#E3E6F4')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#FFFFFF')
         SummaryBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#D6DAEE')
-        CardBorder = '#5D5FEF'
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#FFFFFF')
+        CardBorder = '#D6DAEE'
         GlowAccent = '#2EA6A6'
         GaugeBackground = $BrushConverter.ConvertFromString('#FFFFFF')
         GaugeStroke = '#5D5FEF'
         SelectedBackground = $BrushConverter.ConvertFromString('#5D5FEF')
-        UnselectedBackground = $BrushConverter.ConvertFromString('Transparent')
+        UnselectedBackground = $BrushConverter.ConvertFromString('#EEF1FA')
         SelectedForeground = $BrushConverter.ConvertFromString('#FFFFFF')
         UnselectedForeground = $BrushConverter.ConvertFromString('#161B3A')
         HoverBackground = $BrushConverter.ConvertFromString('#4448D8')
@@ -1376,6 +1376,44 @@ function Set-BrushPropertySafe {
     }
 }
 
+function Convert-ToBrushResource {
+    param(
+        [object]$Value,
+        [switch]$AllowTransparentFallback
+    )
+
+    if ($null -eq $Value) { return $null }
+
+    $probe = New-Object System.Windows.Controls.Border
+
+    try {
+        if ($AllowTransparentFallback) {
+            Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value -AllowTransparentFallback
+        } else {
+            Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value
+        }
+    } catch {
+        return $null
+    }
+
+    $result = $probe.Background
+    if ($null -eq $result) { return $null }
+
+    if ($result -is [System.Windows.Freezable]) {
+        try {
+            $clone = $result.Clone()
+            if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
+                try { $clone.Freeze() } catch { }
+            }
+            return $clone
+        } catch {
+            return $result
+        }
+    }
+
+    return $result
+}
+
 function Normalize-BrushResources {
     param(
         [System.Windows.ResourceDictionary]$Resources,
@@ -1398,30 +1436,21 @@ function Normalize-BrushResources {
         $resourceValue = $Resources[$key]
         if ($resourceValue -is [System.Windows.Media.Brush]) { continue }
 
-        $normalizedBrush = Resolve-BrushInstance $resourceValue
-        if (-not $normalizedBrush) {
-            $colorString = Get-ColorStringFromValue $resourceValue
-            if (-not [string]::IsNullOrWhiteSpace($colorString)) {
-                $normalizedBrush = New-SolidColorBrushSafe $colorString
-            }
-        }
-
-        if (-not $normalizedBrush -and $AllowTransparentFallback) {
-            $normalizedBrush = [System.Windows.Media.Brushes]::Transparent
+        if ($AllowTransparentFallback) {
+            $normalizedBrush = Convert-ToBrushResource -Value $resourceValue -AllowTransparentFallback
+        } else {
+            $normalizedBrush = Convert-ToBrushResource -Value $resourceValue
         }
 
         if ($normalizedBrush -is [System.Windows.Media.Brush]) {
-            if ($normalizedBrush -is [System.Windows.Freezable] -and $normalizedBrush.IsFrozen) {
-                try { $Resources[$key] = $normalizedBrush.Clone() } catch { $Resources[$key] = $normalizedBrush }
-            } else {
-                $Resources[$key] = $normalizedBrush
-            }
-        } elseif ($resourceValue -is [System.Management.Automation.PSObject]) {
-            if ($AllowTransparentFallback) {
-                $Resources[$key] = [System.Windows.Media.Brushes]::Transparent
-            } else {
-                Write-Verbose "Normalize-BrushResources skipped '$key' due to unresolved brush value"
-            }
+            $Resources[$key] = $normalizedBrush
+            continue
+        }
+
+        if ($AllowTransparentFallback) {
+            $Resources[$key] = [System.Windows.Media.Brushes]::Transparent
+        } else {
+            Write-Verbose "Normalize-BrushResources skipped '$key' due to unresolved brush value"
         }
     }
 }
@@ -2068,60 +2097,34 @@ function Update-AllUIElementsRecursively {
               $hoverBrush = New-SolidColorBrushSafe $Hover
           }
 
-          $brushConverter = $null
           $setResourceBrush = {
               param($key, $brushCandidate, $colorValue)
 
               if (-not $form.Resources.Contains($key)) { return }
 
-              $assignBrush = {
-                  param($resourceKey, $brush)
-                  if (-not $brush) { return $false }
-
-                  $normalizedBrush = Resolve-BrushInstance $brush
-                  if (-not $normalizedBrush) {
-                      $normalizedBrush = New-SolidColorBrushSafe $brush
-                  }
-
-                  if (-not $normalizedBrush -or ($normalizedBrush -isnot [System.Windows.Media.Brush])) {
-                      return $false
-                  }
-
-                  try {
-                      if ($normalizedBrush -is [System.Windows.Freezable] -and $normalizedBrush.IsFrozen) {
-                          $form.Resources[$resourceKey] = $normalizedBrush.Clone()
-                      } else {
-                          $form.Resources[$resourceKey] = $normalizedBrush
-                      }
-                  } catch {
-                      $form.Resources[$resourceKey] = $normalizedBrush
-                  }
-
-                  return $true
-              }
+              $finalBrush = $null
 
               if ($brushCandidate) {
-                  if (& $assignBrush $key $brushCandidate) { return }
-              }
-
-              $colorString = Get-ColorStringFromValue $colorValue
-              if ([string]::IsNullOrWhiteSpace($colorString)) {
-                  return
-              }
-
-              try {
-                  if (-not $brushConverter) {
-                      $brushConverter = Get-SharedBrushConverter
+                  $finalBrush = Convert-ToBrushResource -Value $brushCandidate
+                  if (-not $finalBrush) {
+                      $finalBrush = Convert-ToBrushResource -Value $brushCandidate -AllowTransparentFallback
                   }
+              }
 
-                  if ($brushConverter) {
-                      $converted = $brushConverter.ConvertFromString($colorString)
-                      if ($converted -and (& $assignBrush $key $converted)) {
-                          return
+              if (-not $finalBrush) {
+                  $colorString = Get-ColorStringFromValue $colorValue
+                  if (-not [string]::IsNullOrWhiteSpace($colorString)) {
+                      $finalBrush = Convert-ToBrushResource -Value $colorString
+                      if (-not $finalBrush) {
+                          $finalBrush = Convert-ToBrushResource -Value $colorString -AllowTransparentFallback
                       }
                   }
-              } catch {
-                  # fall through to safe brush creation
+              }
+
+              if ($finalBrush -is [System.Windows.Media.Brush]) {
+                  $form.Resources[$key] = $finalBrush
+              } else {
+                  Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
               }
 
               $safeBrush = New-SolidColorBrushSafe $colorString
@@ -2488,10 +2491,12 @@ function Apply-ThemeColors {
             foreach ($resourceKey in $resourceColors.Keys) {
                 $value = $resourceColors[$resourceKey]
                 if ($null -eq $value) { continue }
-                $brush = Resolve-BrushInstance $value
+
+                $brush = Convert-ToBrushResource -Value $value
                 if (-not $brush) {
-                    $brush = New-SolidColorBrushSafe $value
+                    $brush = Convert-ToBrushResource -Value $value -AllowTransparentFallback
                 }
+
                 if ($brush -is [System.Windows.Media.Brush]) {
                     try { $form.Resources[$resourceKey] = $brush } catch { Write-Verbose "Resource brush '$resourceKey' could not be updated: $($_.Exception.Message)" }
                 } else {
@@ -5302,7 +5307,6 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
-
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5596,7 +5600,6 @@ $xamlContent = @'
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <StackPanel>
             <TextBlock x:Name="lblMainTitle" Text="Dashboard" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
@@ -5615,13 +5618,6 @@ $xamlContent = @'
                 </StackPanel>
               </Border>
             </WrapPanel>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Tag="Spacing:12">
-            <StackPanel Width="220" Tag="Spacing:6">
-              <TextBlock Text="Theme preset" Style="{StaticResource SectionSubtext}" FontSize="12"/>
-              <ComboBox x:Name="cmbHeaderTheme" Style="{StaticResource ModernComboBox}" Width="220"/>
-            </StackPanel>
-            <Button x:Name="btnHeaderApplyTheme" Content="Apply theme" Width="120" Height="36" Style="{StaticResource SuccessButton}" FontSize="12"/>
           </StackPanel>
         </Grid>
       </Border>
@@ -5642,7 +5638,22 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </Border>
-
+      <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6222,7 +6233,6 @@ $xamlContent = @'
               </StackPanel>
             </Border>
           </StackPanel>
-
           <StackPanel x:Name="panelLog" Visibility="Collapsed" Tag="Spacing:16">
             <Border x:Name="activityLogBorder"
                     Background="{DynamicResource ContentBackgroundBrush}"
@@ -6232,60 +6242,58 @@ $xamlContent = @'
                     Padding="24">
               <Grid Tag="RowSpacing:16">
                 <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
                   <RowDefinition Height="*"/>
+                  <RowDefinition Height="200"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                  </Grid.ColumnDefinitions>
-                  <StackPanel>
-                    <TextBlock Text="Activity log" Style="{StaticResource SectionHeader}" FontSize="20"/>
-                    <TextBlock Text="Monitor every action KOALA performs and keep a detailed history." Style="{StaticResource SectionSubtext}"/>
-                  </StackPanel>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:8" VerticalAlignment="Center">
-                    <Button x:Name="btnToggleLogView" Content="Detailed" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-                    <Button x:Name="btnExtendLog" Content="Extend" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-                    <Button x:Name="btnClearLog" Content="Clear" Width="90" Height="32" Style="{StaticResource WarningButton}" FontSize="11"/>
-                    <Button x:Name="btnSaveLog" Content="Save log" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
-                    <Button x:Name="btnSearchLog" Content="Search" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="11"/>
-                  </StackPanel>
-                </Grid>
+                <StackPanel Grid.Row="0" Tag="Spacing:16">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                      <TextBlock Text="Activity log" Style="{StaticResource SectionHeader}" FontSize="20"/>
+                      <TextBlock Text="Monitor every action KOALA performs and keep a detailed history." Style="{StaticResource SectionSubtext}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Tag="Spacing:8" VerticalAlignment="Center">
+                      <Button x:Name="btnToggleLogView" Content="Detailed" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                      <Button x:Name="btnExtendLog" Content="Extend" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                      <Button x:Name="btnClearLog" Content="Clear" Width="90" Height="32" Style="{StaticResource WarningButton}" FontSize="11"/>
+                      <Button x:Name="btnSaveLog" Content="Save log" Width="90" Height="32" Style="{StaticResource ModernButton}" FontSize="11"/>
+                      <Button x:Name="btnSearchLog" Content="Search" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="11"/>
+                    </StackPanel>
+                  </Grid>
 
-                <WrapPanel Grid.Row="1" Margin="0,10,0,6">
-                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="Active game" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock Text="{Binding Text, ElementName=lblDashActiveGames}" Style="{StaticResource MetricValue}" FontSize="16"/>
-                    </StackPanel>
-                  </Border>
-                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="CPU usage" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock Text="{Binding Text, ElementName=lblDashCpuUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
-                    </StackPanel>
-                  </Border>
-                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock Text="{Binding Text, ElementName=lblDashMemoryUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
-                    </StackPanel>
-                  </Border>
-                  <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
-                    <StackPanel Tag="Spacing:4">
-                      <TextBlock Text="Health" Style="{StaticResource SectionSubtext}"/>
-                      <TextBlock Text="{Binding Text, ElementName=lblDashSystemHealth}" Style="{StaticResource MetricValue}" FontSize="16"/>
-                    </StackPanel>
-                  </Border>
-                </WrapPanel>
+                  <WrapPanel Margin="0,10,0,0">
+                    <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                      <StackPanel Tag="Spacing:4">
+                        <TextBlock Text="Active game" Style="{StaticResource SectionSubtext}"/>
+                        <TextBlock Text="{Binding Text, ElementName=lblDashActiveGames}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                      <StackPanel Tag="Spacing:4">
+                        <TextBlock Text="CPU usage" Style="{StaticResource SectionSubtext}"/>
+                        <TextBlock Text="{Binding Text, ElementName=lblDashCpuUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                      <StackPanel Tag="Spacing:4">
+                        <TextBlock Text="Memory" Style="{StaticResource SectionSubtext}"/>
+                        <TextBlock Text="{Binding Text, ElementName=lblDashMemoryUsage}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource HeroChipBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,12,12">
+                      <StackPanel Tag="Spacing:4">
+                        <TextBlock Text="Health" Style="{StaticResource SectionSubtext}"/>
+                        <TextBlock Text="{Binding Text, ElementName=lblDashSystemHealth}" Style="{StaticResource MetricValue}" FontSize="16"/>
+                      </StackPanel>
+                    </Border>
+                  </WrapPanel>
+                </StackPanel>
 
-                <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="{DynamicResource SidebarAccentBrush}" Margin="0,6" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" VerticalAlignment="Center" ShowsPreview="True"/>
-
-                <ScrollViewer Grid.Row="3" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <ScrollViewer Grid.Row="1" x:Name="logScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                   <TextBox x:Name="LogBox"
                            Background="{DynamicResource ContentBackgroundBrush}"
                            Foreground="{DynamicResource PrimaryTextBrush}"
@@ -6408,8 +6416,6 @@ $lblHeaderLastRun = $form.FindName('lblHeaderLastRun')
 $lblHeroProfiles = $form.FindName('lblHeroProfiles')
 $lblHeroOptimizations = $form.FindName('lblHeroOptimizations')
 $lblHeroAutoMode = $form.FindName('lblHeroAutoMode')
-$cmbHeaderTheme = $form.FindName('cmbHeaderTheme')
-$btnHeaderApplyTheme = $form.FindName('btnHeaderApplyTheme')
 
 # Admin status controls (sidebar)
 $lblSidebarAdminStatus = $form.FindName('lblSidebarAdminStatus')
@@ -6637,41 +6643,6 @@ if ($cmbOptionsTheme -and $customThemePanel) {
 
 if (-not (Get-Variable -Name 'ThemeSelectionSyncInProgress' -Scope Script -ErrorAction SilentlyContinue)) {
     $script:ThemeSelectionSyncInProgress = $false
-}
-
-if ($cmbHeaderTheme -and $cmbOptionsTheme) {
-    try {
-        $cmbHeaderTheme.Items.Clear()
-        foreach ($item in $cmbOptionsTheme.Items) {
-            if ($item -is [System.Windows.Controls.ComboBoxItem]) {
-                $cloneItem = New-Object System.Windows.Controls.ComboBoxItem
-                $cloneItem.Content = $item.Content
-                $cloneItem.Tag = $item.Tag
-                if ($item.ToolTip) { $cloneItem.ToolTip = $item.ToolTip }
-                [void]$cmbHeaderTheme.Items.Add($cloneItem)
-            }
-        }
-
-        $selectedTag = $null
-        if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-            $selectedTag = $cmbOptionsTheme.SelectedItem.Tag
-        }
-
-        if (-not $selectedTag -and $cmbHeaderTheme.Items.Count -gt 0) {
-            $selectedTag = ($cmbHeaderTheme.Items[0]).Tag
-        }
-
-        if ($selectedTag) {
-            foreach ($headerItem in $cmbHeaderTheme.Items) {
-                if ($headerItem.Tag -eq $selectedTag) {
-                    $cmbHeaderTheme.SelectedItem = $headerItem
-                    break
-                }
-            }
-        }
-    } catch {
-        Log "Warning: Failed to initialize header theme options: $($_.Exception.Message)" 'Warning'
-    }
 }
 
 # UI scaling controls
@@ -7236,10 +7207,6 @@ if ($btnAdvancedServices) {
 }
 
 # Header theme selector removed - theme switching now only available in Options panel
-# if ($cmbHeaderTheme) {
-#     $cmbHeaderTheme.Add_SelectionChanged({
-#     if ($cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
-#         $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
 #         Log "Theme change requested from header: $selectedTheme" 'Info'
 #         Switch-Theme -ThemeName $selectedTheme
 #
@@ -10994,52 +10961,6 @@ if ($cmbOptionsTheme) {
     })
 }
 
-if ($cmbHeaderTheme) {
-    $cmbHeaderTheme.Add_SelectionChanged({
-        if ($script:ThemeSelectionSyncInProgress) { return }
-
-        try {
-            $script:ThemeSelectionSyncInProgress = $true
-
-            if ($cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
-                $themeName = $cmbHeaderTheme.SelectedItem.Content
-
-                if ($cmbOptionsTheme) {
-                    foreach ($item in $cmbOptionsTheme.Items) {
-                        if ($item.Tag -eq $selectedTheme) {
-                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
-                                $cmbOptionsTheme.SelectedItem = $item
-                            }
-                            break
-                        }
-                    }
-                }
-
-                Update-ThemeColorPreview -ThemeName $selectedTheme
-
-                if ($selectedTheme -eq 'Custom' -and $customThemePanel) {
-                    $customThemePanel.Visibility = 'Visible'
-                    if ($global:CustomThemeColors) {
-                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
-                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
-                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
-                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
-                    }
-                } elseif ($customThemePanel) {
-                    $customThemePanel.Visibility = 'Collapsed'
-                }
-
-                Log "Header theme selection changed to '$themeName'" 'Info'
-            }
-        } catch {
-            Log "Error syncing header theme selection: $($_.Exception.Message)" 'Error'
-        } finally {
-            $script:ThemeSelectionSyncInProgress = $false
-        }
-    })
-}
-
 # Apply button - primary method for theme application (themes only apply when clicked)
 # Theme Apply Button Event Handler
 if ($btnOptionsApplyTheme) {
@@ -11077,13 +10998,6 @@ if ($btnApplyTheme) {
         }
     })
 }
-
-if ($btnHeaderApplyTheme -and $btnOptionsApplyTheme) {
-    $btnHeaderApplyTheme.Add_Click({
-        try {
-            if ($cmbHeaderTheme -and $cmbHeaderTheme.SelectedItem -and $cmbHeaderTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbHeaderTheme.SelectedItem.Tag
-
                 if ($cmbOptionsTheme) {
                     foreach ($item in $cmbOptionsTheme.Items) {
                         if ($item.Tag -eq $selectedTheme) {
