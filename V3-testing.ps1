@@ -1,4 +1,4 @@
-﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
+﻿﻿﻿﻿﻿﻿# KOALA Gaming Optimizer v3.0 - COMPLETE ENHANCED VERSION
 # Saved with UTF-8 BOM to preserve emoji characters when downloading raw scripts
 # Full-featured Windows Gaming Optimizer with 40+ game profiles
 # Works on PowerShell 5.1+ (Windows 10/11)
@@ -3634,9 +3634,6 @@ function Show-SystemHealthDialog {
                     Log "Quick optimization triggered from System Health dialog" 'Info'
                     $healthWindow.Close()
                     $btnApply.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-                } else {
-                    [System.Windows.MessageBox]::Show("Quick optimization is not available. Please use the main optimization features.", "Optimization", 'OK', 'Information')
-                }
             } catch {
                 Log "Error triggering optimization from health dialog: $($_.Exception.Message)" 'Error'
             }
@@ -8749,8 +8746,7 @@ function Search-CustomFoldersForExecutables {
                 catch {
                     Log "Error scanning custom path $customPath : $($_.Exception.Message)" 'Warning'
                 }
-            }
-            else {
+            } else {
                 Log "Custom path no longer exists: $customPath" 'Warning'
             }
         }
@@ -10917,114 +10913,6 @@ if ($cmbOptionsTheme) {
         if ($script:ThemeSelectionSyncInProgress) { return }
 
         try {
-            $script:ThemeSelectionSyncInProgress = $true
-
-            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
-                $themeName = $cmbOptionsTheme.SelectedItem.Content
-
-                # Keep header selection in sync without causing recursion
-                if ($cmbHeaderTheme) {
-                    foreach ($headerItem in $cmbHeaderTheme.Items) {
-                        if ($headerItem.Tag -eq $selectedTheme) {
-                            if ($cmbHeaderTheme.SelectedItem -ne $headerItem) {
-                                $cmbHeaderTheme.SelectedItem = $headerItem
-                            }
-                            break
-                        }
-                    }
-                }
-
-                # Update color preview panel only - no instant theme application
-                Update-ThemeColorPreview -ThemeName $selectedTheme
-
-                # Show/hide custom theme panel
-                if ($selectedTheme -eq "Custom" -and $customThemePanel) {
-                    $customThemePanel.Visibility = "Visible"
-                    if ($global:CustomThemeColors) {
-                        if ($txtCustomBg) { $txtCustomBg.Text = $global:CustomThemeColors['Background'] }
-                        if ($txtCustomPrimary) { $txtCustomPrimary.Text = $global:CustomThemeColors['Primary'] }
-                        if ($txtCustomHover) { $txtCustomHover.Text = $global:CustomThemeColors['Hover'] }
-                        if ($txtCustomText) { $txtCustomText.Text = $global:CustomThemeColors['Text'] }
-                    }
-                } elseif ($customThemePanel) {
-                    $customThemePanel.Visibility = "Collapsed"
-                }
-
-                Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
-            }
-        } catch {
-            Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
-        } finally {
-            $script:ThemeSelectionSyncInProgress = $false
-        }
-    })
-}
-
-# Apply button - primary method for theme application (themes only apply when clicked)
-# Theme Apply Button Event Handler
-if ($btnOptionsApplyTheme) {
-    $btnOptionsApplyTheme.Add_Click({
-        try {
-            if ($cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
-                $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
-                $themeName = $cmbOptionsTheme.SelectedItem.Content
-
-                Log "Applying theme: $themeName" 'Info'
-                Switch-Theme -ThemeName $selectedTheme
-
-                # Force ComboBox refresh
-                $cmbOptionsTheme.InvalidateVisual()
-                $cmbOptionsTheme.UpdateLayout()
-
-                [System.Windows.MessageBox]::Show("Theme '$themeName' wurde erfolgreich angewendet!", "Theme Applied", 'OK', 'Information')
-            } else {
-                [System.Windows.MessageBox]::Show("Bitte wÃ¤hlen Sie zuerst ein Theme aus der Liste.", "No Theme Selected", 'OK', 'Warning')
-            }
-        } catch {
-            Log "Error applying theme: $($_.Exception.Message)" 'Error'
-            [System.Windows.MessageBox]::Show("Fehler beim Anwenden des Themes: $($_.Exception.Message)", "Theme Error", 'OK', 'Error')
-        }
-    })
-}
-
-
-# Alias button for test compatibility - applies same functionality
-if ($btnApplyTheme) {
-    $btnApplyTheme.Add_Click({
-        # Apply the selected theme instantly - same as main button functionality
-        if ($btnOptionsApplyTheme) {
-            $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-        }
-    })
-}
-                if ($cmbOptionsTheme) {
-                    foreach ($item in $cmbOptionsTheme.Items) {
-                        if ($item.Tag -eq $selectedTheme) {
-                            if ($cmbOptionsTheme.SelectedItem -ne $item) {
-                                $cmbOptionsTheme.SelectedItem = $item
-                            }
-                            break
-                        }
-                    }
-                }
-
-                $btnOptionsApplyTheme.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
-            } else {
-                [System.Windows.MessageBox]::Show("Please select a theme first.", "Theme", 'OK', 'Warning')
-            }
-        } catch {
-            Log "Error applying theme from header: $($_.Exception.Message)" 'Error'
-        }
-    })
-}
-
-if ($btnApplyScale) {
-    $btnApplyScale.Add_Click({
-        try {
-            if ($cmbUIScale.SelectedItem -and $cmbUIScale.SelectedItem.Tag) {
-                $scaleValue = [double]$cmbUIScale.SelectedItem.Tag
-                $scalePercent = $cmbUIScale.SelectedItem.Content
 
                 Log "Applying UI scale: $scalePercent (factor: $scaleValue)" 'Info'
 
@@ -11034,9 +10922,6 @@ if ($btnApplyScale) {
 
                 Log "UI scale '$scalePercent' applied successfully" 'Success'
                 [System.Windows.MessageBox]::Show("UI scale '$scalePercent' has been applied successfully!", "Scale Applied", 'OK', 'Information')
-            } else {
-                [System.Windows.MessageBox]::Show("Please select a scale from the dropdown first.", "No Scale Selected", 'OK', 'Warning')
-            }
         } catch {
             Log "Error applying UI scale: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error applying UI scale: $($_.Exception.Message)", "Scale Application Failed", 'OK', 'Error')
