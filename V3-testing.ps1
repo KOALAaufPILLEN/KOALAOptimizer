@@ -2126,6 +2126,13 @@ function Update-AllUIElementsRecursively {
               } else {
                   Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
               }
+
+              $safeBrush = New-SolidColorBrushSafe $colorString
+              if (& $assignBrush $key $safeBrush) {
+                  return
+              }
+
+              Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
           }
 
           & $setResourceBrush 'ButtonBackgroundBrush' $primaryBrush $Primary
@@ -5300,8 +5307,6 @@ $xamlContent = @'
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#222227"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1B1B1F"/>
     <SolidColorBrush x:Key="HeroChipBrush" Color="#151517"/>
-
-
     <Style x:Key="BaseControlStyle" TargetType="Control">
       <Setter Property="FontFamily" Value="Segoe UI"/>
       <Setter Property="FontSize" Value="13"/>
@@ -5616,7 +5621,23 @@ $xamlContent = @'
           </StackPanel>
         </Grid>
       </Border>
-
+      
+      <Border x:Name="dashboardSummaryStrip" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Profiles:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroProfiles" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Optimizations:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroOptimizations" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Text="--"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Tag="Spacing:8">
+            <TextBlock Text="Auto mode:" Style="{StaticResource SectionSubtext}" FontSize="13"/>
+            <TextBlock x:Name="lblHeroAutoMode" Style="{StaticResource MetricValue}" FontSize="20" Foreground="{DynamicResource DangerBrush}" Text="Off"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
       <Border x:Name="dashboardSummaryRibbon" Grid.Row="1" Margin="26,18,26,12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Tag="Spacing:24">
           <StackPanel Orientation="Horizontal" Tag="Spacing:8">
@@ -5633,7 +5654,6 @@ $xamlContent = @'
           </StackPanel>
         </StackPanel>
       </Border>
-
       <ScrollViewer x:Name="MainScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="26">
         <StackPanel Tag="Spacing:22">
           <StackPanel x:Name="panelDashboard" Visibility="Visible" Tag="Spacing:18">
@@ -6213,7 +6233,6 @@ $xamlContent = @'
               </StackPanel>
             </Border>
           </StackPanel>
-
           <StackPanel x:Name="panelLog" Visibility="Collapsed" Tag="Spacing:16">
             <Border x:Name="activityLogBorder"
                     Background="{DynamicResource ContentBackgroundBrush}"
@@ -6292,7 +6311,6 @@ $xamlContent = @'
       </ScrollViewer>
 
       <Border x:Name="FooterBar" Grid.Row="3" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0" Padding="24,16" Visibility="Collapsed"/>
-
     </Grid>
 
     <StackPanel Visibility="Collapsed">
@@ -10905,6 +10923,18 @@ if ($cmbOptionsTheme) {
                 $selectedTheme = $cmbOptionsTheme.SelectedItem.Tag
                 $themeName = $cmbOptionsTheme.SelectedItem.Content
 
+                # Keep header selection in sync without causing recursion
+                if ($cmbHeaderTheme) {
+                    foreach ($headerItem in $cmbHeaderTheme.Items) {
+                        if ($headerItem.Tag -eq $selectedTheme) {
+                            if ($cmbHeaderTheme.SelectedItem -ne $headerItem) {
+                                $cmbHeaderTheme.SelectedItem = $headerItem
+                            }
+                            break
+                        }
+                    }
+                }
+
                 # Update color preview panel only - no instant theme application
                 Update-ThemeColorPreview -ThemeName $selectedTheme
 
@@ -10968,7 +10998,6 @@ if ($btnApplyTheme) {
         }
     })
 }
-
                 if ($cmbOptionsTheme) {
                     foreach ($item in $cmbOptionsTheme.Items) {
                         if ($item.Tag -eq $selectedTheme) {
