@@ -1966,7 +1966,6 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
                 if ($element.BorderBrush) {
                     Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
-
                 }
             }
             "Border" {
@@ -1974,7 +1973,6 @@ function Update-AllUIElementsRecursively {
 
                 if ($currentBg -match "#161D3F|#1B2345|#141830|#1A1F39|#141830|#14132B|#F8F9FA|#FFFFFF|#F0F2F5") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
-
                 }
                 if ($currentBg -match "#0E101A|#36393F|#0E0E10") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
@@ -2010,18 +2008,21 @@ function Update-AllUIElementsRecursively {
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "WrapPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "DockPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "TabItem" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
@@ -2048,7 +2049,6 @@ function Update-AllUIElementsRecursively {
                 }
                 elseif ($currentForeground -match "#A9A5D9|#A6AACF|#B8B8B8|#777EA6888|#6C757D|#8B949E") {
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.TextSecondary
-
                 }
                 elseif ($currentForeground -match "White|#FFFFFF|Black|#000000|#212529|#1C1E21") {
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
@@ -2082,17 +2082,10 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $comboForeground
                 Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
 
-                    $element.FontSize = 12
-                    $element.FontWeight = 'Normal'
-
                 foreach ($item in $element.Items) {
                     if ($item -is [System.Windows.Controls.ComboBoxItem]) {
                         Set-BrushPropertySafe -Target $item -Property 'Background' -Value $comboBackground
                         Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $comboForeground
-
-                            $item.Padding = "10,6"
-                            $item.MinHeight = 28
-                            $item.FontSize = 12
                     }
                 }
             }
@@ -2122,7 +2115,6 @@ function Update-AllUIElementsRecursively {
                 if ($element.Name -and -not ($element.Name -match "btnNav")) {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
                     Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
-                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
                 } elseif ($element.Name -match "btnNav") {
                     if ($element.Tag -eq "Selected") {
                         Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.SelectedBackground -AllowTransparentFallback
@@ -2131,24 +2123,22 @@ function Update-AllUIElementsRecursively {
                         Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.UnselectedBackground -AllowTransparentFallback
                         Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.UnselectedForeground -AllowTransparentFallback
                     }
-                    Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Primary
-                    Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value 'White'
-    }
-                    Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
+                }
+                Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Hover -AllowTransparentFallback
+            }
             "ScrollViewer" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background
 
-                    if ($element.Template) {
-        $scrollBars = @()
-        Find-AllControlsOfType -Parent $element -ControlType 'System.Windows.Controls.Primitives.ScrollBar' -Collection ([ref]$scrollBars)
-                        foreach ($scrollBar in $scrollBars) {
-                            Set-BrushPropertySafe -Target $scrollBar -Property 'Background' -Value $colors.Secondary
-                            Set-BrushPropertySafe -Target $scrollBar -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
+                if ($element.Template) {
+                    $scrollBars = @()
+                    Find-AllControlsOfType -Parent $element -ControlType 'System.Windows.Controls.Primitives.ScrollBar' -Collection ([ref]$scrollBars)
 
-                        }
+                    foreach ($scrollBar in $scrollBars) {
+                        Set-BrushPropertySafe -Target $scrollBar -Property 'Background' -Value $colors.Secondary
+                        Set-BrushPropertySafe -Target $scrollBar -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
                     }
-                    # Continue if scrollbar theming fails
                 }
+            }
             "ProgressBar" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Primary
@@ -2169,9 +2159,10 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
                 Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
+        }
 
-            $element.InvalidateVisual()
-            # Ignore refresh issues on individual elements
+        $element.InvalidateVisual()
+        # Ignore refresh issues on individual elements
 
         if ($element.Children) {
             foreach ($child in $element.Children) {
@@ -2187,7 +2178,9 @@ function Update-AllUIElementsRecursively {
 
         # Continue on individual element failures
 
-  function Update-ButtonStyles {
+    }
+
+function Update-ButtonStyles {
       param($Primary, $Hover)
 
           $primaryBrush = $null
