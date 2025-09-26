@@ -2506,6 +2506,7 @@ function Apply-ThemeColors {
                 $colors = $global:CustomThemeColors.Clone()
             } else {
                 $colors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
+            }
             $appliedThemeName = $ThemeName
 
         $colors = Normalize-ThemeColorTable $colors
@@ -2521,6 +2522,7 @@ function Apply-ThemeColors {
 
         Log "Wende Theme '$($colors.Name)' an..." 'Info'
 
+        try {
             $cardStartValue = if ($colors.ContainsKey('CardBackgroundStart') -and $colors['CardBackgroundStart']) { $colors['CardBackgroundStart'] } else { $colors.Secondary }
             $cardEndValue = if ($colors.ContainsKey('CardBackgroundEnd') -and $colors['CardBackgroundEnd']) { $colors['CardBackgroundEnd'] } else { $colors.Background }
             $summaryStartValue = if ($colors.ContainsKey('SummaryBackgroundStart') -and $colors['SummaryBackgroundStart']) { $colors['SummaryBackgroundStart'] } else { $cardStartValue }
@@ -2552,7 +2554,6 @@ function Apply-ThemeColors {
             if ($heroBrush -is [System.Windows.Media.Brush]) {
                 try { $form.Resources['HeroCardBrush'] = $heroBrush } catch { Write-Verbose "HeroCardBrush resource assignment skipped" }
             }
-catch { }
 
             $gaugeBackgroundBrush = New-SolidColorBrushSafe $gaugeBackgroundValue
             if (-not $gaugeBackgroundBrush) { $gaugeBackgroundBrush = New-SolidColorBrushSafe $colors.Secondary }
@@ -2602,6 +2603,7 @@ catch { }
                 } else {
                     Write-Verbose "Resource brush '$resourceKey' skipped due to unresolved value"
                 }
+            }
 
             if ($form -and $form.Resources) {
                 Register-BrushResourceKeys -Keys $form.Resources.Keys
@@ -2609,14 +2611,16 @@ catch { }
 
             $targetBrushKeys = @($script:BrushResourceKeys)
             if ($form -and $form.Resources) {
+                try {
                     foreach ($resourceKey in $form.Resources.Keys) {
                         if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($targetBrushKeys -notcontains $resourceKey)) {
                             $targetBrushKeys += $resourceKey
-
                         }
                     }
-                    # Ignore enumeration errors and fall back to the static list
+                } catch {
+                    Write-Verbose "Resource key enumeration skipped: $($_.Exception.Message)"
                 }
+            }
 
             Normalize-BrushResources -Resources $form.Resources -Keys $targetBrushKeys -AllowTransparentFallback
 
@@ -2667,7 +2671,9 @@ catch { }
                     Set-BrushPropertySafe -Target $innerEllipse -Property 'Fill' -Value $innerGaugeBrush
                 }
             }
+        } catch {
             Log "Fehler beim Aktualisieren der Dashboard-Hintergründe: $($_.Exception.Message)" 'Warning'
+        }
 
         $backgroundBrush = New-SolidColorBrushSafe $colors.Background
         $secondaryBrush = New-SolidColorBrushSafe $colors.Secondary
