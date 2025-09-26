@@ -646,18 +646,21 @@ function Test-AdminPrivileges {
         return $false
     }
 
+    try {
         $id = [Security.Principal.WindowsIdentity]::GetCurrent()
         if (-not $id) {
             return $false
-
         }
 
         $principal = New-Object Security.Principal.WindowsPrincipal($id)
         return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch {
         $warningMessage = 'Admin privilege detection unavailable: {0}' -f $_.Exception.Message
         Log $warningMessage 'Warning'
         return $false
     }
+}
 
 function Get-SafeConfigPath {
     param([string]$Filename)
