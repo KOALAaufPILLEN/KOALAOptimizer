@@ -3164,14 +3164,14 @@ function Get-SystemHealthStatus {
     Analyzes system health across multiple dimensions and provides actionable recommendations
     #>
 
+    try {
         $healthData = @{
-            OverallScore = 100
-            Issues = @()
-            Warnings = @()
+            OverallScore    = 100
+            Issues          = @()
+            Warnings        = @()
             Recommendations = @()
-            Status = "Excellent"
-            Metrics = @{}
-
+            Status          = "Excellent"
+            Metrics         = @{}
         }
 
         # 1. Memory Health Check - MemoryUsagePercent gt 90 triggers Critical memory usage alerts
@@ -3203,6 +3203,7 @@ function Get-SystemHealthStatus {
                 $healthData.Recommendations += "Monitor CPU-intensive applications"
                 $healthData.OverallScore -= 8
             }
+        }
 
         # 3. Disk Space Health Check - REMOVED due to PowerShell parser errors
         # The following disk space health check code has been commented out to resolve parsing issues:
@@ -3229,101 +3230,105 @@ function Get-SystemHealthStatus {
                     $healthData.Recommendations += "Consider cleaning up temporary files and uninstalling unused programs"
                     $healthData.OverallScore -= 12
                 }
+            }
             Log "Warning: Could not check disk space: $($_.Exception.Message)" 'Warning'
         #>
 
         # 4. Running Processes Health Check - processCount gt 200 analysis and optimization detection
-            $processCount = (Get-Process).Count
-            $healthData.Metrics.ProcessCount = $processCount
+        $processCount = (Get-Process).Count
+        $healthData.Metrics.ProcessCount = $processCount
 
-            if ($processCount -gt 200) {
-                $healthData.Warnings += "High number of running processes: $processCount"
-                $healthData.Recommendations += "Consider using Task Manager to close unnecessary processes"
-                $healthData.OverallScore -= 8
+        if ($processCount -gt 200) {
+            $healthData.Warnings += "High number of running processes: $processCount"
+            $healthData.Recommendations += "Consider using Task Manager to close unnecessary processes"
+            $healthData.OverallScore -= 8
+        }
 
-            }
+        # Check for known problematic processes
+        $problematicProcesses = Get-Process | Where-Object {
+            $_.ProcessName -match "miner|crypto|torrent" -and $_.WorkingSet -gt 100MB
+        }
 
-            # Check for known problematic processes
-            $problematicProcesses = Get-Process | Where-Object {
-                $_.ProcessName -match "miner|crypto|torrent" -and $_.WorkingSet -gt 100MB
-            }
-
-            if ($problematicProcesses) {
-                $healthData.Warnings += "Detected potentially problematic processes affecting gaming performance"
-                $healthData.Recommendations += "Review and close mining, crypto, or torrent applications while gaming"
-                $healthData.OverallScore -= 15
-            }
-            Log "Warning: Could not analyze running processes: $($_.Exception.Message)" 'Warning'
+        if ($problematicProcesses) {
+            $healthData.Warnings += "Detected potentially problematic processes affecting gaming performance"
+            $healthData.Recommendations += "Review and close mining, crypto, or torrent applications while gaming"
+            $healthData.OverallScore -= 15
+        }
+        Log "Warning: Could not analyze running processes: $($_.Exception.Message)" 'Warning'
 
         # 5. Windows Update Health Check - Microsoft.Update.Session for pendingUpdates analysis
-            $updateSession = New-Object -ComObject Microsoft.Update.Session -ErrorAction SilentlyContinue
-            if ($updateSession) {
-                $updateSearcher = $updateSession.CreateUpdateSearcher()
-                $pendingUpdates = $updateSearcher.Search("IsInstalled=0 and IsHidden=0").Updates.Count
+        $updateSession = New-Object -ComObject Microsoft.Update.Session -ErrorAction SilentlyContinue
+        if ($updateSession) {
+            $updateSearcher = $updateSession.CreateUpdateSearcher()
+            $pendingUpdates = $updateSearcher.Search("IsInstalled=0 and IsHidden=0").Updates.Count
 
-                if ($pendingUpdates -gt 0) {
-                    $healthData.Metrics.PendingUpdates = $pendingUpdates
-                    $healthData.Warnings += "$pendingUpdates pending Windows updates"
-                    $healthData.Recommendations += "Install pending Windows updates for security and performance improvements"
-                    $healthData.OverallScore -= 5
-
-                }
+            if ($pendingUpdates -gt 0) {
+                $healthData.Metrics.PendingUpdates = $pendingUpdates
+                $healthData.Warnings += "$pendingUpdates pending Windows updates"
+                $healthData.Recommendations += "Install pending Windows updates for security and performance improvements"
+                $healthData.OverallScore -= 5
             }
-            # Silent fail for Windows Update check
+        }
+        # Silent fail for Windows Update check
 
         # 6. Gaming Optimization Status - GameBar AllowAutoGameMode and HwSchMode validation
-            $gameMode = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\GameBar" -Name "AllowAutoGameMode" -ErrorAction SilentlyContinue
-            if (-not $gameMode -or $gameMode.AllowAutoGameMode -ne 1) {
-                $healthData.Warnings += "Windows Game Mode is not enabled"
-                $healthData.Recommendations += "Enable Game Mode in Windows Settings for better gaming performance"
-                $healthData.OverallScore -= 5
+        $gameMode = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\GameBar" -Name "AllowAutoGameMode" -ErrorAction SilentlyContinue
+        if (-not $gameMode -or $gameMode.AllowAutoGameMode -ne 1) {
+            $healthData.Warnings += "Windows Game Mode is not enabled"
+            $healthData.Recommendations += "Enable Game Mode in Windows Settings for better gaming performance"
+            $healthData.OverallScore -= 5
+        }
 
-            }
-
-            $hardwareScheduling = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -ErrorAction SilentlyContinue
-            if (-not $hardwareScheduling -or $hardwareScheduling.HwSchMode -ne 2) {
-                $healthData.Warnings += "Hardware GPU Scheduling is not enabled"
-                $healthData.Recommendations += "Enable Hardware GPU Scheduling for improved graphics performance"
-                $healthData.OverallScore -= 5
-            }
-            # Silent fail for optimization checks
+        $hardwareScheduling = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -ErrorAction SilentlyContinue
+        if (-not $hardwareScheduling -or $hardwareScheduling.HwSchMode -ne 2) {
+            $healthData.Warnings += "Hardware GPU Scheduling is not enabled"
+            $healthData.Recommendations += "Enable Hardware GPU Scheduling for improved graphics performance"
+            $healthData.OverallScore -= 5
+        }
+        # Silent fail for optimization checks
 
         # 7. Network Health Check - Win32_NetworkAdapter NetEnabled and NetConnectionStatus analysis
-            $networkAdapters = Get-WmiObject -Class Win32_NetworkAdapter -Filter "NetEnabled=True" -ErrorAction SilentlyContinue
-            $activeAdapters = $networkAdapters | Where-Object { $_.NetConnectionStatus -eq 2 }
+        $networkAdapters = Get-WmiObject -Class Win32_NetworkAdapter -Filter "NetEnabled=True" -ErrorAction SilentlyContinue
+        $activeAdapters = $networkAdapters | Where-Object { $_.NetConnectionStatus -eq 2 }
 
-            if ($activeAdapters.Count -eq 0) {
-                $healthData.Issues += "No active network connections detected"
-                $healthData.Recommendations += "Check network connectivity for online gaming"
-                $healthData.OverallScore -= 20
-
-            } elseif ($activeAdapters.Count -gt 2) {
-                $healthData.Warnings += "Multiple active network adapters detected"
-                $healthData.Recommendations += "Disable unused network adapters to reduce latency"
-                $healthData.OverallScore -= 5
-            # Silent fail for network check
+        if ($activeAdapters.Count -eq 0) {
+            $healthData.Issues += "No active network connections detected"
+            $healthData.Recommendations += "Check network connectivity for online gaming"
+            $healthData.OverallScore -= 20
+        } elseif ($activeAdapters.Count -gt 2) {
+            $healthData.Warnings += "Multiple active network adapters detected"
+            $healthData.Recommendations += "Disable unused network adapters to reduce latency"
+            $healthData.OverallScore -= 5
+        }
+        # Silent fail for network check
 
         # Determine overall status - OverallScore ge 90 Excellent, ge 75 Good, ge 60 Fair, Poor, Critical
         if ($healthData.OverallScore -ge 90) {
             $healthData.Status = "Excellent"
         } elseif ($healthData.OverallScore -ge 75) {
             $healthData.Status = "Good"
+        } elseif ($healthData.OverallScore -ge 60) {
             $healthData.Status = "Fair"
+        } elseif ($healthData.OverallScore -ge 40) {
             $healthData.Status = "Poor"
+        } else {
             $healthData.Status = "Critical"
-
-        return $healthData
-
-        Log "Error performing system health check: $($_.Exception.Message)" 'Error'
-        return @{
-            OverallScore = 0
-            Issues = @("Health check failed")
-            Warnings = @()
-            Recommendations = @("Run as Administrator for complete health analysis")
-            Status = "Unknown"
-            Metrics = @{}
         }
 
+        return $healthData
+    }
+    catch {
+        Log "Error performing system health check: $($_.Exception.Message)" 'Error'
+        return @{
+            OverallScore    = 0
+            Issues          = @('Health check failed')
+            Warnings        = @()
+            Recommendations = @('Run as Administrator for complete health analysis')
+            Status          = 'Unknown'
+            Metrics         = @{}
+        }
+    }
+}
 function Update-SystemHealthSummary {
         $status = if ($global:SystemHealthData.HealthStatus) { $global:SystemHealthData.HealthStatus } else { 'Not Run' }
         $score = $global:SystemHealthData.HealthScore
