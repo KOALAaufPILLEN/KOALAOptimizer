@@ -97,6 +97,7 @@ function Set-BorderBrushSafe {
 
     if (-not $Element) { return }
 
+    try {
         # Check if element supports BorderBrush
         if ($Element.GetType().GetProperty("BorderBrush")) {
             Set-BrushPropertySafe -Target $Element -Property 'BorderBrush' -Value $BorderBrushValue -AllowTransparentFallback
@@ -107,11 +108,11 @@ function Set-BorderBrushSafe {
         if ($BorderThicknessValue -and $Element.GetType().GetProperty("BorderThickness")) {
             $Element.BorderThickness = $BorderThicknessValue
         }
-        # Sealed object exception - skip assignment
-        Write-Verbose "BorderBrush assignment skipped due to sealed object (compatible with .NET Framework 4.8)"
-        # Other exceptions - log but don't fail
+    }
+    catch {
         Write-Verbose "BorderBrush assignment failed: $($_.Exception.Message)"
     }
+}
 
 # ---------- CENTRALIZED THEME ARRAY - ONLY CHANGE HERE! ----------
 # ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
