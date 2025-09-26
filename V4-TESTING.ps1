@@ -2181,106 +2181,110 @@ function Update-AllUIElementsRecursively {
     }
 
 function Update-ButtonStyles {
-      param($Primary, $Hover)
+    param($Primary, $Hover)
 
-          $primaryBrush = $null
-          if ($Primary) {
-              $primaryBrush = New-SolidColorBrushSafe $Primary
+    try {
+        $primaryBrush = $null
+        if ($Primary) {
+            $primaryBrush = New-SolidColorBrushSafe $Primary
+        }
 
-          }
+        $hoverBrush = $null
+        if ($Hover) {
+            $hoverBrush = New-SolidColorBrushSafe $Hover
+        }
 
-          $hoverBrush = $null
-          if ($Hover) {
-              $hoverBrush = New-SolidColorBrushSafe $Hover
-          }
+        $setResourceBrush = {
+            param($key, $brushCandidate, $colorValue)
 
-          $setResourceBrush = {
-              param($key, $brushCandidate, $colorValue)
+            if (-not $form.Resources.Contains($key)) { return }
 
-              if (-not $form.Resources.Contains($key)) { return }
+            $finalBrush = $null
 
-              $finalBrush = $null
+            if ($brushCandidate) {
+                $finalBrush = Convert-ToBrushResource -Value $brushCandidate
+                if (-not $finalBrush) {
+                    $finalBrush = Convert-ToBrushResource -Value $brushCandidate -AllowTransparentFallback
+                }
+            }
 
-              if ($brushCandidate) {
-                  $finalBrush = Convert-ToBrushResource -Value $brushCandidate
-                  if (-not $finalBrush) {
-                      $finalBrush = Convert-ToBrushResource -Value $brushCandidate -AllowTransparentFallback
-                  }
-              }
+            if (-not $finalBrush) {
+                $colorString = Get-ColorStringFromValue $colorValue
+                if (-not [string]::IsNullOrWhiteSpace($colorString)) {
+                    $finalBrush = Convert-ToBrushResource -Value $colorString
+                    if (-not $finalBrush) {
+                        $finalBrush = Convert-ToBrushResource -Value $colorString -AllowTransparentFallback
+                    }
+                }
+            }
 
-              if (-not $finalBrush) {
-                  $colorString = Get-ColorStringFromValue $colorValue
-                  if (-not [string]::IsNullOrWhiteSpace($colorString)) {
-                      $finalBrush = Convert-ToBrushResource -Value $colorString
-                      if (-not $finalBrush) {
-                          $finalBrush = Convert-ToBrushResource -Value $colorString -AllowTransparentFallback
-                      }
-                  }
-              }
+            if ($finalBrush -is [System.Windows.Media.Brush]) {
+                $form.Resources[$key] = $finalBrush
+            } else {
+                Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
+            }
 
-              if ($finalBrush -is [System.Windows.Media.Brush]) {
-                  $form.Resources[$key] = $finalBrush
-              } else {
-                  Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
-              }
+            if ($finalBrush -is [System.Windows.Media.Brush]) {
+                $form.Resources[$key] = $finalBrush
+            } else {
+                Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
+            }
 
-              if ($finalBrush -is [System.Windows.Media.Brush]) {
-                  $form.Resources[$key] = $finalBrush
-              } else {
-                  Write-Verbose "Skipping resource '$key' update - unable to convert value to a brush"
-              }
+            $safeBrush = New-SolidColorBrushSafe $colorString
+            if ($key -and $safeBrush) {
+                return
+            }
 
-              $safeBrush = New-SolidColorBrushSafe $colorString
-              if ($key -and $safeBrush) {
-                  return
-              }
+            Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
+        }
 
-              Write-Verbose "Skipping resource '$key' update - unable to convert '$colorString' to a brush"
+        # removed invalid call 'ButtonBackgroundBrush' $primaryBrush $Primary
+        # removed invalid call 'ButtonBorderBrush' $primaryBrush $Primary
 
-          # removed invalid call 'ButtonBackgroundBrush' $primaryBrush $Primary
-          # removed invalid call 'ButtonBorderBrush' $primaryBrush $Primary
+        $hoverBrushCandidate = $hoverBrush
+        if (-not $hoverBrushCandidate) { $hoverBrushCandidate = $primaryBrush }
 
-          $hoverBrushCandidate = $hoverBrush
-          if (-not $hoverBrushCandidate) { $hoverBrushCandidate = $primaryBrush }
+        $hoverColorValue = $Hover
+        if (-not $hoverColorValue) { $hoverColorValue = $Primary }
 
-          $hoverColorValue = $Hover
-          if (-not $hoverColorValue) { $hoverColorValue = $Primary }
+        # removed invalid call 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
+        # removed invalid call 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
 
-          # removed invalid call 'ButtonHoverBrush' $hoverBrushCandidate $hoverColorValue
-          # removed invalid call 'ButtonPressedBrush' $hoverBrushCandidate $hoverColorValue
+        $buttons = @()
+        Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
 
-          $buttons = @()
-          Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Button' -Collection ([ref]$buttons)
+        $modernStyle = $form.Resources['ModernButton']
+        foreach ($button in $buttons) {
+            if ($modernStyle -and $button.Style -eq $modernStyle) {
+                if ($primaryBrush) {
+                    Set-BrushPropertySafe -Target $button -Property 'Background' -Value $primaryBrush
+                    Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $primaryBrush
+                } elseif ($Primary) {
+                    Set-BrushPropertySafe -Target $button -Property 'Background' -Value $Primary
+                    Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $Primary
+                }
+            }
+        }
 
-          $modernStyle = $form.Resources['ModernButton']
-          foreach ($button in $buttons) {
-              if ($modernStyle -and $button.Style -eq $modernStyle) {
-                  if ($primaryBrush) {
-                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $primaryBrush
-                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $primaryBrush
-                  } elseif ($Primary) {
-                      Set-BrushPropertySafe -Target $button -Property 'Background' -Value $Primary
-                      Set-BrushPropertySafe -Target $button -Property 'BorderBrush' -Value $Primary
-                  }
-              }
-
-          Normalize-BrushResources -Resources $form.Resources -Keys @('ButtonBackgroundBrush','ButtonBorderBrush','ButtonHoverBrush','ButtonPressedBrush') -AllowTransparentFallback
-
-          $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
-          Log $errorMessage 'Warning'
+        Normalize-BrushResources -Resources $form.Resources -Keys @('ButtonBackgroundBrush','ButtonBorderBrush','ButtonHoverBrush','ButtonPressedBrush') -AllowTransparentFallback
+    } catch {
+        $errorMessage = 'Error updating button styles: {0}' -f $_.Exception.Message
+        Log $errorMessage 'Warning'
+    }
+}
 
 function Update-ComboBoxStyles {
     param($Background, $Foreground, $Border, $ThemeName = 'Nebula')
 
+    try {
         $themeColors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
         if ($themeColors -and $themeColors.ContainsKey('IsLight')) {
             $isLight = [bool]$themeColors['IsLight']
-
         }
 
-    $comboBoxes = @()
-    Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.ComboBox' -Collection ([ref]$comboBoxes)
+        $comboBoxes = @()
+        Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.ComboBox' -Collection ([ref]$comboBoxes)
 
         $actualBackground = if ($isLight) {
             'White'
@@ -2288,11 +2292,13 @@ function Update-ComboBoxStyles {
             $themeColors.Secondary
         } else {
             $Background
+        }
 
         $actualForeground = if ($themeColors -and $themeColors.Text) {
             $themeColors.Text
         } else {
             $Foreground
+        }
 
         $itemBackground = if ($isLight) { 'White' } else { $actualBackground }
         $itemForeground = $actualForeground
@@ -2302,8 +2308,10 @@ function Update-ComboBoxStyles {
             Set-BrushPropertySafe -Target $combo -Property 'Foreground' -Value $actualForeground
             Set-BrushPropertySafe -Target $combo -Property 'BorderBrush' -Value $Border -AllowTransparentFallback
 
+            try {
                 $combo.FontSize = 13
                 $combo.FontWeight = 'Normal'
+            } catch {
                 Write-Verbose 'ComboBox font styling skipped for compatibility'
             }
 
@@ -2312,32 +2320,41 @@ function Update-ComboBoxStyles {
                     Set-BrushPropertySafe -Target $item -Property 'Background' -Value $itemBackground
                     Set-BrushPropertySafe -Target $item -Property 'Foreground' -Value $itemForeground
 
+                    try {
                         $item.Padding = '12,6'
                         $item.MinHeight = 30
                         $item.FontSize = 13
+                    } catch {
                         Write-Verbose 'ComboBoxItem styling skipped for compatibility'
                     }
                 }
+            }
 
+            try {
                 $combo.InvalidateVisual()
                 $combo.UpdateLayout()
+            } catch {
                 Write-Verbose 'ComboBox refresh skipped for compatibility'
-
+            }
+        }
+    } catch {
         $errorMessage = 'Error updating ComboBox styles: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
+    }
+}
 
 function Update-TextStyles {
     param($Foreground, $Header, $ThemeName = 'Nebula')
 
+    try {
         $colors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
         if ($colors -and $colors.ContainsKey('IsLight')) {
             $isLight = [bool]$colors['IsLight']
-
         }
 
-    $textBlocks = @()
-    Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.TextBlock' -Collection ([ref]$textBlocks)
+        $textBlocks = @()
+        Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.TextBlock' -Collection ([ref]$textBlocks)
 
         foreach ($textBlock in $textBlocks) {
             if ($textBlock.Tag -eq 'AccentText') { continue }
@@ -2350,9 +2367,9 @@ function Update-TextStyles {
 
             Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $targetColor
 
+            try {
                 if (-not $textBlock.FontSize -or $textBlock.FontSize -lt 11) {
                     $textBlock.FontSize = 11
-
                 }
 
                 if ($isLight) {
@@ -2361,26 +2378,33 @@ function Update-TextStyles {
                         Set-BrushPropertySafe -Target $textBlock -Property 'Foreground' -Value $colors.TextSecondary
                     }
                 }
+            } catch {
                 Write-Verbose 'TextBlock enhancement skipped for compatibility'
             }
+        }
 
-    $labels = @()
-    Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Label' -Collection ([ref]$labels)
+        $labels = @()
+        Find-AllControlsOfType -Parent $form -ControlType 'System.Windows.Controls.Label' -Collection ([ref]$labels)
 
         foreach ($label in $labels) {
             Set-BrushPropertySafe -Target $label -Property 'Foreground' -Value $Foreground
+
+            try {
                 if (-not $label.FontSize -or $label.FontSize -lt 11) {
                     $label.FontSize = 11
-
                 }
                 if ($isLight) {
                     $label.FontWeight = 'Normal'
                 }
+            } catch {
                 Write-Verbose 'Label enhancement skipped for compatibility'
             }
-
+        }
+    } catch {
         $errorMessage = 'Error updating text styles: {0}' -f $_.Exception.Message
         Log $errorMessage 'Warning'
+    }
+}
 
 function Update-ThemeColorPreview {
     param([string]$ThemeName)
@@ -2389,9 +2413,9 @@ function Update-ThemeColorPreview {
         return
     }
 
+    try {
         $colors = if ($ThemeName -eq 'Custom' -and $global:CustomThemeColors) {
             $global:CustomThemeColors
-
         } else {
             Get-ThemeColors -ThemeName $ThemeName
         }
@@ -2421,7 +2445,10 @@ function Update-ThemeColorPreview {
         }
 
         Log "Farb-Vorschau für '$($colors.Name)' aktualisiert" 'Info'
+    } catch {
         Log "Fehler bei Farb-Vorschau: $($_.Exception.Message)" 'Warning'
+    }
+}
 
 function Apply-ThemeColors {
     [CmdletBinding(DefaultParameterSetName='ByTheme')]
