@@ -692,8 +692,11 @@ function Get-SafeConfigPath {
         }
 
         if (-not (Test-Path $script:SafeConfigDirectory)) {
+            try {
                 New-Item -ItemType Directory -Path $script:SafeConfigDirectory -Force | Out-Null
                 Log "Created safe configuration directory: $script:SafeConfigDirectory" 'Info'
+            }
+            catch {
                 Log "Failed to create safe configuration directory: $script:SafeConfigDirectory - $($_.Exception.Message)" 'Warning'
             }
         }
