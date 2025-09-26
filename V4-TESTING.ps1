@@ -3646,21 +3646,29 @@ function Show-SystemHealthDialog {
 
         $btnOptimizeNow.Add_Click({
             if ($btnApply) {
-                Log "Quick optimization triggered from System Health dialog" 'Info'
-                $healthWindow.Close()
+                try {
+                    Log "Quick optimization triggered from System Health dialog" 'Info'
+                    $healthWindow.Close()
 
                     $btnApply.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent))
+                } catch {
                     Log "Error triggering optimization from health dialog: $($_.Exception.Message)" 'Error'
+                    [System.Windows.MessageBox]::Show("Could not start quick optimization: $($_.Exception.Message)", "Optimization Error", 'OK', 'Error')
                 }
             } else {
                 [System.Windows.MessageBox]::Show("Quick optimization is not available. Please use the main optimization features.", "Optimization", 'OK', 'Information')
+            }
+        })
 
         $btnOpenTaskManager.Add_Click({
+            try {
                 Start-Process "taskmgr.exe" -ErrorAction Stop
                 Log "Task Manager opened from System Health dialog" 'Info'
+            } catch {
                 Log "Error opening Task Manager: $($_.Exception.Message)" 'Warning'
                 [System.Windows.MessageBox]::Show("Could not open Task Manager: $($_.Exception.Message)", "Task Manager Error", 'OK', 'Warning')
             }
+        })
 
         $btnCloseHealth.Add_Click({
             Log "System Health dialog closed by user" 'Info'
