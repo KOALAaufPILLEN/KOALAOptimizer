@@ -319,18 +319,21 @@ function Get-SystemPerformanceMetrics {
 
         }
 
-        # Get CPU usage
-            $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
-            $metrics.CPU = [math]::Round($cpu.Average, 1)
-            $metrics.CPU = 0
-        }
+        try {
+            # Get CPU usage
+                $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
+                $metrics.CPU = [math]::Round($cpu.Average, 1)
 
-        # Get Memory usage
-            $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
-            $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
-            $usedMemory = $totalMemory - $availableMemory
-            $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
+            # Get Memory usage
+                $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
+                $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
+                $usedMemory = $totalMemory - $availableMemory
+                $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
+        }
+        catch {
+            $metrics.CPU = 0
             $metrics.Memory = 0
+        }
 
         if ($Detailed) {
             # Add more detailed metrics if needed
@@ -339,13 +342,7 @@ function Get-SystemPerformanceMetrics {
         }
 
         return $metrics
-        # Return default metrics on error
-        return @{
-            CPU = 0
-            Memory = 0
-            Disk = 0
-            Network = 0
-        }
+}
 
 function Ensure-NavigationVisibility {
     param([System.Windows.Controls.Panel]$NavigationPanel)
