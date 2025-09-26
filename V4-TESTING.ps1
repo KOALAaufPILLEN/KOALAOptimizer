@@ -2891,17 +2891,21 @@ function Switch-Theme {
 
         Log "Wechsle zu Theme '$($themeColors.Name)'..." 'Info'
 
-        if (${function:Apply-ThemeColors}) {
-            & ${function:Apply-ThemeColors} -ThemeName $ThemeName
-        } else {
-            Log "Apply-ThemeColors Funktion nicht verfügbar - Theme kann nicht angewendet werden" 'Error'
-            return
-
-        $form.Dispatcher.Invoke([action]{
-
-                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
-                Write-Verbose "Switch-Theme background refresh skipped: $($_.Exception.Message)"
+        try {
+            if (${function:Apply-ThemeColors}) {
+                & ${function:Apply-ThemeColors} -ThemeName $ThemeName
+            } else {
+                Log "Apply-ThemeColors Funktion nicht verfügbar - Theme kann nicht angewendet werden" 'Error'
+                return
             }
+
+            $form.Dispatcher.Invoke([action]{
+                try {
+                    Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
+                } catch {
+                    Write-Verbose "Switch-Theme background refresh skipped: $($_.Exception.Message)"
+                }
+            })
 
             $form.InvalidateVisual()
             $form.InvalidateMeasure()
@@ -2912,6 +2916,7 @@ function Switch-Theme {
                 $global:NavigationButtonNames
             } else {
                 @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
+            }
 
             foreach ($btnName in $navButtons) {
                 $btn = $form.FindName($btnName)
@@ -2928,6 +2933,7 @@ function Switch-Theme {
                     $btn.InvalidateMeasure()
                     $btn.UpdateLayout()
                 }
+            }
 
             if ($form.Children -and $form.Children.Count -gt 0) {
                 $firstChild = $form.Children[0]
@@ -2943,9 +2949,12 @@ function Switch-Theme {
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[0] -Property 'Background' -Value $themeColors.SidebarBg
                             }
                             if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
-                                try { Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
+                                try {
+                                    Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg
+                                } catch {
+                                    Write-Verbose "Sidebar scroll background skipped"
+                                }
                             }
-catch { }
                             if ($sidebarGrid.Children.Count -gt 2) {
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'Background' -Value $themeColors.SidebarBg
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
@@ -2997,80 +3006,92 @@ catch { }
             }
 
             if ($activityLogBorder) {
+                try {
                     Set-BrushPropertySafe -Target $activityLogBorder -Property 'Background' -Value $themeColors.LogBg
                     Set-BorderBrushSafe -Element $activityLogBorder -BorderBrushValue $themeColors.Accent -BorderThicknessValue '0,0,0,2'
                     $activityLogBorder.InvalidateVisual()
                     $activityLogBorder.UpdateLayout()
+                } catch {
                     Write-Verbose "Activity log border update skipped: $($_.Exception.Message)"
                 }
-
-            $form.InvalidateVisual()
-            $form.UpdateLayout()
-
-
-        Start-Sleep -Milliseconds 100
-
-        $form.Dispatcher.BeginInvoke([action]{
-            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
-            $form.InvalidateVisual()
-            $form.UpdateLayout()
-
-            $navButtons = if ($global:NavigationButtonNames) {
-                $global:NavigationButtonNames
-            } else {
-                @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
             }
 
-            foreach ($btnName in $navButtons) {
-                $btn = $form.FindName($btnName)
-                if ($btn) {
-                    if ($btn.Tag -eq "Selected") {
-                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
-                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
-                    } else {
-                        Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
-                        Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
-                    }
-                    $btn.InvalidateVisual()
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
+
+            Start-Sleep -Milliseconds 100
+
+            $form.Dispatcher.BeginInvoke([action]{
+                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $themeColors.Background
+                $form.InvalidateVisual()
+                $form.UpdateLayout()
+
+                $navButtons = if ($global:NavigationButtonNames) {
+                    $global:NavigationButtonNames
+                } else {
+                    @('btnNavDashboard', 'btnNavBasicOpt', 'btnNavAdvanced', 'btnNavGames', 'btnNavOptions', 'btnNavBackup', 'btnNavLog')
                 }
 
+                foreach ($btnName in $navButtons) {
+                    $btn = $form.FindName($btnName)
+                    if ($btn) {
+                        if ($btn.Tag -eq "Selected") {
+                            Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.SelectedBackground -AllowTransparentFallback
+                            Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.SelectedForeground -AllowTransparentFallback
+                        } else {
+                            Set-BrushPropertySafe -Target $btn -Property 'Background' -Value $themeColors.UnselectedBackground -AllowTransparentFallback
+                            Set-BrushPropertySafe -Target $btn -Property 'Foreground' -Value $themeColors.UnselectedForeground -AllowTransparentFallback
+                        }
+                        $btn.InvalidateVisual()
+                    }
+                }
+            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
 
-        Start-Sleep -Milliseconds 150
+            Start-Sleep -Milliseconds 150
 
-        $form.Dispatcher.BeginInvoke([action]{
-            Update-AllUIElementsRecursively -element $form -colors $themeColors
+            $form.Dispatcher.BeginInvoke([action]{
+                Update-AllUIElementsRecursively -element $form -colors $themeColors
 
-            $form.InvalidateVisual()
-            $form.UpdateLayout()
+                $form.InvalidateVisual()
+                $form.UpdateLayout()
 
-        }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+            }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
 
-        if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
-            $currentSection = $global:CurrentAdvancedSection
-            $themeForHighlight = if ($appliedThemeName) { $appliedThemeName } else { $ThemeName }
+            if ($global:CurrentPanel -eq 'Advanced' -and $global:CurrentAdvancedSection) {
+                $currentSection = $global:CurrentAdvancedSection
+                $themeForHighlight = if ($appliedThemeName) { $appliedThemeName } else { $ThemeName }
 
-                $form.Dispatcher.BeginInvoke([action]{
-                    Set-ActiveAdvancedSectionButton -Section $currentSection -CurrentTheme $themeForHighlight
+                try {
+                    $form.Dispatcher.BeginInvoke([action]{
+                        Set-ActiveAdvancedSectionButton -Section $currentSection -CurrentTheme $themeForHighlight
 
-                }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
-                Log "Could not refresh advanced section highlight: $($_.Exception.Message)" 'Warning'
+                    }, [System.Windows.Threading.DispatcherPriority]::Background) | Out-Null
+                } catch {
+                    Log "Could not refresh advanced section highlight: $($_.Exception.Message)" 'Warning'
+                }
             }
 
-        Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
+            Log "[OK] Theme '$($themeColors.Name)' erfolgreich angewendet mit umfassendem UI-Refresh!" 'Success'
 
-        if ($ThemeName -ne 'Custom') {
-            Update-ThemeColorPreview -ThemeName $ThemeName
+            if ($ThemeName -ne 'Custom') {
+                Update-ThemeColorPreview -ThemeName $ThemeName
+            }
+        } catch {
+            Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
+
+            try {
+                if (${function:Apply-ThemeColors}) {
+                    & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
+                    Log "Standard-Theme als Fallback angewendet" 'Info'
+                } else {
+                    Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
+                }
+            } catch {
+                Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
+            }
         }
 
-        Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
-
-            if (${function:Apply-ThemeColors}) {
-                & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
-                Log "Standard-Theme als Fallback angewendet" 'Info'
-
-            } else {
-                Log "Fallback-Theme konnte nicht geladen werden (Function nicht verfügbar)" 'Error'
-            Log "KRITISCHER FEHLER: Kein Theme kann angewendet werden." 'Error'
+}
 
 # Log functions moved to top of script to fix call order issues
 
