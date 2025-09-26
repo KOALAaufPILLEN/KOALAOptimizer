@@ -13035,33 +13035,41 @@ Start-PerformanceMonitoring
 Log "Game detection monitoring remains off until Auto-Optimize is enabled" 'Info'
 
 # Show the form
-Normalize-VisualTreeBrushes -Root $form
+try {
+    Normalize-VisualTreeBrushes -Root $form
 
-$finalBrushKeys = @($script:BrushResourceKeys)
-if ($form -and $form.Resources) {
-    Register-BrushResourceKeys -Keys $form.Resources.Keys
     $finalBrushKeys = @($script:BrushResourceKeys)
+    if ($form -and $form.Resources) {
+        Register-BrushResourceKeys -Keys $form.Resources.Keys
+        $finalBrushKeys = @($script:BrushResourceKeys)
         foreach ($resourceKey in $form.Resources.Keys) {
             if ($resourceKey -is [string] -and $resourceKey.EndsWith('Brush') -and ($finalBrushKeys -notcontains $resourceKey)) {
                 $finalBrushKeys += $resourceKey
+            }
+        }
+    }
 
-        # Ignore enumeration issues during final normalization
-
-Normalize-BrushResources -Resources $form.Resources -Keys $finalBrushKeys -AllowTransparentFallback
+    # Ignore enumeration issues during final normalization
+    Normalize-BrushResources -Resources $form.Resources -Keys $finalBrushKeys -AllowTransparentFallback
     $form.ShowDialog() | Out-Null
+}
+catch {
     Write-Host "Error displaying form: $($_.Exception.Message)" -ForegroundColor Red
-} finally {
+}
+finally {
     # Cleanup
 
-        # Stop performance monitoring
-        Stop-PerformanceMonitoring
+    # Stop performance monitoring
+    Stop-PerformanceMonitoring
 
-        # Stop game detection monitoring
-        Stop-GameDetectionMonitoring
+    # Stop game detection monitoring
+    Stop-GameDetectionMonitoring
 
+    # Cleanup timer precision
+    [WinMM]::timeEndPeriod(1) | Out-Null
 
-        # Cleanup timer precision
-        [WinMM]::timeEndPeriod(1) | Out-Null
+    if ($dashboardLogPanel) { $dashboardLogPanel.Visibility = 'Visible'; $dashboardLogPanel.Height = 260 }
+}
 # - Service Management (Xbox, Telemetry, Search, Print Spooler, Superfetch)
 # - Engine-specific optimizations (Unreal, Unity, Source, Frostbite, RED Engine, Creation Engine)
 # - Special optimizations (DLSS, RTX, Vulkan, OpenGL, Physics, Frame Pacing)
@@ -13090,9 +13098,6 @@ $btnAdvanced.Add_Click({
     Show-AdvancedSection -Section 'System'
     Show-AdvancedSection -Section 'Services'
 })
-
-    if ($dashboardLogPanel) { $dashboardLogPanel.Visibility = 'Visible'; $dashboardLogPanel.Height = 260 }
-}
 
 function Apply-UiScale {
     param([double]$Scale = 1.0)
