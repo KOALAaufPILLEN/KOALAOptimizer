@@ -58,10 +58,15 @@ if (-not $script:IsWindowsPlatform) {
         'System.Windows.Forms'
         'Microsoft.VisualBasic'
     )
-    Add-Type -AssemblyName $assemblies -ErrorAction Stop
-    $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
-    Write-Host $warning -ForegroundColor Yellow
-    return
+    try {
+        Add-Type -AssemblyName $assemblies -ErrorAction Stop
+    }
+    catch {
+        Write-Host "Error loading WPF assemblies: $($_.Exception.Message)" -ForegroundColor Red
+        $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
+        Write-Host $warning -ForegroundColor Yellow
+        return
+    }
 
 $BrushConverter = New-Object System.Windows.Media.BrushConverter
 
