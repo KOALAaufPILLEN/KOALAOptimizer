@@ -559,24 +559,24 @@ function Log {
 
         # Enhanced context logging for comprehensive user action tracking
         if ($msg -match "Theme|Game|Mode|Optimization|Service|System|Network|Settings|Backup|Import|Export|Search") {
-                $adminStatus = if (Get-Command Test-AdminPrivileges -ErrorAction SilentlyContinue) { Test-AdminPrivileges } else { "Unknown" }
-                $contextMessage = "[$global:CachedTimestamp] [Context] [$category] User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus"
-                Add-Content -Path $logFilePath -Value $contextMessage -Encoding UTF8 -ErrorAction SilentlyContinue
+            $adminStatus = if (Get-Command Test-AdminPrivileges -ErrorAction SilentlyContinue) { Test-AdminPrivileges } else { "Unknown" }
+            $contextMessage = "[$global:CachedTimestamp] [Context] [$category] User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus"
+            Add-Content -Path $logFilePath -Value $contextMessage -Encoding UTF8 -ErrorAction SilentlyContinue
 
-                # Add to history as well
-                Add-LogToHistory -Message "User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus" -Level "Context" -Category $category
-                # Ignore context logging errors to prevent circular issues
-            }
+            # Add to history as well
+            Add-LogToHistory -Message "User action '$($msg.Split(' ')[0])' in $global:MenuMode mode with Admin: $adminStatus" -Level "Context" -Category $category
+            # Ignore context logging errors to prevent circular issues
+        }
 
         # Additional validation logging for critical operations
         if ($Level -eq 'Error') {
-                $errorContext = "[$global:CachedTimestamp] [ErrorContext] [$category] PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})"
-                Add-Content -Path $logFilePath -Value $errorContext -Encoding UTF8 -ErrorAction SilentlyContinue
+            $errorContext = "[$global:CachedTimestamp] [ErrorContext] [$category] PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})"
+            Add-Content -Path $logFilePath -Value $errorContext -Encoding UTF8 -ErrorAction SilentlyContinue
 
-                # Add to history as well
-                Add-LogToHistory -Message "PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})" -Level "ErrorContext" -Category $category
-                # Ignore additional context logging errors
-            }
+            # Add to history as well
+            Add-LogToHistory -Message "PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})" -Level "ErrorContext" -Category $category
+            # Ignore additional context logging errors
+        }
 
         # Enhanced error reporting for administrator mode and permission issues
         $errorContext = ""
@@ -591,54 +591,57 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
 
     if ($global:LogBox -and $global:LogBoxAvailable) {
-            # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
-            $global:LogBox.Dispatcher.Invoke({
-                try {
-                    # Check if LogBox is still accessible
-                    if ($global:LogBox -and $global:LogBox.IsEnabled -ne $null) {
-                        $global:LogBox.AppendText("$logMessage`r`n")
-                        $global:LogBox.ScrollToEnd()
+        # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
+        $global:LogBox.Dispatcher.Invoke({
+            try {
+                # Check if LogBox is still accessible
+                if ($global:LogBox -and $global:LogBox.IsEnabled -ne $null) {
+                    $global:LogBox.AppendText("$logMessage`r`n")
+                    $global:LogBox.ScrollToEnd()
 
-                        # Maintain detailed log backup for toggle functionality
-                        if (-not $global:DetailedLogBackup) {
-                            $global:DetailedLogBackup = ""
-                        }
-                        $global:DetailedLogBackup += "$logMessage`r`n"
-
-                        # If in compact mode, apply filtering
-                        if ($global:LogViewDetailed -eq $false) {
-                            if ($msg -match "Success|Error|Warning|Applied|Optimization") {
-                                # Important messages are shown in compact view
-
-                            } else {
-                                # Hide non-essential messages in compact view
-                                $currentText = $global:LogBox.Text
-                                $lines = $currentText -split "`r`n"
-                                $filteredLines = $lines | Where-Object {
-                                    $_ -match "Success|Error|Warning|Applied|Optimization"
-                                } | Select-Object -Last 20
-                                $global:LogBox.Text = ($filteredLines -join "`r`n")
-                            }
-                        }
-
-                        # Force immediate UI update to ensure text appears
-                        $global:LogBox.InvalidateVisual()
-                        $global:LogBox.UpdateLayout()
-
-                        # Process pending UI operations
-                        if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke({ }, [System.Windows.Threading.DispatcherPriority]::Render)
-                        }
-                    } else {
-                        $global:LogBoxAvailable = $false
-                        Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+                    # Maintain detailed log backup for toggle functionality
+                    if (-not $global:DetailedLogBackup) {
+                        $global:DetailedLogBackup = ""
                     }
+                    $global:DetailedLogBackup += "$logMessage`r`n"
+
+                    # If in compact mode, apply filtering
+                    if ($global:LogViewDetailed -eq $false) {
+                        if ($msg -match "Success|Error|Warning|Applied|Optimization") {
+                            # Important messages are shown in compact view
+
+                        } else {
+                            # Hide non-essential messages in compact view
+                            $currentText = $global:LogBox.Text
+                            $lines = $currentText -split "`r`n"
+                            $filteredLines = $lines | Where-Object {
+                                $_ -match "Success|Error|Warning|Applied|Optimization"
+                            } | Select-Object -Last 20
+                            $global:LogBox.Text = ($filteredLines -join "`r`n")
+                        }
+                    }
+
+                    # Force immediate UI update to ensure text appears
+                    $global:LogBox.InvalidateVisual()
+                    $global:LogBox.UpdateLayout()
+
+                    # Process pending UI operations
+                    if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke({ }, [System.Windows.Threading.DispatcherPriority]::Render)) {
+                        # No additional action needed; ensures pending UI operations are processed
+                    }
+                } else {
                     $global:LogBoxAvailable = $false
                     Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
-                    Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
                 }
-            $global:LogBoxAvailable = $false
-            Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+            } catch {
+                $global:LogBoxAvailable = $false
+                Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+                Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
+            }
+        })
+    } else {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+    }
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
