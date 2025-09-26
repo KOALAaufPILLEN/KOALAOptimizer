@@ -2782,9 +2782,10 @@ catch { }
                     Find-ScrollViewers $element.Content
                 } elseif ($element.Child) {
                     Find-ScrollViewers $element.Child
+                }
+            }
 
             $form.Dispatcher.Invoke([action]{
-
                 $form.InvalidateVisual()
                 $form.InvalidateMeasure()
                 $form.InvalidateArrange()
@@ -2794,35 +2795,37 @@ catch { }
                 Find-ScrollViewers $form
 
                 foreach ($scrollViewer in $script:scrollViewers) {
-                        $scrollViewer.InvalidateVisual()
-                        $scrollViewer.UpdateLayout()
-                    }
+                    $scrollViewer.InvalidateVisual()
+                    $scrollViewer.UpdateLayout()
                 }
+            })
 
 
             $form.Dispatcher.BeginInvoke([action]{
+                $backgroundBrush = $null
+                try {
+                    $backgroundBrush = New-SolidColorBrushSafe $colors.Background
+                } catch {
                     $backgroundBrush = $null
-                    try {
-                        $backgroundBrush = New-SolidColorBrushSafe $colors.Background
-                    } catch {
-                        $backgroundBrush = $null
-                    }
+                }
 
-                    if ($backgroundBrush) {
-                        Set-BrushPropertySafe -Target $form -Property 'Background' -Value $backgroundBrush
+                if ($backgroundBrush) {
+                    Set-BrushPropertySafe -Target $form -Property 'Background' -Value $backgroundBrush
+                } else {
+                    $converter = New-Object System.Windows.Media.BrushConverter
+                    $converted = $converter.ConvertFromString($colors.Background)
+                    if ($converted) {
+                        Set-BrushPropertySafe -Target $form -Property 'Background' -Value $converted
                     } else {
-                            $converter = New-Object System.Windows.Media.BrushConverter
-                            $converted = $converter.ConvertFromString($colors.Background)
-                            if ($converted) {
-                                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $converted
+                        Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
+                    }
+                }
+            })
 
-                            } else {
-                                Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
-                            Set-BrushPropertySafe -Target $form -Property 'Background' -Value $colors.Background
-                    Write-Verbose "Background refresh skipped: $($_.Exception.Message)"
+            Write-Verbose "Background refresh skipped: $($_.Exception.Message)"
 
-                $form.InvalidateVisual()
-                $form.UpdateLayout()
+            $form.InvalidateVisual()
+            $form.UpdateLayout()
 
             Log '[OK] Vollständiger UI-Refresh abgeschlossen - alle Änderungen sofort sichtbar!' 'Success'
 
