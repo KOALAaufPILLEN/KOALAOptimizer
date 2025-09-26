@@ -3844,6 +3844,7 @@ function Show-LogSearchDialog {
     Creates a WPF dialog for advanced log searching and filtering
     #>
 
+    try {
         [xml]$logSearchXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -4038,7 +4039,7 @@ function Show-LogSearchDialog {
         # Search function
         $performSearch = {
             $searchTerm = $txtSearchTerm.Text
-            $category = $cmbCategory.SelectedItem.ToString()
+            $category = if ($cmbCategory.SelectedItem) { $cmbCategory.SelectedItem.ToString() } else { 'All' }
 
             $levels = @()
             if ($chkInfo.IsChecked) { $levels += "Info" }
@@ -4057,29 +4058,17 @@ function Show-LogSearchDialog {
         }
 
         # Event handlers
-$btnSearch.Add_Click({
-    try {
-        $searchTerm = $txtSearchTerm.Text
-        $category   = if ($cmbCategory.SelectedItem) { $cmbCategory.SelectedItem.Content } else { 'All' }
-        $levels = @(); if ($chkInfo.IsChecked){$levels+='Info'}; if($chkWarning.IsChecked){$levels+='Warning'}; if($chkError.IsChecked){$levels+='Error'}
-        $results = Search-LogHistory -SearchTerm $searchTerm -Level $levels -Category $category
-        $lstLogResults.ItemsSource = $results
-        $lblResultsInfo.Text = "Search results: $($results.Count) entries (Total: $($global:LogHistory.Count))"
-        Log "Log search performed via button: '$searchTerm'" 'Info'
-} catch { })
-$txtSearchTerm.Add_KeyDown({
-    if ($_.Key -eq 'Return') { $btnSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)) }
-})
-        $levels = @(); if ($chkInfo.IsChecked){$levels+='Info'}; if($chkWarning.IsChecked){$levels+='Warning'}; if($chkError.IsChecked){$levels+='Error'}
-        $results = Search-LogHistory -SearchTerm $searchTerm -Level $levels -Category $category
-        $lstLogResults.ItemsSource = $results
-        $lblResultsInfo.Text = "Search results: $($results.Count) entries (Total: $($global:LogHistory.Count))"
-        Log "Log search performed via button: '$searchTerm'" 'Info'
-})
-            if ($saveDialog.ShowDialog()) {
-                $results = $lstLogResults.ItemsSource
-                Export-LogHistory -Path $saveDialog.FileName -Format "TXT" -FilteredResults $results
+        $btnSearch.Add_Click({
+            try {
+                & $performSearch
+            } catch {
+                Log "Error performing log search: $($_.Exception.Message)" 'Error'
+                [System.Windows.MessageBox]::Show("An error occurred while searching the logs: $($_.Exception.Message)", "Search Error", 'OK', 'Error') | Out-Null
             }
+        })
+
+        $txtSearchTerm.Add_KeyDown({
+            if ($_.Key -eq 'Return') { $btnSearch.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)) }
         })
 
         $btnExportCSV.Add_Click({
@@ -4127,9 +4116,11 @@ $txtSearchTerm.Add_KeyDown({
 
         # Show the window
         $searchWindow.ShowDialog() | Out-Null
-
+    } catch {
         Log "Error showing log search dialog: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error displaying log search window: $($_.Exception.Message)", "Log Search Error", 'OK', 'Error')
+        [System.Windows.MessageBox]::Show("Error displaying log search window: $($_.Exception.Message)", "Log Search Error", 'OK', 'Error') | Out-Null
+    }
+}
 $global:PerformanceTimer = $null
 $global:LastCpuTime = @{ Idle = 0; Kernel = 0; User = 0; Timestamp = [DateTime]::Now }
 
