@@ -13079,6 +13079,7 @@ function Run-QuickOptimizations {
         reg add 'HKCU\System\GameConfigStore' /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 2 /f | Out-Null
         Log 'Quick optimizations applied successfully.' 'Success'
         Log "Quick optimizations failed: $($_.Exception.Message)" 'Error'
+}
 
 $btnQuickOptimize.Add_Click({
     Run-QuickOptimizations
