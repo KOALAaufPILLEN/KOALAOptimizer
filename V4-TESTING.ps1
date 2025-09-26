@@ -3359,6 +3359,9 @@ function Update-SystemHealthSummary {
                 default { $foreground = '#A6AACF' }
             }
 
+        }
+        }
+
         if ($lblDashSystemHealth) {
             $lblDashSystemHealth.Dispatcher.Invoke([Action]{
                 $lblDashSystemHealth.Text = $text
@@ -3366,6 +3369,8 @@ function Update-SystemHealthSummary {
             })
         }
         Log "Error updating dashboard health summary: $($_.Exception.Message)" 'Warning'
+
+}
 
 function Update-SystemHealthDisplay {
     param([switch]$RunCheck)
