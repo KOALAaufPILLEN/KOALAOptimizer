@@ -3417,7 +3417,7 @@ function Show-SystemHealthDialog {
     Creates a WPF dialog displaying comprehensive system health information
     #>
 
-
+    try {
         [xml]$healthDialogXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -3636,6 +3636,7 @@ function Show-SystemHealthDialog {
                 $lblMemoryMetric.Text = "$($data.Metrics.MemoryUsage)%"
             } else {
                 $lblMemoryMetric.Text = '--%'
+            }
 
             # Disk metric intentionally omitted (legacy compatibility)
 
@@ -3648,8 +3649,11 @@ function Show-SystemHealthDialog {
                 $lstRecommendations.ItemsSource = $data.Recommendations
             } else {
                 $lstRecommendations.ItemsSource = @('No recommendations available. Great job!')
+            }
 
             Log "System health dialog updated with cached status: $($data.HealthStatus)" 'Info'
+
+        }
 
         # Event handlers
         $btnRefreshHealth.Add_Click({
@@ -3694,8 +3698,11 @@ function Show-SystemHealthDialog {
         # Show the window
         $healthWindow.ShowDialog() | Out-Null
 
+    } catch {
         Log "Error showing system health dialog: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error displaying system health window: $($_.Exception.Message)", "Health Monitor Error", 'OK', 'Error')
+    }
+}
 
 function Search-LogHistory {
     <#
