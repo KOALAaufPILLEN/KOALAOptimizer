@@ -280,12 +280,14 @@ function Get-ThemeColors {
 
     if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
         return Normalize-ThemeColorTable $global:ThemeDefinitions[$ThemeName]
-    } else {
-        Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
-        return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
-    }
+      } else {
+          Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
+          return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
+      }
 
-function Optimize-LogFile {
+  }
+
+  function Optimize-LogFile {
     param([int]$MaxSizeMB = 10)
 
         $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
