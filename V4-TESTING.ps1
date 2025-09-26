@@ -12771,125 +12771,158 @@ function Invoke-SystemPanelOptimizations {
             Checkbox    = $chkPowerPlanSystem
             Action      = { Apply-PowerPlan }
             Description = 'High performance power plan'
+        }
         [pscustomobject]@{
             Checkbox    = $chkGameDVRSystem
             Action      = { Disable-GameDVR }
             Description = 'Disable Game DVR'
+        }
         [pscustomobject]@{
             Checkbox    = $chkGPUSchedulingSystem
             Action      = { Enable-GPUScheduling }
             Description = 'Enable GPU scheduling'
+        }
         [pscustomobject]@{
             Checkbox    = $chkAdvancedTelemetryDisable
             Action      = { Disable-AdvancedTelemetry }
             Description = 'Advanced telemetry reduction'
+        }
         [pscustomobject]@{
             Checkbox    = $chkMemoryDefragmentation
             Action      = { Enable-MemoryDefragmentation }
             Description = 'Memory defragmentation'
+        }
         [pscustomobject]@{
             Checkbox    = $chkServiceOptimization
             Action      = { Apply-ServiceOptimization }
             Description = 'Service optimization suite'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDiskTweaksAdvanced
             Action      = { Apply-DiskTweaksAdvanced }
             Description = 'Disk tweaks (advanced)'
+        }
         [pscustomobject]@{
             Checkbox    = $chkNetworkLatencyOptimization
             Action      = { Enable-NetworkLatencyOptimization }
             Description = 'Network latency optimization'
+        }
         [pscustomobject]@{
             Checkbox    = $chkFPSSmoothness
             Action      = { Enable-FPSSmoothness }
             Description = 'FPS smoothness tuning'
+        }
         [pscustomobject]@{
             Checkbox    = $chkCPUMicrocode
             Action      = { Optimize-CPUMicrocode }
             Description = 'CPU microcode optimization'
+        }
         [pscustomobject]@{
             Checkbox    = $chkRAMTimings
             Action      = { Optimize-RAMTimings }
             Description = 'RAM timings optimization'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableCortana
             Action      = { Disable-Cortana }
             Description = 'Disable Cortana'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableWindowsUpdate
             Action      = { Optimize-WindowsUpdate }
             Description = 'Optimize Windows Update'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableBackgroundApps
             Action      = { Disable-BackgroundApps }
             Description = 'Disable background apps'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableLocationTracking
             Action      = { Disable-LocationTracking }
             Description = 'Disable location tracking'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableAdvertisingID
             Action      = { Disable-AdvertisingID }
             Description = 'Disable advertising ID'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableErrorReporting
             Action      = { Disable-ErrorReporting }
             Description = 'Disable error reporting'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableCompatTelemetry
             Action      = { Disable-CompatibilityTelemetry }
             Description = 'Disable compatibility telemetry'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableWSH
             Action      = { Disable-WSH }
             Description = 'Disable Windows Script Host'
+        }
     )
 
     # Enhanced Gaming Optimizations
     $enhancedGameOptimizations = @()
     if ($chkDynamicResolution -and $chkDynamicResolution.IsChecked) {
         $enhancedGameOptimizations += 'DynamicResolutionScaling'
+    }
     if ($chkEnhancedFramePacing -and $chkEnhancedFramePacing.IsChecked) {
         $enhancedGameOptimizations += 'EnhancedFramePacing'
+    }
     if ($chkGPUOverclocking -and $chkGPUOverclocking.IsChecked) {
         $enhancedGameOptimizations += 'ProfileBasedGPUOverclocking'
+    }
     if ($chkCompetitiveLatency -and $chkCompetitiveLatency.IsChecked) {
         $enhancedGameOptimizations += 'CompetitiveLatencyReduction'
+    }
 
     if ($enhancedGameOptimizations.Count -gt 0) {
         Apply-FPSOptimizations -OptimizationList $enhancedGameOptimizations
         $summary = 'Enhanced gaming optimizations: ' + ($enhancedGameOptimizations -join ', ')
         [void]$systemActions.Add($summary)
+    }
 
     # Enhanced System Optimizations
     $enhancedSystemSettings = @{}
     if ($chkAutoDiskOptimization -and $chkAutoDiskOptimization.IsChecked) {
         $enhancedSystemSettings.AutoDiskOptimization = $true
+    }
     if ($chkAdaptivePowerManagement -and $chkAdaptivePowerManagement.IsChecked) {
         $enhancedSystemSettings.AdaptivePowerManagement = $true
+    }
     if ($chkEnhancedPagingFile -and $chkEnhancedPagingFile.IsChecked) {
         $enhancedSystemSettings.EnhancedPagingFile = $true
+    }
     if ($chkDirectStorageEnhanced -and $chkDirectStorageEnhanced.IsChecked) {
         $enhancedSystemSettings.DirectStorageEnhanced = $true
+    }
 
     if ($enhancedSystemSettings.Count -gt 0) {
         Apply-EnhancedSystemOptimizations -Settings $enhancedSystemSettings
         $systemSettingsSummary = 'Enhanced system settings: ' + (($enhancedSystemSettings.Keys) -join ', ')
         [void]$systemActions.Add($systemSettingsSummary)
+    }
 
     if ($systemActions.Count -gt 0) {
         $details = $systemActions -join ', '
         Log "System optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No system optimizations were selected in the dedicated System panel' 'Info'
+    }
+}
 
 function Start-SystemBenchmark {
     Log "Starting system benchmark..." 'Info'
 
+    try {
         # Simple CPU and memory benchmark
         $cpuStart = Get-Date
         for ($i = 0; $i -lt 1000000; $i++) {
             [math]::Sqrt($i) | Out-Null
+        }
 
         $cpuTime = (Get-Date) - $cpuStart
 
@@ -12910,17 +12943,24 @@ function Start-SystemBenchmark {
         $message = $results -join "`n"
         [System.Windows.MessageBox]::Show($message, "System Benchmark", 'OK', 'Information')
         Log "System benchmark completed" 'Success'
+    } catch {
         Log "Error running system benchmark: $($_.Exception.Message)" 'Error'
+    }
+}
 
 function Reset-SystemSettings {
     Log "Resetting system settings to default..." 'Info'
 
+    try {
         # Reset common system optimization registry keys
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "SystemResponsiveness" -ErrorAction SilentlyContinue
         Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" -ErrorAction SilentlyContinue
 
         Log "System settings reset to default values" 'Success'
+    } catch {
         Log "Error resetting system settings: $($_.Exception.Message)" 'Error'
+    }
+}
 
 function Invoke-ServicePanelOptimizations {
     Log "Applying service optimizations from dedicated Services panel..." 'Info'
@@ -12930,14 +12970,17 @@ function Invoke-ServicePanelOptimizations {
             Checkbox    = $chkDisableXboxServicesServices
             Action      = { Disable-XboxServices }
             Description = 'Disable Xbox services'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableTelemetryServices
             Action      = { Disable-Telemetry }
             Description = 'Disable telemetry services'
+        }
         [pscustomobject]@{
             Checkbox    = $chkDisableSearchServices
             Action      = { Disable-WindowsSearch }
             Description = 'Disable Windows Search service'
+        }
     )
 
     if ($serviceActions.Count -gt 0) {
@@ -12945,30 +12988,40 @@ function Invoke-ServicePanelOptimizations {
         Log "Service optimizations applied successfully ($details)" 'Success'
     } else {
         Log 'No service optimizations were selected in the dedicated Services panel' 'Info'
+    }
+}
 
 function Show-RunningServices {
     Log "Showing running services..." 'Info'
 
+    try {
         # Get running services
-        $services = Get-Service | Where-Object {$_.Status -eq 'Running'} | Sort-Object Name
+        $services = Get-Service | Where-Object { $_.Status -eq 'Running' } | Sort-Object Name
         $serviceList = $services | ForEach-Object { "$($_.Name) - $($_.DisplayName)" }
 
         # Create a simple list window or show in message box (simplified for this implementation)
         $message = "Running Services (first 20):`n`n" + (($serviceList | Select-Object -First 20) -join "`n")
         if ($serviceList.Count -gt 20) {
             $message += "`n`n... and $($serviceList.Count - 20) more services"
-
+        }
 
         [System.Windows.MessageBox]::Show($message, "Running Services", 'OK', 'Information')
+    } catch {
         Log "Error viewing running services: $($_.Exception.Message)" 'Error'
+    }
+}
 
 function Reset-ServiceSettings {
     Log "Resetting service settings to default..." 'Info'
 
+    try {
         # Reset services to default startup types (simplified implementation)
         # In a real implementation, this would restore original service configurations
         Log "Service settings reset to default values" 'Success'
+    } catch {
         Log "Error resetting service settings: $($_.Exception.Message)" 'Error'
+    }
+}
 
 # ============================================================================
 # END OF SCRIPT - Enhanced Gaming Optimizer with Dedicated Advanced Settings Panels
