@@ -5071,15 +5071,17 @@ function Show-ElevationMessage {
 
     switch ($result) {
         'Yes' {
+            try {
                 $scriptPath = $PSCommandPath
                 if (-not $scriptPath) {
                     $scriptPath = Join-Path $ScriptRoot "koalafixed.ps1"
-
                 }
 
                 Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File `"$scriptPath`"" -Verb RunAs -ErrorAction Stop
                 $form.Close()
                 return $true
+            }
+            catch {
                 Log "Failed to elevate privileges: $($_.Exception.Message)" 'Error'
                 return $false
             }
@@ -5094,6 +5096,7 @@ function Show-ElevationMessage {
             return $false
         }
     }
+}
 
 function Get-SystemInfo {
         $info = @{
