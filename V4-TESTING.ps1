@@ -386,7 +386,9 @@ if ($PSScriptRoot) {
     $ScriptRoot = $PSScriptRoot
 } elseif ($MyInvocation -and $MyInvocation.MyCommand -and $MyInvocation.MyCommand.Path) {
     $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+} else {
     $ScriptRoot = (Get-Location).Path
+}
 
 # Function moved to after helper functions to fix call order
 
