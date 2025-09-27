@@ -9027,8 +9027,11 @@ function Apply-FPSOptimizations {
             }
 
             'MemoryCompressionDisable' {
+                try {
                     Disable-MMAgent -MemoryCompression -ErrorAction Stop
                     Log "Memory compression disabled" 'Success'
+                }
+                catch {
                     Log "Failed to disable memory compression: $($_.Exception.Message)" 'Warning'
                 }
             }
@@ -9040,12 +9043,14 @@ function Apply-FPSOptimizations {
             }
 
             'InterruptModerationOptimization' {
+                try {
                     Get-NetAdapter | ForEach-Object {
                         Set-NetAdapterAdvancedProperty -Name $_.Name -DisplayName "Interrupt Moderation" -DisplayValue "Disabled" -ErrorAction SilentlyContinue
                         Set-NetAdapterAdvancedProperty -Name $_.Name -DisplayName "Interrupt Moderation Rate" -DisplayValue "Off" -ErrorAction SilentlyContinue
-
                     }
                     Log "Interrupt moderation optimized" 'Success'
+                }
+                catch {
                     Log "Network adapter interrupt moderation failed: $($_.Exception.Message)" 'Warning'
                 }
             }
@@ -9149,9 +9154,12 @@ function Apply-FPSOptimizations {
             }
 
             'NetworkLatencyOptimization' {
+                try {
                     netsh int tcp set supplemental internet congestionprovider=ctcp | Out-Null
                     Log "Network latency optimization applied" 'Success'
-                    Log "Failed to apply network latency optimization" 'Warning'
+                }
+                catch {
+                    Log "Failed to apply network latency optimization: $($_.Exception.Message)" 'Warning'
                 }
             }
 
