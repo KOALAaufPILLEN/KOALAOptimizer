@@ -42,7 +42,7 @@ $script:IsWindowsPlatform = $false
     $script:IsWindowsPlatform = ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)
 
 if (-not $script:IsWindowsPlatform) {
-    Write-Host 'KOALA Gaming Optimizer requires Windows because it depends on WPF and Windows-specific APIs.' -ForegroundColor Yellow
+    Write-Host "KOALA Gaming Optimizer requires Windows because it depends on WPF and Windows-specific APIs." -ForegroundColor Yellow
     return
 }
 
