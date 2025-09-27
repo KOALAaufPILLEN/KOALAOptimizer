@@ -1002,7 +1002,6 @@ function Get-ColorStringFromValue {
     if ($ColorValue -is [System.Windows.Media.Brush]) {
         try { return $ColorValue.ToString() } catch { return $null }
     }
-catch { }
 
     if ($ColorValue -is [System.Management.Automation.PSObject]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -1019,7 +1018,6 @@ catch { }
 
         try { return $ColorValue.ToString() } catch { return $null }
     }
-catch { }
 
     if ($ColorValue -is [System.Collections.IDictionary]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -1253,7 +1251,6 @@ function Set-BrushPropertySafe {
             } else {
                 try { $colorString = [string]$colorValue } catch { $colorString = $null }
             }
-catch { }
 
         if (-not [string]::IsNullOrWhiteSpace($colorString)) {
             $converter = Get-SharedBrushConverter
@@ -1475,7 +1472,6 @@ function Find-AllControlsOfType {
                     default {
                         try { $resolvedType = [Type]::GetType("$typeName, PresentationFramework", $false) } catch { }
                     }
-catch { }
                 }
             }
 
@@ -2753,7 +2749,6 @@ function Apply-ThemeColors {
         if ($mainScroll -is [System.Windows.Controls.ScrollViewer]) {
             try { Set-BrushPropertySafe -Target $mainScroll -Property 'Background' -Value [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
         }
-catch { }
 
             Update-AllUIElementsRecursively -element $form -colors $colors
             Log "Rekursive UI-Element-Aktualisierung abgeschlossen" 'Info'
@@ -8014,10 +8009,12 @@ function Show-InstalledGames {
                         }
                     }
                 }
+            } catch {
                 Log "Steam registry detection failed: $($_.Exception.Message)" 'Warning'
             }
 
             # 2. Epic Games Launcher detection
+            try {
                 Log "Searching Epic Games registry..." 'Info'
                 $epicPath = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Epic Games\EpicGamesLauncher" -Name "AppDataPath" -ErrorAction SilentlyContinue
                 if ($epicPath) {
@@ -8037,10 +8034,13 @@ function Show-InstalledGames {
 
                                 }
                                 # Skip invalid manifests
+                            } catch {
+                                Log "Failed to parse Epic manifest $($manifest.FullName): $($_.Exception.Message)" 'Warning'
                             }
                         }
                     }
                 }
+            } catch {
                 Log "Epic Games detection failed: $($_.Exception.Message)" 'Warning'
             }
 
@@ -8354,7 +8354,6 @@ function Set-OptimizeButtonsEnabled {
     foreach ($button in $script:OptimizeSelectedButtons) {
         try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
     }
-catch { }
 }
 
 function Get-GameListPanels {
@@ -8424,6 +8423,7 @@ function Search-GamesForPanel {
                         Log "Found $($steamGames.Count) Steam games" 'Success'
                     }
                 }
+            } catch {
                 Log "Steam detection failed: $($_.Exception.Message)" 'Warning'
             }
 
@@ -8486,6 +8486,7 @@ function Search-GamesForPanel {
                 }
             }
 
+        } catch {
             Log "Enhanced detection encountered error: $($_.Exception.Message)" 'Warning'
         }
 
@@ -11184,6 +11185,7 @@ if ($btnImportConfigOptions) {
 # Backup as .reg file handler
 if ($btnBackupReg) {
     $btnBackupReg.Add_Click({
+        try {
             Log "Registry backup (.reg file) requested" 'Info'
             $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
             $regBackupPath = Join-Path (Get-Location) "Koala-Registry-Backup_$timestamp.reg"
@@ -11216,17 +11218,20 @@ Windows Registry Editor Version 5.00
                         # Export registry values would require more complex logic
                         $regContent += "; Registry values would be exported here`r`n"
                     }
+                } catch {
                     # Continue with other keys if one fails
-                } catch { }}
+                }
+            }
 
             Set-Content -Path $regBackupPath -Value $regContent -Encoding Unicode
             Log "Registry backup created: $regBackupPath" 'Success'
             [System.Windows.MessageBox]::Show("Registry backup created successfully!`n`nFile: $regBackupPath", "Registry Backup Complete", 'OK', 'Information')
-
+        } catch {
             Log "Error creating registry backup: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error creating registry backup: $($_.Exception.Message)", "Backup Failed", 'OK', 'Error')
         }
     })
+}
 
 # Backup panel button handlers
 if ($btnCreateBackup) { $btnCreateBackup.Add_Click({ Create-Backup }) }
@@ -11236,6 +11241,7 @@ if ($btnImportConfigBackup) { $btnImportConfigBackup.Add_Click({ Import-Configur
 
 if ($btnSaveActivityLog) {
     $btnSaveActivityLog.Add_Click({
+        try {
             Log "Save activity log requested" 'Info'
             $saveDialog = New-Object Microsoft.Win32.SaveFileDialog
             $saveDialog.Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*"
@@ -11251,24 +11257,22 @@ if ($btnSaveActivityLog) {
                     $logText = $logContent -join "`r`n"
                     Set-Content -Path $selectedPath -Value $logText -Encoding UTF8
                     Log "Activity log saved to: $selectedPath" 'Success'
-                    [System.Windows.MessageBox]::Show(
-                        "Activity log saved successfully!`n`nLocation: $selectedPath`nTimestamp: $(Get-Date)",
-                        "Log Saved",
-                        'OK',
-                        'Information'
-                    )
+                    [System.Windows.MessageBox]::Show("Activity log saved successfully!`n`nLocation: $selectedPath`nTimestamp: $(Get-Date)", "Log Saved", 'OK', 'Information')
 
                 } else {
                     Log "No activity log content available to save" 'Warning'
                     [System.Windows.MessageBox]::Show("No activity log content available to save.", "No Content", 'OK', 'Warning')
                 }
             }
+        } catch {
             Log "Error saving activity log: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error saving activity log: $($_.Exception.Message)", "Save Failed", 'OK', 'Error')
         }
-
+    })
+}
 if ($btnClearActivityLog) {
     $btnClearActivityLog.Add_Click({
+        try {
             $result = [System.Windows.MessageBox]::Show(
                 "Are you sure you want to clear the activity log?`nThis action cannot be undone.",
                 "Clear Activity Log",
@@ -11282,10 +11286,11 @@ if ($btnClearActivityLog) {
 
                 }
             }
+        } catch {
             Log "Error clearing activity log: $($_.Exception.Message)" 'Error'
         }
     })
-
+}
 if ($btnViewActivityLog) {
     $btnViewActivityLog.Add_Click({
         # Switch to the main panel to show the activity log
@@ -11505,11 +11510,13 @@ function Start-CustomFolderOnlySearch {
                         Details = "Executable found in custom folder"
                         CanOptimize = $true
                     }
+                } catch {
                     # Continue if file details can't be read
-                } catch { }}
+                }
+            }
 
             Log "Found $($foundExecutables.Count) executable files in custom folder" 'Success'
-
+        } catch {
             Log "Error scanning custom folder: $($_.Exception.Message)" 'Error'
         }
 
