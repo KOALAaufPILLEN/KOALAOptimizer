@@ -529,13 +529,13 @@ function Log {
     }
 
     # Enhanced activity logging with persistent file logging and administrator mode awareness
+    try {
         $logFilePath = Join-Path $ScriptRoot 'Koala-Activity.log'
 
         # Additional reliability check: ensure directory exists
         $logDir = Split-Path $logFilePath -Parent
         if (-not (Test-Path $logDir)) {
             New-Item -Path $logDir -ItemType Directory -Force -ErrorAction Stop | Out-Null
-
         }
 
         # Enhanced file writing with retry mechanism
@@ -544,17 +544,22 @@ function Log {
         $success = $false
 
         while (-not $success -and $retryCount -lt $maxRetries) {
+            try {
                 # Enhanced log entry with category information
                 $enhancedLogMessage = "[$global:CachedTimestamp] [$Level] [$category] $msg"
                 Add-Content -Path $logFilePath -Value $enhancedLogMessage -Encoding UTF8 -ErrorAction Stop
                 $success = $true
+            }
+            catch {
                 $retryCount++
                 if ($retryCount -lt $maxRetries) {
                     Start-Sleep -Milliseconds 100
-                } else {
+                }
+                else {
                     throw
                 }
             }
+        }
 
         # Verify file write was successful for critical operations
         if ($Level -eq 'Error' -or $Level -eq 'Warning') {
@@ -584,18 +589,24 @@ function Log {
             Add-LogToHistory -Message "PowerShell: $($PSVersionTable.PSVersion), OS: $(if ($IsWindows -ne $null) { if ($IsWindows) {'Windows'} else {'Non-Windows'} } else {'Windows Legacy'})" -Level "ErrorContext" -Category $category
             # Ignore additional context logging errors
         }
-
+    }
+    catch {
         # Enhanced error reporting for administrator mode and permission issues
         $errorContext = ""
         if ($_.Exception.Message -match "Access.*denied|UnauthorizedAccess") {
             $errorContext = " (Insufficient permissions - try running as Administrator)"
-        } elseif ($_.Exception.Message -match "path.*not found|DirectoryNotFound") {
+        }
+        elseif ($_.Exception.Message -match "path.*not found|DirectoryNotFound") {
             $errorContext = " (Directory access issue - check script location)"
+        }
+        elseif ($_.Exception.Message -match "used by another process|sharing violation|file in use") {
             $errorContext = " (File in use - another instance may be running)"
+        }
 
         # Fallback to console with enhanced error context
         Write-Host "LOG FILE ERROR: $($_.Exception.Message)$errorContext" -ForegroundColor Red
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+    }
 
     if ($global:LogBox -and $global:LogBoxAvailable) {
         # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
@@ -649,6 +660,8 @@ function Log {
     } else {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
     }
+
+}
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
