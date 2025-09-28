@@ -10668,6 +10668,7 @@ if ($btnInstalledGamesDash -and $btnInstalledGames) {
 
 # Basic Network Optimizations button
 $btnBasicNetwork.Add_Click({
+    try {
         Log "Applying Basic Network Optimizations..." 'Info'
 
         # Apply all network optimizations from the Network section
@@ -10681,13 +10682,15 @@ $btnBasicNetwork.Add_Click({
         Log "Network optimizations applied successfully in $global:MenuMode mode!" 'Success'
         Log "Applied 6 network optimizations: TCP ACK, DelAck, Throttling, NoDelay, Timestamps, Window Size" 'Info'
         [System.Windows.MessageBox]::Show("Network optimizations have been applied successfully!`n`nOptimizations applied:`n* TCP ACK Frequency optimization`n* Network throttling disabled`n* Nagle algorithm disabled`n* TCP window size optimized`n* Latency reduction tweaks", "Network Optimization Complete", 'OK', 'Information')
-
+    } catch {
         Log "Error applying network optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying network optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
     }
+})
 
 # Basic System Performance button
 $btnBasicSystem.Add_Click({
+    try {
         Log "Applying Basic System Performance Optimizations..." 'Info'
 
         # Apply system performance optimizations
@@ -10704,18 +10707,28 @@ $btnBasicSystem.Add_Click({
                 $planGUID = ($ultimatePlan -split "\s+")[3]
                 powercfg /setactive $planGUID
                 Log "Ultimate Performance power plan activated" 'Success'
+            } else {
+                Log "Could not set Ultimate Performance power plan" 'Warning'
             }
-            Log "Could not set Ultimate Performance power plan" 'Warning'
-        } catch { }Log "System performance optimizations applied successfully in $global:MenuMode mode!" 'Success'
-        Log "Applied 5 system optimizations: Responsiveness, GPU Priority, CPU Scheduling, Memory Management, Power Plan" 'Info'
-        [System.Windows.MessageBox]::Show("System performance optimizations have been applied successfully!`n`nOptimizations applied:`n* System responsiveness enhanced`n* Game task priority boosted`n* CPU scheduling optimized`n* Memory management improved`n* Power plan optimized", "System Optimization Complete", 'OK', 'Information')
-
+        }
+        catch {
+            Log "Error setting Ultimate Performance power plan: $($_.Exception.Message)" 'Warning'
+        }
+    }
+    catch {
         Log "Error applying system optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying system optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
+        return
     }
+
+    Log "System performance optimizations applied successfully in $global:MenuMode mode!" 'Success'
+    Log "Applied 5 system optimizations: Responsiveness, GPU Priority, CPU Scheduling, Memory Management, Power Plan" 'Info'
+    [System.Windows.MessageBox]::Show("System performance optimizations have been applied successfully!`n`nOptimizations applied:`n* System responsiveness enhanced`n* Game task priority boosted`n* CPU scheduling optimized`n* Memory management improved`n* Power plan optimized", "System Optimization Complete", 'OK', 'Information')
+})
 
 # Basic Gaming Optimizations button
 $btnBasicGaming.Add_Click({
+    try {
         Log "Applying Basic Gaming Optimizations..." 'Info'
 
         # Apply essential gaming optimizations
@@ -10735,17 +10748,21 @@ $btnBasicGaming.Add_Click({
         }
 
         # Disable hibernation
+        try {
             powercfg /hibernate off | Out-Null
             Log "Hibernation disabled" 'Success'
+        } catch {
             Log "Could not disable hibernation" 'Warning'
+        }
 
         Log "Gaming optimizations applied successfully in $global:MenuMode mode!" 'Success'
         Log "Applied 7 gaming optimizations: Game DVR, GPU Scheduling, Game Mode, High Priority, Precision Timer, Hibernation" 'Info'
         [System.Windows.MessageBox]::Show("Gaming optimizations have been applied successfully!`n`nOptimizations applied:`n* Game DVR disabled`n* Hardware GPU scheduling enabled`n* Game mode activated`n* High precision timer enabled`n* Visual effects optimized`n* Hibernation disabled", "Gaming Optimization Complete", 'OK', 'Information')
-
+    } catch {
         Log "Error applying gaming optimizations: $($_.Exception.Message)" 'Error'
         [System.Windows.MessageBox]::Show("Error applying gaming optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
-
+    }
+})
 # Apply theme button
 # Removed $btnApplyTheme event handler (now only in Options panel)
 
