@@ -8169,6 +8169,7 @@ function Show-InstalledGames {
             foreach ($path in $searchPaths) {
                 if (Test-Path $path) {
                     Log "Searching in: $path" 'Info'
+                    try {
                         # Search for known game executables with verification
                         foreach ($exe in $gameExecutables.Keys) {
                             $foundFiles = Get-ChildItem -Path $path -Recurse -Name $exe -ErrorAction SilentlyContinue
@@ -8304,6 +8305,7 @@ function Show-InstalledGames {
             }
 
             return $games
+        }
 
         # Initial search
         $foundGames = Search-InstalledGames
@@ -8338,6 +8340,7 @@ function Show-InstalledGames {
                 $lstInstalledGames.ItemsSource = $noGamesFound
                 Log "Refresh complete: No games found" 'Warning'
             }
+        })
 
         $btnCloseGames.Add_Click({
             Log "Installed Games window closed by user" 'Info'
