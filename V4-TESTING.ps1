@@ -9182,6 +9182,12 @@ function Apply-FPSOptimizations {
                 Log "CPU optimization applied" 'Success'
             }
 
+        }
+
+    }
+
+}
+
 # ---------- DirectX 11 Optimization Functions ----------
 function Apply-DX11Optimizations {
     param([string[]]$OptimizationList)
