@@ -8321,6 +8321,7 @@ function Show-InstalledGames {
             })
             $lstInstalledGames.ItemsSource = $noGamesFound
             Log "No games found in common directories" 'Warning'
+        }
 
         # Event handlers
         $btnRefreshGames.Add_Click({
@@ -8348,10 +8349,14 @@ function Show-InstalledGames {
         })
 
         # Show the window
-        $gamesWindow.ShowDialog() | Out-Null
-
-        Log "Error showing installed games: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error displaying installed games window: $($_.Exception.Message)", "Installed Games Error", 'OK', 'Error')
+        try {
+            $gamesWindow.ShowDialog() | Out-Null
+        }
+        catch {
+            Log "Error showing installed games: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error displaying installed games window: $($_.Exception.Message)", "Installed Games Error", 'OK', 'Error')
+        }
+}
 
 # Helper functions for synchronizing game list UI across multiple panels
 function Set-OptimizeButtonsEnabled {
