@@ -1232,12 +1232,12 @@ function Set-BrushPropertySafe {
     if (-not $Target) { return }
     if ([string]::IsNullOrWhiteSpace($Property)) { return }
 
+    try {
         $resolvedValue = $Value
         $previousValue = $null
         while ($resolvedValue -is [System.Management.Automation.PSObject] -and $resolvedValue -ne $previousValue) {
             $previousValue = $resolvedValue
             $resolvedValue = $resolvedValue.PSObject.BaseObject
-
         }
 
         $brush = Resolve-BrushInstance $resolvedValue
@@ -1273,15 +1273,16 @@ function Set-BrushPropertySafe {
             } else {
                 try { $colorString = [string]$colorValue } catch { $colorString = $null }
             }
+        }
 
         if (-not [string]::IsNullOrWhiteSpace($colorString)) {
             $converter = Get-SharedBrushConverter
             if ($converter) {
+                try {
                     $converted = $converter.ConvertFromString($colorString)
                     $convertedBrush = Resolve-BrushInstance $converted
                     if (-not $convertedBrush) {
                         $convertedBrush = New-SolidColorBrushSafe $converted
-
                     }
 
                     if ($convertedBrush -is [System.Windows.Media.Brush]) {
@@ -1292,8 +1293,11 @@ function Set-BrushPropertySafe {
                         }
                         return
                     }
+                }
+                catch {
                     Write-Verbose "BrushConverter fallback for property '$Property' failed: $($_.Exception.Message)"
                 }
+            }
 
             $fallbackBrush = New-SolidColorBrushSafe $colorString
             if ($fallbackBrush -is [System.Windows.Media.Brush]) {
@@ -1303,6 +1307,8 @@ function Set-BrushPropertySafe {
                     $Target.$Property = $fallbackBrush
                 }
                 return
+            }
+        }
 
         if ($AllowTransparentFallback) {
             $transparentBrush = [System.Windows.Media.Brushes]::Transparent
@@ -1311,8 +1317,15 @@ function Set-BrushPropertySafe {
             } else {
                 $Target.$Property = $transparentBrush
             }
-            try { $Target.$Property = $null } catch { }
+            return
+        }
+
+        try { $Target.$Property = $null } catch { }
+    }
+    catch {
         Write-Verbose "Set-BrushPropertySafe failed for property '$Property' on $($Target.GetType().Name): $($_.Exception.Message)"
+    }
+}
 
 function Convert-ToBrushResource {
     param(
@@ -1324,28 +1337,35 @@ function Convert-ToBrushResource {
 
     $probe = New-Object System.Windows.Controls.Border
 
+    try {
         if ($AllowTransparentFallback) {
             Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value -AllowTransparentFallback
-
         } else {
             Set-BrushPropertySafe -Target $probe -Property 'Background' -Value $Value
         }
+    }
+    catch {
         return $null
+    }
 
     $result = $probe.Background
     if ($null -eq $result) { return $null }
 
     if ($result -is [System.Windows.Freezable]) {
+        try {
             $clone = $result.Clone()
             if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
                 try { $clone.Freeze() } catch { }
-
             }
             return $clone
-        } catch {
+        }
+        catch {
             return $result
+        }
+    }
 
     return $result
+}
 
 function Normalize-BrushResources {
     param(
