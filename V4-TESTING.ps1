@@ -10485,148 +10485,168 @@ if ($btnElevate) {
 # Auto-detect games
 if ($btnAutoDetect) {
     $btnAutoDetect.Add_Click({
-        Log "Auto-detecting running games in $global:MenuMode mode..." 'Info'
-        Log "Executable detection request - searching for running processes" 'Info'
-        $detectedGames = Get-RunningGames
-        $global:ActiveGames = $detectedGames
+        try {
+            Log "Auto-detecting running games in $global:MenuMode mode..." 'Info'
+            Log "Executable detection request - searching for running processes" 'Info'
+            $detectedGames = Get-RunningGames
+            $global:ActiveGames = $detectedGames
 
-        if ($detectedGames.Count -gt 0) {
-            $firstGame = $detectedGames[0]
-            $process = $firstGame.Process
+            if ($detectedGames.Count -gt 0) {
+                $firstGame = $detectedGames[0]
+                $process = $firstGame.Process
 
-            if ($lblDashActiveGames) {
-                $lblDashActiveGames.Dispatcher.Invoke([Action]{
-                    $lblDashActiveGames.Text = "$($detectedGames.Count) running"
-                    Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
-                })
-            }
+                if ($lblDashActiveGames) {
+                    $lblDashActiveGames.Dispatcher.Invoke([Action]{
+                        $lblDashActiveGames.Text = "$($detectedGames.Count) running"
+                        Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#8F6FFF'
+                    })
+                }
 
-            # Enhanced logging with executable details
-            Log "Detected Game: $($firstGame.DisplayName)" 'Success'
-            Log "Executable: $($process.ProcessName).exe (PID: $($process.Id))" 'Info'
+                # Enhanced logging with executable details
+                Log "Detected Game: $($firstGame.DisplayName)" 'Success'
+                Log "Executable: $($process.ProcessName).exe (PID: $($process.Id))" 'Info'
+
                 if ($process.MainModule -and $process.MainModule.FileName) {
                     Log "Path: $($process.MainModule.FileName)" 'Info'
-
+                } else {
+                    Log "Path: Access denied (running as different user)" 'Warning'
                 }
-            Log "Path: Access denied (running as different user)" 'Warning'
-        }
 
-        # Show all detected games if multiple found
-        if ($detectedGames.Count -gt 1) {
-            Log "Additional games detected: $(($detectedGames[1..($detectedGames.Count-1)] | ForEach-Object { $_.DisplayName }) -join ', ')" 'Info'
-        }
+                # Show all detected games if multiple found
+                if ($detectedGames.Count -gt 1) {
+                    Log "Additional games detected: $(($detectedGames[1..($detectedGames.Count-1)] | ForEach-Object { $_.DisplayName }) -join ', ')" 'Info'
+                }
 
-        # Select the first game in the dropdown
-        foreach ($item in $cmbGameProfile.Items) {
-            if ($item.Tag -eq $firstGame.GameKey) {
-                $cmbGameProfile.SelectedItem = $item
-                Log "Selected profile: $($firstGame.DisplayName)" 'Success'
-                break
+                # Select the first game in the dropdown
+                foreach ($item in $cmbGameProfile.Items) {
+                    if ($item.Tag -eq $firstGame.GameKey) {
+                        $cmbGameProfile.SelectedItem = $item
+                        Log "Selected profile: $($firstGame.DisplayName)" 'Success'
+                        break
+                    }
+                }
+
+                # Show user-friendly message with details
+                $processInfo = "Process: $($process.ProcessName).exe (PID: $($process.Id))"
+                [System.Windows.MessageBox]::Show("Successfully detected: $($firstGame.DisplayName)`n$processInfo`n`nProfile automatically selected in dropdown.", "Game Detected", 'OK', 'Information')
+            } else {
+                Log "No supported games detected" 'Warning'
+                [System.Windows.MessageBox]::Show("No supported games are currently running.", "No Games Detected", 'OK', 'Information')
+                if ($lblDashActiveGames) {
+                    $lblDashActiveGames.Dispatcher.Invoke([Action]{
+                        $lblDashActiveGames.Text = "None detected"
+                        Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
+                    })
+                }
             }
+        } catch {
+            Log "Error auto-detecting games: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error detecting games: $($_.Exception.Message)", "Detection Failed", 'OK', 'Error')
         }
-
-        # Show user-friendly message with details
-        $processInfo = "Process: $($process.ProcessName).exe (PID: $($process.Id))"
-        [System.Windows.MessageBox]::Show("Successfully detected: $($firstGame.DisplayName)`n$processInfo`n`nProfile automatically selected in dropdown.", "Game Detected", 'OK', 'Information')
-    } else {
-        Log "No supported games detected" 'Warning'
-        [System.Windows.MessageBox]::Show("No supported games are currently running.", "No Games Detected", 'OK', 'Information')
-        if ($lblDashActiveGames) {
-            $lblDashActiveGames.Dispatcher.Invoke([Action]{
-                $lblDashActiveGames.Text = "None detected"
-                Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'
-            })
-        }
-    }
+    })
+}
 
 # Optimize custom game button
-$btnOptimizeGame.Add_Click({
-        $gameExecutable = $txtCustomGame.Text.Trim()
+if ($btnOptimizeGame) {
+    $btnOptimizeGame.Add_Click({
+        try {
+            $gameExecutable = $txtCustomGame.Text.Trim()
 
-        if ([string]::IsNullOrEmpty($gameExecutable)) {
-            Log "Please enter a game executable name first" 'Warning'
-            [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) before optimizing.", "No Game Specified", 'OK', 'Warning')
-            return
+            if ([string]::IsNullOrEmpty($gameExecutable)) {
+                Log "Please enter a game executable name first" 'Warning'
+                [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) before optimizing.", "No Game Specified", 'OK', 'Warning')
+                return
+            }
 
+            Log "Starting optimization for custom game: $gameExecutable" 'Info'
+
+            # Apply standard gaming optimizations
+            Apply-CustomGameOptimizations -GameExecutable $gameExecutable
+
+            Log "Successfully applied gaming optimizations for: $gameExecutable" 'Success'
+            [System.Windows.MessageBox]::Show("Gaming optimizations have been successfully applied for '$gameExecutable'!`n`nOptimizations applied:`n* Process priority boost`n* Network latency reduction`n* GPU scheduling enhancement`n* Game mode activation`n* High precision timers", "Optimization Complete", 'OK', 'Information')
+        } catch {
+            Log "Error optimizing custom game: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error applying optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
         }
-
-        Log "Starting optimization for custom game: $gameExecutable" 'Info'
-
-        # Apply standard gaming optimizations
-        Apply-CustomGameOptimizations -GameExecutable $gameExecutable
-
-        Log "Successfully applied gaming optimizations for: $gameExecutable" 'Success'
-        [System.Windows.MessageBox]::Show("Gaming optimizations have been successfully applied for '$gameExecutable'!`n`nOptimizations applied:`n* Process priority boost`n* Network latency reduction`n* GPU scheduling enhancement`n* Game mode activation`n* High precision timers", "Optimization Complete", 'OK', 'Information')
-
-        Log "Error optimizing custom game: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error applying optimizations: $($_.Exception.Message)", "Optimization Failed", 'OK', 'Error')
-    }
+    })
+}
 
 # Find executable button
-$btnFindExecutable.Add_Click({
-        $gameExecutable = $txtCustomGame.Text.Trim()
+if ($btnFindExecutable) {
+    $btnFindExecutable.Add_Click({
+        try {
+            $gameExecutable = $txtCustomGame.Text.Trim()
 
-        if ([string]::IsNullOrEmpty($gameExecutable)) {
-            Log "Please enter a game executable name first" 'Warning'
-            [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) to search for.", "No Game Specified", 'OK', 'Warning')
-            return
+            if ([string]::IsNullOrEmpty($gameExecutable)) {
+                Log "Please enter a game executable name first" 'Warning'
+                [System.Windows.MessageBox]::Show("Please enter a game executable name (e.g., mygame.exe) to search for.", "No Game Specified", 'OK', 'Warning')
+                return
+            }
 
-        }
+            Log "Searching for executable: $gameExecutable" 'Info'
 
-        Log "Searching for executable: $gameExecutable" 'Info'
+            # Search for the executable in common game directories
+            $searchPaths = @(
+                "C:\Program Files\",
+                "C:\Program Files (x86)\",
+                "C:\Program Files\WindowsApps\",
+                "D:\Program Files\",
+                "D:\Program Files (x86)\",
+                "C:\Games\",
+                "D:\Games\",
+                "$env:USERPROFILE\Desktop\",
+                "$env:USERPROFILE\Documents\",
+                "$env:USERPROFILE\Downloads\"
+            )
 
-        # Search for the executable in common game directories
-        $searchPaths = @(
-            "C:\Program Files\",
-            "C:\Program Files (x86)\",
-            "C:\Program Files\WindowsApps\",
-            "D:\Program Files\",
-            "D:\Program Files (x86)\",
-            "C:\Games\",
-            "D:\Games\",
-            "$env:USERPROFILE\Desktop\",
-            "$env:USERPROFILE\Documents\",
-            "$env:USERPROFILE\Downloads\"
-        )
+            $found = $false
+            $foundPaths = @()
 
-        $found = $false
-        $foundPaths = @()
-
-        foreach ($path in $searchPaths) {
-            if (Test-Path $path) {
-                $files = Get-ChildItem -Path $path -Recurse -Name $gameExecutable -ErrorAction SilentlyContinue
-                if ($files) {
-                    foreach ($file in $files) {
-                        $fullPath = Join-Path $path $file
-                        $foundPaths += $fullPath
-                        $found = $true
+            foreach ($path in $searchPaths) {
+                if (Test-Path $path) {
+                    $files = Get-ChildItem -Path $path -Recurse -Name $gameExecutable -ErrorAction SilentlyContinue
+                    if ($files) {
+                        foreach ($file in $files) {
+                            $fullPath = Join-Path $path $file
+                            $foundPaths += $fullPath
+                            $found = $true
+                        }
                     }
                 }
             }
-        }
 
-        if ($found) {
-            $pathsText = $foundPaths -join "`n"
-            Log "Executable '$gameExecutable' found at: $($foundPaths[0])" 'Success'
-            [System.Windows.MessageBox]::Show("Executable '$gameExecutable' found!`n`nLocation(s):`n$pathsText", "Executable Found", 'OK', 'Information')
-        } else {
-            Log "Executable '$gameExecutable' not found in common directories" 'Warning'
-            [System.Windows.MessageBox]::Show("Executable '$gameExecutable' was not found in common game directories.`n`nNote: The executable may still exist in other locations, or it may need to be running to be detected.", "Executable Not Found", 'OK', 'Warning')
+            if ($found) {
+                $pathsText = $foundPaths -join "`n"
+                Log "Executable '$gameExecutable' found at: $($foundPaths[0])" 'Success'
+                [System.Windows.MessageBox]::Show("Executable '$gameExecutable' found!`n`nLocation(s):`n$pathsText", "Executable Found", 'OK', 'Information')
+            } else {
+                Log "Executable '$gameExecutable' not found in common directories" 'Warning'
+                [System.Windows.MessageBox]::Show("Executable '$gameExecutable' was not found in common game directories.`n`nNote: The executable may still exist in other locations, or it may need to be running to be detected.", "Executable Not Found", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error searching for executable: $($_.Exception.Message)" 'Error'
+            [System.Windows.MessageBox]::Show("Error searching for executable: $($_.Exception.Message)", "Search Failed", 'OK', 'Error')
         }
-
-        Log "Error searching for executable: $($_.Exception.Message)" 'Error'
-        [System.Windows.MessageBox]::Show("Error searching for executable: $($_.Exception.Message)", "Search Failed", 'OK', 'Error')
+    })
+}
 
 # Custom game executable text change - Track user input for enhanced logging
-$txtCustomGame.Add_TextChanged({
-        $gameText = $txtCustomGame.Text.Trim()
-        if ($gameText -and $gameText.Length -gt 2) {
-            Log "Custom game executable entered: $gameText" 'Info'
-            Log "User preparing to optimize custom game in $global:MenuMode mode" 'Info'
+if ($txtCustomGame) {
+    $txtCustomGame.Add_TextChanged({
+        try {
+            $gameText = $txtCustomGame.Text.Trim()
+            if ($gameText -and $gameText.Length -gt 2) {
+                Log "Custom game executable entered: $gameText" 'Info'
+                Log "User preparing to optimize custom game in $global:MenuMode mode" 'Info'
+            }
 
+            # Silent fail for text input monitoring to avoid spam
+        } catch {
+            Log "Error monitoring custom game input: $($_.Exception.Message)" 'Error'
         }
-        # Silent fail for text input monitoring to avoid spam
-    }
+    })
+}
 
 # Installed Games button - Show installed games discovery window
 if ($btnInstalledGames) {
