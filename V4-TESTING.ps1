@@ -10769,7 +10769,8 @@ $btnBasicGaming.Add_Click({
 # Options panel event handlers - selection changes only update preview, no instant application
 if ($cmbOptionsTheme) {
     $cmbOptionsTheme.Add_SelectionChanged({
-        if ($script:ThemeSelectionSyncInProgress) { return }
+        try {
+            if ($script:ThemeSelectionSyncInProgress) { return }
 
             $script:ThemeSelectionSyncInProgress = $true
 
@@ -10796,9 +10797,13 @@ if ($cmbOptionsTheme) {
 
                 Log "Theme selection changed to '$themeName' - preview updated (Apply button required for theme change)" 'Info'
             }
+        } catch {
             Log "Error updating theme preview: $($_.Exception.Message)" 'Error'
         } finally {
             $script:ThemeSelectionSyncInProgress = $false
+        }
+    })
+}
 
 # Apply button - primary method for theme application (themes only apply when clicked)
 # Theme Apply Button Event Handler
