@@ -8494,6 +8494,18 @@ function Search-GamesForPanel {
 
         } catch {
             Log "Enhanced detection encountered error: $($_.Exception.Message)" 'Warning'
+
+            $gameListPanel.Children.Clear()
+            $errorText = New-Object System.Windows.Controls.TextBlock
+            $errorText.Text = "❌ Error searching for games: $($_.Exception.Message)"
+            Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
+            $errorText.HorizontalAlignment = "Center"
+            $errorText.Margin = "0,20"
+            $errorText.TextWrapping = "Wrap"
+            $gameListPanel.Children.Add($errorText)
+
+            Log "Error in game search: $($_.Exception.Message)" 'Error'
+            return
         }
 
         # Clear loading message
@@ -8512,8 +8524,10 @@ function Search-GamesForPanel {
             foreach ($game in $foundGames) {
                 $gameContainer = New-Object System.Windows.Controls.Border
                 Set-BrushPropertySafe -Target $gameContainer -Property 'Background' -Value '#14132B'
+                try {
                     Set-BrushPropertySafe -Target $gameContainer -Property 'BorderBrush' -Value '#2F285A'
                     $gameContainer.BorderThickness = "1"
+                } catch {
                     Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
                 }
                 $gameContainer.Padding = "10"
@@ -8557,7 +8571,7 @@ function Search-GamesForPanel {
             Set-OptimizeButtonsEnabled -Enabled $true
 
             Log "Game search complete: Found $($foundGames.Count) games" 'Success'
-
+        } else {
             # No games found
             $noGamesText = New-Object System.Windows.Controls.TextBlock
             $noGamesText.Text = "❌ No supported games found in common directories.`n`nTry running as Administrator for better detection, or use 'Add Game Folder' to specify custom locations."
@@ -8570,18 +8584,7 @@ function Search-GamesForPanel {
             $gameListPanel.Children.Add($noGamesText)
 
             Log "Game search complete: No games found" 'Warning'
-
-        # Clear panel and show error
-        $gameListPanel.Children.Clear()
-        $errorText = New-Object System.Windows.Controls.TextBlock
-        $errorText.Text = "❌ Error searching for games: $($_.Exception.Message)"
-        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
-        $errorText.HorizontalAlignment = "Center"
-        $errorText.Margin = "0,20"
-        $errorText.TextWrapping = "Wrap"
-        $gameListPanel.Children.Add($errorText)
-
-        Log "Error in game search: $($_.Exception.Message)" 'Error'
+        }
 
 # ---------- Custom Folder Search Function ----------
 function Search-CustomFoldersForExecutables {
@@ -8604,140 +8607,147 @@ function Search-CustomFoldersForExecutables {
 
         $foundExecutables = @()
 
-        foreach ($customPath in $global:CustomGamePaths) {
-            if (Test-Path $customPath) {
-                Log "Searching custom path: $customPath" 'Info'
+        try {
+            foreach ($customPath in $global:CustomGamePaths) {
+                if (Test-Path $customPath) {
+                    Log "Searching custom path: $customPath" 'Info'
 
-                try {
-                    # Find all .exe files in the custom folder (not recursive to avoid performance issues)
-                    $executables = Get-ChildItem -Path $customPath -Filter "*.exe" -File -ErrorAction SilentlyContinue
+                    try {
+                        # Find all .exe files in the custom folder (not recursive to avoid performance issues)
+                        $executables = Get-ChildItem -Path $customPath -Filter "*.exe" -File -ErrorAction SilentlyContinue
 
-                    foreach ($exe in $executables) {
-                        try {
-                            # Get file info
-                            $fileInfo = Get-ItemProperty -Path $exe.FullName -ErrorAction SilentlyContinue
-                            $displayName = if ($exe.VersionInfo -and $exe.VersionInfo.FileDescription) {
-                                $exe.VersionInfo.FileDescription
-                            } else {
-                                $exe.BaseName
+                        foreach ($exe in $executables) {
+                            try {
+                                # Get file info
+                                $fileInfo = Get-ItemProperty -Path $exe.FullName -ErrorAction SilentlyContinue
+                                $displayName = if ($exe.VersionInfo -and $exe.VersionInfo.FileDescription) {
+                                    $exe.VersionInfo.FileDescription
+                                } else {
+                                    $exe.BaseName
+                                }
+
+                                $foundExecutables += [PSCustomObject]@{
+                                    Name = $displayName
+                                    ExecutableName = $exe.Name
+                                    Path = $exe.FullName
+                                    Size = [Math]::Round($exe.Length / 1MB, 2)
+                                    LastModified = $exe.LastWriteTime
+                                    Details = "Custom Folder: $customPath"
+
+                                }
                             }
-
-                            $foundExecutables += [PSCustomObject]@{
-                                Name = $displayName
-                                ExecutableName = $exe.Name
-                                Path = $exe.FullName
-                                Size = [Math]::Round($exe.Length / 1MB, 2)
-                                LastModified = $exe.LastWriteTime
-                                Details = "Custom Folder: $customPath"
-
+                            catch {
+                                # Continue if can't get file info
+                                $foundExecutables += [PSCustomObject]@{
+                                    Name = $exe.BaseName
+                                    ExecutableName = $exe.Name
+                                    Path = $exe.FullName
+                                    Size = 0
+                                    LastModified = $exe.LastWriteTime
+                                    Details = "Custom Folder: $customPath"
+                                }
                             }
                         }
-                        catch {
-                            # Continue if can't get file info
-                            $foundExecutables += [PSCustomObject]@{
-                                Name = $exe.BaseName
-                                ExecutableName = $exe.Name
-                                Path = $exe.FullName
-                                Size = 0
-                                LastModified = $exe.LastWriteTime
-                                Details = "Custom Folder: $customPath"
-                            }
-                        }
+
+                        Log "Found $($executables.Count) executables in $customPath" 'Info'
                     }
+                    catch {
+                        Log "Error scanning custom path $customPath : $($_.Exception.Message)" 'Warning'
+                    }
+                } else {
+                    Log "Custom path no longer exists: $customPath" 'Warning'
+                }
+            }
 
-                    Log "Found $($executables.Count) executables in $customPath" 'Info'
+            # Clear loading message
+            $gameListPanel.Children.Clear()
+
+            if ($foundExecutables.Count -gt 0) {
+                Log "Custom search complete: Found $($foundExecutables.Count) executables" 'Success'
+
+                # Add header
+                $headerText = New-Object System.Windows.Controls.TextBlock
+                $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
+                Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
+                $headerText.FontWeight = "Bold"
+                $headerText.FontSize = 12
+                $headerText.Margin = "0,0,0,8"
+                $headerText.TextWrapping = "Wrap"
+                $gameListPanel.Children.Add($headerText)
+
+                # Sort by name for better presentation
+                $foundExecutables = $foundExecutables | Sort-Object Name
+
+                foreach ($executable in $foundExecutables) {
+                    # Create container border
+                    $border = New-Object System.Windows.Controls.Border
+                    Set-BrushPropertySafe -Target $border -Property 'Background' -Value '#14132B'
+                    try {
+                        Set-BrushPropertySafe -Target $border -Property 'BorderBrush' -Value '#2F285A'
+                        $border.BorderThickness = "1"
+                    } catch {
+                        Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
+                    }
+                    $border.Margin = "0,2"
+                    $border.Padding = "8"
+
+                    $stackPanel = New-Object System.Windows.Controls.StackPanel
+
+                    # Create checkbox for selection
+                    $checkbox = New-Object System.Windows.Controls.CheckBox
+                    $checkbox.Content = $executable.Name
+                    Set-BrushPropertySafe -Target $checkbox -Property 'Foreground' -Value '#F5F3FF'
+                    $checkbox.FontWeight = "SemiBold"
+                    $checkbox.Tag = $executable.Path  # Store full path for optimization
+                    $stackPanel.Children.Add($checkbox)
+
+                    # Add details
+                    $detailsText = New-Object System.Windows.Controls.TextBlock
+                    $detailsText.Text = "🔍 $($executable.Details)"
+                    Set-BrushPropertySafe -Target $detailsText -Property 'Foreground' -Value '#A9A5D9'
+                    $detailsText.FontSize = 10
+                    $detailsText.Margin = "20,2,0,0"
+                    $stackPanel.Children.Add($detailsText)
+
+                    $fileDetailsText = New-Object System.Windows.Controls.TextBlock
+                    $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
+                    Set-BrushPropertySafe -Target $fileDetailsText -Property 'Foreground' -Value '#7D7EB0'
+                    $fileDetailsText.FontSize = 9
+                    $fileDetailsText.Margin = "20,1,0,0"
+                    $stackPanel.Children.Add($fileDetailsText)
+
+                    $border.Child = $stackPanel
+                    $gameListPanel.Children.Add($border)
                 }
-                catch {
-                    Log "Error scanning custom path $customPath : $($_.Exception.Message)" 'Warning'
-                }
+
+                # Enable the optimize button
+                Set-OptimizeButtonsEnabled -Enabled $true
             } else {
-                Log "Custom path no longer exists: $customPath" 'Warning'
+                $noExecutablesText = New-Object System.Windows.Controls.TextBlock
+                $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
+                Set-BrushPropertySafe -Target $noExecutablesText -Property 'Foreground' -Value '#FF6B6B'
+                $noExecutablesText.HorizontalAlignment = "Center"
+                $noExecutablesText.Margin = "0,20"
+                $noExecutablesText.TextWrapping = "Wrap"
+                $gameListPanel.Children.Add($noExecutablesText)
+
+                Log "Custom search complete: No executables found" 'Warning'
             }
+        } catch {
+            Log "Custom folder search encountered error: $($_.Exception.Message)" 'Warning'
 
-        # Clear loading message
-        $gameListPanel.Children.Clear()
+            $gameListPanel.Children.Clear()
+            $errorText = New-Object System.Windows.Controls.TextBlock
+            $errorText.Text = "❌ Error searching custom folders: $($_.Exception.Message)"
+            Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
+            $errorText.HorizontalAlignment = "Center"
+            $errorText.Margin = "0,20"
+            $errorText.TextWrapping = "Wrap"
+            $gameListPanel.Children.Add($errorText)
 
-        if ($foundExecutables.Count -gt 0) {
-            Log "Custom search complete: Found $($foundExecutables.Count) executables" 'Success'
-
-            # Add header
-            $headerText = New-Object System.Windows.Controls.TextBlock
-            $headerText.Text = "🔍 Found $($foundExecutables.Count) executable(s) in custom folders - Select any to optimize:"
-            Set-BrushPropertySafe -Target $headerText -Property 'Foreground' -Value '#8F6FFF'
-            $headerText.FontWeight = "Bold"
-            $headerText.FontSize = 12
-            $headerText.Margin = "0,0,0,8"
-            $headerText.TextWrapping = "Wrap"
-            $gameListPanel.Children.Add($headerText)
-
-            # Sort by name for better presentation
-            $foundExecutables = $foundExecutables | Sort-Object Name
-
-            foreach ($executable in $foundExecutables) {
-                # Create container border
-                $border = New-Object System.Windows.Controls.Border
-                Set-BrushPropertySafe -Target $border -Property 'Background' -Value '#14132B'
-                    Set-BrushPropertySafe -Target $border -Property 'BorderBrush' -Value '#2F285A'
-                    $border.BorderThickness = "1"
-                    Write-Verbose "BorderBrush assignment skipped for .NET Framework 4.8 compatibility"
-                }
-                $border.Margin = "0,2"
-                $border.Padding = "8"
-
-                $stackPanel = New-Object System.Windows.Controls.StackPanel
-
-                # Create checkbox for selection
-                $checkbox = New-Object System.Windows.Controls.CheckBox
-                $checkbox.Content = $executable.Name
-                Set-BrushPropertySafe -Target $checkbox -Property 'Foreground' -Value '#F5F3FF'
-                $checkbox.FontWeight = "SemiBold"
-                $checkbox.Tag = $executable.Path  # Store full path for optimization
-                $stackPanel.Children.Add($checkbox)
-
-                # Add details
-                $detailsText = New-Object System.Windows.Controls.TextBlock
-                $detailsText.Text = "🔍 $($executable.Details)"
-                Set-BrushPropertySafe -Target $detailsText -Property 'Foreground' -Value '#A9A5D9'
-                $detailsText.FontSize = 10
-                $detailsText.Margin = "20,2,0,0"
-                $stackPanel.Children.Add($detailsText)
-
-                $fileDetailsText = New-Object System.Windows.Controls.TextBlock
-                $fileDetailsText.Text = "💾 File: $($executable.ExecutableName) | Size: $($executable.Size) MB | Modified: $($executable.LastModified.ToString('yyyy-MM-dd'))"
-                Set-BrushPropertySafe -Target $fileDetailsText -Property 'Foreground' -Value '#7D7EB0'
-                $fileDetailsText.FontSize = 9
-                $fileDetailsText.Margin = "20,1,0,0"
-                $stackPanel.Children.Add($fileDetailsText)
-
-                $border.Child = $stackPanel
-                $gameListPanel.Children.Add($border)
-            }
-
-            # Enable the optimize button
-            Set-OptimizeButtonsEnabled -Enabled $true
-
-            $noExecutablesText = New-Object System.Windows.Controls.TextBlock
-            $noExecutablesText.Text = "❌ No executable files found in custom folders.`n`nTip: Make sure the folders contain .exe files and you have permission to access them."
-            Set-BrushPropertySafe -Target $noExecutablesText -Property 'Foreground' -Value '#FF6B6B'
-            $noExecutablesText.HorizontalAlignment = "Center"
-            $noExecutablesText.Margin = "0,20"
-            $noExecutablesText.TextWrapping = "Wrap"
-            $gameListPanel.Children.Add($noExecutablesText)
-
-            Log "Custom search complete: No executables found" 'Warning'
-
-        # Clear panel and show error
-        $gameListPanel.Children.Clear()
-        $errorText = New-Object System.Windows.Controls.TextBlock
-        $errorText.Text = "❌ Error searching custom folders: $($_.Exception.Message)"
-        Set-BrushPropertySafe -Target $errorText -Property 'Foreground' -Value '#FF6B6B'
-        $errorText.HorizontalAlignment = "Center"
-        $errorText.Margin = "0,20"
-        $errorText.TextWrapping = "Wrap"
-        $gameListPanel.Children.Add($errorText)
-
-        Log "Error in custom folder search: $($_.Exception.Message)" 'Error'
-
+            Log "Error in custom folder search: $($_.Exception.Message)" 'Error'
+        }
+}
 # ---------- Game Detection and Auto-Optimization ----------
 function Get-RunningGames {
     $runningGames = @()
