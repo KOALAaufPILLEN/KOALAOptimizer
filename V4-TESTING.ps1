@@ -1075,7 +1075,10 @@ function Normalize-ThemeColorTable {
 
         if ($value -is [string]) {
             $stringBrush = $null
+            try {
                 $stringBrush = New-SolidColorBrushSafe $value
+            }
+            catch {
                 $stringBrush = $null
             }
 
@@ -1089,10 +1092,12 @@ function Normalize-ThemeColorTable {
 
         if ($value -is [bool]) { continue }
         if ($value -is [System.Windows.Media.Brush]) {
+            try {
                 if ($value -is [System.Windows.Freezable] -and -not $value.IsFrozen) {
                     $value.Freeze()
-
                 }
+            }
+            catch {
                 Write-Verbose "Normalize-ThemeColorTable: Failed to freeze brush for key '$key'"
             }
             continue
@@ -1103,8 +1108,10 @@ function Normalize-ThemeColorTable {
         if (-not [string]::IsNullOrWhiteSpace($resolved)) {
             $Theme[$key] = $resolved
         }
+    }
 
     return $Theme
+}
 
 # Creates a cloneable brush instance from a variety of incoming values.
 function Resolve-BrushInstance {
@@ -1121,15 +1128,17 @@ function Resolve-BrushInstance {
     }
 
     if ($current -is [System.Windows.Media.Brush]) {
+        try {
             $clone = if ($current -is [System.Windows.Freezable]) { $current.Clone() } else { $current }
             if ($clone -is [System.Windows.Freezable] -and -not $clone.IsFrozen) {
                 try { $clone.Freeze() } catch { }
-
             }
             return $clone
-        } catch {
+        }
+        catch {
             return $current
         }
+    }
 
     return $null
 
