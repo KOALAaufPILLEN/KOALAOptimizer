@@ -1148,12 +1148,20 @@ function New-SolidColorBrushSafe {
 
     if ($null -eq $ColorValue) { return $null }
 
-    $existingBrush = Resolve-BrushInstance $ColorValue
+    try {
+        $existingBrush = Resolve-BrushInstance $ColorValue
+    }
+    catch {
+        Write-Verbose "Resolve-BrushInstance failed for '$ColorValue': $($_.Exception.Message)"
+        $existingBrush = $null
+    }
+
     if ($existingBrush -is [System.Windows.Media.SolidColorBrush]) {
         return $existingBrush
     }
 
     if ($existingBrush -is [System.Windows.Media.Brush]) {
+        try {
             $colorText = $existingBrush.ToString()
             if (-not [string]::IsNullOrWhiteSpace($colorText)) {
                 $colorCandidate = [System.Windows.Media.ColorConverter]::ConvertFromString($colorText)
@@ -1164,6 +1172,8 @@ function New-SolidColorBrushSafe {
 
                 }
             }
+        }
+        catch {
             Write-Verbose "Failed to coerce brush value '$existingBrush' to SolidColorBrush: $($_.Exception.Message)"
         }
     }
@@ -1179,25 +1189,34 @@ function New-SolidColorBrushSafe {
 
     $converter = Get-SharedBrushConverter
     if ($converter) {
+        try {
             $converted = $converter.ConvertFromString($resolvedValue)
             $convertedBrush = Resolve-BrushInstance $converted
             if ($convertedBrush -is [System.Windows.Media.SolidColorBrush]) {
                 return $convertedBrush
 
             }
+        }
+        catch {
             Write-Verbose "BrushConverter could not convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
         }
 
-        $color = [System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
-        if ($color -is [System.Windows.Media.Color]) {
-            $brush = New-Object System.Windows.Media.SolidColorBrush $color
-            $brush.Freeze()
-            return $brush
+        try {
+            $color = [System.Windows.Media.ColorConverter]::ConvertFromString($resolvedValue)
+            if ($color -is [System.Windows.Media.Color]) {
+                $brush = New-Object System.Windows.Media.SolidColorBrush $color
+                $brush.Freeze()
+                return $brush
 
+            }
         }
-        Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
+        catch {
+            Write-Verbose "Failed to convert '$resolvedValue' to SolidColorBrush: $($_.Exception.Message)"
+        }
+    }
 
     return $null
+}
 
 function Get-SharedBrushConverter {
     if (-not $script:SharedBrushConverter -or $script:SharedBrushConverter.GetType().FullName -ne 'System.Windows.Media.BrushConverter') {
