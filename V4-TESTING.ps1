@@ -9664,7 +9664,9 @@ function Disable-EdgeTelemetry {
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Edge" "MetricsReportingEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Edge" "PersonalizationReportingEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Log "Edge telemetry disabled" 'Success'
-} catch { }function Disable-Cortana {
+}
+
+function Disable-Cortana {
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" "AllowCortana" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Set-Reg "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" "BingSearchEnabled" 'DWord' 0 | Out-Null
     Log "Cortana disabled" 'Success'
@@ -9674,7 +9676,9 @@ function Disable-Telemetry {
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" "AllowTelemetry" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Log "System telemetry disabled" 'Success'
-} catch { }# ---------- Razer Booster-inspired Advanced Optimizations ----------
+}
+
+# ---------- Razer Booster-inspired Advanced Optimizations ----------
 function Disable-AdvancedTelemetry {
     # Enhanced telemetry disabling beyond basic Windows telemetry
     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" "AllowTelemetry" 'DWord' 0 -RequiresAdmin $true | Out-Null
@@ -9685,7 +9689,9 @@ function Disable-AdvancedTelemetry {
     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe" "Debugger" 'String' "%windir%\System32\taskkill.exe" -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\DeviceCensus.exe" "Debugger" 'String' "%windir%\System32\taskkill.exe" -RequiresAdmin $true | Out-Null
     Log "Advanced telemetry and tracking disabled" 'Success'
-} catch { }function Enable-MemoryDefragmentation {
+}
+
+function Enable-MemoryDefragmentation {
     # Advanced memory management and cleanup
     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "ClearPageFileAtShutdown" 'DWord' 1 -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 'DWord' 1 -RequiresAdmin $true | Out-Null
@@ -9806,7 +9812,9 @@ function Disable-CompatibilityTelemetry {
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat" "DisableInventory" 'DWord' 1 -RequiresAdmin $true | Out-Null
     Set-Reg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat" "DisableUAR" 'DWord' 1 -RequiresAdmin $true | Out-Null
     Log "Compatibility telemetry disabled" 'Success'
-} catch { }function Disable-WSH {
+}
+
+function Disable-WSH {
     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows Script Host\Settings" "Enabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
     Log "Windows Script Host disabled" 'Success'
 }
