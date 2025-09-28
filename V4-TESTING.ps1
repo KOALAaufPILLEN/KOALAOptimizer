@@ -9197,65 +9197,88 @@ function Apply-DX11Optimizations {
     foreach ($optimization in $OptimizationList) {
         switch ($optimization) {
             'DX11EnhancedGpuScheduling' {
+                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" "EnablePreemption" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrLevel" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "TdrDelay" 'DWord' 60 -RequiresAdmin $true | Out-Null
                     Log "Enhanced GPU scheduling for DX11 applied" 'Success'
+                }
+                catch {
                     Log "Failed to apply enhanced GPU scheduling: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11GameProcessPriority' {
+                try {
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" "UseLargePages" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 'DWord' 38 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "LargeSystemCache" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Game process priority optimizations applied" 'Success'
+                }
+                catch {
                     Log "Failed to apply process priority optimizations: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11DisableBackgroundServices' {
+                try {
                     $servicesToDisable = @('Themes', 'TabletInputService', 'Fax', 'WSearch', 'HomeGroupListener', 'HomeGroupProvider')
                     foreach ($service in $servicesToDisable) {
                         $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
                         if ($svc -and $svc.Status -eq 'Running') {
                             Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
                             Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
-
                         }
                     }
                     Log "Background services disabled for gaming performance" 'Success'
+                }
+                catch {
                     Log "Failed to disable some background services: $($_.Exception.Message)" 'Warning'
                 }
             }
 
             'DX11HardwareAcceleration' {
+                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 'DWord' 2 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "EnableHWSched" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D_DISABLE_9EX" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Hardware-accelerated GPU scheduling enabled" 'Success'
+                }
+                catch {
                     Log "Failed to enable hardware-accelerated GPU scheduling: $($_.Exception.Message)" 'Warning'
                 }
+            }
 
             'DX11MaxPerformanceMode' {
+                try {
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power" "HibernateEnabledDefault" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" "HiberbootEnabled" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\893dee8e-2bef-41e0-89c6-b55d0929964c" "ValueMax" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\893dee8e-2bef-41e0-89c6-b55d0929964c" "ValueMin" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "Maximum performance mode configured" 'Success'
+                }
+                catch {
                     Log "Failed to configure maximum performance mode: $($_.Exception.Message)" 'Warning'
                 }
+            }
 
             'DX11RegistryOptimizations' {
+                try {
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_MULTITHREADED" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_ENABLE_BREAK_ON_MESSAGE" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_ENABLE_SHADER_CACHING" 'DWord' 1 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SOFTWARE\Microsoft\DirectX" "D3D11_FORCE_SINGLE_THREADED" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Set-Reg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "DisableWriteCombining" 'DWord' 0 -RequiresAdmin $true | Out-Null
                     Log "DirectX 11 registry optimizations applied" 'Success'
+                }
+                catch {
                     Log "Failed to apply DirectX 11 registry optimizations: $($_.Exception.Message)" 'Warning'
                 }
+            }
+        }
+    }
+}
 
 # ---------- Apply Game-Specific Tweaks ----------
 function Apply-GameSpecificTweaks {
