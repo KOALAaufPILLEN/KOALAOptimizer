@@ -1432,6 +1432,9 @@ function Normalize-BrushResources {
             $Resources[$key] = [System.Windows.Media.Brushes]::Transparent
         } else {
             Write-Verbose "Normalize-BrushResources skipped '$key' due to unresolved brush value"
+        }
+    }
+}
 
 function Normalize-ElementBrushProperties {
     param([System.Windows.DependencyObject]$Element)
@@ -1452,13 +1455,19 @@ function Normalize-ElementBrushProperties {
     )
 
     foreach ($propertyName in $brushPropertyNames) {
+        try {
             $propertyInfo = $Element.GetType().GetProperty($propertyName)
+        }
+        catch {
             $propertyInfo = $null
         }
 
         if (-not $propertyInfo -or -not $propertyInfo.CanRead -or -not $propertyInfo.CanWrite) { continue }
 
+        try {
             $currentValue = $propertyInfo.GetValue($Element, $null)
+        }
+        catch {
             continue
         }
 
@@ -1466,6 +1475,8 @@ function Normalize-ElementBrushProperties {
         if ($currentValue -is [System.Windows.Media.Brush]) { continue }
 
         Set-BrushPropertySafe -Target $Element -Property $propertyName -Value $currentValue -AllowTransparentFallback
+    }
+}
 
 function Normalize-VisualTreeBrushes {
     param([System.Windows.DependencyObject]$Root)
@@ -1481,7 +1492,10 @@ function Normalize-VisualTreeBrushes {
 
         if ($current -isnot [System.Windows.DependencyObject]) { continue }
 
+        try {
             $hash = [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode($current)
+        }
+        catch {
             continue
         }
 
@@ -1490,7 +1504,10 @@ function Normalize-VisualTreeBrushes {
         Normalize-ElementBrushProperties -Element $current
 
         $childCount = 0
+        try {
             $childCount = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($current)
+        }
+        catch {
             $childCount = 0
         }
 
@@ -1500,12 +1517,17 @@ function Normalize-VisualTreeBrushes {
             if ($child) { $stack.Push($child) }
         }
 
+        try {
             foreach ($logicalChild in [System.Windows.LogicalTreeHelper]::GetChildren($current)) {
                 if ($logicalChild -is [System.Windows.DependencyObject]) {
                     $stack.Push($logicalChild)
-
                 }
             }
+        }
+        catch {
+        }
+    }
+}
 
 # ---------- Theme and Styling Helpers (moved forward for availability) ----------
 function Find-AllControlsOfType {
