@@ -1226,12 +1226,11 @@ function New-SolidColorBrushSafe {
 
 function Get-SharedBrushConverter {
     if (-not $script:SharedBrushConverter -or $script:SharedBrushConverter.GetType().FullName -ne 'System.Windows.Media.BrushConverter') {
-            $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
-            $script:SharedBrushConverter = $null
-        }
+        $script:SharedBrushConverter = [System.Windows.Media.BrushConverter]::new()
     }
 
     return $script:SharedBrushConverter
+}
 
 function Set-ShapeFillSafe {
     param(
@@ -1241,9 +1240,13 @@ function Set-ShapeFillSafe {
 
     if (-not $Shape) { return }
 
+    try {
         Set-BrushPropertySafe -Target $Shape -Property 'Fill' -Value $Value -AllowTransparentFallback
+    }
+    catch {
         Write-Verbose "Set-ShapeFillSafe failed: $($_.Exception.Message)"
     }
+}
 
 # Centralized helper to assign Brush-like theme values to WPF dependency properties.
 function Set-BrushPropertySafe {
