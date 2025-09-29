@@ -310,42 +310,6 @@ function Get-ThemeColors {
         # Silent failure for log optimization to prevent recursion
     }
 
-function Get-SystemPerformanceMetrics {
-    param([switch]$Detailed)
-
-        $metrics = @{
-            CPU = 0
-            Memory = 0
-            Disk = 0
-            Network = 0
-
-        }
-
-        try {
-            # Get CPU usage
-                $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
-                $metrics.CPU = [math]::Round($cpu.Average, 1)
-
-            # Get Memory usage
-                $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
-                $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
-                $usedMemory = $totalMemory - $availableMemory
-                $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
-        }
-        catch {
-            $metrics.CPU = 0
-            $metrics.Memory = 0
-        }
-
-        if ($Detailed) {
-            # Add more detailed metrics if needed
-            $metrics.Timestamp = Get-Date
-            $metrics.Source = "WMI"
-        }
-
-        return $metrics
-}
-
 function Ensure-NavigationVisibility {
     param([System.Windows.Controls.Panel]$NavigationPanel)
 
@@ -4249,15 +4213,22 @@ function Get-SystemPerformanceMetrics {
     Provides comprehensive system metrics for dashboard display with efficient polling
     #>
 
-        $metrics = @{}
+    $metrics = @{
+        CpuUsage = 0
+        MemoryUsedGB = 0
+        MemoryTotalGB = 0
+        MemoryUsagePercent = 0
+        ActiveGamesCount = if ($global:ActiveGames) { $global:ActiveGames.Count } else { 0 }
+        LastOptimization = "Never"
+    }
 
+    try {
         # Get CPU Usage using existing PerfMon API
-        try {
-            $idleTime = [long]0
-            $kernelTime = [long]0
-            $userTime = [long]0
+        $idleTime = [long]0
+        $kernelTime = [long]0
+        $userTime = [long]0
 
-            if ([PerfMon]::GetSystemTimes([ref]$idleTime, [ref]$kernelTime, [ref]$userTime)) {
+        if ([PerfMon]::GetSystemTimes([ref]$idleTime, [ref]$kernelTime, [ref]$userTime)) {
             $currentTime = [DateTime]::Now
             $timeDiff = ($currentTime - $global:LastCpuTime.Timestamp).TotalMilliseconds
 
@@ -4270,78 +4241,61 @@ function Get-SystemPerformanceMetrics {
                 if ($totalDiff -gt 0) {
                     $cpuUsage = [Math]::Round((($totalDiff - $idleDiff) / $totalDiff) * 100, 1)
                     $metrics.CpuUsage = [Math]::Max(0, [Math]::Min(100, $cpuUsage))
-                } else {
-                    $metrics.CpuUsage = 0
-
                 }
-            } else {
-                $metrics.CpuUsage = 0
+            }
+
+            $global:LastCpuTime = @{
+                Idle      = $idleTime
+                Kernel    = $kernelTime
+                User      = $userTime
+                Timestamp = $currentTime
             }
         } else {
-            $metrics.CpuUsage = 0
-            # Safe defaults on error for Windows API performance monitoring calls
-            $metrics.CpuUsage = 0
-            Write-Verbose "CPU monitoring failed: $($_.Exception.Message)"
-
-        # Update LastCpuTime with Idle, Kernel, User times and Timestamp for accurate CPU delta calculations
-        $global:LastCpuTime = @{
-            Idle = $idleTime
-            Kernel = $kernelTime
-            User = $userTime
-            Timestamp = $currentTime
+            Write-Verbose "CPU monitoring failed: unable to retrieve system times."
         }
 
         # Get Memory Usage using existing PerfMon API
-            $memStatus = New-Object PerfMon+MEMORYSTATUSEX
-            $memStatus.dwLength = [System.Runtime.InteropServices.Marshal]::SizeOf($memStatus)
+        $memStatus = New-Object PerfMon+MEMORYSTATUSEX
+        $memStatus.dwLength = [System.Runtime.InteropServices.Marshal]::SizeOf($memStatus)
 
-            if ([PerfMon]::GlobalMemoryStatusEx([ref]$memStatus)) {
-            # Math.Round calculations for accurate GB conversions and percentage
+        if ([PerfMon]::GlobalMemoryStatusEx([ref]$memStatus)) {
             $totalGB = [Math]::Round($memStatus.ullTotalPhys / 1GB, 1)
             $availableGB = [Math]::Round($memStatus.ullAvailPhys / 1GB, 1)
             $usedGB = [Math]::Round($totalGB - $availableGB, 1)
-            $usagePercent = [Math]::Round($memStatus.dwMemoryLoad, 1)
 
             $metrics.MemoryUsedGB = $usedGB
             $metrics.MemoryTotalGB = $totalGB
-            $metrics.MemoryUsagePercent = $usagePercent
-
+            $metrics.MemoryUsagePercent = [Math]::Round($memStatus.dwMemoryLoad, 1)
         } else {
-            $metrics.MemoryUsedGB = 0
-            $metrics.MemoryTotalGB = 0
-            $metrics.MemoryUsagePercent = 0
-            # Safe defaults on error for memory monitoring Windows API calls
-            $metrics.MemoryUsedGB = 0
-            $metrics.MemoryTotalGB = 0
-            $metrics.MemoryUsagePercent = 0
-            Write-Verbose "Memory monitoring failed: $($_.Exception.Message)"
-
-        # Get Active Games Count (from existing global variable)
-        $metrics.ActiveGamesCount = if ($global:ActiveGames) { $global:ActiveGames.Count } else { 0 }
+            Write-Verbose "Memory monitoring failed: unable to retrieve memory status."
+        }
 
         # Get Last Optimization Time (from logs or global variable)
         if ($global:LastOptimizationTime) {
             $timeSince = (Get-Date) - $global:LastOptimizationTime
+
             if ($timeSince.Days -gt 0) {
                 $metrics.LastOptimization = "$($timeSince.Days)d ago"
             } elseif ($timeSince.Hours -gt 0) {
                 $metrics.LastOptimization = "$($timeSince.Hours)h ago"
             } elseif ($timeSince.Minutes -gt 0) {
                 $metrics.LastOptimization = "$($timeSince.Minutes)m ago"
+            } else {
                 $metrics.LastOptimization = "Just now"
+            }
+        } elseif ($global:LastOptimizationTime -eq $null) {
             $metrics.LastOptimization = "Never"
-
-        return $metrics
-
-        # Return safe defaults on error
-        return @{
-            CpuUsage = 0
-            MemoryUsedGB = 0
-            MemoryTotalGB = 0
-            MemoryUsagePercent = 0
-            ActiveGamesCount = 0
-            LastOptimization = "Error"
         }
+    } catch {
+        Write-Verbose "Performance metric collection failed: $($_.Exception.Message)"
+    }
+
+    if (-not $metrics.LastOptimization) {
+        $metrics.LastOptimization = "Never"
+    }
+
+    return $metrics
+}
 
 function Update-DashboardMetrics {
     <#
