@@ -1575,19 +1575,28 @@ function Find-AllControlsOfType {
         return
     }
 
+    try {
         if ($Parent -is $ControlType) {
             $Collection.Value += $Parent
-
         }
 
         if ($Parent.Children) {
             foreach ($child in $Parent.Children) {
                 Find-AllControlsOfType -Parent $child -ControlType $ControlType -Collection $Collection
             }
-        } elseif ($Parent.Content -and $Parent.Content -is [System.Windows.UIElement]) {
+        }
+        elseif ($Parent.Content -and $Parent.Content -is [System.Windows.UIElement]) {
             Find-AllControlsOfType -Parent $Parent.Content -ControlType $ControlType -Collection $Collection
+        }
+        elseif ($Parent.Child -and $Parent.Child -is [System.Windows.UIElement]) {
             Find-AllControlsOfType -Parent $Parent.Child -ControlType $ControlType -Collection $Collection
+        }
+    }
+    catch {
         # Continue searching even if error occurs with specific element
+        Write-Verbose "Find-AllControlsOfType encountered an error: $($_.Exception.Message)"
+    }
+}
 
 function Set-StackPanelChildSpacing {
     param(
@@ -1616,27 +1625,37 @@ function Set-StackPanelChildSpacing {
             if ($index -lt $count - 1) {
                 if ([math]::Abs($current) -lt 0.01) {
                     $newMargin.Right = $Spacing
-                } elseif ($current -lt $Spacing) {
+                }
+                elseif ($current -lt $Spacing) {
                     $newMargin.Right = $Spacing
                 }
-            } else {
+            }
+            else {
                 if ([math]::Abs($current) -lt 0.01) {
                     $newMargin.Right = 0
                 }
             }
-        } else {
+        }
+        else {
             $current = $margin.Bottom
             if ($index -lt $count - 1) {
                 if ([math]::Abs($current) -lt 0.01) {
                     $newMargin.Bottom = $Spacing
-                } elseif ($current -lt $Spacing) {
+                }
+                elseif ($current -lt $Spacing) {
                     $newMargin.Bottom = $Spacing
                 }
+            }
+            else {
                 if ([math]::Abs($current) -lt 0.01) {
                     $newMargin.Bottom = 0
                 }
+            }
+        }
 
         $child.Margin = $newMargin
+    }
+}
 
 function Set-GridColumnSpacing {
     param(
