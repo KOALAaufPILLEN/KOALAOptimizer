@@ -1163,18 +1163,24 @@ function New-SolidColorBrushSafe {
     if ($existingBrush -is [System.Windows.Media.Brush]) {
         try {
             $colorText = $existingBrush.ToString()
-            if (-not [string]::IsNullOrWhiteSpace($colorText)) {
+        }
+        catch {
+            Write-Verbose "Failed to read brush value for '$existingBrush': $($_.Exception.Message)"
+            $colorText = $null
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($colorText)) {
+            try {
                 $colorCandidate = [System.Windows.Media.ColorConverter]::ConvertFromString($colorText)
                 if ($colorCandidate -is [System.Windows.Media.Color]) {
                     $fromBrush = New-Object System.Windows.Media.SolidColorBrush $colorCandidate
                     $fromBrush.Freeze()
                     return $fromBrush
-
                 }
             }
-        }
-        catch {
-            Write-Verbose "Failed to coerce brush value '$existingBrush' to SolidColorBrush: $($_.Exception.Message)"
+            catch {
+                Write-Verbose "Failed to coerce brush value '$existingBrush' to SolidColorBrush: $($_.Exception.Message)"
+            }
         }
     }
 
