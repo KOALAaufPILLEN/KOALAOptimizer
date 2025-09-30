@@ -1750,59 +1750,6 @@ function Test-XamlNameUniqueness {
     throw "Duplicate element names detected in XAML content."
 }
 
-function Get-XamlDuplicateNames {
-    param(
-        [Parameter(Mandatory = $true)][string]$Xaml
-    )
-
-    $pattern = [regex]'\b(?:x:)?Name\s*=\s*"([^"]+)"'
-    $occurrences = @()
-    $lineNumber = 1
-
-    foreach ($line in $Xaml -split "`r?`n") {
-        foreach ($match in $pattern.Matches($line)) {
-            $occurrences += [pscustomobject]@{
-                Name     = $match.Groups[1].Value
-                Line     = $lineNumber
-                LineText = $line.Trim()
-            }
-        }
-
-        $lineNumber++
-    }
-
-    return $occurrences |
-        Group-Object -Property Name |
-        Where-Object { $_.Count -gt 1 } |
-        ForEach-Object {
-            [pscustomobject]@{
-                Name        = $_.Name
-                Occurrences = $_.Group
-            }
-        }
-}
-
-function Test-XamlNameUniqueness {
-    param(
-        [Parameter(Mandatory = $true)][string]$Xaml
-    )
-
-    $duplicates = Get-XamlDuplicateNames -Xaml $Xaml
-    if (-not $duplicates -or $duplicates.Count -eq 0) {
-        return
-    }
-
-    Write-Host 'Duplicate x:Name/Name values detected in XAML:' -ForegroundColor Red
-    foreach ($duplicate in $duplicates) {
-        foreach ($occurrence in $duplicate.Occurrences) {
-            $lineInfo = if ($occurrence.Line -gt 0) { "line $($occurrence.Line)" } else { 'unknown line' }
-            Write-Host ("  {0} ({1}): {2}" -f $duplicate.Name, $lineInfo, $occurrence.LineText) -ForegroundColor Red
-        }
-    }
-
-    throw "Duplicate element names detected in XAML content."
-}
-
 function Apply-FallbackThemeColors {
     param($element, $colors)
 
