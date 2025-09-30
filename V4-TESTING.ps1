@@ -4252,6 +4252,7 @@ function Update-DashboardMetrics {
     Safely updates dashboard UI elements with current system performance data
     #>
 
+    try {
         $metrics = Get-SystemPerformanceMetrics
 
         # Update CPU Usage
@@ -4261,14 +4262,14 @@ function Update-DashboardMetrics {
 
                 # Color coding based on CpuUsage and MemoryUsagePercent for dynamic metrics display
                 if ($metrics.CpuUsage -ge 80) {
-                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#FF4444'  # Red for high
-
+                    Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#FF4444'  # Red for high load
                 } elseif ($metrics.CpuUsage -ge 60) {
                     Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#A78BFA'  # Purple for medium load
                 } else {
                     Set-BrushPropertySafe -Target $lblDashCpuUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for low load
                 }
             })
+        }
 
         # Update Memory Usage
         if ($lblDashMemoryUsage) {
@@ -4283,6 +4284,8 @@ function Update-DashboardMetrics {
                 } else {
                     Set-BrushPropertySafe -Target $lblDashMemoryUsage -Property 'Foreground' -Value '#8F6FFF'  # Accent for normal
                 }
+            })
+        }
 
         if ($lblHeroProfiles) {
             $lblHeroProfiles.Dispatcher.Invoke([Action]{
@@ -4314,6 +4317,7 @@ function Update-DashboardMetrics {
                     Set-BrushPropertySafe -Target $lblDashActiveGames -Property 'Foreground' -Value '#A6AACF'  # Default color
                 }
             })
+        }
 
         # Update Last Optimization
         if ($lblDashLastOptimization) {
@@ -4340,12 +4344,16 @@ function Update-DashboardMetrics {
                     $lblHeaderSystemStatus.Text = 'Stable'
                     Set-BrushPropertySafe -Target $lblHeaderSystemStatus -Property 'Foreground' -Value [System.Windows.Media.Brushes]::LightGreen
                 }
+            })
+        }
 
         # Refresh System Health summary without running a full check
         Update-SystemHealthSummary
-
+    } catch {
         # Silent fail to prevent UI disruption
         Write-Verbose "Dashboard metrics update failed: $($_.Exception.Message)"
+    }
+}
 
 function Start-PerformanceMonitoring {
     <#
@@ -4355,9 +4363,9 @@ function Start-PerformanceMonitoring {
     Initializes a dispatcher timer for regular dashboard updates
     #>
 
+    try {
         if ($global:PerformanceTimer) {
             $global:PerformanceTimer.Stop()
-
         }
 
         # Create dispatcher timer for UI updates
@@ -4376,9 +4384,10 @@ function Start-PerformanceMonitoring {
         Update-DashboardMetrics
 
         Log "Real-time performance monitoring started (3s intervals)" 'Success'
-
+    } catch {
         Log "Error starting performance monitoring: $($_.Exception.Message)" 'Error'
     }
+}
 
 function Stop-PerformanceMonitoring {
     <#
@@ -4386,14 +4395,16 @@ function Stop-PerformanceMonitoring {
     Stops the performance monitoring timer
     #>
 
+    try {
         if ($global:PerformanceTimer) {
             $global:PerformanceTimer.Stop()
             $global:PerformanceTimer = $null
             Log "Performance monitoring stopped" 'Info'
-
         }
+    } catch {
         Write-Verbose "Error stopping performance monitoring: $($_.Exception.Message)"
     }
+}
 
 # ---------- Enhanced Game Detection and Auto-Optimization ----------
 $global:ActiveGameProcesses = @()
