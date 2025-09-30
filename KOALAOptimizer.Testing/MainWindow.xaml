@@ -110,14 +110,8 @@
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
-        <!-- Header with gradient -->
-        <Border Grid.Row="0" Padding="15">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#6d28d9" Offset="0"/>
-                    <GradientStop Color="#8b5cf6" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
+        <!-- Header with accent background -->
+        <Border Grid.Row="0" Padding="15" Background="{StaticResource AccentPurple}">
             <StackPanel>
                 <TextBlock Text="🐨 KOALA Gaming Optimizer v3.0" FontSize="24" FontWeight="Bold" Foreground="White"/>
                 <TextBlock Text="Advanced Windows gaming optimization with comprehensive FPS-boosting features" FontSize="12" Foreground="#e9d5ff"/>
