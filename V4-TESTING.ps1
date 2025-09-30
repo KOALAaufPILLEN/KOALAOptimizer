@@ -11057,6 +11057,7 @@ if ($btnLoadSettings) {
 
 if ($btnResetSettings) {
     $btnResetSettings.Add_Click({
+        try {
             $result = [System.Windows.MessageBox]::Show(
                 "Are you sure you want to reset all settings to default?`n`nThis will:`n- Set theme to Dark Purple`n- Set UI scale to 100%`n- Switch to Basic mode",
                 "Reset Settings",
@@ -11101,12 +11102,15 @@ if ($btnResetSettings) {
                 Log "All settings reset to default values" 'Success'
                 [System.Windows.MessageBox]::Show("All settings have been reset to default values!", "Settings Reset", 'OK', 'Information')
             }
+        } catch {
             Log "Error resetting settings: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Error resetting settings: $($_.Exception.Message)", "Reset Failed", 'OK', 'Error')
         }
     })
+} else {
     Log "Warning: btnResetSettings control not found - skipping event handler binding" 'Warning'
 
+}
 # Auto-optimize checkbox
 if ($chkAutoOptimize) {
     $chkAutoOptimize.Add_Checked({
@@ -11128,34 +11132,41 @@ if ($chkAutoOptimize) {
 # Clear log button - Enhanced user action tracking
 if ($btnClearLog) {
     $btnClearLog.Add_Click({
+        try {
             Log "User requested to clear Activity Log in $global:MenuMode mode" 'Info'
 
             if ($global:LogBox -and $global:LogBoxAvailable) {
                 try {
                     $currentLogLines = if ($global:LogBox.Text) { ($global:LogBox.Text -split "`n").Count } else { 0 }
                     $global:LogBox.Clear()
-                Log "Activity Log cleared successfully ($currentLogLines entries removed)" 'Success'
-                Log "Activity Log reset - ready for new user action tracking" 'Info'
+                    Log "Activity Log cleared successfully ($currentLogLines entries removed)" 'Success'
+                    Log "Activity Log reset - ready for new user action tracking" 'Info'
 
-                # Show user feedback
-                [System.Windows.MessageBox]::Show("Activity Log has been cleared successfully!`n`nThe log is now ready to track new user actions.`nPrevious $currentLogLines log entries have been removed from the display.", "Log Cleared", 'OK', 'Information')
-
-                Log "Failed to clear Activity Log UI: $($_.Exception.Message)" 'Warning'
-                [System.Windows.MessageBox]::Show("Warning: Could not clear the Activity Log display.`n`nError: $($_.Exception.Message)", "Clear Failed", 'OK', 'Warning')
-            } catch { }} else {
-            Log "Activity Log UI not available - cleared console logs only" 'Warning'
-            [System.Windows.MessageBox]::Show("Activity Log display not available.`nConsole logs have been noted as cleared.", "Limited Clear", 'OK', 'Warning')
+                    # Show user feedback
+                    [System.Windows.MessageBox]::Show("Activity Log has been cleared successfully!`n`nThe log is now ready to track new user actions.`nPrevious $currentLogLines log entries have been removed from the display.", "Log Cleared", 'OK', 'Information')
+                } catch {
+                    Log "Failed to clear Activity Log UI: $($_.Exception.Message)" 'Warning'
+                    [System.Windows.MessageBox]::Show("Warning: Could not clear the Activity Log display.`n`nError: $($_.Exception.Message)", "Clear Failed", 'OK', 'Warning')
+                }
+            } else {
+                Log "Activity Log UI not available - cleared console logs only" 'Warning'
+                [System.Windows.MessageBox]::Show("Activity Log display not available.`nConsole logs have been noted as cleared.", "Limited Clear", 'OK', 'Warning')
+            }
+        } catch {
+            Log "Error in Clear Log operation: $($_.Exception.Message)" 'Error'
         }
+    })
+} else {
+    Log "Warning: btnClearLog control not found - skipping event handler binding" 'Warning'
 
-        Log "Error in Clear Log operation: $($_.Exception.Message)" 'Error'
-    }
-
+}
 # Activity Log Extend button - Toggle height functionality
 if ($btnExtendLog) {
     # Initialize global variable for log state
     $global:LogExtended = $false
 
     $btnExtendLog.Add_Click({
+        try {
             if ($activityLogBorder) {
                 if (-not $global:LogExtended) {
                     # Extend the log to full size
@@ -11176,15 +11187,21 @@ if ($btnExtendLog) {
                 $activityLogBorder.InvalidateMeasure()
                 $activityLogBorder.UpdateLayout()
             }
+        } catch {
             Log "Error toggling Activity Log size: $($_.Exception.Message)" 'Error'
         }
+    })
+} else {
+    Log "Warning: btnExtendLog control not found - skipping event handler binding" 'Warning'
 
+}
 # Activity Log View Toggle button - Switch between compact and detailed views
 if ($btnToggleLogView) {
     # Initialize global variable for log view state
     $global:LogViewDetailed = $true
 
     $btnToggleLogView.Add_Click({
+        try {
             if ($global:LogBox) {
                 if ($global:LogViewDetailed) {
                     # Switch to compact view - show only latest entries
@@ -11214,15 +11231,21 @@ if ($btnToggleLogView) {
                     $logScrollViewer.ScrollToBottom()
                 }
             }
+        } catch {
             Log "Error toggling log view mode: $($_.Exception.Message)" 'Error'
         }
+    })
 
     # Store detailed log for restoration
     $global:DetailedLogBackup = ""
+} else {
+    Log "Warning: btnToggleLogView control not found - skipping event handler binding" 'Warning'
 
+}
 # Activity Log Save button
 if ($btnSaveLog) {
     $btnSaveLog.Add_Click({
+        try {
             Log "User requested to save Activity Log" 'Info'
 
             $saveDialog = New-Object Microsoft.Win32.SaveFileDialog
@@ -11249,10 +11272,15 @@ if ($btnSaveLog) {
                     [System.Windows.MessageBox]::Show("No activity log content available to save.", "No Content", 'OK', 'Warning')
                 }
             }
+        } catch {
             Log "Error saving activity log: $($_.Exception.Message)" 'Error'
             [System.Windows.MessageBox]::Show("Failed to save activity log: $($_.Exception.Message)", "Save Error", 'OK', 'Error')
         }
+    })
+} else {
+    Log "Warning: btnSaveLog control not found - skipping event handler binding" 'Warning'
 
+}
 # Search Log button - Enhanced log search and filtering
 if ($btnSearchLog) {
     $btnSearchLog.Add_Click({
