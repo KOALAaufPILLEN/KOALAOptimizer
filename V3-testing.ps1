@@ -47,25 +47,26 @@ if (-not $script:IsWindowsPlatform) {
 }
 
 # ---------- WPF Assemblies ----------
-    # Load required assemblies for the WPF-based UI. Breaking the list of
-    # assemblies into an array keeps the code readable and avoids issues with
-    # extremely long lines or accidental line wraps.
-    $assemblies = @(
-        'PresentationFramework'
-        'PresentationCore'
-        'WindowsBase'
-        'System.Xaml'
-        'System.Windows.Forms'
-        'Microsoft.VisualBasic'
-    )
-    try {
-        Add-Type -AssemblyName $assemblies -ErrorAction Stop
-    }
-    catch {
-        $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
-        Write-Host $warning -ForegroundColor Yellow
-        return
-    }
+# Load required assemblies for the WPF-based UI. Breaking the list of
+# assemblies into an array keeps the code readable and avoids issues with
+# extremely long lines or accidental line wraps.
+$assemblies = @(
+    'PresentationFramework'
+    'PresentationCore'
+    'WindowsBase'
+    'System.Xaml'
+    'System.Windows.Forms'
+    'Microsoft.VisualBasic'
+)
+
+try {
+    Add-Type -AssemblyName $assemblies -ErrorAction Stop
+}
+catch {
+    $warning = "Warning: WPF assemblies not available. This script requires Windows with .NET Framework."
+    Write-Host $warning -ForegroundColor Yellow
+    return
+}
 
 $BrushConverter = New-Object System.Windows.Media.BrushConverter
 
