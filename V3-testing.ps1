@@ -115,98 +115,36 @@ function Set-BorderBrushSafe {
 # ---------- CENTRALIZED THEME ARRAY - ONLY CHANGE HERE! ----------
 # ---------- COMPLETE THEME ARRAY - ALL COLORS CENTRALIZED! ----------
 $global:ThemeDefinitions = @{
-    'Nebula' = @{
-        Name = 'Nebula Vortex'
-        Background = $BrushConverter.ConvertFromString('#0F0F12')
-        Primary = '#A855F7'
-        Hover = '#9333EA'
+    'OptimizerDark' = @{
+        Name = 'Optimizer Dark'
+        Background = $BrushConverter.ConvertFromString('#0A0A0A')
+        Primary = '#9966CC'
+        Hover = '#8659B3'
         Text = '#FFFFFF'
-        Secondary = $BrushConverter.ConvertFromString('#151517')
-        Accent = '#A855F7'
-        TextSecondary = '#9CA3AF'
-        LogBg = $BrushConverter.ConvertFromString('#111111')
-        SidebarBg = $BrushConverter.ConvertFromString('#141416')
-        HeaderBg = $BrushConverter.ConvertFromString('#151517')
+        Secondary = $BrushConverter.ConvertFromString('#141414')
+        Accent = '#9966CC'
+        TextSecondary = '#C7C7C7'
+        LogBg = $BrushConverter.ConvertFromString('#0F0F0F')
+        SidebarBg = $BrushConverter.ConvertFromString('#121212')
+        HeaderBg = $BrushConverter.ConvertFromString('#1A1A1A')
         Success = '#22C55E'
         Warning = '#F59E0B'
         Danger = '#EF4444'
         Info = '#60A5FA'
-        CardBackgroundStart = $BrushConverter.ConvertFromString('#1A1A1D')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#1A1A1D')
-        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#151517')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#151517')
-        CardBorder = '#2A2A2E'
+        CardBackgroundStart = $BrushConverter.ConvertFromString('#141414')
+        CardBackgroundEnd = $BrushConverter.ConvertFromString('#141414')
+        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#161616')
+        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#161616')
+        CardBorder = '#1F1F1F'
         GlowAccent = '#00000000'
-        GaugeBackground = $BrushConverter.ConvertFromString('#1F1F23')
-        GaugeStroke = '#A855F7'
-        SelectedBackground = $BrushConverter.ConvertFromString('#A855F7')
-        UnselectedBackground = $BrushConverter.ConvertFromString('#1F1F23')
+        GaugeBackground = $BrushConverter.ConvertFromString('#1E1E1E')
+        GaugeStroke = '#9966CC'
+        SelectedBackground = $BrushConverter.ConvertFromString('#9966CC')
+        UnselectedBackground = $BrushConverter.ConvertFromString('#1E1E1E')
         SelectedForeground = $BrushConverter.ConvertFromString('#FFFFFF')
-        UnselectedForeground = $BrushConverter.ConvertFromString('#9CA3AF')
-        HoverBackground = $BrushConverter.ConvertFromString('#222227')
+        UnselectedForeground = $BrushConverter.ConvertFromString('#C7C7C7')
+        HoverBackground = $BrushConverter.ConvertFromString('#222222')
         IsLight = $false
-    }
-    'Midnight' = @{
-        Name = 'Midnight Azure'
-        Background = $BrushConverter.ConvertFromString('#071021')
-        Primary = '#3FA6FF'
-        Hover = '#63B8FF'
-        Text = '#E6F1FF'
-        Secondary = $BrushConverter.ConvertFromString('#0D1A33')
-        Accent = '#3FA6FF'
-        TextSecondary = '#98B7D8'
-        LogBg = $BrushConverter.ConvertFromString('#0D1A33')
-        SidebarBg = $BrushConverter.ConvertFromString('#081326')
-        HeaderBg = $BrushConverter.ConvertFromString('#0F1F3C')
-        Success = '#10B981'
-        Warning = '#F59E0B'
-        Danger = '#EF4444'
-        Info = '#35D0FF'
-        CardBackgroundStart = $BrushConverter.ConvertFromString('#0D1A33')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#0D1A33')
-        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#102845')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#102845')
-        CardBorder = '#22538A'
-        GlowAccent = '#35D0FF'
-        GaugeBackground = $BrushConverter.ConvertFromString('#102845')
-        GaugeStroke = '#63B8FF'
-        SelectedBackground = $BrushConverter.ConvertFromString('#3FA6FF')
-        UnselectedBackground = $BrushConverter.ConvertFromString('#102845')
-        SelectedForeground = $BrushConverter.ConvertFromString('#031021')
-        UnselectedForeground = $BrushConverter.ConvertFromString('#E6F1FF')
-        HoverBackground = $BrushConverter.ConvertFromString('#1B395A')
-        IsLight = $false
-    }
-    'Lumen' = @{
-        Name = 'Lumen Daybreak'
-        Background = $BrushConverter.ConvertFromString('#F5F7FB')
-        Primary = '#5D5FEF'
-        Hover = '#4448D8'
-        Text = '#161B3A'
-        Secondary = $BrushConverter.ConvertFromString('#E7EAF5')
-        Accent = '#5D5FEF'
-        TextSecondary = '#444B72'
-        LogBg = $BrushConverter.ConvertFromString('#FFFFFF')
-        SidebarBg = $BrushConverter.ConvertFromString('#EEF1FA')
-        HeaderBg = $BrushConverter.ConvertFromString('#EEF1FA')
-        Success = '#0EA769'
-        Warning = '#C27803'
-        Danger = '#C24133'
-        Info = '#5D5FEF'
-        CardBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
-        CardBackgroundEnd = $BrushConverter.ConvertFromString('#FFFFFF')
-        SummaryBackgroundStart = $BrushConverter.ConvertFromString('#FFFFFF')
-        SummaryBackgroundEnd = $BrushConverter.ConvertFromString('#FFFFFF')
-        CardBorder = '#D6DAEE'
-        GlowAccent = '#2EA6A6'
-        GaugeBackground = $BrushConverter.ConvertFromString('#FFFFFF')
-        GaugeStroke = '#5D5FEF'
-        SelectedBackground = $BrushConverter.ConvertFromString('#5D5FEF')
-        UnselectedBackground = $BrushConverter.ConvertFromString('#EEF1FA')
-        SelectedForeground = $BrushConverter.ConvertFromString('#FFFFFF')
-        UnselectedForeground = $BrushConverter.ConvertFromString('#161B3A')
-        HoverBackground = $BrushConverter.ConvertFromString('#4448D8')
-        IsLight = $true
     }
 }
 
@@ -274,13 +212,13 @@ $global:CustomThemeColors = $null
 
 # Einfache Funktion zum Abrufen eines Themes
 function Get-ThemeColors {
-    param([string]$ThemeName = 'Nebula')
+    param([string]$ThemeName = 'OptimizerDark')
 
     if ($global:ThemeDefinitions.ContainsKey($ThemeName)) {
         return Normalize-ThemeColorTable $global:ThemeDefinitions[$ThemeName]
     } else {
-        Log "Theme '$ThemeName' nicht gefunden, verwende Nebula" 'Warning'
-        return Normalize-ThemeColorTable $global:ThemeDefinitions['Nebula']
+        Log "Theme '$ThemeName' nicht gefunden, verwende Optimizer Dark" 'Warning'
+        return Normalize-ThemeColorTable $global:ThemeDefinitions['OptimizerDark']
     }
 
 function Optimize-LogFile {
@@ -2081,7 +2019,7 @@ function Update-AllUIElementsRecursively {
           Log $errorMessage 'Warning'
 
 function Update-ComboBoxStyles {
-    param($Background, $Foreground, $Border, $ThemeName = 'Nebula')
+    param($Background, $Foreground, $Border, $ThemeName = 'OptimizerDark')
 
         $themeColors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
@@ -2138,7 +2076,7 @@ function Update-ComboBoxStyles {
         Log $errorMessage 'Warning'
 
 function Update-TextStyles {
-    param($Foreground, $Header, $ThemeName = 'Nebula')
+    param($Foreground, $Header, $ThemeName = 'OptimizerDark')
 
         $colors = Get-ThemeColors -ThemeName $ThemeName
         $isLight = $false
@@ -2238,7 +2176,7 @@ function Apply-ThemeColors {
     [CmdletBinding(DefaultParameterSetName='ByTheme')]
     param(
         [Parameter(ParameterSetName='ByTheme')]
-        [string]$ThemeName = 'Nebula',
+        [string]$ThemeName = 'OptimizerDark',
         [Parameter(ParameterSetName='ByCustom')]
         [string]$Background,
         [Parameter(ParameterSetName='ByCustom')]
@@ -2252,7 +2190,7 @@ function Apply-ThemeColors {
     )
 
         if ($PSCmdlet.ParameterSetName -eq 'ByCustom') {
-            $colors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+            $colors = (Get-ThemeColors -ThemeName 'OptimizerDark').Clone()
             $colors['Name'] = 'Custom Theme'
 
             if ($PSBoundParameters.ContainsKey('Background') -and -not [string]::IsNullOrWhiteSpace($Background)) {
@@ -2622,13 +2560,13 @@ catch { }
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
 
         $shouldAttemptFallback = -not $IsFallback
-        if ($PSCmdlet.ParameterSetName -eq 'ByTheme' -and $ThemeName -eq 'Nebula') {
+        if ($PSCmdlet.ParameterSetName -eq 'ByTheme' -and $ThemeName -eq 'OptimizerDark') {
             $shouldAttemptFallback = $false
         }
 
         if ($shouldAttemptFallback) {
                 if (${function:Apply-ThemeColors}) {
-                    & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
+                    & ${function:Apply-ThemeColors} -ThemeName 'OptimizerDark' -IsFallback
                     Log "Standard-Theme als Fallback angewendet" 'Info'
 
                 } else {
@@ -2642,7 +2580,7 @@ function Switch-Theme {
 
         if (-not $ThemeName) {
             Log "Theme-Name ist leer, verwende Standard" 'Warning'
-            $ThemeName = "Nebula"
+            $ThemeName = "OptimizerDark"
 
         }
 
@@ -2655,8 +2593,8 @@ function Switch-Theme {
             $themeColors = $global:CustomThemeColors.Clone()
         } else {
             if (-not $global:ThemeDefinitions.ContainsKey($ThemeName)) {
-                Log "Theme '$ThemeName' nicht gefunden, wechsle zu Nebula" 'Warning'
-                $ThemeName = "Nebula"
+                Log "Theme '$ThemeName' nicht gefunden, wechsle zu Optimizer Dark" 'Warning'
+                $ThemeName = "OptimizerDark"
             }
 
             $themeColors = (Get-ThemeColors -ThemeName $ThemeName).Clone()
@@ -2840,7 +2778,7 @@ catch { }
         Log "❌ Fehler beim Theme-Wechsel: $($_.Exception.Message)" 'Error'
 
             if (${function:Apply-ThemeColors}) {
-                & ${function:Apply-ThemeColors} -ThemeName 'Nebula' -IsFallback
+                & ${function:Apply-ThemeColors} -ThemeName 'OptimizerDark' -IsFallback
                 Log "Standard-Theme als Fallback angewendet" 'Info'
 
             } else {
@@ -5738,9 +5676,7 @@ $xamlContent = @'
                       </Grid.ColumnDefinitions>
                       <TextBlock Text="Preset" VerticalAlignment="Center" Style="{StaticResource SectionSubtext}"/>
                       <ComboBox x:Name="cmbOptionsThemeMain" Grid.Column="1" Style="{StaticResource ModernComboBox}">
-                        <ComboBoxItem Content="Nebula Vortex" Tag="Nebula"/>
-                        <ComboBoxItem Content="Midnight Azure" Tag="Midnight"/>
-                        <ComboBoxItem Content="Lumen Daybreak" Tag="Lumen"/>
+                        <ComboBoxItem Content="Optimizer Dark" Tag="OptimizerDark"/>
                         <ComboBoxItem Content="Custom" Tag="Custom"/>
                       </ComboBox>
                       <Button x:Name="btnOptionsApplyThemeMain" Grid.Column="2" Content="Apply" Width="90" Height="32" Style="{StaticResource SuccessButton}" FontSize="12"/>
@@ -6070,14 +6006,14 @@ $null = Test-XamlNameUniqueness -Xaml $xamlContent
 
 # ---------- Bind All Controls ----------
 
-# Ensure a default theme is applied at startup (fallback to Nebula if no selection)
-    $defaultTheme = 'Nebula'
+# Ensure a default theme is applied at startup (fallback to OptimizerDark if no selection)
+    $defaultTheme = 'OptimizerDark'
     if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem -and $cmbOptionsTheme.SelectedItem.Tag) {
         $defaultTheme = $cmbOptionsTheme.SelectedItem.Tag
 
     }
     & ${function:Apply-ThemeColors} -ThemeName $defaultTheme
-    try { & ${function:Apply-ThemeColors} -ThemeName 'Nebula' } catch {}
+    try { & ${function:Apply-ThemeColors} -ThemeName 'OptimizerDark' } catch {}
 
 # Sidebar navigation controls
 $btnNavDashboard = $form.FindName('btnNavDashboard')
@@ -6298,7 +6234,7 @@ $customThemeDefaults = [ordered]@{
 # Ensure the global custom theme cache is initialized before any preview updates so
 # other functions can safely clone the values.
 if (-not $global:CustomThemeColors) {
-    $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'Nebula').Clone()
+    $global:CustomThemeColors = (Get-ThemeColors -ThemeName 'OptimizerDark').Clone()
     $global:CustomThemeColors = Normalize-ThemeColorTable $global:CustomThemeColors
     $global:CustomThemeColors['Name'] = 'Custom Theme'
 }
@@ -6434,7 +6370,7 @@ $global:MenuMode = "Dashboard"  # For legacy compatibility
 function Set-ActiveNavigationButton {
     param(
         [string]$ActiveButtonName,
-        [string]$CurrentTheme = 'Nebula'
+        [string]$CurrentTheme = 'OptimizerDark'
     )
 
         # Theme-Farben holen
@@ -6499,7 +6435,7 @@ function Set-ActiveNavigationButton {
 function Set-ActiveAdvancedSectionButton {
     param(
         [string]$Section,
-        [string]$CurrentTheme = 'Nebula'
+        [string]$CurrentTheme = 'OptimizerDark'
     )
 
     if ([string]::IsNullOrWhiteSpace($Section)) {
@@ -6566,7 +6502,7 @@ function Switch-Panel {
             $cmbOptionsTheme.SelectedItem.Tag
 
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         $global:CurrentAdvancedSection = $null
@@ -6655,7 +6591,7 @@ function Switch-Panel {
 function Show-AdvancedSection {
     param(
         [string]$Section,
-        [string]$CurrentTheme = 'Nebula'
+        [string]$CurrentTheme = 'OptimizerDark'
     )
 
     if ([string]::IsNullOrWhiteSpace($Section)) {
@@ -6753,7 +6689,7 @@ if ($btnNavDashboard) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Switch-Panel "Dashboard"
@@ -6768,7 +6704,7 @@ if ($btnNavBasicOpt) {
             $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
                 $cmbOptionsTheme.SelectedItem.Tag
             } else {
-                'Nebula'
+                'OptimizerDark'
             }
 
             Switch-Panel "BasicOpt"
@@ -6786,7 +6722,7 @@ if ($btnNavAdvanced) {
             $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
                 $cmbOptionsTheme.SelectedItem.Tag
             } else {
-                'Nebula'
+                'OptimizerDark'
             }
 
             Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
@@ -6800,7 +6736,7 @@ if ($btnNavGames) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Switch-Panel "Games"
@@ -6812,7 +6748,7 @@ if ($btnNavOptions) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Switch-Panel "Options"
@@ -6824,7 +6760,7 @@ if ($btnNavBackup) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Switch-Panel "Backup"
@@ -6836,7 +6772,7 @@ if ($btnNavLog) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Switch-Panel "Log"
@@ -6849,7 +6785,7 @@ if ($btnAdvancedNetwork) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Show-AdvancedSection -Section 'Network' -CurrentTheme $currentTheme
@@ -6860,7 +6796,7 @@ if ($btnAdvancedSystem) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Show-AdvancedSection -Section 'System' -CurrentTheme $currentTheme
@@ -6871,7 +6807,7 @@ if ($btnAdvancedServices) {
         $currentTheme = if ($cmbOptionsTheme -and $cmbOptionsTheme.SelectedItem) {
             $cmbOptionsTheme.SelectedItem.Tag
         } else {
-            'Nebula'
+            'OptimizerDark'
         }
 
         Show-AdvancedSection -Section 'Services' -CurrentTheme $currentTheme
@@ -7200,7 +7136,7 @@ function Set-UILanguage {
     } elseif ($global:CurrentTheme) {
         $global:CurrentTheme
     } else {
-        'Nebula'
+        'OptimizerDark'
 
         Switch-Theme -ThemeName $activeTheme
 
@@ -10573,7 +10509,7 @@ if ($btnSaveSettings) {
             $configPath = Join-Path (Get-Location) "koala-settings.cfg"
 
             # Gather current settings
-            $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "Nebula" }
+            $currentTheme = if ($cmbOptionsTheme.SelectedItem) { $cmbOptionsTheme.SelectedItem.Tag } else { "OptimizerDark" }
             $currentScale = if ($cmbUIScale.SelectedItem) { $cmbUIScale.SelectedItem.Tag } else { "1.0" }
             $currentLanguage = if ($script:CurrentLanguage) { $script:CurrentLanguage } else { 'en' }
             $advancedSelections = Get-AdvancedCheckedSelections
@@ -10669,18 +10605,18 @@ if ($btnLoadSettings) {
 if ($btnResetSettings) {
     $btnResetSettings.Add_Click({
             $result = [System.Windows.MessageBox]::Show(
-                "Are you sure you want to reset all settings to default?`n`nThis will:`n- Set theme to Dark Purple`n- Set UI scale to 100%`n- Switch to Basic mode",
+                "Are you sure you want to reset all settings to default?`n`nThis will:`n- Set theme to Optimizer Dark`n- Set UI scale to 100%`n- Switch to Basic mode",
                 "Reset Settings",
                 'YesNo',
                 'Question'
             )
 
             if ($result -eq 'Yes') {
-                # Reset theme to Dark Purple
+                # Reset theme to Optimizer Dark
                 foreach ($item in $cmbOptionsTheme.Items) {
-                    if ($item.Tag -eq "Nebula") {
+                    if ($item.Tag -eq "OptimizerDark") {
                         $cmbOptionsTheme.SelectedItem = $item
-                        Switch-Theme -ThemeName "Nebula"
+                        Switch-Theme -ThemeName "OptimizerDark"
                         break
 
                     }
@@ -12291,7 +12227,7 @@ if ($lblOptimizationStatus -and $lblOptimizationStatus.Text -ne $null) {
 
 # Apply default theme on startup
     Log "Applying default theme on startup..." 'Info'
-    Switch-Theme -ThemeName "Nebula"
+    Switch-Theme -ThemeName "OptimizerDark"
     Log "Default theme applied successfully - UI ready" 'Success'
     Log "Warning: Could not apply default theme on startup: $($_.Exception.Message)" 'Warning'
 
@@ -12451,12 +12387,12 @@ $form.Add_SizeChanged({
 
 # Initialize default theme and color preview
 if ($cmbOptionsTheme -and $cmbOptionsTheme.Items.Count -gt 0) {
-    # Set default theme to Nebula
+    # Set default theme to Optimizer Dark
     foreach ($item in $cmbOptionsTheme.Items) {
-        if ($item.Tag -eq "Nebula") {
+        if ($item.Tag -eq "OptimizerDark") {
             $cmbOptionsTheme.SelectedItem = $item
-            Update-ThemeColorPreview -ThemeName "Nebula"
-            Log "Default theme 'Dark Purple' selected with color preview initialized" 'Info'
+            Update-ThemeColorPreview -ThemeName "OptimizerDark"
+            Log "Default theme 'Optimizer Dark' selected with color preview initialized" 'Info'
             break
 } else {
     Log "Warning: Theme dropdown not available for initialization" 'Warning'
