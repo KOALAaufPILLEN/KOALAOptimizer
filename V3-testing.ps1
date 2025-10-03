@@ -247,41 +247,74 @@ function Optimize-LogFile {
 function Get-SystemPerformanceMetrics {
     param([switch]$Detailed)
 
+    try {
         $metrics = @{
             CPU = 0
             Memory = 0
             Disk = 0
             Network = 0
-
         }
 
-        # Get CPU usage
+        try {
             $cpu = Get-WmiObject -Class Win32_Processor | Measure-Object -Property LoadPercentage -Average
-            $metrics.CPU = [math]::Round($cpu.Average, 1)
-            $metrics.CPU = 0
+            if ($cpu -and $cpu.Average -ne $null) {
+                $metrics.CPU = [math]::Round($cpu.Average, 1)
+            }
+        }
+        catch {
+            Write-Verbose "Failed to retrieve CPU metrics: $($_.Exception.Message)"
         }
 
-        # Get Memory usage
+        try {
             $totalMemory = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory
             $availableMemory = (Get-WmiObject -Class Win32_OperatingSystem).AvailablePhysicalMemory
-            $usedMemory = $totalMemory - $availableMemory
-            $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
-            $metrics.Memory = 0
+
+            if ($totalMemory -and $availableMemory) {
+                $usedMemory = $totalMemory - $availableMemory
+                $metrics.Memory = [math]::Round(($usedMemory / $totalMemory) * 100, 1)
+            }
+        }
+        catch {
+            Write-Verbose "Failed to retrieve memory metrics: $($_.Exception.Message)"
+        }
+
+        try {
+            $diskUsage = Get-Counter -Counter "\PhysicalDisk(_Total)\% Disk Time" -ErrorAction Stop
+            if ($diskUsage -and $diskUsage.CounterSamples) {
+                $metrics.Disk = [math]::Round($diskUsage.CounterSamples.CookedValue, 1)
+            }
+        }
+        catch {
+            Write-Verbose "Failed to retrieve disk metrics: $($_.Exception.Message)"
+        }
+
+        try {
+            $networkUsage = Get-Counter -Counter "\Network Interface(*)\Bytes Total/sec" -ErrorAction Stop
+            if ($networkUsage -and $networkUsage.CounterSamples) {
+                $metrics.Network = [math]::Round((($networkUsage.CounterSamples | Measure-Object CookedValue -Average).Average) / 1KB, 2)
+            }
+        }
+        catch {
+            Write-Verbose "Failed to retrieve network metrics: $($_.Exception.Message)"
+        }
 
         if ($Detailed) {
-            # Add more detailed metrics if needed
             $metrics.Timestamp = Get-Date
             $metrics.Source = "WMI"
         }
 
         return $metrics
-        # Return default metrics on error
+    }
+    catch {
+        Write-Verbose "Falling back to default system performance metrics: $($_.Exception.Message)"
         return @{
             CPU = 0
             Memory = 0
             Disk = 0
             Network = 0
         }
+    }
+}
 
 function Ensure-NavigationVisibility {
     param([System.Windows.Controls.Panel]$NavigationPanel)
