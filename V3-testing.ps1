@@ -962,7 +962,6 @@ function Get-ColorStringFromValue {
     if ($ColorValue -is [System.Windows.Media.Brush]) {
         try { return $ColorValue.ToString() } catch { return $null }
     }
-catch { }
 
     if ($ColorValue -is [System.Management.Automation.PSObject]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -979,7 +978,6 @@ catch { }
 
         try { return $ColorValue.ToString() } catch { return $null }
     }
-catch { }
 
     if ($ColorValue -is [System.Collections.IDictionary]) {
         foreach ($propName in 'Brush','Color','Value','Hex','Text','Background','Primary') {
@@ -1213,7 +1211,6 @@ function Set-BrushPropertySafe {
             } else {
                 try { $colorString = [string]$colorValue } catch { $colorString = $null }
             }
-catch { }
 
         if (-not [string]::IsNullOrWhiteSpace($colorString)) {
             $converter = Get-SharedBrushConverter
@@ -1435,7 +1432,6 @@ function Find-AllControlsOfType {
                     default {
                         try { $resolvedType = [Type]::GetType("$typeName, PresentationFramework", $false) } catch { }
                     }
-catch { }
                 }
             }
 
@@ -2307,7 +2303,6 @@ function Apply-ThemeColors {
             if ($heroBrush -is [System.Windows.Media.Brush]) {
                 try { $form.Resources['HeroCardBrush'] = $heroBrush } catch { Write-Verbose "HeroCardBrush resource assignment skipped" }
             }
-catch { }
 
             $gaugeBackgroundBrush = New-SolidColorBrushSafe $gaugeBackgroundValue
             if (-not $gaugeBackgroundBrush) { $gaugeBackgroundBrush = New-SolidColorBrushSafe $colors.Secondary }
@@ -2495,7 +2490,6 @@ catch { }
         if ($mainScroll -is [System.Windows.Controls.ScrollViewer]) {
             try { Set-BrushPropertySafe -Target $mainScroll -Property 'Background' -Value [System.Windows.Media.Brushes]::Transparent } catch { Write-Verbose "Main scroll background skipped" }
         }
-catch { }
 
             Update-AllUIElementsRecursively -element $form -colors $colors
             Log "Rekursive UI-Element-Aktualisierung abgeschlossen" 'Info'
@@ -2691,7 +2685,6 @@ function Switch-Theme {
                             if ($sidebarGrid.Children.Count -gt 1 -and $sidebarGrid.Children[1].GetType().GetProperty('Background')) {
                                 try { Set-BrushPropertySafe -Target $sidebarGrid.Children[1] -Property 'Background' -Value $themeColors.SidebarBg } catch { Write-Verbose "Sidebar scroll background skipped" }
                             }
-catch { }
                             if ($sidebarGrid.Children.Count -gt 2) {
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'Background' -Value $themeColors.SidebarBg
                                 Set-BrushPropertySafe -Target $sidebarGrid.Children[2] -Property 'BorderBrush' -Value $themeColors.Primary -AllowTransparentFallback
@@ -8054,7 +8047,6 @@ function Set-OptimizeButtonsEnabled {
     foreach ($button in $script:OptimizeSelectedButtons) {
         try { $button.IsEnabled = $Enabled } catch { Write-Verbose "Failed to update optimize button state: $($_.Exception.Message)" }
     }
-catch { }
 }
 
 function Get-GameListPanels {
