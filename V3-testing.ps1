@@ -567,7 +567,8 @@ function Log {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
 
     if ($global:LogBox -and $global:LogBoxAvailable) {
-            # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
+        # Use Dispatcher.Invoke instead of BeginInvoke for more reliable UI updates
+        try {
             $global:LogBox.Dispatcher.Invoke({
                 try {
                     # Check if LogBox is still accessible
@@ -606,16 +607,22 @@ function Log {
                             [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke({}, [System.Windows.Threading.DispatcherPriority]::Render)
                         }
                     } else {
-                        $global:LogBoxAvailable = $false
-                        Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+                        throw [System.InvalidOperationException]::new("LogBox is unavailable")
                     }
-                    $global:LogBoxAvailable = $false
-                    Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
-                    Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
-                }
+            } catch {
+                $global:LogBoxAvailable = $false
+                Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+                Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
+            }
+            })
+        } catch {
             $global:LogBoxAvailable = $false
             Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+            Log "LogBox UI became unavailable: $($_.Exception.Message)" 'Warning'
+        }
+    } else {
         Write-Host $logMessage -ForegroundColor $(Get-LogColor $Level)
+    }
 
 # ---------- Essential Helper Functions (moved to top to fix call order) ----------
 function Test-AdminPrivileges {
