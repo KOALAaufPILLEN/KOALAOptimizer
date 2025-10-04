@@ -1782,18 +1782,21 @@ function Update-AllUIElementsRecursively {
                 } elseif (-not $element.Background -or $element.Background.ToString() -eq "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "WrapPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "DockPanel" {
                 if ($element.Background -and $element.Background.ToString() -ne "Transparent") {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 } else {
                     Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Background -AllowTransparentFallback
                 }
+            }
             "TabItem" {
                 Set-BrushPropertySafe -Target $element -Property 'Background' -Value $colors.Secondary
                 Set-BrushPropertySafe -Target $element -Property 'Foreground' -Value $colors.Text
@@ -1942,8 +1945,10 @@ function Update-AllUIElementsRecursively {
                 Set-BrushPropertySafe -Target $element -Property 'BorderBrush' -Value $colors.Primary -AllowTransparentFallback
             }
 
-            $element.InvalidateVisual()
-            # Ignore refresh issues on individual elements
+        }
+
+        $element.InvalidateVisual()
+        # Ignore refresh issues on individual elements
 
         if ($element.Children) {
             foreach ($child in $element.Children) {
@@ -1958,6 +1963,8 @@ function Update-AllUIElementsRecursively {
         }
 
         # Continue on individual element failures
+
+}
 
   function Update-ButtonStyles {
       param($Primary, $Hover)
